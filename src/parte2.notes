@@ -23,16 +23,22 @@ D 0xBC24 0xBC35 tabla (17 B; racha 68.00, entropia 0.87, 2 valores: pocos valore
 D 0xBDAA 0xBDAC relleno o resto (2 B; 2 bytes)
 D 0xBFEB 0xC001 relleno (22 B; 22 de 22 bytes son 0xFF)
 D 0xC459 0xC45E relleno o resto (5 B; 5 bytes)
-D 0xC788 0xC7A7 tabla (31 B; racha 2.21, entropia 4.31, 22 valores: pocos valores para ser un dibujo)
 D 0xC804 0xC83E datos sin clasificar (58 B; racha 2.42, entropia 4.95, 37 valores)
-D 0xC864 0xC891 datos sin clasificar (45 B; racha 2.14, entropia 4.69, 28 valores)
 D 0xC8F7 0xCAA0 graficos (425 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
 D 0xCB0F 0xCB14 relleno o resto (5 B; 5 bytes)
 D 0xCB26 0xCB27 relleno o resto (1 B; 1 bytes)
 D 0xCBDB 0xCBF0 tabla (21 B; racha 2.43, entropia 3.16, 11 valores: pocos valores para ser un dibujo)
-D 0xCC3D 0xCC53 tabla (22 B; racha 2.79, entropia 3.94, 17 valores: pocos valores para ser un dibujo)
 D 0xCC99 0xCCAB tabla (18 B; racha 3.43, entropia 3.28, 11 valores: pocos valores para ser un dibujo)
 D 0xCDC0 0xCDD0 tabla (16 B; racha 2.37, entropia 2.27, 7 valores: pocos valores para ser un dibujo)
 D 0xD13A 0xD13C relleno o resto (2 B; 2 bytes)
 D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valores para ser un dibujo)
-D 0xD48C 0xD675 tabla (489 B; racha 4.67, entropia 2.83, 22 valores: pocos valores para ser un dibujo)
+
+# --- LOS BORDES DE LAS RUTINAS QUE APARECIERON JUGANDO -----------------------
+# Al comprobar con el replay que varios rangos declarados como datos se
+# ejecutaban, se retiraron y se declararon como puntos de entrada. Estos son los
+# trozos que quedaron a los lados: el trazador no llega a ellos, y la partida
+# tampoco paso por ahi. Se etiquetan conservador, como todo lo que no se sabe.
+D 0xC788 0xC794 tabla (12 B; racha 2.40, entropia 3.42, 11 valores: pocos valores para ser un dibujo)
+D 0xC864 0xC865 relleno o resto (1 B; 1 bytes)
+D 0xC880 0xC891 tabla (17 B; racha 2.12, entropia 3.97, 16 valores: pocos valores para ser un dibujo)
+D 0xCC3D 0xCC3E relleno o resto (1 B; 1 bytes)

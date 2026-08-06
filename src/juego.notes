@@ -101,9 +101,6 @@ D 0xBBB2 0xBBCB tabla (25 B; racha 2.30, entropia 2.95, 9 valores: pocos valores
 D 0xBC4F 0xBC54 relleno o resto (5 B; 5 bytes)
 D 0xC05C 0xC063 relleno o resto (7 B; 7 bytes)
 D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
-D 0xC190 0xC1BD datos sin clasificar (45 B; racha 2.24, entropia 4.47, 29 valores)
-D 0xC4FC 0xC525 tabla (41 B; racha 1.89, entropia 3.64, 18 valores: pocos valores para ser un dibujo)
-D 0xC5B5 0xC5D2 tabla (29 B; racha 1.63, entropia 3.36, 15 valores: pocos valores para ser un dibujo)
 D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
 D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
 D 0xCE73 0xCEBC datos sin clasificar (73 B; racha 2.46, entropia 5.25, 45 valores)
@@ -123,7 +120,6 @@ D 0xE8C0 0xE8C8 tabla (8 B; racha 2.13, entropia 2.50, 6 valores: pocos valores 
 D 0xE922 0xE92A tabla (8 B; racha 2.46, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
 D 0xE97E 0xE987 tabla (9 B; racha 3.43, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
 D 0xEAB9 0xEADD tabla (36 B; racha 2.36, entropia 3.97, 21 valores: pocos valores para ser un dibujo)
-D 0xF07B 0xF080 relleno o resto (5 B; 5 bytes)
 D 0xF120 0xF124 relleno o resto (4 B; 4 bytes)
 D 0xF393 0xF394 relleno o resto (1 B; 1 bytes)
 D 0xF77D 0xF77E relleno o resto (1 B; 1 bytes)
@@ -196,3 +192,12 @@ D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
 #   BASADO EN UNA IDEA ORIGINAL / JOSE MANUEL MU&OZ / TOPO SOFT.
 #   El '&' es como la fuente del juego codifica la enye)
 D 0xF972 0xFDE7 datos sin clasificar (1141 B; racha 7.87, entropia 1.08, 11 valores: pocos valores para ser un dibujo; parece tabla)
+
+# --- LOS BORDES DE LAS RUTINAS QUE APARECIERON JUGANDO -----------------------
+# Al comprobar con el replay que varios rangos declarados como datos se
+# ejecutaban, se retiraron y se declararon como puntos de entrada. Estos son los
+# trozos que quedaron a los lados: el trazador no llega a ellos, y la partida
+# tampoco paso por ahi. Se etiquetan conservador, como todo lo que no se sabe.
+D 0xC190 0xC1AF tabla (31 B; racha 2.32, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
+D 0xC503 0xC50C tabla (9 B; racha 1.67, entropia 1.58, 3 valores: pocos valores para ser un dibujo)
+D 0xC5B5 0xC5C1 tabla (12 B; racha 1.68, entropia 2.79, 8 valores: pocos valores para ser un dibujo)

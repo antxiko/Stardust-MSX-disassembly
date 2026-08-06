@@ -214,3 +214,30 @@
 # Para volver a traer nombres del cotejo hacen falta las dos cosas: arreglar esa
 # busqueda, y que el punto de entrada NO caiga en un rango declarado como datos.
 # Lo segundo lo comprueba ahora un test, asi que no se puede colar otra vez.
+
+# --- CODIGO QUE SOLO APARECE JUGANDO LA PARTIDA ENTERA -----------------------
+#
+# Estas direcciones salen de reproducir un replay completo de 38 minutos
+# grabado por Araubi (tools/omsx_replay.tcl), muestreando el PC y quedandose
+# con lo que el procesador ejecuto de verdad y el trazador no alcanza.
+#
+# La diferencia con las 41 entradas que hubo que retirar de aqui es toda:
+# aquellas venian de suponer que un tramo de otro binario estaba en la misma
+# direccion, y caian dentro de los graficos. Estas vienen de haber visto pasar
+# el contador de programa por ellas, con la cuenta de muestras al lado.
+#
+# OJO con como se midio, porque la trampa de este juego es siempre la misma:
+# en la cinta hay cinco programas que ocupan las MISMAS direcciones en momentos
+# distintos. Solo se han contado las muestras de la ventana en la que el juego
+# de naves es el dueno de la memoria: desde que el cargador salta a 0xBD85
+# (t=449 s) hasta que empieza la carga de la segunda parte (t=1575 s). Sin ese
+# corte, el logo de TOPO, la pantalla de carga y la ROM del BASIC aparecen como
+# si fueran codigo dentro de la tileria.
+#
+# De las 1489 direcciones distintas que se ejecutaron dentro del bloque, el
+# trazador ya alcanzaba 1444. Estas son las 45 que faltaban.
+0xC1AF  ejec_C1AF    ejecutado en partida (6 muestras), sin llamador localizado
+0xC4FC  ejec_C4FC    ejecutado en partida (1140 muestras)
+0xC50C  ejec_C50C    ejecutado en partida (3977 muestras)
+0xC5C1  ejec_C5C1    ejecutado en partida (71 muestras)
+0xF07B  ejec_F07B    ejecutado en partida (4 muestras)

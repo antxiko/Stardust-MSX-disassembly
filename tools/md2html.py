@@ -90,7 +90,8 @@ def ruta(href):
     h = h.replace("../", "")
     # Codigo fuente, herramientas y ficheros de la raiz: no estan bajo docs/
     if h.startswith(("src/", "tools/")) or h in (
-            "README.md", "LICENSE", "AVISO-LEGAL.md", "Makefile"):
+            "README.md", "README.es.md", "LICENSE", "AVISO-LEGAL.md",
+            "LEGAL-NOTICE.md", "Makefile"):
         return f"{REPO}/blob/main/{h}"
     if h.endswith(".md"):
         h = h[:-3] + ".html"

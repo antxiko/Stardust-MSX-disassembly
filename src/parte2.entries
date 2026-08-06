@@ -48,3 +48,24 @@
 # con AND y se pinta con OR. Se lo trajeron al MSX, que si tiene sprites.
 0xAA8F  tira_bits_1  entrada por la mitad de la tira de desplazamiento
 0xAB22  tira_bits_2  entrada por la mitad de la tira de desplazamiento
+
+# --- CODIGO QUE SOLO APARECE JUGANDO LA PARTIDA ENTERA -----------------------
+#
+# La fase de a pie apenas se habia podido mirar: para llegar a ella hay que
+# superar las siete zonas de naves. Con el replay completo de Araubi se juega
+# sola, y muestreando el PC en la ventana en la que ella es la duena de la
+# memoria -a partir de que la carga termina, t=1775 s- aparecen 749 direcciones
+# distintas, de las que el trazador no alcanzaba 159.
+#
+# Dos de ellas son las rutinas que mas trabajan de toda la segunda parte, y las
+# dos estaban declaradas como datos:
+#   0xD48C  139.323 muestras   figuraba como "tabla" de 489 bytes
+#   0xC865   27.928 muestras   figuraba como "datos sin clasificar"
+# Que una rutina asi estuviera clasificada como tabla es lo que pasa cuando se
+# etiqueta midiendo entropia en vez de mirando si se ejecuta.
+0xC794  ejec_C794    ejecutado en partida (86 muestras)
+0xC865  ejec_C865    ejecutado en partida (27928 muestras)
+0xCC3E  ejec_CC3E    ejecutado en partida (10 muestras)
+0xD48C  ejec_D48C    ejecutado en partida (139323 muestras): la rutina mas caliente
+0xD525  ejec_D525    ejecutado en partida (133 muestras)
+0xD57F  ejec_D57F    ejecutado en partida (40 muestras)

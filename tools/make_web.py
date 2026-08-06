@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from estilo_web import ESTILO                      # noqa: E402
 
 TOTAL = 93861
-SIN_IDENTIFICAR = 6658
+SIN_IDENTIFICAR = 6568
 
 TXT = {
     "es": dict(
@@ -31,7 +31,7 @@ TXT = {
               "el presupuesto cierre al 100 % quiere decir que cada byte de la "
               "cinta tiene dueño —o es código que el trazador alcanza de verdad, "
               "o cae en un rango con nombre y medida—, <b>no</b> que se sepa para "
-              "qué sirve cada uno. Quedan 6658 bytes sin identificar y buena "
+              "qué sirve cada uno. Quedan 6568 bytes sin identificar y buena "
               "parte de las rutinas sin comentar. Está contado con cifras en "
               "<a href='LO-QUE-FALTA.html'>Lo que falta</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
@@ -45,9 +45,9 @@ TXT = {
         otro=("../", "In English"),
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
-        cifras=[("100%", "del binario con dueño"), ("95", "rutinas identificadas"),
-                ("7+1", "zonas de naves, y una a pie"), ("27.011", "bytes de código"),
-                ("66.850", "bytes de datos"), ("6.658", "bytes sin identificar")],
+        cifras=[("100%", "del binario con dueño"), ("106", "rutinas identificadas"),
+                ("7+1", "zonas de naves, y una a pie"), ("27.635", "bytes de código"),
+                ("66.226", "bytes de datos"), ("6.568", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -66,7 +66,7 @@ TXT = {
         aviso="<b>This is not finished, and work continues.</b> The budget closing "
               "at 100% means every byte on the tape has an owner —either code the "
               "tracer genuinely reaches, or a range with a name and a "
-              "measurement— <b>not</b> that its purpose is known. 6658 bytes "
+              "measurement— <b>not</b> that its purpose is known. 6568 bytes "
               "remain unidentified and much of the code is still uncommented. It "
               "is set out with figures in "
               "<a href='LO-QUE-FALTA.html'>What's missing</a>.",
@@ -81,9 +81,9 @@ TXT = {
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
-        cifras=[("100%", "of the binary owned"), ("95", "routines identified"),
-                ("7+1", "ship zones, plus one on foot"), ("27,011", "bytes of code"),
-                ("66,850", "bytes of data"), ("6,658", "bytes unidentified")],
+        cifras=[("100%", "of the binary owned"), ("106", "routines identified"),
+                ("7+1", "ship zones, plus one on foot"), ("27,635", "bytes of code"),
+                ("66,226", "bytes of data"), ("6,568", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "
@@ -152,7 +152,16 @@ HALLAZGOS = {
          "igual, y la sanidad del trazado sólo miraba los rangos de un fichero donde "
          "los gráficos no estaban. Ahora hay una comprobación para exactamente esto: "
          "<b>ningún punto de entrada puede caer dentro de un rango declarado como "
-         "datos</b>. La cobertura real del bloque es del <b>24,6 %</b>.</p>"),
+         "datos</b>.</p>"
+         "<p>Y luego llegó la prueba de verdad. Un aficionado, Araubi, había "
+         "grabado una partida completa de 38 minutos en el emulador. "
+         "Reproduciéndola y anotando por dónde pasa el procesador, de las "
+         "<b>1489 direcciones que el juego ejecutó, el trazador ya alcanzaba "
+         "1444</b>: la limpieza era correcta. Y las que faltaban dejaron de ser "
+         "una corazonada para pasar a ser código con su cuenta de muestras al "
+         "lado. La cobertura real del bloque es del <b>24,7 %</b>, y la de la "
+         "segunda parte subió al <b>51,3 %</b> al aparecer ahí sus dos rutinas "
+         "más trabajadoras, que estaban clasificadas como tablas de datos.</p>"),
     ],
     "en": [
         ("This isn't an MSX tape",
@@ -207,7 +216,16 @@ HALLAZGOS = {
          "bytes, only read differently — the budget still closed, and the trace "
          "sanity check only looked at ranges in a file the graphics weren't in. There "
          "is now a check for exactly this: <b>no entry point may fall inside a range "
-         "declared as data</b>. The block's real coverage is <b>24.6%</b>.</p>"),
+         "declared as data</b>.</p>"
+         "<p>Then came the real test. An enthusiast, Araubi, had recorded a "
+         "complete 38-minute playthrough in the emulator. Replaying it and "
+         "noting where the processor actually goes, of the <b>1489 addresses "
+         "the game executed the tracer already reached 1444</b>: the cleanup "
+         "was right. And the ones it missed stopped being a hunch and became "
+         "code with a sample count beside it. The block's real coverage is "
+         "<b>24.7%</b>, and the second part's rose to <b>51.3%</b> when its two "
+         "hardest-working routines turned up there, both of which had been "
+         "classified as data tables.</p>"),
     ],
 }
 

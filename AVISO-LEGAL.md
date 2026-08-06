@@ -1,5 +1,7 @@
 # Aviso legal y de atribución
 
+*(Also available [in English](LEGAL-NOTICE.md).)*
+
 ## De quién es cada cosa
 
 **El juego no es nuestro.** *Stardust* (1987) lo publicó **Topo Soft**. Todos los

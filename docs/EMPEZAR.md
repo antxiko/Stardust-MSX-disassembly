@@ -64,5 +64,5 @@ divergir: el fichero que se publica es el que se verifica.
 ## Si quieres tirar del hilo
 
 Lo que falta está contado con cifras en [Lo que falta](LO-QUE-FALTA.html). Las
-dos líneas donde más se puede avanzar ahora mismo son los 6658 bytes sin
+dos líneas donde más se puede avanzar ahora mismo son los 6568 bytes sin
 identificar y las rutinas de la segunda parte, que apenas se ha jugado.

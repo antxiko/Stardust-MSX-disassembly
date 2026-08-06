@@ -6,7 +6,7 @@ that brought the tape system across with it**.
 
 ⚠️ **This is not finished, and work continues.** The budget closing at 100% means
 every byte has a name and a measurement behind it, not that its purpose is
-known: **6658 bytes remain unidentified** and much of the code is still
+known: **6568 bytes remain unidentified** and much of the code is still
 uncommented. What's missing, with figures, is on
 [the what's-missing page](https://antxiko.github.io/Stardust-MSX-disassembly/LO-QUE-FALTA.html).
 
@@ -75,7 +75,7 @@ make web      # rebuild the site in docs/
 You need `pasmo`, `z80dasm` and Python 3. For the screenshots, `openmsx`.
 
 **The tape is not distributed** with this repository, only the documentation
-work (see [AVISO-LEGAL.md](AVISO-LEGAL.md)). To rebuild everything you need your
+work (see [LEGAL-NOTICE.md](LEGAL-NOTICE.md)). To rebuild everything you need your
 own copy, named `stardust.tsx` in the root, with this sha256:
 
 ```
@@ -104,7 +104,7 @@ documentation site is available in both languages.
 
 Part of this disassembly leans on the **ZX Spectrum disassembly published by the
 game's original authors**, and that is set out in detail in
-[AVISO-LEGAL.md](AVISO-LEGAL.md). The rule followed has been to take none of
+[LEGAL-NOTICE.md](LEGAL-NOTICE.md). The rule followed has been to take none of
 their labels on trust: only those for stretches that appear **identical byte for
 byte** in both binaries are adopted, because the MSX version was made by other
 people and their names are a hypothesis until the bytes confirm them.
@@ -113,4 +113,4 @@ people and their names are a hypothesis until the bytes confirm them.
 
 *Stardust* belongs to Topo Soft and to its authors; this is preservation and
 study work. This version's loading screen is signed **CANO**. See
-[AVISO-LEGAL.md](AVISO-LEGAL.md).
+[LEGAL-NOTICE.md](LEGAL-NOTICE.md).
