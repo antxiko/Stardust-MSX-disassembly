@@ -118,6 +118,20 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>Por eso esta versión lleva algo que el original no necesita: un <b>buffer de pantalla</b> en RAM, y una rutina que lo vuelca. El buffer está en 0x4B40 y mide <b>960 bytes, 24 de ancho por 40 de alto</b>, y el tamaño se sabe por dos caminos que coinciden: lo dice el código (<code>ld de,04b40h</code>, y 24×40 = 960, que llevan de 0x4B40 a 0x4EFF) y lo confirma el emulador, donde esa rutina hizo <b>3.252.480 escrituras</b> con el puntero llegando exactamente hasta 0x4EFF.</p>
 <p><b>Los ejes estuvieron publicados al revés</b>, y merece contarse porque el error se propagó. El <code>ld b,028h</code> del volcado se leyó como «40 columnas», pero es el bucle interior y recorre el buffer a saltos de 24: recoge 40 bytes de una misma columna. Quien cuenta columnas es el exterior, <code>ld c,018h</code>, que avanza de uno en uno 24 veces.</p>
 <p>Lo caza dibujarlo: de 24 en 24 sale la tabla de récords legible; de 40 en 40, ruido. Y encaja con lo que se ve jugando, que es de donde salió la duda: 24 bytes son 192 píxeles, más estrecho que la pantalla —por eso el marco de los lados no se mueve—, y lo que sobra está a lo alto, que es por donde scrollea.</p>
+<h2 id="la-fase-de-a-pie-tiene-su-propia-demo-y-su-propia-partida-grabada">La fase de a pie tiene su propia demo, y su propia partida grabada</h2>
+<p>La demo de la parte de naves no es una máquina jugando: son <b>869 bytes de partida grabada</b>, un byte por fotograma. La fase de a pie tiene la suya, y no podría ser de otro modo: la grabación de las naves está en 0xBA20 y su lector en 0xC1AF, y <b>las dos direcciones caen dentro de 0x61D0-0xD674</b>, o sea que la segunda parte las machaca al cargarse.</p>
+<p>La suya empieza en <b>0x9FF3</b> y son <b>646 bytes</b>, que a 50 Hz son 12,9 segundos. El sitio lo dice el propio código —<code>ld hl,09ff3h</code> en 0xA3FF— y el corte se ve a simple vista, porque justo antes hay dibujo:</p>
+<pre><code>9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   &lt;- damero, dos valores
+9FF3  00 00 00 00 00 00 00 00 ...                       &lt;- ya no</code></pre>
+<p>Los 646 bytes usan 17 valores distintos, <b>todos pares y ninguno mayor de 0x1E</b>: es la máscara de controles, un byte por fotograma.</p>
+<p>Y lo interesante es <b>cómo se enciende</b>. En 0xA688 hay una llamada cuyo operando se reescribe desde dos sitios:</p>
+<pre><code>a313: ld hl,0a6fch / ld (0a689h),hl   &lt;- partida normal: lee los mandos
+b6ca: ld hl,0a6eeh / ld (0a689h),hl   &lt;- demo: lee la grabación</code></pre>
+<p>La misma llamada, dos orígenes, conmutados parcheando el código. Y el rótulo DEMO que parpadea abajo a la derecha <b>no consulta ningún indicador</b>: le pregunta a la instrucción parcheada.</p>
+<pre><code>a4d1: ld a,(0a689h)   ; el operando de esa llamada
+a4d4: cp 0eeh         ; ¿apunta a 0xA6EE, el lector de la grabación?
+a4d6: jr nz,...       ; si no, no estamos en demo</code></pre>
+<p>Esto apareció porque un jugador se pasó el juego y contó que, tras la tabla de récords, arrancaba una demo <b>de la fase a pie</b>. El lector estaba dentro de un rango que este proyecto tenía etiquetado como «tabla».</p>
 <h2 id="lo-que-decia-aqui-sobre-la-musica-y-por-que-ya-no">Lo que decía aquí sobre la música, y por qué ya no</h2>
 <p>Aquí se afirmaba que las tablas de música se habían portado enteras, con 754 bytes idénticos a los de la versión de Spectrum en 0xAB0E. <b>Se retira.</b></p>
 <p>Esa coincidencia la daba la misma herramienta de cotejo cuya búsqueda resultó estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites (0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se buscaba código, que es exactamente el fallo que contaminó el trazado entero.</p>

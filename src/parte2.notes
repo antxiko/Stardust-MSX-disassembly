@@ -20,10 +20,42 @@ D 0x8A78 0x984E graficos (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
 #   entraba por el `jp nz,8A78` fantasma de 0x6209, leido a caballo entre dos
 #   entradas de la tabla de punteros. Una partida completa hasta el final del
 #   juego no ejecuto ni una de sus 3542 direcciones.
-D 0x984E 0xA262 graficos tramados (2580 B; racha 1.96, entropia 5.26, 156 valores: rachas cortas y muchos valores, firma del damero)
-#   OJO: este rango llegaba hasta 0xA2D2 y se tragaba el ARRANQUE del programa,
-#   que esta en 0xA279. Acaba antes: de 0xA262 a 0xA278 hay relleno.
-D 0xA262 0xA279 relleno antes del arranque (23 B: ceros y un 0x10)
+D 0x984E 0x9FF3 graficos tramados (1957 B; rachas cortas y muchos valores, firma del damero)
+#   OJO CON EL FINAL. Este rango llego a estar declarado hasta 0xA2D2 y se
+#   tragaba dos cosas: el ARRANQUE del programa (0xA279) y la partida grabada de
+#   la demo (0x9FF3). El corte se ve a simple vista en los bytes:
+#       9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   <- dibujo
+#       9FF3  00 00 00 00 00 00 00 00 ...                       <- ya no
+
+D 0x9FF3 0xA279 la partida grabada de la DEMO de la fase a pie (646 B)
+#   La fase de a pie tiene su propia demo, con su propia partida grabada, su
+#   propio lector y su propio puntero. No reutiliza nada de la parte de naves,
+#   y no podria: aquella tiene su grabacion en 0xBA20 y su lector en 0xC1AF, y
+#   las dos direcciones caen dentro de 0x61D0-0xD674, o sea que esta misma parte
+#   las machaca al cargarse.
+#
+#   DONDE EMPIEZA, sin suponer nada: 0xA3FF hace `ld hl,09ff3h / ld (0c460h),hl`,
+#   y 0xC460 es el puntero que lee el lector de 0xA6EE:
+#       a6ee: ld ix,(0c460h) / ld a,(ix+000h) / inc ix / ld (0c460h),ix / ret
+#   Que es la MISMA rutina que la de 0xC1AF de la parte de naves, cambiando solo
+#   el puntero (0xE158 alli, 0xC460 aqui).
+#
+#   QUE SON LOS BYTES: uno por fotograma, con la mascara de controles. Los 646
+#   usan 17 valores distintos, TODOS PARES y ninguno mayor de 0x1E. A 50 Hz son
+#   12,9 segundos de partida grabada (la de naves son 869 B y 17,4 s).
+#
+#   COMO SE ENCIENDE LA DEMO: parcheando codigo. En 0xA688 hay un `call` cuyo
+#   operando, en 0xA689, se reescribe desde dos sitios:
+#       a313: ld hl,0a6fch / ld (0a689h),hl   <- partida normal, lee los mandos
+#       b6ca: ld hl,0a6eeh / ld (0a689h),hl   <- demo, lee la grabacion
+#   La misma llamada, dos origenes. Es el mismo truco que usa la parte de naves
+#   para el rotulo DEMO, y que esta documentado mas arriba.
+#
+#   EL FINAL NO ESTA CONFIRMADO APARTE. El lector no comprueba ningun byte de
+#   fin: solo lee y avanza. Se declara hasta 0xA279 porque ahi empieza el codigo
+#   del arranque, y los ultimos 23 bytes son ceros -fotogramas sin pulsar nada-.
+#   Si alguien mide la duracion real de la demo y no da 12,9 s, este es el sitio
+#   donde mirar.
 D 0xA5F0 0xA5F1 relleno o resto (1 B; 1 bytes)
 # 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 # 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
@@ -104,3 +136,23 @@ D 0x6791 0x682E datos sin clasificar (157 B; racha 2.89, entropia 5.43, 68 valor
 D 0x7C78 0x7C9D graficos (37 B; racha 4.35, entropia 4.11, 24 valores: rachas mas largas que el azar)
 D 0x6247 0x625E tabla (23 B; racha 1.92, entropia 3.08, 14 valores: pocos valores para ser un dibujo)
 D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
+
+# --- EL ROTULO DEMO DE LA FASE DE A PIE --------------------------------------
+#
+# El gemelo exacto del de la parte de naves, hasta en la posicion de pantalla:
+#     naves    bfb4: ld ix,0ddf2h / ld hl,04d94h / call 0d4e5h
+#     a pie    a4ed: ld ix,0b9abh / ld hl,04d94h / call 0b4bch
+# 0x4D94 esta en el buffer de pantalla (0x4B40-0x4EFF) y cae abajo a la derecha,
+# que es donde se ve. Y 0xB9AB cae dentro del bloque de textos de aqui al lado,
+# en su ultima cadena.
+#
+# COMO SABE QUE ESTA EN DEMO, que es lo bonito: no guarda ningun indicador. Le
+# pregunta al codigo parcheado.
+#     a4d1: ld a,(0a689h)   <- el operando del `call` que lee los controles
+#     a4d4: cp 0eeh         <- vale 0xEE? entonces apunta a 0xA6EE, el lector
+#     a4d6: jr nz,L_A501       de la partida grabada: estamos en demo
+# El 0xAD27 de la linea siguiente, con `and 008h`, es el bit que lo hace
+# parpadear.
+0xA4D1  rotulo_demo   dibuja DEMO abajo a la derecha; sabe que hay demo mirando el operando parcheado de 0xA689
+0xA6EE  lee_demo      lee un byte de la partida grabada y avanza el puntero de 0xC460
+0xB4BC  render_cadena la del tramado: dibuja con las mascaras de 0xB4A9/0xB4AF

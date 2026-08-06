@@ -134,6 +134,20 @@ TOPO SOFT</code></pre>
 <p>So this version carries something the original doesn&#x27;t need: a <b>screen buffer</b> in RAM, and a routine that dumps it. The buffer is at 0x4B40 and measures <b>960 bytes, 24 wide by 40 tall</b>, and the size is known through two paths that agree without depending on each other: the code says so (<code>ld de,04b40h</code>, and 24×40 = 960, running from 0x4B40 to 0x4EFF) and the emulator confirms it, where that routine made <b>3,252,480 writes</b> with the pointer reaching exactly 0x4EFF.</p>
 <p><b>The axes went out backwards</b>, and it is worth telling because the error spread. The dump&#x27;s <code>ld b,028h</code> was read as &quot;40 columns&quot;, but it is the inner loop and it walks the buffer in steps of 24: it collects 40 bytes from a single column. The one counting columns is the outer loop, <code>ld c,018h</code>, stepping one byte at a time, 24 times.</p>
 <p>Drawing it catches it: 24 at a time gives a legible high-score table; 40 at a time, noise. And it fits what you see while playing, which is where the doubt came from: 24 bytes are 192 pixels, narrower than the screen —which is why the frame down the sides never moves— and the surplus is vertical, which is the way it scrolls.</p>
+<h2 id="the-on-foot-stage-has-its-own-demo-and-its-own-recorded-game">The on-foot stage has its own demo, and its own recorded game</h2>
+<p>The ship part&#x27;s demo isn&#x27;t a machine playing: it is <b>869 bytes of recorded game</b>, one byte per frame. The on-foot stage has its own, and it could not be otherwise: the ships&#x27; recording sits at 0xBA20 and its reader at 0xC1AF, and <b>both addresses fall inside 0x61D0-0xD674</b> — which the second part overwrites as it loads.</p>
+<p>Its own starts at <b>0x9FF3</b> and runs to <b>646 bytes</b>, which at 50 Hz is 12.9 seconds. The code says where —<code>ld hl,09ff3h</code> at 0xA3FF— and the boundary is visible to the naked eye, because just before it there is artwork:</p>
+<pre><code>9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   &lt;- halftone, two values
+9FF3  00 00 00 00 00 00 00 00 ...                       &lt;- not any more</code></pre>
+<p>The 646 bytes use 17 distinct values, <b>all even and none above 0x1E</b>: the control mask, one byte per frame.</p>
+<p>The interesting part is <b>how it is switched on</b>. At 0xA688 there is a call whose operand is rewritten from two places:</p>
+<pre><code>a313: ld hl,0a6fch / ld (0a689h),hl   &lt;- normal play: read the controls
+b6ca: ld hl,0a6eeh / ld (0a689h),hl   &lt;- demo: read the recording</code></pre>
+<p>The same call, two sources, switched by patching the code. And the DEMO label blinking in the bottom right <b>consults no flag at all</b>: it asks the patched instruction.</p>
+<pre><code>a4d1: ld a,(0a689h)   ; the operand of that call
+a4d4: cp 0eeh         ; does it point at 0xA6EE, the recording&#x27;s reader?
+a4d6: jr nz,...       ; if not, we are not in demo mode</code></pre>
+<p>This turned up because a player finished the game and reported that, after the high-score table, a demo started <b>of the on-foot stage</b>. The reader was inside a range this project had labelled &quot;table&quot;.</p>
 <h2 id="what-this-page-used-to-say-about-the-music-and-why-it-doesn-t">What this page used to say about the music, and why it doesn&#x27;t</h2>
 <p>It used to claim here that the music tables had been carried across whole, with 754 bytes identical to the ZX Spectrum version&#x27;s at 0xAB0E. <b>That is withdrawn.</b></p>
 <p>The match came from the same cross-check tool whose search turned out to be unsound, and 0xAB0E falls inside the range this project declares as sprites (0xA560–0xBA20). So the &quot;finding&quot; amounted to locating artwork where code was being looked for, which is exactly the fault that contaminated the whole trace.</p>

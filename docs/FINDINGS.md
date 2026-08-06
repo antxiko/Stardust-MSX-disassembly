@@ -178,6 +178,48 @@ came from: 24 bytes are 192 pixels, narrower than the screen —which is why the
 frame down the sides never moves— and the surplus is vertical, which is the way
 it scrolls.
 
+## The on-foot stage has its own demo, and its own recorded game
+
+The ship part's demo isn't a machine playing: it is **869 bytes of recorded
+game**, one byte per frame. The on-foot stage has its own, and it could not be
+otherwise: the ships' recording sits at 0xBA20 and its reader at 0xC1AF, and
+**both addresses fall inside 0x61D0-0xD674** — which the second part overwrites
+as it loads.
+
+Its own starts at **0x9FF3** and runs to **646 bytes**, which at 50 Hz is 12.9
+seconds. The code says where —`ld hl,09ff3h` at 0xA3FF— and the boundary is
+visible to the naked eye, because just before it there is artwork:
+
+```
+9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   <- halftone, two values
+9FF3  00 00 00 00 00 00 00 00 ...                       <- not any more
+```
+
+The 646 bytes use 17 distinct values, **all even and none above 0x1E**: the
+control mask, one byte per frame.
+
+The interesting part is **how it is switched on**. At 0xA688 there is a call
+whose operand is rewritten from two places:
+
+```
+a313: ld hl,0a6fch / ld (0a689h),hl   <- normal play: read the controls
+b6ca: ld hl,0a6eeh / ld (0a689h),hl   <- demo: read the recording
+```
+
+The same call, two sources, switched by patching the code. And the DEMO label
+blinking in the bottom right **consults no flag at all**: it asks the patched
+instruction.
+
+```
+a4d1: ld a,(0a689h)   ; the operand of that call
+a4d4: cp 0eeh         ; does it point at 0xA6EE, the recording's reader?
+a4d6: jr nz,...       ; if not, we are not in demo mode
+```
+
+This turned up because a player finished the game and reported that, after the
+high-score table, a demo started **of the on-foot stage**. The reader was inside
+a range this project had labelled "table".
+
 ## What this page used to say about the music, and why it doesn't
 
 It used to claim here that the music tables had been carried across whole, with

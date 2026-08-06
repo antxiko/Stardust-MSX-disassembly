@@ -72,10 +72,10 @@ lb262h:	equ 0x0b262
 ;   0x7c9d..0x8a78  (3547 bytes)
 ; DATOS graficos: (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
 ;   0x8a78..0x984e  (3542 bytes)
-; DATOS graficos: tramados (2580 B; racha 1.96, entropia 5.26, 156 valores: rachas cortas y muchos valores, firma del damero)
-;   0x984e..0xa262  (2580 bytes)
-; DATOS relleno: antes del arranque (23 B: ceros y un 0x10)
-;   0xa262..0xa279  (23 bytes)
+; DATOS graficos: tramados (1957 B; rachas cortas y muchos valores, firma del damero)
+;   0x984e..0x9ff3  (1957 bytes)
+; DATOS la: partida grabada de la DEMO de la fase a pie (646 B)
+;   0x9ff3..0xa279  (646 bytes)
 ; ----------------------------------------------------------------------
 	defb 07fh,042h,00ch,01ch,038h,071h,07fh,000h,0c1h,078h,0bah,078h,0b8h,078h,0b6h,078h	; 61d0  .B..8q...x.x.x.x
 	defb 0b4h,078h,0b2h,078h,0b0h,078h,0aeh,078h,0ach,078h,0aah,078h,0a8h,078h,0a6h,078h	; 61e0  .x.x.x.x.x.x.x.x

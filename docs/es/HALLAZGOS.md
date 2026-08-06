@@ -149,6 +149,48 @@ ruido. Y encaja con lo que se ve jugando, que es de donde salió la duda: 24
 bytes son 192 píxeles, más estrecho que la pantalla —por eso el marco de los
 lados no se mueve—, y lo que sobra está a lo alto, que es por donde scrollea.
 
+## La fase de a pie tiene su propia demo, y su propia partida grabada
+
+La demo de la parte de naves no es una máquina jugando: son **869 bytes de
+partida grabada**, un byte por fotograma. La fase de a pie tiene la suya, y no
+podría ser de otro modo: la grabación de las naves está en 0xBA20 y su lector en
+0xC1AF, y **las dos direcciones caen dentro de 0x61D0-0xD674**, o sea que la
+segunda parte las machaca al cargarse.
+
+La suya empieza en **0x9FF3** y son **646 bytes**, que a 50 Hz son 12,9 segundos.
+El sitio lo dice el propio código —`ld hl,09ff3h` en 0xA3FF— y el corte se ve a
+simple vista, porque justo antes hay dibujo:
+
+```
+9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   <- damero, dos valores
+9FF3  00 00 00 00 00 00 00 00 ...                       <- ya no
+```
+
+Los 646 bytes usan 17 valores distintos, **todos pares y ninguno mayor de 0x1E**:
+es la máscara de controles, un byte por fotograma.
+
+Y lo interesante es **cómo se enciende**. En 0xA688 hay una llamada cuyo operando
+se reescribe desde dos sitios:
+
+```
+a313: ld hl,0a6fch / ld (0a689h),hl   <- partida normal: lee los mandos
+b6ca: ld hl,0a6eeh / ld (0a689h),hl   <- demo: lee la grabación
+```
+
+La misma llamada, dos orígenes, conmutados parcheando el código. Y el rótulo
+DEMO que parpadea abajo a la derecha **no consulta ningún indicador**: le
+pregunta a la instrucción parcheada.
+
+```
+a4d1: ld a,(0a689h)   ; el operando de esa llamada
+a4d4: cp 0eeh         ; ¿apunta a 0xA6EE, el lector de la grabación?
+a4d6: jr nz,...       ; si no, no estamos en demo
+```
+
+Esto apareció porque un jugador se pasó el juego y contó que, tras la tabla de
+récords, arrancaba una demo **de la fase a pie**. El lector estaba dentro de un
+rango que este proyecto tenía etiquetado como «tabla».
+
 ## Lo que decía aquí sobre la música, y por qué ya no
 
 Aquí se afirmaba que las tablas de música se habían portado enteras, con 754
