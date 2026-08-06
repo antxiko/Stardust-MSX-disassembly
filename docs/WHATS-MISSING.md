@@ -27,7 +27,7 @@ Here is the honest breakdown.
 
 ## What is left to identify
 
-**4713 bytes, 5.0% of the tape**, are declared as "unclassified data". For each
+**4089 bytes, 4.4% of the tape**, are declared as "unclassified data". For each
 one we know where it starts, where it ends and what it measures —average run of
 equal bits, entropy, and how many distinct values it uses— but not what it is or
 what it is used for.
@@ -105,7 +105,7 @@ next looking in the wrong place.
 
 The criterion across the whole series is that every claim can be checked against
 the binary. That includes claims about what is **not** known: which is why the
-4713 bytes are bounded one by one instead of swept under the carpet, and why the
+4089 bytes are bounded one by one instead of swept under the carpet, and why the
 coverage figures come out of the tracer rather than out of an impression.
 
 ## What is being worked on now
@@ -126,4 +126,4 @@ If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and
 the notes files where each finding gets recorded.
 
-When those 4713 bytes are identified, this page will get shorter.
+When those 4089 bytes are identified, this page will get shorter.

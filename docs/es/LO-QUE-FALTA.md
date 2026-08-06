@@ -26,7 +26,7 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**4713 bytes, el 5,0 % de la cinta**, están declarados como «datos sin
+**4089 bytes, el 4,4 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
@@ -102,14 +102,14 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-4713 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+4089 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 4713 bytes sin clasificar.** La vía del cotejo con la versión de
+- **Los 4089 bytes sin clasificar.** La vía del cotejo con la versión de
   Spectrum está de momento cerrada: la herramienta que lo hacía buscaba cada
   sección con una aguja de 32 bytes y se quedaba con la primera coincidencia,
   sin comprobar que fuera única ni que el desplazamiento resultante encajara con
@@ -130,4 +130,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 4713 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 4089 bytes se identifiquen, esta página se hará más corta.

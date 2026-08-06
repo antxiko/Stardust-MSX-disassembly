@@ -93,12 +93,6 @@ D 0x54E0 0x54EA colores (SCREEN 2) (10 B; racha 1.67, entropia 0.88, 2 valores, 
 D 0x5980 0x5C31 tabla (689 B; racha 4.20, entropia 2.68, 14 valores: pocos valores para ser un dibujo)
 D 0x5FFD 0x6150 graficos (339 B; racha 4.22, entropia 4.33, 50 valores: rachas mas largas que el azar)
 D 0x68FF 0x69A8 relleno (169 B; 169 de 169 bytes son 0x00)
-D 0xBAD7 0xBADF colores (SCREEN 2) (8 B; racha 2.00, entropia 1.30, 3 valores, el nibble bajo es 0xA en el 88%)
-D 0xBB4E 0xBB53 relleno o resto (5 B; 5 bytes)
-D 0xBB73 0xBB7C tabla (9 B; racha 2.18, entropia 1.75, 4 valores: pocos valores para ser un dibujo)
-D 0xBB7E 0xBB88 tabla (10 B; racha 2.16, entropia 0.72, 2 valores: pocos valores para ser un dibujo)
-D 0xBBB2 0xBBCB tabla (25 B; racha 2.30, entropia 2.95, 9 valores: pocos valores para ser un dibujo)
-D 0xBC4F 0xBC54 relleno o resto (5 B; 5 bytes)
 D 0xC05C 0xC063 relleno o resto (7 B; 7 bytes)
 D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
 D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
@@ -168,19 +162,6 @@ D 0x5051 0x511B datos sin clasificar (202 B; racha 3.01, entropia 5.36, 84 valor
 D 0x512F 0x514A datos sin clasificar (27 B; racha 3.48, entropia 3.96, 19 valores: pocos valores para ser un dibujo; parece tabla)
 D 0x5151 0x5300 datos sin clasificar (431 B; racha 2.51, entropia 4.04, 48 valores)
 D 0x54EA 0x5640 datos sin clasificar (342 B; racha 1.92, entropia 3.29, 13 valores, el nibble bajo es 0x1 en el 86%; parece colores (SCREEN 2))
-D 0xBA20 0xBAD7 la DEMO: los mandos grabados, un byte por fotograma
-#   Del cotejo con el Spectrum, y respaldado por 183 bytes identicos: el
-#   fichero de control de alli llama a esto "Data for player input in the
-#   demo, one byte per frame". Encaja con lo que se ve: rachas largas del
-#   mismo valor (00, 02...) que son el mando quieto durante varios fotogramas.
-#   O sea que la demo no es una inteligencia artificial jugando: es una
-#   partida grabada que se reproduce.
-D 0xBADF 0xBB4E datos sin clasificar (111 B; racha 3.07, entropia 3.21, 12 valores: pocos valores para ser un dibujo; parece tabla)
-D 0xBB53 0xBB73 datos sin clasificar (32 B; racha 2.00, entropia 2.98, 10 valores: pocos valores para ser un dibujo; parece tabla)
-D 0xBB7C 0xBB7E datos sin clasificar (2 B; 2 bytes)
-D 0xBB88 0xBBB2 datos sin clasificar (42 B; racha 3.65, entropia 3.21, 13 valores: pocos valores para ser un dibujo; parece tabla)
-D 0xBBCB 0xBC4F datos sin clasificar (132 B; racha 3.06, entropia 3.58, 15 valores: pocos valores para ser un dibujo; parece tabla)
-D 0xBC54 0xBD85 datos sin clasificar (305 B; racha 3.44, entropia 3.48, 18 valores: pocos valores para ser un dibujo; parece tabla)
 D 0xCA5F 0xCA96 datos sin clasificar (55 B; racha 5.00, entropia 2.95, 14 valores: pocos valores para ser un dibujo; parece tabla)
 D 0xDA82 0xDA83 datos sin clasificar (1 B; 1 bytes)
 D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
@@ -360,3 +341,33 @@ D 0xDE18 0xDE9A diccionario de frases del descompresor de niveles
 #     +0        los graficos: 0x6037-0xA55F y 0xA561-0xBD84, 23885 bytes
 #     -894      el bloque de textos y el diccionario de niveles
 #     +124      unas tablas alrededor de 0xC9A4
+
+# --- LA DEMO: UNA PARTIDA GRABADA -------------------------------------------
+#
+# Los 869 bytes de 0xBA20 a 0xBD84 son los MANDOS de la demo, un byte por
+# fotograma. A 50 Hz eso son 17,4 segundos de partida reproducida. La demo no es
+# una maquina jugando: es una grabacion.
+#
+# Estaba troceado en trece fragmentos que el clasificador automatico habia
+# etiquetado a ojo -"tabla", "relleno", "colores (SCREEN 2)"- y 624 de esos
+# bytes contaban como sin clasificar. Son una sola cosa.
+#
+# El limite de arriba esta confirmado por tres caminos independientes:
+#   - la racha identica al binario de Spectrum acaba EXACTAMENTE en 0xBD84;
+#   - su fichero de control pone "Entry Point" en 0xBD85;
+#   - y el cargador turbo de esta version salta a 0xBD85 (`jp 0bd85h`).
+# O sea que 0xBD85 es donde acaban los datos y empieza el codigo, y lo dicen el
+# otro binario, su desensamblado y el nuestro por separado.
+#
+# El limite de abajo es el final de los sprites: 0xA560 + 83*64 = 0xBA20.
+D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,4 s)
+
+
+# La rutina que lee esa grabacion, y que confirma AQUI lo que decia la etiqueta
+# del Spectrum en vez de darla por buena:
+#     c1af: ld ix,(0e158h)     <- el puntero a los mandos grabados
+#     c1b3: ld a,(ix+000h)     <- lee UN byte
+#     c1b6: inc ix / ld (0e158h),ix / ret
+# Un byte por llamada. Y el puntero se inicializa al arrancar la demo:
+#     beab: ld hl,0ba20h / ld (0e158h),hl
+0xE158  puntero de la partida grabada de la demo (2 bytes en RAM del juego)

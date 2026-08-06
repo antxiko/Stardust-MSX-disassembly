@@ -236,7 +236,7 @@
 #
 # De las 1489 direcciones distintas que se ejecutaron dentro del bloque, el
 # trazador ya alcanzaba 1444. Estas son las 45 que faltaban.
-0xC1AF  ejec_C1AF    ejecutado en partida (6 muestras), sin llamador localizado
+0xC1AF  lee_mando_demo  saca un byte de la partida grabada de la demo y avanza el puntero
 0xC4FC  ejec_C4FC    ejecutado en partida (1140 muestras)
 0xC50C  ejec_C50C    ejecutado en partida (3977 muestras)
 0xC5C1  ejec_C5C1    ejecutado en partida (71 muestras)
