@@ -157,6 +157,42 @@ D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
 0xA6EE  lee_demo      lee un byte de la partida grabada y avanza el puntero de 0xC460
 0xB4BC  render_cadena la del tramado: dibuja con las mascaras de 0xB4A9/0xB4AF
 
+# --- LA PANTALLA SE COMPONE DE TRES BANDAS (hecho-verificado 2026-08-06) -----
+#
+# Esto es de lo mas util que ha salido del bloque, y estuvo dos horas oculto por
+# dar por hecho que el buffer de la fase de a pie era como el de la parte de
+# naves. No lo es.
+#
+# La rutina de volcado, 0xD383, llama TRES VECES al mismo nucleo (0xD3A6), cada
+# vez con su buffer, su destino en la VRAM y su altura:
+#
+#     d383: ld de,04000h / ld hl,00108h / ld b,038h / call L_D3A6   ; 56 filas
+#     d38e: ld de,04540h / ld hl,00900h / ld b,040h / call L_D3A6   ; 64 filas
+#     d399: ld de,04b40h / ld hl,01100h / ld b,028h / call L_D3A6   ; 40 filas
+#
+# Las tres bandas son CONTIGUAS en RAM y cierran al byte:
+#     0x4000 + 24*56 = 0x4540      0x4540 + 24*64 = 0x4B40
+#     0x4B40 + 24*40 = 0x4F00
+# o sea 3840 bytes, 0x4000-0x4EFF, que es EXACTAMENTE el rango de HL que se vio
+# en la medida del puerto 0x98 (tools/omsx_vram_apie.tcl).
+#
+# Y los tres destinos caen uno en cada tercio de la tabla de patrones del
+# SCREEN 2 (0x0000, 0x0800 y 0x1000 en adelante), que es como el MSX divide la
+# pantalla.
+#
+# LOS EJES, que en este proyecto ya han mordido tres veces: el 56/64/40 es el
+# bucle INTERIOR y recorre el buffer a saltos de 24, o sea que son FILAS DE
+# PIXELES (la altura); el 24 es el exterior y son COLUMNAS DE BYTES, 192 pixeles
+# de ancho. La prueba es que dibujado asi, apilando las tres bandas, sale una
+# imagen coherente de 192x160 con el juego reconocible -y con el bloque de tiles
+# repetidos del piso inferior y sus franjas de sombra de 3 pixeles abajo y a la
+# derecha, tal y como lo describio el jugador-. Dibujado de otra forma sale
+# ruido. Ver dump/tres_bandas.png.
+#
+# CUIDADO CON LA PARTE DE NAVES: la suya (0xF3F2) hace UNA sola llamada, con el
+# buffer 0x4B40 y 40 filas. O sea que la de a pie no es una version de aquella,
+# es otra cosa mas grande.
+
 # --- LOS DOS PLANOS DE SCROLL (medido, 2026-08-06) ---------------------------
 #
 # Un jugador que se paso el juego conto que la fase de a pie tiene DOS PISOS que
@@ -190,7 +226,38 @@ D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
 # "tabla" y que en realidad es un bloque de variables (0xAD27, ahi dentro, es el
 # contador de cuadros que hace parpadear el rotulo DEMO).
 #
-# LO QUE NO ESTA ESTABLECIDO, y conviene no dar por hecho: CUAL de los dos
-# grupos es el piso de arriba y cual el de abajo. Para eso hay que atar las
-# columnas del buffer a la geometria de la pantalla, y precisamente los ejes de
-# este buffer ya se leyeron al reves una vez. Queda pendiente.
+# INTENTADO Y FALLIDO: asignar cada grupo a un piso. Se probo, se llego a dar
+# por bueno, y una comprobacion visual lo tumbo. Queda escrito porque el camino
+# equivocado tambien vale.
+#
+# El jugador anadio un dato que parecia decidirlo: el piso de abajo usa UN SOLO
+# diseno, siempre el mismo, y ese dibujo no aparece nunca arriba. Contando la
+# variedad del contenido de cada columna a lo largo de 400 fotos sale que el
+# grupo rapido tiene 2,3 veces mas variedad (41,8 valores distintos por columna
+# contra 18,4), lo que encajaba: el grupo lento seria el de abajo, por lento y
+# por repetitivo.
+#
+# PERO AL DIBUJARLO NO SALE. Sacando solo las columnas del grupo lento y
+# pintandolas, lo que aparece son estructuras variadas -maquinaria, pasillos-,
+# no el diseno repetido de arcos que se ve en la captura del piso inferior. Si
+# esas columnas fueran ese piso, tendria que salir su dibujo.
+#
+# O sea que los grupos de columnas NO son los dos planos, o no solo eso. Lo que
+# sigue en pie es que hay dos velocidades conviviendo (hechos 3 y 4); lo que se
+# cae es la lectura de que cada grupo de columnas sea un piso.
+#
+# LA CAUSA DE ESE FALLO, encontrada despues: se estaba muestreando SOLO
+# 0x4B40-0x4EFF, 960 bytes, porque es el tamano del buffer de la parte de naves.
+# El de la fase de a pie son 3840 en tres bandas (ver el apartado de arriba). Se
+# estaba mirando un cuarto de la pantalla.
+#
+# CON LA GEOMETRIA BUENA TAMPOCO SE HAN PODIDO SEPARAR, y conviene decirlo para
+# que el siguiente no repita el camino. Sobre las 160 filas completas, el
+# contenido cambia un 82 % entre fotos separadas, pero NO se desplaza de forma
+# coherente: ni en horizontal ni en vertical, ni con margen de +-24 pixeles ni
+# comparando cuadros consecutivos. Correlar imagenes a nivel de bit no sirve
+# aqui, entre los sprites, el damero y que la escena se recompone tile a tile.
+#
+# LO QUE HABRIA QUE PROBAR: cazar las ESCRITURAS AL BUFFER (0x4000-0x4EFF) y ver
+# que rutina escribe en que banda y con que frecuencia. Eso separa los planos
+# por quien los dibuja, no por como se ven, que es lo que ha fallado.

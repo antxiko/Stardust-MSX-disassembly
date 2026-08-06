@@ -44,14 +44,20 @@ say "PC=[format 0x%04X [reg PC]]"
 # o sea que los planos se componen ANTES, en RAM. Asi que hay que mirar el
 # buffer: si un plano va mas lento que el otro, sus filas se desplazaran a menos
 # velocidad, y eso se ve fila a fila.
-set INI 0x4B40
+# EL BUFFER ENTERO, no el ultimo cuarto. La primera version muestreaba
+# 0x4B40-0x4EFF (960 bytes), que es el tamano del buffer de la PARTE DE NAVES.
+# El de la fase de a pie es mas grande: la medida de la VRAM
+# (tools/omsx_vram_apie.tcl) dice que la rutina de volcado 0xD3B3 lee con HL
+# entre 0x4000 y 0x4EFF, o sea 3840 bytes. Mirando solo el ultimo cuarto no
+# aparecian ni las franjas de sombra del piso inferior ni nada reconocible.
+set INI 0x4000
 set N   [expr {0x4F00 - $INI}]
 
 set ::fotos {}
 proc foto {} {
     global INI N
     lappend ::fotos [debug read_block memory $INI $N]
-    if {[llength $::fotos] >= 400} { vuelca ; exit 0 }
+    if {[llength $::fotos] >= 200} { vuelca ; exit 0 }
     after time 0.02 foto       ;# un fotograma a 50 Hz
 }
 
