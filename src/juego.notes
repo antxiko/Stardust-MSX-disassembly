@@ -48,13 +48,14 @@
 0xC4C5  desplazamiento de sprite, tira desenrollada de adc hl,hl / adc a,a
 
 # ------------------------------------------------------------------ musica
-# La musica se porto TAL CUAL: los 754 bytes de las tablas de script de musica
-# aparecen identicos byte a byte en los dos binarios, con el mismo
-# desplazamiento de 0x4000 que el resto de lo portado.
-#   MSX 0xAB0E  <->  Spectrum 0xEB0E   754 bytes, los 754
-# Y la segunda parte del juego, la de a pie, reutiliza 259 de esos mismos bytes
-# en su 0x7852. O sea que las dos partes suenan con los mismos datos.
-0xAB0E  tablas de la musica: 754 bytes identicos a los de la version de Spectrum
+# AQUI SE AFIRMABA que las tablas de musica se habian portado enteras, con 754
+# bytes identicos a los del Spectrum en 0xAB0E. ESO SE RETIRO: esa coincidencia
+# la daba la version rota de la herramienta de cotejo, y 0xAB0E cae dentro del
+# rango que este mismo fichero declara como sprites (0xA560-0xBA20). Era
+# encontrar dibujo donde se buscaba codigo.
+#
+# Lo que si esta medido sobre este binario es el reproductor, y esta unas lineas
+# mas abajo: el interprete de guiones de 0xE203 y su tabla de notas de 0xE6E3.
 
 # ---------------------------------------------------- rangos de datos
 # Los mismos que src/juego.nocode, aqui en el formato que lee el
@@ -98,8 +99,9 @@ D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
 D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
 D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
 D 0xDA3D 0xDA55 tabla (24 B; racha 2.02, entropia 4.14, 19 valores: pocos valores para ser un dibujo)
-D 0xDA72 0xDA82 tabla (16 B; racha 2.25, entropia 3.62, 13 valores: pocos valores para ser un dibujo)
-D 0xDA83 0xDAD9 datos sin clasificar (86 B; racha 2.17, entropia 5.59, 54 valores)
+# 0xDA72-0xDAC4 ESTUVO AQUI como tres rangos de datos -16 B de "tabla", 1 B
+# suelto y 86 B "sin clasificar"- y son 83 bytes de CODIGO seguido. Se retiran y
+# 0xDA72 pasa a src/juego.entries. Ver el comentario de ahi.
 D 0xE14E 0xE15A relleno (12 B; 12 de 12 bytes son 0x00)
 D 0xE5E2 0xE5E7 relleno o resto (5 B; 5 bytes)
 D 0xE7F4 0xE7F6 relleno o resto (2 B; 2 bytes)
@@ -150,6 +152,21 @@ D 0xA560 0xBA20 sprites: 83 de 16x16 con mascara, 64 bytes cada uno
 # No ejecutarse en 900 segundos tampoco prueba que sean datos: esa partida no
 # llega al fin de partida, ni a la tabla de records, ni a redefinir teclas, ni
 # al modo demo. Lo que se afirma es lo medido y nada mas.
+# LOS TRECE RANGOS DE 0x4952 A 0x563F: EL SPECTRUM NO PUEDE AYUDAR, Y SE SABE
+# POR QUE. Son 1415 bytes, y contra ellos se probo la via de mirar el original
+# en la direccion EQUIVALENTE aunque los bytes no coincidan
+# (tools/coteja_equivalencias.py). No da nada, y no por casualidad: en el
+# Spectrum 0x4000-0x5AFF es la MEMORIA DE PANTALLA, 6144 bytes de pixeles y 768
+# de atributos. Alli no hay juego que mirar, hay imagen.
+#
+# Y eso mismo explica por que aqui hay algo: esta version tiene esas direcciones
+# LIBRES, porque en el MSX la VRAM esta detras del VDP y no se direcciona. Es la
+# misma razon por la que hizo falta el buffer de pantalla de 0x4B40, que el
+# original no necesita. O sea que estos bytes son, por construccion, de los que
+# menos posibilidades tienen de venir del otro lado.
+#
+# Esto no los identifica. Lo que hace es cerrar una via con un motivo, en vez de
+# dejarla como "sin probar".
 D 0x4952 0x49E3 datos sin clasificar (145 B; racha 4.28, entropia 4.12, 35 valores: rachas mas largas que el azar; parece graficos)
 D 0x49E5 0x49EB datos sin clasificar (6 B; 6 bytes)
 D 0x49FA 0x4A03 datos sin clasificar (9 B; racha 2.48, entropia 1.97, 4 valores: pocos valores para ser un dibujo; parece tabla)
@@ -163,7 +180,6 @@ D 0x512F 0x514A datos sin clasificar (27 B; racha 3.48, entropia 3.96, 19 valore
 D 0x5151 0x5300 datos sin clasificar (431 B; racha 2.51, entropia 4.04, 48 valores)
 D 0x54EA 0x5640 datos sin clasificar (342 B; racha 1.92, entropia 3.29, 13 valores, el nibble bajo es 0x1 en el 86%; parece colores (SCREEN 2))
 D 0xCA5F 0xCA96 datos sin clasificar (55 B; racha 5.00, entropia 2.95, 14 valores: pocos valores para ser un dibujo; parece tabla)
-D 0xDA82 0xDA83 datos sin clasificar (1 B; 1 bytes)
 D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
 #   Cada entrada son dos bytes: la MASCARA del bit dentro de la fila, y el valor
 #   que hay que escribir en el puerto 0xAA del PPI para seleccionar esa fila,
@@ -193,8 +209,18 @@ D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
 #   fila, y con ella se traduce (fila, bit) al caracter que se muestra en
 #   pantalla al redefinir.
 
-D 0xDAD9 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
-#   (1078 B, 63 % imprimible). Estuvo como "datos sin clasificar" hasta que
+D 0xDAC5 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
+#   (1098 B, 63 % imprimible).
+#
+#   OJO CON DONDE EMPIEZA. Este rango arrancaba en 0xDAD9, y eso partia una
+#   cadena por la mitad: 0xDAD9 es la S de "HAS CONSEGUIDO". El principio de
+#   verdad es 0xDAC5, que es donde acaba el codigo -0xDAC4 es un `ret`- y donde
+#   empieza la estructura del bloque:
+#       DAC5  00 0D 01 0A  "FELICIDADES" 0D 0D 0D  "HAS CONSEGUIDO..."
+#   0x00 termina cadena, 0x0D es salto de linea y 0x01 <n> coloca la columna.
+#   Los veinte bytes que se recuperan asi estaban contados como "sin clasificar".
+#
+#   Estuvo como "datos sin clasificar" hasta que
 #   un jugador conto que el rotulo DEMO parpadea abajo a la derecha: buscando
 #   esa cadena aparece en 0xDDF2, dentro de este rango, y con ella el resto.
 #   Contiene, por orden: el mensaje de la multicarga (HAS CONSEGUIDO PENETRAR
@@ -210,7 +236,31 @@ D 0xDAD9 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
 #   MEJORES / PUNTUACIONES DE HOY / ESCRIBE TU NOMBRE); y DEMO y BONUS 5000.
 #   Que no se ejecute nunca cuadra con que sea texto y no codigo.
 D 0xE001 0xE002 datos sin clasificar (1 B; 1 bytes)
-D 0xE5E7 0xE785 datos sin clasificar (414 B; racha 4.85, entropia 4.08, 95 valores: rachas mas largas que el azar; parece graficos)
+D 0xE5E7 0xE6E3 datos sin clasificar (252 B; racha 4.85, entropia 4.08: la mitad de delante del rango de 414 B, que sigue sin identificar)
+#   Se probo que fueran guiones para el interprete de 0xE203 -tienen pinta:
+#   registros cortos separados por 0xFF y 0xFE- pero NO se sostiene. Los cuatro
+#   `ld bc,0xE6xx` que parecian arrancarlos aqui caen dentro de los sprites, y
+#   el quinto, el de 0xC7B7, es desalineamiento: el listado trazado lee ahi
+#   `ld c,001h` en 0xC7B6. No hay ni una referencia buena. Queda sin identificar.
+
+D 0xE6E3 0xE785 tabla de periodos del PSG: 81 notas cromaticas desde do1 (162 B)
+#   Son 81 palabras de 16 bits, estrictamente decrecientes, de 3421 a 34. La
+#   prueba de que es una escala cromatica es que cada entrada vale EXACTAMENTE
+#   el doble que la que esta doce posiciones mas alla -razon 2,0000 en las 69
+#   comprobables-, que es lo que define una octava de doce semitonos.
+#
+#   Y cae donde tiene que caer: con el PSG del MSX a 1.789.772,5 Hz y periodo P,
+#   la frecuencia es reloj/(16*P). Para 3421 da 32,70 Hz, que es el do1 teorico
+#   (32,703). O sea que la tabla empieza en un do exacto y cubre casi siete
+#   octavas.
+#
+#   Quien la lee: el interprete de guiones de 0xE203. Este saca un byte con
+#   `ld a,(bc)`; si vale menos de 0x80 es una NOTA y cae en 0xE231, que hace
+#   `ld hl,0e6e3h` y guarda el periodo en (ix+0Ah)/(ix+0Bh) del canal. Si vale
+#   0x80 o mas es un COMANDO y va por la tabla de saltos de 0xE7A3.
+#
+#   El ajuste es al byte: 0xE6E3 + 81*2 = 0xE785, que es justo donde acababa el
+#   rango sin clasificar. Eso es lo que fija los dos extremos de la tabla.
 D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
 #   CONVERSION POR / CARLOS ARIAS / GRAFICOS / JUAN CARLOS Y JAVIER AREVALO /
 #   ...ADEMAS DE... / JULIO MARTIN / MUSICA COMPUESTA POR / GOMINOLAS /

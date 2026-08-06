@@ -5926,7 +5926,7 @@ L_DA37:
 	defb 0dah,0ddh,075h,003h,0ddh,074h,004h,0c9h	; da4d  ..u..t..
 
 ; ======================================================================
-; CODIGO 0xda55..0xda72  (29 bytes)
+; CODIGO 0xda55..0xdac5  (112 bytes)
 ; ======================================================================
 
 
@@ -5947,16 +5947,54 @@ L_DA55:
 	ld a,(0d3c5h)		;da6d
 	or e			;da70
 	ret			;da71
+L_DA72:
+	call L_DA55		;da72
+	ld (ix+000h),000h	;da75
+	ret nz			;da79
+	ld a,(0c184h)		;da7a
+	cp 058h			;da7d
+	ret nz			;da7f
+	ld a,(0c9a3h)		;da80
+	cp 008h			;da83
+	ret nz			;da85
+	ld hl,L_DA9D		;da86
+	ld (0c064h),hl		;da89
+	ld hl,0d959h		;da8c
+	ld (0d0ddh),hl		;da8f
+	ld (0cb04h),a		;da92
+	ld a,01fh		;da95
+	ld (0c9a3h),a		;da97
+	jp L_C678		;da9a
+L_DA9D:
+	ld hl,(0c184h)		;da9d
+	push hl			;daa0
+	ld a,008h		;daa1
+	call L_C47B		;daa3
+	pop hl			;daa6
+	ld a,(0c9a3h)		;daa7
+	push hl			;daaa
+	push af			;daab
+	ld h,a			;daac
+	ld a,018h		;daad
+	call L_C47B		;daaf
+	pop af			;dab2
+	pop hl			;dab3
+	cp 0c8h			;dab4
+	ret nc			;dab6
+	inc a			;dab7
+	inc a			;dab8
+	cp h			;dab9
+	jr c,L_DABD		;daba
+	ld h,a			;dabc
+L_DABD:
+	ld (0c9a3h),a		;dabd
+	ld a,h			;dac0
+	ld (0c185h),a		;dac1
+	ret			;dac4
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (16 B; racha 2.25, entropia 3.62, 13 valores: pocos valores para ser un dibujo)
-;   0xda72..0xda82  (16 bytes)
-; DATOS datos: sin clasificar (1 B; 1 bytes)
-;   0xda82..0xda83  (1 bytes)
-; DATOS datos: sin clasificar (86 B; racha 2.17, entropia 5.59, 54 valores)
-;   0xda83..0xdad9  (86 bytes)
 ; DATOS textos: del juego: menu, redefinir teclas, records y mensajes
-;   0xdad9..0xdf0f  (1078 bytes)
+;   0xdac5..0xdf0f  (1098 bytes)
 ; DATOS tabla: de teclas: 7 entradas de (mascara, valor de puerto)
 ;   0xdcb1..0xdcbf  (14 bytes)
 ; DATOS tabla: de zonas: 7 entradas de (puntero, color de SCREEN 2)
@@ -5964,80 +6002,75 @@ L_DA55:
 ; DATOS diccionario: de frases del descompresor de niveles
 ;   0xde18..0xde9a  (130 bytes)
 ; ----------------------------------------------------------------------
-	defb 0cdh,055h,0dah,0ddh,036h,000h,000h,0c0h,03ah,084h,0c1h,0feh,058h,0c0h,03ah,0a3h	; da72  .U..6...:...X.:.
-	defb 0c9h,0feh,008h,0c0h,021h,09dh,0dah,022h,064h,0c0h,021h,059h,0d9h,022h,0ddh,0d0h	; da82  ....!.."d.!Y."..
-	defb 032h,004h,0cbh,03eh,01fh,032h,0a3h,0c9h,0c3h,078h,0c6h,02ah,084h,0c1h,0e5h,03eh	; da92  2..>.2...x.*...>
-	defb 008h,0cdh,07bh,0c4h,0e1h,03ah,0a3h,0c9h,0e5h,0f5h,067h,03eh,018h,0cdh,07bh,0c4h	; daa2  ..{..:....g>..{.
-	defb 0f1h,0e1h,0feh,0c8h,0d0h,03ch,03ch,0bch,038h,001h,067h,032h,0a3h,0c9h,07ch,032h	; dab2  .....<<.8.g2..|2
-	defb 085h,0c1h,0c9h,000h,00dh,001h,00ah,046h,045h,04ch,049h,043h,049h,044h,041h,044h	; dac2  .......FELICIDAD
-	defb 045h,053h,00dh,00dh,00dh,048h,041h,053h,020h,043h,04fh,04eh,053h,045h,047h,055h	; dad2  ES...HAS CONSEGU
-	defb 049h,044h,04fh,020h,050h,045h,04eh,045h,054h,052h,041h,052h,00dh,00dh,04ch,041h	; dae2  IDO PENETRAR..LA
-	defb 053h,020h,044h,045h,046h,045h,04eh,053h,041h,053h,020h,044h,045h,020h,04ch,041h	; daf2  S DEFENSAS DE LA
-	defb 020h,04eh,041h,056h,045h,00dh,00dh,001h,00ch,049h,04eh,053h,049h,047h,04eh,049h	; db02   NAVE....INSIGNI
-	defb 041h,00dh,00dh,00dh,050h,045h,052h,04fh,020h,04ch,04fh,020h,050h,045h,04fh,052h	; db12  A...PERO LO PEOR
-	defb 020h,041h,055h,04eh,020h,04eh,04fh,020h,048h,041h,00dh,00dh,001h,00ch,04ch,04ch	; db22   AUN NO HA....LL
-	defb 045h,047h,041h,044h,04fh,00dh,00dh,00dh,001h,007h,050h,055h,04ch,053h,041h,020h	; db32  EGADO.....PULSA 
-	defb 041h,04ch,047h,055h,04eh,041h,020h,054h,045h,043h,04ch,041h,00dh,00dh,053h,049h	; db42  ALGUNA TECLA..SI
-	defb 020h,051h,055h,049h,045h,052h,045h,053h,020h,044h,045h,053h,043h,055h,042h,052h	; db52   QUIERES DESCUBR
-	defb 049h,052h,04ch,04fh,00dh,000h,020h,020h,020h,020h,041h,042h,041h,04ah,04fh,020h	; db62  IRLO..    ABAJO 
-	defb 020h,020h,020h,020h,000h,000h,000h,000h,000h,000h,000h,00dh,00dh,020h,020h,020h	; db72      .........   
-	defb 020h,041h,052h,052h,049h,042h,041h,020h,020h,020h,020h,000h,000h,000h,000h,000h	; db82   ARRIBA    .....
-	defb 000h,000h,00dh,00dh,020h,020h,020h,020h,044h,045h,052h,045h,043h,048h,041h,020h	; db92  ....    DERECHA 
-	defb 020h,020h,000h,000h,000h,000h,000h,000h,000h,00dh,00dh,020h,020h,020h,020h,049h	; dba2    .........    I
-	defb 05ah,051h,055h,049h,045h,052h,044h,041h,020h,000h,000h,000h,000h,000h,000h,000h	; dbb2  ZQUIERDA .......
-	defb 00dh,00dh,020h,020h,020h,020h,044h,049h,053h,050h,041h,052h,04fh,020h,020h,020h	; dbc2  ..    DISPARO   
-	defb 000h,000h,000h,000h,000h,000h,000h,00dh,00dh,020h,020h,020h,020h,050h,041h,052h	; dbd2  .........    PAR
-	defb 041h,052h,020h,020h,020h,020h,020h,000h,000h,000h,000h,000h,000h,000h,00dh,00dh	; dbe2  AR     .........
-	defb 020h,020h,020h,020h,041h,042h,041h,04eh,044h,04fh,04eh,041h,052h,020h,000h,000h	; dbf2      ABANDONAR ..
-	defb 000h,000h,000h,000h,000h,00dh,000h,030h,031h,032h,033h,034h,035h,036h,037h,038h	; dc02  .......012345678
-	defb 039h,02dh,03dh,023h,022h,024h,026h,027h,03bh,02ch,02eh,02fh,025h,041h,042h,043h	; dc12  9-=#"$&';,./%ABC
-	defb 044h,045h,046h,047h,048h,049h,04ah,04bh,04ch,04dh,04eh,04fh,050h,051h,052h,053h	; dc22  DEFGHIJKLMNOPQRS
-	defb 054h,055h,056h,057h,058h,059h,05ah,001h,002h,003h,004h,005h,006h,007h,008h,009h	; dc32  TUVWXYZ.........
-	defb 00ah,00bh,00ch,00dh,00eh,00fh,010h,011h,012h,013h,014h,020h,020h,020h,020h,020h	; dc42  ...........     
-	defb 053h,048h,049h,046h,054h,000h,043h,054h,052h,04ch,000h,047h,052h,041h,050h,048h	; dc52  SHIFT.CTRL.GRAPH
-	defb 000h,043h,041h,050h,053h,000h,043h,04fh,044h,045h,000h,046h,020h,031h,000h,046h	; dc62  .CAPS.CODE.F 1.F
-	defb 020h,032h,000h,046h,020h,033h,000h,046h,020h,034h,000h,046h,020h,035h,000h,045h	; dc72   2.F 3.F 4.F 5.E
-	defb 053h,043h,000h,054h,041h,042h,000h,053h,054h,04fh,050h,000h,042h,053h,000h,053h	; dc82  SC.TAB.STOP.BS.S
-	defb 045h,04ch,045h,043h,054h,000h,045h,04eh,054h,045h,052h,000h,053h,050h,041h,043h	; dc92  ELECT.ENTER.SPAC
-	defb 045h,000h,048h,04fh,04dh,045h,000h,049h,04eh,053h,000h,044h,045h,04ch,000h,040h	; dca2  E.HOME.INS.DEL.@
-	defb 0f2h,040h,0f4h,020h,0f4h,010h,0f4h,001h,0f8h,020h,0f3h,010h,0f3h,000h,000h,000h	; dcb2  .@. ..... ......
-	defb 000h,000h,000h,000h,053h,054h,041h,052h,044h,055h,053h,054h,000h,04ah,04fh,059h	; dcc2  ....STARDUST.JOY
-	defb 053h,054h,049h,043h,04bh,000h,054h,045h,043h,04ch,041h,044h,04fh,000h,052h,045h	; dcd2  STICK.TECLADO.RE
-	defb 044h,045h,046h,049h,04eh,049h,052h,020h,054h,045h,043h,04ch,041h,053h,000h,04ah	; dce2  DEFINIR TECLAS.J
-	defb 055h,047h,041h,052h,000h,03ch,03eh,03eh,03eh,03eh,03eh,03eh,03eh,000h,03ch,03eh	; dcf2  UGAR.<>>>>>>>.<>
-	defb 03eh,03eh,03eh,03eh,03eh,000h,04ah,041h,056h,049h,045h,052h,020h,020h,031h,030h	; dd02  >>>>>.JAVIER  10
-	defb 030h,030h,030h,030h,000h,04ah,055h,041h,04eh,020h,043h,020h,020h,030h,038h,030h	; dd12  0000.JUAN C  080
-	defb 030h,030h,030h,000h,04dh,041h,052h,054h,041h,020h,020h,020h,030h,036h,030h,030h	; dd22  000.MARTA   0600
-	defb 030h,030h,000h,04dh,041h,052h,049h,041h,020h,020h,020h,030h,035h,030h,030h,030h	; dd32  00.MARIA   05000
-	defb 030h,000h,020h,020h,020h,020h,020h,020h,020h,020h,030h,034h,030h,030h,030h,030h	; dd42  0.        040000
-	defb 000h,020h,054h,04fh,050h,04fh,020h,020h,020h,030h,033h,030h,030h,030h,030h,000h	; dd52  . TOPO   030000.
-	defb 020h,053h,04fh,046h,054h,020h,020h,020h,030h,032h,030h,030h,030h,030h,000h,020h	; dd62   SOFT   020000. 
-	defb 020h,020h,020h,020h,020h,020h,020h,030h,031h,030h,030h,030h,030h,000h,030h,030h	; dd72         010000.00
-	defb 030h,030h,030h,030h,000h,001h,00bh,042h,020h,052h,020h,041h,020h,056h,020h,04fh	; dd82  0000...B R A V O
-	defb 00dh,00dh,00dh,00dh,001h,007h,048h,041h,053h,020h,043h,04fh,04eh,053h,045h,047h	; dd92  ......HAS CONSEG
-	defb 055h,049h,044h,04fh,020h,055h,04eh,041h,00dh,00dh,001h,009h,044h,045h,020h,04ch	; dda2  UIDO UNA....DE L
-	defb 041h,053h,020h,04dh,045h,04ah,04fh,052h,045h,053h,00dh,00dh,001h,006h,050h,055h	; ddb2  AS MEJORES....PU
-	defb 04eh,054h,055h,041h,043h,049h,04fh,04eh,045h,053h,020h,020h,044h,045h,020h,048h	; ddc2  NTUACIONES  DE H
-	defb 04fh,059h,00dh,00dh,00dh,001h,007h,045h,053h,043h,052h,049h,042h,045h,020h,020h	; ddd2  OY.....ESCRIBE  
-	defb 054h,055h,020h,04eh,04fh,04dh,042h,052h,045h,00dh,00dh,00dh,00dh,001h,00dh,000h	; dde2  TU NOMBRE.......
-	defb 044h,045h,04dh,04fh,000h,000h,042h,04fh,04eh,055h,053h,020h,035h,030h,030h,030h	; ddf2  DEMO..BONUS 5000
-	defb 000h,0d8h,061h,0a1h,0d7h,062h,0f1h,0d4h,063h,071h,0d4h,064h,0a1h,0dbh,065h,0f1h	; de02  ..a..b..cq.d..e.
-	defb 0eah,066h,071h,0e4h,067h,0a1h,003h,000h,000h,003h,000h,080h,003h,080h,080h,003h	; de12  .fq.g...........
-	defb 098h,000h,003h,083h,083h,003h,015h,015h,003h,014h,014h,003h,006h,005h,003h,0ach	; de22  ................
-	defb 009h,003h,001h,002h,003h,01eh,021h,003h,01dh,01eh,003h,004h,004h,003h,003h,003h	; de32  ......!.........
-	defb 003h,010h,011h,003h,0aeh,005h,003h,0aeh,0afh,003h,002h,000h,003h,000h,001h,003h	; de42  ................
-	defb 006h,026h,003h,025h,005h,003h,008h,027h,003h,024h,009h,004h,013h,019h,013h,003h	; de52  .&.%...'.$......
-	defb 000h,015h,003h,015h,000h,003h,026h,025h,003h,027h,024h,003h,002h,017h,003h,017h	; de62  ......&%.'$.....
-	defb 001h,003h,022h,001h,003h,005h,006h,003h,025h,026h,003h,00eh,00fh,004h,091h,089h	; de72  ..".....%&......
-	defb 092h,004h,080h,086h,080h,004h,098h,089h,099h,003h,03bh,03bh,003h,024h,027h,003h	; de82  ..........;;.$'.
-	defb 025h,004h,003h,004h,026h,003h,024h,003h,003h,003h,027h,003h,091h,092h,003h,008h	; de92  %...&.$...'.....
-	defb 003h,003h,003h,009h,003h,006h,004h,003h,004h,005h,003h,0ach,0adh,004h,0ach,08dh	; dea2  ................
-	defb 0adh,004h,000h,093h,094h,003h,095h,096h,004h,0ach,09bh,0adh,004h,081h,089h,080h	; deb2  ................
-	defb 004h,091h,080h,092h,004h,096h,080h,095h,003h,00dh,001h,003h,00ch,001h,003h,032h	; dec2  ...............2
-	defb 032h,003h,036h,036h,003h,04ah,04bh,003h,052h,053h,003h,00eh,003h,003h,003h,00fh	; ded2  2.66.JK.RS......
-	defb 003h,010h,004h,003h,004h,011h,003h,01ah,01ah,003h,04ch,04dh,003h,048h,049h,003h	; dee2  ..........LM.HI.
-	defb 050h,051h,003h,04eh,058h,003h,058h,04fh,003h,05ah,058h,003h,058h,05bh,003h,059h	; def2  PQ.NX.XO.ZX.X[.Y
-	defb 059h,004h,02eh,018h,02fh,004h,060h,061h,062h,004h,068h,069h,06ah	; df02  Y.../.`ab.hij
+	defb 000h,00dh,001h,00ah,046h,045h,04ch,049h,043h,049h,044h,041h,044h,045h,053h,00dh	; dac5  ....FELICIDADES.
+	defb 00dh,00dh,048h,041h,053h,020h,043h,04fh,04eh,053h,045h,047h,055h,049h,044h,04fh	; dad5  ..HAS CONSEGUIDO
+	defb 020h,050h,045h,04eh,045h,054h,052h,041h,052h,00dh,00dh,04ch,041h,053h,020h,044h	; dae5   PENETRAR..LAS D
+	defb 045h,046h,045h,04eh,053h,041h,053h,020h,044h,045h,020h,04ch,041h,020h,04eh,041h	; daf5  EFENSAS DE LA NA
+	defb 056h,045h,00dh,00dh,001h,00ch,049h,04eh,053h,049h,047h,04eh,049h,041h,00dh,00dh	; db05  VE....INSIGNIA..
+	defb 00dh,050h,045h,052h,04fh,020h,04ch,04fh,020h,050h,045h,04fh,052h,020h,041h,055h	; db15  .PERO LO PEOR AU
+	defb 04eh,020h,04eh,04fh,020h,048h,041h,00dh,00dh,001h,00ch,04ch,04ch,045h,047h,041h	; db25  N NO HA....LLEGA
+	defb 044h,04fh,00dh,00dh,00dh,001h,007h,050h,055h,04ch,053h,041h,020h,041h,04ch,047h	; db35  DO.....PULSA ALG
+	defb 055h,04eh,041h,020h,054h,045h,043h,04ch,041h,00dh,00dh,053h,049h,020h,051h,055h	; db45  UNA TECLA..SI QU
+	defb 049h,045h,052h,045h,053h,020h,044h,045h,053h,043h,055h,042h,052h,049h,052h,04ch	; db55  IERES DESCUBRIRL
+	defb 04fh,00dh,000h,020h,020h,020h,020h,041h,042h,041h,04ah,04fh,020h,020h,020h,020h	; db65  O..    ABAJO    
+	defb 020h,000h,000h,000h,000h,000h,000h,000h,00dh,00dh,020h,020h,020h,020h,041h,052h	; db75   .........    AR
+	defb 052h,049h,042h,041h,020h,020h,020h,020h,000h,000h,000h,000h,000h,000h,000h,00dh	; db85  RIBA    ........
+	defb 00dh,020h,020h,020h,020h,044h,045h,052h,045h,043h,048h,041h,020h,020h,020h,000h	; db95  .    DERECHA   .
+	defb 000h,000h,000h,000h,000h,000h,00dh,00dh,020h,020h,020h,020h,049h,05ah,051h,055h	; dba5  ........    IZQU
+	defb 049h,045h,052h,044h,041h,020h,000h,000h,000h,000h,000h,000h,000h,00dh,00dh,020h	; dbb5  IERDA ......... 
+	defb 020h,020h,020h,044h,049h,053h,050h,041h,052h,04fh,020h,020h,020h,000h,000h,000h	; dbc5     DISPARO   ...
+	defb 000h,000h,000h,000h,00dh,00dh,020h,020h,020h,020h,050h,041h,052h,041h,052h,020h	; dbd5  ......    PARAR 
+	defb 020h,020h,020h,020h,000h,000h,000h,000h,000h,000h,000h,00dh,00dh,020h,020h,020h	; dbe5      .........   
+	defb 020h,041h,042h,041h,04eh,044h,04fh,04eh,041h,052h,020h,000h,000h,000h,000h,000h	; dbf5   ABANDONAR .....
+	defb 000h,000h,00dh,000h,030h,031h,032h,033h,034h,035h,036h,037h,038h,039h,02dh,03dh	; dc05  ....0123456789-=
+	defb 023h,022h,024h,026h,027h,03bh,02ch,02eh,02fh,025h,041h,042h,043h,044h,045h,046h	; dc15  #"$&';,./%ABCDEF
+	defb 047h,048h,049h,04ah,04bh,04ch,04dh,04eh,04fh,050h,051h,052h,053h,054h,055h,056h	; dc25  GHIJKLMNOPQRSTUV
+	defb 057h,058h,059h,05ah,001h,002h,003h,004h,005h,006h,007h,008h,009h,00ah,00bh,00ch	; dc35  WXYZ............
+	defb 00dh,00eh,00fh,010h,011h,012h,013h,014h,020h,020h,020h,020h,020h,053h,048h,049h	; dc45  ........     SHI
+	defb 046h,054h,000h,043h,054h,052h,04ch,000h,047h,052h,041h,050h,048h,000h,043h,041h	; dc55  FT.CTRL.GRAPH.CA
+	defb 050h,053h,000h,043h,04fh,044h,045h,000h,046h,020h,031h,000h,046h,020h,032h,000h	; dc65  PS.CODE.F 1.F 2.
+	defb 046h,020h,033h,000h,046h,020h,034h,000h,046h,020h,035h,000h,045h,053h,043h,000h	; dc75  F 3.F 4.F 5.ESC.
+	defb 054h,041h,042h,000h,053h,054h,04fh,050h,000h,042h,053h,000h,053h,045h,04ch,045h	; dc85  TAB.STOP.BS.SELE
+	defb 043h,054h,000h,045h,04eh,054h,045h,052h,000h,053h,050h,041h,043h,045h,000h,048h	; dc95  CT.ENTER.SPACE.H
+	defb 04fh,04dh,045h,000h,049h,04eh,053h,000h,044h,045h,04ch,000h,040h,0f2h,040h,0f4h	; dca5  OME.INS.DEL.@.@.
+	defb 020h,0f4h,010h,0f4h,001h,0f8h,020h,0f3h,010h,0f3h,000h,000h,000h,000h,000h,000h	; dcb5   ..... .........
+	defb 000h,053h,054h,041h,052h,044h,055h,053h,054h,000h,04ah,04fh,059h,053h,054h,049h	; dcc5  .STARDUST.JOYSTI
+	defb 043h,04bh,000h,054h,045h,043h,04ch,041h,044h,04fh,000h,052h,045h,044h,045h,046h	; dcd5  CK.TECLADO.REDEF
+	defb 049h,04eh,049h,052h,020h,054h,045h,043h,04ch,041h,053h,000h,04ah,055h,047h,041h	; dce5  INIR TECLAS.JUGA
+	defb 052h,000h,03ch,03eh,03eh,03eh,03eh,03eh,03eh,03eh,000h,03ch,03eh,03eh,03eh,03eh	; dcf5  R.<>>>>>>>.<>>>>
+	defb 03eh,03eh,000h,04ah,041h,056h,049h,045h,052h,020h,020h,031h,030h,030h,030h,030h	; dd05  >>.JAVIER  10000
+	defb 030h,000h,04ah,055h,041h,04eh,020h,043h,020h,020h,030h,038h,030h,030h,030h,030h	; dd15  0.JUAN C  080000
+	defb 000h,04dh,041h,052h,054h,041h,020h,020h,020h,030h,036h,030h,030h,030h,030h,000h	; dd25  .MARTA   060000.
+	defb 04dh,041h,052h,049h,041h,020h,020h,020h,030h,035h,030h,030h,030h,030h,000h,020h	; dd35  MARIA   050000. 
+	defb 020h,020h,020h,020h,020h,020h,020h,030h,034h,030h,030h,030h,030h,000h,020h,054h	; dd45         040000. T
+	defb 04fh,050h,04fh,020h,020h,020h,030h,033h,030h,030h,030h,030h,000h,020h,053h,04fh	; dd55  OPO   030000. SO
+	defb 046h,054h,020h,020h,020h,030h,032h,030h,030h,030h,030h,000h,020h,020h,020h,020h	; dd65  FT   020000.    
+	defb 020h,020h,020h,020h,030h,031h,030h,030h,030h,030h,000h,030h,030h,030h,030h,030h	; dd75      010000.00000
+	defb 030h,000h,001h,00bh,042h,020h,052h,020h,041h,020h,056h,020h,04fh,00dh,00dh,00dh	; dd85  0...B R A V O...
+	defb 00dh,001h,007h,048h,041h,053h,020h,043h,04fh,04eh,053h,045h,047h,055h,049h,044h	; dd95  ...HAS CONSEGUID
+	defb 04fh,020h,055h,04eh,041h,00dh,00dh,001h,009h,044h,045h,020h,04ch,041h,053h,020h	; dda5  O UNA....DE LAS 
+	defb 04dh,045h,04ah,04fh,052h,045h,053h,00dh,00dh,001h,006h,050h,055h,04eh,054h,055h	; ddb5  MEJORES....PUNTU
+	defb 041h,043h,049h,04fh,04eh,045h,053h,020h,020h,044h,045h,020h,048h,04fh,059h,00dh	; ddc5  ACIONES  DE HOY.
+	defb 00dh,00dh,001h,007h,045h,053h,043h,052h,049h,042h,045h,020h,020h,054h,055h,020h	; ddd5  ....ESCRIBE  TU 
+	defb 04eh,04fh,04dh,042h,052h,045h,00dh,00dh,00dh,00dh,001h,00dh,000h,044h,045h,04dh	; dde5  NOMBRE.......DEM
+	defb 04fh,000h,000h,042h,04fh,04eh,055h,053h,020h,035h,030h,030h,030h,000h,0d8h,061h	; ddf5  O..BONUS 5000..a
+	defb 0a1h,0d7h,062h,0f1h,0d4h,063h,071h,0d4h,064h,0a1h,0dbh,065h,0f1h,0eah,066h,071h	; de05  ..b..cq.d..e..fq
+	defb 0e4h,067h,0a1h,003h,000h,000h,003h,000h,080h,003h,080h,080h,003h,098h,000h,003h	; de15  .g..............
+	defb 083h,083h,003h,015h,015h,003h,014h,014h,003h,006h,005h,003h,0ach,009h,003h,001h	; de25  ................
+	defb 002h,003h,01eh,021h,003h,01dh,01eh,003h,004h,004h,003h,003h,003h,003h,010h,011h	; de35  ...!............
+	defb 003h,0aeh,005h,003h,0aeh,0afh,003h,002h,000h,003h,000h,001h,003h,006h,026h,003h	; de45  ..............&.
+	defb 025h,005h,003h,008h,027h,003h,024h,009h,004h,013h,019h,013h,003h,000h,015h,003h	; de55  %...'.$.........
+	defb 015h,000h,003h,026h,025h,003h,027h,024h,003h,002h,017h,003h,017h,001h,003h,022h	; de65  ...&%.'$......."
+	defb 001h,003h,005h,006h,003h,025h,026h,003h,00eh,00fh,004h,091h,089h,092h,004h,080h	; de75  .....%&.........
+	defb 086h,080h,004h,098h,089h,099h,003h,03bh,03bh,003h,024h,027h,003h,025h,004h,003h	; de85  .......;;.$'.%..
+	defb 004h,026h,003h,024h,003h,003h,003h,027h,003h,091h,092h,003h,008h,003h,003h,003h	; de95  .&.$...'........
+	defb 009h,003h,006h,004h,003h,004h,005h,003h,0ach,0adh,004h,0ach,08dh,0adh,004h,000h	; dea5  ................
+	defb 093h,094h,003h,095h,096h,004h,0ach,09bh,0adh,004h,081h,089h,080h,004h,091h,080h	; deb5  ................
+	defb 092h,004h,096h,080h,095h,003h,00dh,001h,003h,00ch,001h,003h,032h,032h,003h,036h	; dec5  ............22.6
+	defb 036h,003h,04ah,04bh,003h,052h,053h,003h,00eh,003h,003h,003h,00fh,003h,010h,004h	; ded5  6.JK.RS.........
+	defb 003h,004h,011h,003h,01ah,01ah,003h,04ch,04dh,003h,048h,049h,003h,050h,051h,003h	; dee5  .......LM.HI.PQ.
+	defb 04eh,058h,003h,058h,04fh,003h,05ah,058h,003h,058h,05bh,003h,059h,059h,004h,02eh	; def5  NX.XO.ZX.X[.YY..
+	defb 018h,02fh,004h,060h,061h,062h,004h,068h,069h,06ah	; df05  ./.`ab.hij
 
 ; ======================================================================
 ; CODIGO 0xdf0f..0xdfd4  (197 bytes)
@@ -7086,8 +7119,10 @@ L_E5D4:
 ; ----------------------------------------------------------------------
 ; DATOS relleno: o resto (5 B; 5 bytes)
 ;   0xe5e2..0xe5e7  (5 bytes)
-; DATOS datos: sin clasificar (414 B; racha 4.85, entropia 4.08, 95 valores: rachas mas largas que el azar; parece graficos)
-;   0xe5e7..0xe785  (414 bytes)
+; DATOS datos: sin clasificar (252 B; racha 4.85, entropia 4.08: la mitad de delante del rango de 414 B, que sigue sin identificar)
+;   0xe5e7..0xe6e3  (252 bytes)
+; DATOS tabla: de periodos del PSG: 81 notas cromaticas desde do1 (162 B)
+;   0xe6e3..0xe785  (162 bytes)
 ; ----------------------------------------------------------------------
 	defb 001h,00bh,032h,000h,000h,004h,0ffh,008h,000h,000h,000h,003h,000h,000h,000h,002h	; e5e2  ..2.............
 	defb 00bh,001h,001h,000h,002h,0ffh,004h,0feh,000h,002h,007h,000h,000h,000h,00ah,000h	; e5f2  ................

@@ -16,14 +16,35 @@ D 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores
 D 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)
 D 0xACA2 0xAD31 tabla (143 B; racha 17.07, entropia 1.59, 14 valores: pocos valores para ser un dibujo)
 D 0xB13E 0xB140 relleno o resto (2 B; 2 bytes)
-D 0xB2A6 0xB3AC datos sin clasificar (262 B; racha 2.14, entropia 5.31, 64 valores)
+# 0xB2A6-0xB3AB ESTUVO AQUI como 262 B "sin clasificar" y son CUATRO RUTINAS.
+# Se retira y pasa a src/parte2.entries.
 D 0xB51B 0xB65B relleno (320 B; 320 de 320 bytes son 0xFF)
-D 0xB720 0xB9B0 datos sin clasificar (656 B; racha 2.44, entropia 4.76, 77 valores)
+D 0xB720 0xB9B0 textos de la segunda parte: menu, redefinir teclas, records y mensajes (656 B, 75 % imprimible)
+#   No hay que interpretarlo, se lee tal cual: los siete rotulos de redefinir
+#   (ABAJO, ARRIBA, DERECHA, IZQUIERDA, DISPARO, PARAR, ABANDONAR), el mapa de
+#   teclado con los nombres de las especiales, el juego de caracteres para
+#   escribir el nombre (0123456789-=#"$&';,./% y el alfabeto), el menu
+#   (STARDUST, REDEFINIR TECLAS, JUGAR, JOYSTICK, TECLADO), la tabla de records
+#   de fabrica, la pantalla de entrada de record (B R A V O / HAS CONSEGUIDO
+#   UNA / DE LAS MEJORES / PUNTUACIONES DE HOY / ESCRIBE TU NOMBRE) y DEMO.
+#
+#   ES SU PROPIA COPIA, no la de la primera parte: la segunda parte ocupa
+#   0x61D0-0xD674 y el bloque de textos de la parte de naves esta en 0xDAC5, por
+#   encima, asi que ahi arriba sigue estando; aun asi trae el suyo.
+#
+#   Y ES CODIGO ESCRITO PARA MSX, no portado: entre los nombres de teclas estan
+#   GRAPH, CODE y SELECT, que son teclas del MSX y en un ZX Spectrum no existen.
+#
+#   La tabla de records de fabrica, por si a alguien le dice algo:
+#       JAVIER 100000 · JUAN C 080000 · MARTA 060000 · MARIA 050000
+#       (en blanco) 040000 · TOPO 030000 · SOFT 020000 · (en blanco) 010000
+#   JAVIER y JUAN C son los dos Arevalo, que firman los graficos.
 D 0xBC24 0xBC35 tabla (17 B; racha 68.00, entropia 0.87, 2 valores: pocos valores para ser un dibujo)
 D 0xBDAA 0xBDAC relleno o resto (2 B; 2 bytes)
 D 0xBFEB 0xC001 relleno (22 B; 22 de 22 bytes son 0xFF)
 D 0xC459 0xC45E relleno o resto (5 B; 5 bytes)
-D 0xC804 0xC83E datos sin clasificar (58 B; racha 2.42, entropia 4.95, 37 valores)
+# 0xC804-0xC83D ESTUVO AQUI como 58 B "sin clasificar" y es CODIGO. Se retira y
+# pasa a src/parte2.entries.
 D 0xC8F7 0xCAA0 graficos (425 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
 D 0xCB0F 0xCB14 relleno o resto (5 B; 5 bytes)
 D 0xCB26 0xCB27 relleno o resto (1 B; 1 bytes)

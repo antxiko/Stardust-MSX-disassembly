@@ -6,7 +6,7 @@ that brought the tape system across with it**.
 
 ⚠️ **This is not finished, and work continues.** The budget closing at 100% means
 every byte has a name and a measurement behind it, not that its purpose is
-known: **4089 bytes remain unidentified** and much of the code is still
+known: **2864 bytes remain unidentified** and much of the code is still
 uncommented. What's missing, with figures, is on
 [the what's-missing page](https://antxiko.github.io/Stardust-MSX-disassembly/WHATS-MISSING.html).
 

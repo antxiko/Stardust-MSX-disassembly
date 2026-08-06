@@ -277,3 +277,27 @@
 0xE094  ejec_E094    ejecutado a mano (8 muestras)
 0xE0D2  ejec_E0D2    ejecutado a mano (2 muestras)
 0xE0E0  ejec_E0E0    ejecutado a mano (3 muestras)
+
+# --- RUTINAS QUE ESTABAN DECLARADAS COMO DATOS ------------------------------
+#
+# No salen de jugar ni del cotejo: salen de mirar los bytes de un rango que
+# estaba etiquetado por MEDIDA -entropia y rachas- y ver que desensambla a
+# codigo perfecto de principio a fin.
+#
+# 0xDA72 son 83 bytes que estaban repartidos en TRES rangos de datos: 16 B de
+# "tabla", 1 B suelto y 86 B "sin clasificar". La raya de arriba la pone el
+# `ret` de 0xDA71, que si estaba trazado, y la de abajo el `ret` de 0xDAC4,
+# despues del cual empieza el bloque de textos. En medio no hay ni un byte que
+# no case:
+#     da72: call 0da55h / ld (ix+0),000h / ret nz
+#     da7a: ld a,(0c184h) / cp 058h / ret nz
+#     da80: ld a,(0c9a3h) / cp 008h / ret nz
+#     da86: ld hl,0da9dh / ld (0c064h),hl      <- se engancha a si misma
+# Ese `ld hl,0da9dh` es la confirmacion de que el alineado es el bueno: apunta a
+# 0xDA9D, que dentro de este mismo tramo vuelve a desensamblar limpio.
+0xDA72  dato_a_codigo_DA72   83 B declarados como datos que son una rutina entera
+# El trazador llega hasta el `jp 0c678h` de 0xDA9A y ahi se le acaba el flujo:
+# a 0xDA9D no se entra con un CALL, se entra porque la propia rutina de arriba
+# guarda esa direccion en 0xC064 y algo la llama despues por puntero. La cita
+# esta en el binario -`ld hl,0da9dh`- asi que el destino no es una suposicion.
+0xDA9D  gancho_DA9D          enganchada en 0xC064 por la rutina de 0xDA72

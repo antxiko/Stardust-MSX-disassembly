@@ -62,6 +62,6 @@ apart: the file that gets published is the file that gets checked.
 ## If you want to pull on a thread
 
 What's missing is set out with figures in [What's missing](WHATS-MISSING.html).
-The two lines where most ground can be gained right now are the 4089
+The two lines where most ground can be gained right now are the 2864
 unidentified bytes and the routines of the second part, which has barely been
 played.

@@ -69,3 +69,37 @@
 0xD48C  ejec_D48C    ejecutado en partida (139323 muestras): la rutina mas caliente
 0xD525  ejec_D525    ejecutado en partida (133 muestras)
 0xD57F  ejec_D57F    ejecutado en partida (40 muestras)
+
+# --- RUTINAS QUE ESTABAN DECLARADAS COMO DATOS ------------------------------
+#
+# Las dos salen de lo mismo: mirar los bytes de un rango etiquetado por medida y
+# ver que desensambla a codigo limpio, con las dos rayas puestas por el codigo
+# ya trazado que hay a los lados.
+#
+# 0xB2A6 son 262 bytes y CUATRO rutinas casi iguales (0xB2A6, 0xB30A, 0xB36E y
+# 0xB396). Todas empiezan igual: cogen el numero de grafico en A, lo multiplican
+# por 64 con `ld h,0 / ld l,a / add hl,hl` seis veces, y suman 0x6555, que cae
+# dentro de los graficos declarados de 0x625E-0x6644. Luego van rotando el
+# dibujo bit a bit a un buffer en 0x7D55 con `rlca / rr (iy+n)`.
+#
+# Eso es el PRE-DESPLAZADO DE SPRITES POR SOFTWARE, el mismo oficio del Spectrum
+# que ya esta documentado en las tiras de 0xAA88: como alli no hay sprites por
+# hardware, cada dibujo se guarda desplazado a las posiciones intermedias. Que
+# la version de MSX lo siga haciendo, teniendo sprites de verdad, es otra cosa
+# que la conversion se trajo tal cual.
+#
+# Los limites cierran solos: en 0xB2A5 el codigo trazado acaba en `ret`, y en
+# 0xB3AB hay otro `ret` justo antes de que el listado vuelva a coger en 0xB3AC.
+0xB2A6  dato_a_codigo_B2A6   pre-desplazado de sprites (4 rutinas, 262 B)
+
+# 0xC804 son 58 bytes que acaban en `jp 0c536h`. La raya de arriba la pone el
+# `jp L_C536` de 0xC801, que ocupa hasta 0xC803: la instruccion siguiente
+# empieza exactamente en 0xC804.
+0xC804  dato_a_codigo_C804   58 B declarados como datos que son codigo
+# Las otras tres del grupo de 0xB2A6. La primera la traza el flujo normal y se
+# para justo en 0xB30A, que es lo que confirma el alineado de la siguiente; las
+# demas se localizan por la misma firma (`ld h,0 / ld l,a / add hl,hl` x6 y
+# `ld de,06555h`) y por acabar cada una donde empieza la de al lado.
+0xB30A  dato_a_codigo_B30A   pre-desplazado de sprites, variante 2
+0xB36E  dato_a_codigo_B36E   pre-desplazado de sprites, variante 3
+0xB396  dato_a_codigo_B396   pre-desplazado de sprites, variante 4

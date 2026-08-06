@@ -26,22 +26,59 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**4089 bytes, el 4,4 % de la cinta**, están declarados como «datos sin
+**2864 bytes, el 3,1 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
 
-De esos, **5305 llegaron aquí desde el otro lado**: figuraban como código en la
-primera versión publicada de esta página, y sólo estaban trazados porque el
-trazador venía sembrado con puntos de entrada que caían dentro de los gráficos.
-Al quitarlos se quedaron sin dueño. Antes de etiquetarlos se muestreó el
-contador de programa de una partida real de 900 segundos: **25 de esos 26 rangos
-no se ejecutaron ni una vez**, y el único donde cayó el contador fue en las dos
-direcciones de los ganchos del sistema, que el juego reescribe al arrancar. Así
-que no son «código al que no se llega»; pero tampoco se sabe qué son.
+Eran 4089. **Se han identificado 1225**, y con ellos la parte de a pie se ha
+quedado sin ni un solo rango sin clasificar: todos los que quedan están en el
+bloque del juego de naves.
 
-Están repartidos en rangos pequeños dentro de los dos bloques grandes. Se pueden
-listar con:
+### Lo que resultaron ser
+
+**656 bytes: el bloque de textos de la segunda parte** (0xB720). No hubo que
+interpretar nada, se lee tal cual: los rótulos de redefinir teclas, el menú, el
+mensaje de récord y la tabla de récords de fábrica, que empieza por *JAVIER
+100000* y *JUAN C 080000* —los dos Arévalo, que firman los gráficos—. Y entre
+los nombres de teclas están GRAPH, CODE y SELECT, que **son teclas del MSX y en
+un ZX Spectrum no existen**: ese bloque no vino portado, se escribió aquí.
+
+**162 bytes: la tabla de notas del chip de sonido** (0xE6E3). Son 81 palabras de
+16 bits estrictamente decrecientes, y lo que las delata es que **cada una vale
+exactamente el doble que la que está doce posiciones más allá** —la razón sale
+2,0000 en las 69 comprobables—, que es la definición de una octava de doce
+semitonos. Con el reloj del PSG del MSX, la primera da 32,70 Hz, que es el **do1
+teórico**. La lee el intérprete de guiones de 0xE203: saca un byte, y si vale
+menos de 0x80 es una nota y va a esta tabla; si no, es un comando. El ajuste es
+al byte: 0xE6E3 + 81×2 cae justo donde acababa el rango.
+
+**403 bytes que no eran datos, sino código.** Cuatro rutinas de pre-desplazado
+de sprites en la segunda parte (0xB2A6), otra de 58 bytes (0xC804) y una de 83
+en la parte de naves (0xDA72) que estaba repartida en tres rangos distintos.
+Estaban clasificadas midiendo entropía; desensambladas salen limpias de punta a
+punta, y los límites los ponen los `ret` del código ya trazado que hay a los
+lados.
+
+**Y una raya mal puesta.** El bloque de textos de la parte de naves empezaba
+declarado en 0xDAD9, que es **la S de «HAS CONSEGUIDO»**: cortaba una cadena por
+la mitad. Empieza en 0xDAC5, justo después del `ret` de 0xDAC4.
+
+### Los que quedan, y una vía que ya se puede cerrar
+
+De los 2864 que siguen sin identificar, **1415 están en 0x4952-0x563F, y ahí el
+original no puede ayudar**. No por falta de haberlo intentado: en el ZX Spectrum
+esas direcciones son la **memoria de pantalla**, 6144 bytes de píxeles y 768 de
+atributos. Allí no hay juego que mirar, hay imagen.
+
+Y es justo la razón por la que aquí hay algo: esta versión tiene esas
+direcciones libres, porque en el MSX la memoria de vídeo está detrás del chip
+gráfico y no se direcciona. Es lo mismo que obligó a añadir el buffer de
+pantalla de 0x4B40. O sea que esos bytes son, por construcción, de los que menos
+posibilidades tienen de venir del otro lado. Eso no los identifica; lo que hace
+es cerrar una vía **con un motivo**, en vez de dejarla como «sin probar».
+
+Están repartidos en rangos pequeños. Se pueden listar con:
 
 ```sh
 grep "datos sin clasificar" src/juego.notes src/parte2.notes
@@ -55,8 +92,8 @@ salió su clasificación.
 El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
-    juego de naves    25,9 %
-    parte de a pie    51,3 %
+    juego de naves    26,1 %
+    parte de a pie    52,3 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
 el flujo**: rutinas a las que solo se entra por saltos calculados, por tablas o
@@ -102,19 +139,23 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-4089 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+2864 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 4089 bytes sin clasificar.** La vía del cotejo con la versión de
-  Spectrum está de momento cerrada: la herramienta que lo hacía buscaba cada
-  sección con una aguja de 32 bytes y se quedaba con la primera coincidencia,
-  sin comprobar que fuera única ni que el desplazamiento resultante encajara con
-  el del resto, y ahí es donde se generó la contaminación. Hasta que esa
-  búsqueda esté arreglada, nada del cotejo vuelve al proyecto.
+- **Los 2864 bytes que siguen sin clasificar.** La vía del cotejo estuvo cerrada
+  mientras la herramienta buscaba cada sección con una aguja de 32 bytes y se
+  quedaba con la primera coincidencia, sin exigir que fuera única ni que el
+  desplazamiento encajara con el del resto: ahí se generó la contaminación. Ya
+  está reescrita —ahora alinea los dos binarios primero y sólo después mira los
+  nombres— y de ella salió la tesis que hoy sostiene el proyecto. Sobre esa base
+  hay una segunda herramienta, `tools/coteja_equivalencias.py`, que mira qué
+  había en el original en la dirección **equivalente** aunque los bytes no
+  coincidan. No adopta nada por su cuenta a propósito: lo que saca son pistas
+  para mirar a mano, que es como se identificaron los bytes de arriba.
 - **Seguir jugando a mano.** Las pantallas que un arnés no alcanza —fin de
   partida, entrada de récord, demo, menú y redefinir teclas— ya se han visitado
   en una sesión grabada, y de ahí salieron 22 rutinas y la tabla de teclas. Lo
@@ -130,4 +171,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 4089 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 2864 bytes se identifiquen, esta página se hará más corta.
