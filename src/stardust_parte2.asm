@@ -1240,7 +1240,7 @@ L_A362:
 	add a,(hl)		;a36b
 	ld (0c465h),a		;a36c
 L_A36F:
-	call L_D383		;a36f
+	call vuelca_pantalla		;a36f
 	ld a,(0ad27h)		;a372
 	dec a			;a375
 	jp z,L_B68C		;a376
@@ -1283,7 +1283,7 @@ L_A3B4:
 	ld (0c45fh),a		;a3cd
 	call L_A56B		;a3d0
 	call L_AC1F		;a3d3
-	call L_D383		;a3d6
+	call vuelca_pantalla		;a3d6
 	call L_BBE2		;a3d9
 	ld hl,0d750h		;a3dc
 	ld de,0b87fh		;a3df
@@ -1321,7 +1321,7 @@ L_A41F:
 	add a,a			;a425
 	add a,00ch		;a426
 	ld (ix+000h),a		;a428
-	call L_AC06		;a42b
+	call azar		;a42b
 	and 00fh		;a42e
 	ld (ix+001h),a		;a430
 	inc ix			;a433
@@ -1357,7 +1357,7 @@ L_A439:
 	call L_D238		;a483
 	call L_A930		;a486
 	call L_A56B		;a489
-	call L_AC06		;a48c
+	call azar		;a48c
 	and 003h		;a48f
 	ld l,a			;a491
 	ld h,000h		;a492
@@ -1380,8 +1380,8 @@ L_A4A1:
 	call L_AD76		;a4b8
 	call L_BB32		;a4bb
 	call L_A753		;a4be
-	call L_BBA2		;a4c1
-	call L_B9B0		;a4c4
+	call tic_cuenta_atras		;a4c1
+	call mueve_tiros_torreta		;a4c4
 	call L_AECE		;a4c7
 	call L_B3F7		;a4ca
 	xor a			;a4cd
@@ -1399,14 +1399,14 @@ L_A4A1:
 	ld (0b4b0h),a		;a4ea
 	ld ix,0b9abh		;a4ed
 	ld hl,04d94h		;a4f1
-	call L_B4BC		;a4f4
+	call rotula_cadena		;a4f4
 	ld a,055h		;a4f7
 	ld (0b4aah),a		;a4f9
 	ld a,0aah		;a4fc
 	ld (0b4b0h),a		;a4fe
 L_A501:
 	call L_A57D		;a501
-	call L_D383		;a504
+	call vuelca_pantalla		;a504
 	ld ix,0b86ah		;a507
 	ld a,(ix+00dh)		;a50b
 	out (0aah),a		;a50e
@@ -1758,7 +1758,7 @@ L_A75D:
 L_A787:
 	ld b,(ix+001h)		;a787
 	ld c,(ix+000h)		;a78a
-	call L_AC06		;a78d
+	call azar		;a78d
 	bit 4,a			;a790
 	jr z,L_A79B		;a792
 	and 007h		;a794
@@ -1850,7 +1850,7 @@ L_A83C:
 	ld a,(ix+002h)		;a849
 	and 007h		;a84c
 	ex af,af'		;a84e
-	call L_AC06		;a84f
+	call azar		;a84f
 	and 01fh		;a852
 	jr nz,L_A865		;a854
 	ld a,(ix+000h)		;a856
@@ -2031,7 +2031,7 @@ L_A980:
 	jr nc,L_A9C2		;a9a8
 	ld c,0ffh		;a9aa
 L_A9AC:
-	ldi			;a9ac
+	ldi			;a9ac   ; El blitter de fondo: cuatro ldi por tira de 4 columnas, paso 24; redibuja las tres bandas enteras 10 veces por segundo
 	ldi			;a9ae
 	ldi			;a9b0
 	ldi			;a9b2
@@ -2164,7 +2164,7 @@ L_AA6D:
 	ex de,hl		;aa6d
 	pop hl			;aa6e
 	and (hl)		;aa6f
-	ld (hl),a		;aa70
+	ld (hl),a		;aa70   ; Los sprites de 24 px de ancho, con mascara and/or, precalculando el desplazamiento con las cadenas de adc
 	inc hl			;aa71
 	ld a,d			;aa72
 	and (hl)		;aa73
@@ -2318,7 +2318,7 @@ L_AB30:
 	ld c,l			;ab31
 	pop hl			;ab32
 	and (hl)		;ab33
-	ld (hl),a		;ab34
+	ld (hl),a		;ab34   ; Los sprites de 16 px de ancho, mismo esquema que los de 24
 	inc hl			;ab35
 	ld a,c			;ab36
 	and (hl)		;ab37
@@ -2489,7 +2489,7 @@ L_AC02:
 	or h			;ac03
 	ld c,a			;ac04
 	ret			;ac05
-L_AC06:
+azar:		; El generador de azar: lee tres bytes de la ROM del BIOS (ventana 0x2000-0x3FFF, puntero en 0xAD28) y los mezcla
 	push hl			;ac06
 	ld hl,(0ad28h)		;ac07
 	ld a,h			;ac0a
@@ -2563,7 +2563,7 @@ L_AC49:
 	inc hl			;ac5e
 	ld (hl),b		;ac5f
 	inc hl			;ac60
-	call L_AC06		;ac61
+	call azar		;ac61
 	and 020h		;ac64
 	or 014h			;ac66
 	ld (hl),a		;ac68
@@ -2577,7 +2577,7 @@ L_AC49:
 	call L_C4A3		;ac73
 	scf			;ac76
 	ret			;ac77
-L_AC78:
+lanza_tiro_torreta:		; Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (max 2), con su sonido
 	ld hl,0ad03h		;ac78
 	ld a,(hl)		;ac7b
 	cp 002h			;ac7c
@@ -2609,7 +2609,7 @@ L_AC78:
 	ret			;aca1
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (143 B; racha 17.07, entropia 1.59, 14 valores: pocos valores para ser un dibujo)
+; DATOS variables: del juego (143 B): 0xACE7/0xACEC/0xACF6 contadores de cuadro, 0xACE9 estado que solo cambia al andar, 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar
 ;   0xaca2..0xad31  (143 bytes)
 ; ----------------------------------------------------------------------
 	defb 000h,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	; aca2  ................
@@ -2629,7 +2629,7 @@ L_AC78:
 
 L_AD31:
 	ld (0b13eh),hl		;ad31
-	call L_AC06		;ad34
+	call azar		;ad34
 	and 001h		;ad37
 	jr z,L_AD67		;ad39
 	ld a,h			;ad3b
@@ -2796,7 +2796,7 @@ L_AE2E:
 	ret			;ae4b
 L_AE4C:
 	ld (0b13eh),hl		;ae4c
-	call L_AC06		;ae4f
+	call azar		;ae4f
 	and 003h		;ae52
 	jr z,L_AE5A		;ae54
 	add hl,bc		;ae56
@@ -2864,7 +2864,7 @@ L_AE95:
 	ex af,af'		;aeac
 	add a,004h		;aead
 	ld e,a			;aeaf
-	call L_AC06		;aeb0
+	call azar		;aeb0
 	and 0c0h		;aeb3
 	or e			;aeb5
 	sub 004h		;aeb6
@@ -2951,7 +2951,7 @@ L_AF21:
 	ld (ix+001h),a		;af45
 	ld (ix+002h),l		;af48
 	ld (ix+003h),h		;af4b
-	call L_AC06		;af4e
+	call azar		;af4e
 	and 03fh		;af51
 	jr nz,L_AF69		;af53
 	push hl			;af55
@@ -3645,14 +3645,14 @@ L_B3BE:
 	inc (hl)		;b3f3
 	jp L_A56B		;b3f4
 L_B3F7:
-	call L_AC06		;b3f7
+	call azar		;b3f7
 	and 003h		;b3fa
 	ret nz			;b3fc
 	ld a,(0b720h)		;b3fd
 	and a			;b400
 	ret nz			;b401
 L_B402:
-	call L_AC06		;b402
+	call azar		;b402
 	cp 0b0h			;b405
 	jr nc,L_B402		;b407
 	ld c,a			;b409
@@ -3717,7 +3717,7 @@ L_B460:
 	jr nz,L_B45E		;b46e
 	ei			;b470
 	ret			;b471
-L_B472:
+rotula_glifo:		; Estampa el glifo 0x5F00+A*8 a DOBLE altura y tramado en damero: borra con rlca/cpl/and, pinta con and 0x55/0xAA; recorta al llegar a 0x4F00
 	ld e,a			;b472
 	ld a,h			;b473
 	cp 04fh			;b474
@@ -3779,14 +3779,14 @@ L_B4A7:
 	jp nz,L_B4A7		;b4b7
 	pop hl			;b4ba
 	ret			;b4bb
-L_B4BC:
+rotula_cadena:		; Imprime la cadena de (IX) hasta el 0 con rotula_glifo: el rotulo DEMO y el menu
 	ld a,(ix+000h)		;b4bc
 	inc ix			;b4bf
 	and a			;b4c1
 	ret z			;b4c2
-	call L_B472		;b4c3
+	call rotula_glifo		;b4c3
 	inc hl			;b4c6
-	jp L_B4BC		;b4c7
+	jp rotula_cadena		;b4c7
 L_B4CA:
 	ld ix,0b886h		;b4ca
 	ld de,000c8h		;b4ce
@@ -3797,25 +3797,25 @@ L_B4CA:
 	call L_BB0A		;b4dd
 	ld de,006c2h		;b4e0
 	call L_BB18		;b4e3
-	call L_B4BC		;b4e6
+	call rotula_cadena		;b4e6
 	ld de,009c2h		;b4e9
 	call L_BB18		;b4ec
-	call L_B4BC		;b4ef
+	call rotula_cadena		;b4ef
 	ld de,00cc2h		;b4f2
 	call L_BB18		;b4f5
-	call L_B4BC		;b4f8
+	call rotula_cadena		;b4f8
 	ld a,(0b87ch)		;b4fb
 	and a			;b4fe
 	jr z,L_B50E		;b4ff
 	ld ix,0b8b7h		;b501
 	ld de,009c2h		;b505
 	call L_BB18		;b508
-	jp L_B4BC		;b50b
+	jp rotula_cadena		;b50b
 L_B50E:
 	ld ix,0b8c0h		;b50e
 	ld de,00cc2h		;b512
 	call L_BB18		;b515
-	jp L_B4BC		;b518
+	jp rotula_cadena		;b518
 
 ; ----------------------------------------------------------------------
 ; DATOS relleno: (320 B; 320 de 320 bytes son 0xFF)
@@ -3857,7 +3857,7 @@ L_B65B:
 	jp c,L_B6A7		;b667
 	ld (0b87dh),hl		;b66a
 	ld ix,0b886h		;b66d
-	call L_B4BC		;b671
+	call rotula_cadena		;b671
 	ld de,00235h		;b674
 	add hl,de		;b677
 	ld ix,0b8c8h		;b678
@@ -3866,7 +3866,7 @@ L_B65B:
 L_B681:
 	push bc			;b681
 	push de			;b682
-	call L_B4BC		;b683
+	call rotula_cadena		;b683
 	pop de			;b686
 	add hl,de		;b687
 	pop bc			;b688
@@ -3879,7 +3879,7 @@ L_B692:
 	call L_AC1F		;b692
 	call L_BB1D		;b695
 	call L_B65B		;b698
-	call L_D383		;b69b
+	call vuelca_pantalla		;b69b
 	call L_D30B		;b69e
 	jp nz,L_A2D5		;b6a1
 	jp L_B692		;b6a4
@@ -3895,7 +3895,7 @@ L_B6B2:
 	call L_D30B		;b6b2
 	jr nz,L_B6C4		;b6b5
 	ld bc,003e8h		;b6b7
-	call L_B71A		;b6ba
+	call espera		;b6ba
 	ld hl,(0d096h)		;b6bd
 	ld a,h			;b6c0
 	or l			;b6c1
@@ -3954,11 +3954,11 @@ L_B711:
 	dec c			;b716
 	jr nz,L_B6D8		;b717
 	ret			;b719
-L_B71A:
+espera:		; Espera de BC vueltas: el paso de las escenas del final
 	dec bc			;b71a
 	ld a,b			;b71b
 	or c			;b71c
-	jr nz,L_B71A		;b71d
+	jr nz,espera		;b71d
 	ret			;b71f
 
 ; ----------------------------------------------------------------------
@@ -4012,7 +4012,7 @@ L_B71A:
 ; ======================================================================
 
 
-L_B9B0:
+mueve_tiros_torreta:		; Mueve los tiros de las torretas (tabla 0xAD04, max 2): al cruzar el borde del piso (Y+10 >= 0x7C) caen al vacio y en la fila 0x80 se borran
 	ld ix,0ad04h		;b9b0
 	ld a,(0ad03h)		;b9b4
 	and a			;b9b7
@@ -4027,7 +4027,7 @@ L_B9BA:
 	ld hl,(0a6ebh)		;b9c7
 	ld a,c			;b9ca
 	add a,00ah		;b9cb
-	cp 07ch			;b9cd
+	cp 07ch			;b9cd   ; El borde del piso inferior: Y+10 contra 0x7C (fila 124); cruzarlo es caer al vacio
 	jr c,L_B9E9		;b9cf
 	ex de,hl		;b9d1
 	ld bc,00404h		;b9d2
@@ -4272,7 +4272,7 @@ L_BB3D:
 	ex af,af'		;bb54
 	ld b,h			;bb55
 	ld c,l			;bb56
-	call L_AC78		;bb57
+	call lanza_tiro_torreta		;bb57   ; Cada torreta viva dispara: mete su tiro en la tabla de 0xAD04
 	pop hl			;bb5a
 	bit 3,(ix+001h)		;bb5b
 	jr z,L_BB9A		;bb5f
@@ -4304,7 +4304,7 @@ L_BB9A:
 	pop bc			;bb9e
 	djnz L_BB3D		;bb9f
 	ret			;bba1
-L_BBA2:
+tic_cuenta_atras:		; El tic de la torre: solo con los 6 objetivos muertos (0xBC33=0) y 1 de cada 16 del contador de cuadros 0xAD27; pinta una fila y a las 161 (0xBC30) salta a tiempo_agotado
 	ld a,(0bc33h)		;bba2
 	and a			;bba5
 	ret nz			;bba6
@@ -4315,19 +4315,19 @@ L_BBA2:
 	inc a			;bbb0
 	ld (0bc30h),a		;bbb1
 	cp 0a1h			;bbb4
-	jp z,L_BCEE		;bbb6
+	jp z,tiempo_agotado		;bbb6
 	xor a			;bbb9
 	ld de,0cd9ch		;bbba
 	call L_C4A3		;bbbd
 	ld hl,(0bc31h)		;bbc0
 	call L_D117		;bbc3
 	ld a,07eh		;bbc6
-	out (098h),a		;bbc8
+	out (098h),a		;bbc8   ; La fila que crece de la torre blanca de la cuenta atras
 	ei			;bbca
-	call L_BBD2		;bbcb
+	call avanza_torre		;bbcb
 	ld (0bc31h),hl		;bbce
 	ret			;bbd1
-L_BBD2:
+avanza_torre:		; Sube la punta de la torre una fila (0xBC31/32); el salto de tercio del SCREEN 2 es el l|=0x3F / h-=8
 	ld a,l			;bbd2
 	and 03fh		;bbd3
 	jr z,L_BBD9		;bbd5
@@ -4376,7 +4376,7 @@ L_BC1B:
 	ret			;bc23
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (17 B; racha 68.00, entropia 0.87, 2 valores: pocos valores para ser un dibujo)
+; DATOS variables: de la cuenta atras: los 6 objetivos (2 B cada uno, 0xBC24-0xBC2F), filas de torre pintadas (0xBC30), punta de la torre en VRAM (0xBC31/32), objetivos restantes (0xBC33, que 0xA415 pone a 6) y un byte sin dueno (0xBC34)
 ;   0xbc24..0xbc35  (17 bytes)
 ; ----------------------------------------------------------------------
 	defb 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,000h,000h,000h,000h	; bc24  ................
@@ -4526,7 +4526,7 @@ L_BCE9:
 	ld sp,00000h		;bce9
 	ei			;bcec
 	ret			;bced
-L_BCEE:
+tiempo_agotado:		; Se acabo el tiempo: flash de dameros, decaimiento de pixeles al azar, y a la tabla de records: game over sin FELICIDADES
 	ld hl,0bdaah		;bcee
 	ld (hl),07eh		;bcf1
 	inc hl			;bcf3
@@ -4538,9 +4538,9 @@ L_BCEE:
 L_BD00:
 	push bc			;bd00
 	ld de,02a54h		;bd01
-	call L_BD7B		;bd04
+	call flash_dameros		;bd04
 	ld de,0542ah		;bd07
-	call L_BD7B		;bd0a
+	call flash_dameros		;bd0a
 	pop bc			;bd0d
 	djnz L_BD00		;bd0e
 	ld hl,0bdaah		;bd10
@@ -4552,7 +4552,7 @@ L_BD00:
 	call L_C4D0		;bd1d
 	ld bc,0005ah		;bd20
 L_BD23:
-	call L_AC06		;bd23
+	call azar		;bd23
 	xor b			;bd26
 	xor c			;bd27
 	cp 0a0h			;bd28
@@ -4561,7 +4561,7 @@ L_BD23:
 L_BD2E:
 	add a,008h		;bd2e
 	ld d,a			;bd30
-	call L_AC06		;bd31
+	call azar		;bd31
 	xor b			;bd34
 	xor c			;bd35
 	and 01fh		;bd36
@@ -4584,18 +4584,18 @@ L_BD3E:
 	in a,(098h)		;bd50
 	ei			;bd52
 	ld e,a			;bd53
-	call L_AC06		;bd54
+	call azar		;bd54
 	and e			;bd57
 	ld e,a			;bd58
 	call L_D117		;bd59
 	ld a,e			;bd5c
 	out (098h),a		;bd5d
 	ei			;bd5f
-	call L_AC06		;bd60
+	call azar		;bd60
 	and 018h		;bd63
 	nop			;bd65
-	call L_AC06		;bd66
-	call L_AC06		;bd69
+	call azar		;bd66
+	call azar		;bd69
 	and 007h		;bd6c
 	inc a			;bd6e
 L_BD6F:
@@ -4605,7 +4605,7 @@ L_BD6F:
 	dec c			;bd75
 	jr nz,L_BD23		;bd76
 	jp L_A2D2		;bd78
-L_BD7B:
+flash_dameros:		; XOR de los tres tercios de la pantalla con el patron DE (0x2A54/0x542A alternados): el destello de la explosion
 	ld hl,0bdaah		;bd7b
 	ld a,(hl)		;bd7e
 	xor d			;bd7f
@@ -4700,7 +4700,7 @@ L_BE06:
 	ld hl,(0a6ebh)		;be09
 	ld a,040h		;be0c
 	call L_BC60		;be0e
-	call L_D383		;be11
+	call vuelca_pantalla		;be11
 	ret			;be14
 L_BE15:
 	ld iy,01388h		;be15
@@ -4711,12 +4711,12 @@ L_BE15:
 	call L_AC1F		;be25
 	call L_BB1D		;be28
 	call L_C421		;be2b
-	call L_D383		;be2e
+	call vuelca_pantalla		;be2e
 	ld bc,00000h		;be31
-	call L_B71A		;be34
-	call L_B71A		;be37
-	call L_B71A		;be3a
-	call L_B71A		;be3d
+	call espera		;be34
+	call espera		;be37
+	call espera		;be3a
+	call espera		;be3d
 	xor a			;be40
 	ld de,0cd8fh		;be41
 	call L_C4D0		;be44
@@ -4739,24 +4739,24 @@ L_BE63:
 	inc ix			;be69
 	ld a,000h		;be6b
 	call L_AADF		;be6d
-	call L_D383		;be70
+	call vuelca_pantalla		;be70
 	jp L_BE47		;be73
 L_BE76:
 	ld bc,00000h		;be76
-	call L_B71A		;be79
-	call L_B71A		;be7c
-	call L_B71A		;be7f
-	call L_B71A		;be82
+	call espera		;be79
+	call espera		;be7c
+	call espera		;be7f
+	call espera		;be82
 	ld hl,001d0h		;be85
 	ld ix,0c33bh		;be88
 	call L_D20E		;be8c
 	ld e,00fh		;be8f
 L_BE91:
 	ld bc,00000h		;be91
-	call L_B71A		;be94
+	call espera		;be94
 	dec e			;be97
 	jr nz,L_BE91		;be98
-	call L_BFB6		;be9a
+	call siembra_metralla		;be9a
 	ld a,008h		;be9d
 	ld (0bec8h),a		;be9f
 	ld ix,0c30bh		;bea2
@@ -4795,7 +4795,7 @@ L_BED4:
 	ld a,h			;beec
 	sub 008h		;beed
 	ld h,a			;beef
-	call L_AC06		;bef0
+	call azar		;bef0
 	and 001h		;bef3
 	jr z,L_BEF9		;bef5
 	ld a,010h		;bef7
@@ -4826,7 +4826,7 @@ L_BF25:
 	add ix,de		;bf28
 	rlc (iy+000h)		;bf2a
 	djnz L_BED4		;bf2e
-	call L_D383		;bf30
+	call vuelca_pantalla		;bf30
 	pop bc			;bf33
 	inc iy			;bf34
 	dec b			;bf36
@@ -4840,19 +4840,19 @@ L_BF47:
 	push bc			;bf47
 	call L_AC1F		;bf48
 	call L_BB1D		;bf4b
-	call L_BF6F		;bf4e
-	call L_D383		;bf51
+	call mueve_metralla		;bf4e
+	call vuelca_pantalla		;bf51
 	pop bc			;bf54
 	djnz L_BF47		;bf55
 	call L_AC1F		;bf57
 	call L_BB1D		;bf5a
-	call L_D383		;bf5d
+	call vuelca_pantalla		;bf5d
 	ld bc,00000h		;bf60
-	call L_B71A		;bf63
-	call L_B71A		;bf66
-	call L_B71A		;bf69
+	call espera		;bf63
+	call espera		;bf66
+	call espera		;bf69
 	jp L_A2D2		;bf6c
-L_BF6F:
+mueve_metralla:		; Mueve y pinta las 200 particulas del final feliz: posicion+velocidad en un solo add hl,de, poda fuera de pantalla, y 4 filas de brillo al azar en el buffer
 	ld ix,0bfebh		;bf6f
 	ld c,0c8h		;bf73
 L_BF75:
@@ -4876,11 +4876,11 @@ L_BF75:
 	ld de,00018h		;bf9b
 	ld b,004h		;bf9e
 L_BFA0:
-	call L_AC06		;bfa0
+	call azar		;bfa0
 	and 03ch		;bfa3
 	ld (hl),a		;bfa5
 	and 018h		;bfa6
-	out (0feh),a		;bfa8
+	out (0feh),a		;bfa8   ; FOSIL DEL SPECTRUM: 0xFE es el puerto del borde (y altavoz) del Spectrum; en MSX este out no hace nada
 	add hl,de		;bfaa
 	djnz L_BFA0		;bfab
 L_BFAD:
@@ -4889,19 +4889,19 @@ L_BFAD:
 	dec c			;bfb2
 	jr nz,L_BF75		;bfb3
 	ret			;bfb5
-L_BFB6:
+siembra_metralla:		; Siembra las 200 particulas de la nave insignia explotando: dx -7..+8, dy -13..+2 sesgado hacia ARRIBA (metralla en fuente), tabla en 0xBFEB
 	ld ix,0bfebh		;bfb6
 	ld b,0c8h		;bfba
 L_BFBC:
 	call L_C3DC		;bfbc
 L_BFBF:
-	call L_AC06		;bfbf
+	call azar		;bfbf
 	and 00fh		;bfc2
 	sub 007h		;bfc4
 	jr z,L_BFBF		;bfc6
 	ld (ix+000h),a		;bfc8
 L_BFCB:
-	call L_AC06		;bfcb
+	call azar		;bfcb
 	and 00fh		;bfce
 	sub 00dh		;bfd0
 	jr z,L_BFCB		;bfd2
@@ -4994,13 +4994,13 @@ L_BFCB:
 
 
 L_C3DC:
-	call L_AC06		;c3dc
+	call azar		;c3dc
 	cp 090h			;c3df
 	jr nc,L_C3DC		;c3e1
 	add a,018h		;c3e3
 	ld l,a			;c3e5
 L_C3E6:
-	call L_AC06		;c3e6
+	call azar		;c3e6
 	and 03fh		;c3e9
 	cp 028h			;c3eb
 	jr nc,L_C3E6		;c3ed
@@ -7172,7 +7172,7 @@ L_D161:
 	ret			;d16e
 L_D16F:
 	call L_AC1F		;d16f
-	call L_D383		;d172
+	call vuelca_pantalla		;d172
 	xor a			;d175
 	ld (0b87ch),a		;d176
 	ld hl,0b7c2h		;d179
@@ -7282,7 +7282,7 @@ L_D211:
 	inc ix			;d214
 	and a			;d216
 	jr z,L_D238		;d217
-	call L_D252		;d219
+	call imprime_marco		;d219
 	jr L_D211		;d21c
 L_D21E:
 	ld a,080h		;d21e
@@ -7311,7 +7311,7 @@ L_D238:
 	call L_C4D0		;d24d
 	pop hl			;d250
 	ret			;d251
-L_D252:
+imprime_marco:		; El impresor del marco: DIRECTO a la VRAM con la fuente de 0x5F00; A<0x20 es control (0 borra la celda, 1 posiciona con el parametro de (IX))
 	ld bc,00bb8h		;d252
 	push af			;d255
 	call L_D305		;d256
@@ -7514,7 +7514,7 @@ L_D370:
 	ex de,hl		;d37d
 	inc ix			;d37e
 	jp L_D35B		;d380
-L_D383:
+vuelca_pantalla:		; Vuelca el buffer a la VRAM en TRES bandas: 0x4000/56 filas a 0x0108, 0x4540/64 a 0x0900, 0x4B40/40 a 0x1100
 	ld de,04000h		;d383
 	ld hl,00108h		;d386
 	ld b,038h		;d389
@@ -7554,7 +7554,7 @@ L_D3B2:
 	ret			;d3c3
 L_D3C4:
 	call L_AC1F		;d3c4
-	call L_D383		;d3c7
+	call vuelca_pantalla		;d3c7
 	ld ix,0b940h		;d3ca
 	ld hl,00118h		;d3ce
 	call L_D20E		;d3d1
@@ -7579,7 +7579,7 @@ L_D3EC:
 	call L_D30B		;d3ec
 	jr nz,L_D3EC		;d3ef
 	ld bc,007d0h		;d3f1
-	call L_B71A		;d3f4
+	call espera		;d3f4
 	call L_D19F		;d3f7
 	ld d,000h		;d3fa
 	push hl			;d3fc
@@ -7607,14 +7607,14 @@ L_D41B:
 	push bc			;d41d
 	ld (de),a		;d41e
 	push de			;d41f
-	call L_D252		;d420
+	call imprime_marco		;d420
 	pop de			;d423
 	inc de			;d424
 	pop bc			;d425
 	djnz L_D3EA		;d426
 L_D428:
 	ld a,00dh		;d428
-	call L_D252		;d42a
+	call imprime_marco		;d42a
 	call L_D238		;d42d
 	ld bc,00000h		;d430
 L_D433:

@@ -78,7 +78,7 @@ lef00h:	equ 0x0ef00
 ;   0x4b0b..0x4b2f  (36 bytes)
 ; DATOS datos: sin clasificar (17 B; racha 2.72, entropia 3.62, 13 valores: pocos valores para ser un dibujo; parece tabla)
 ;   0x4b2f..0x4b40  (17 bytes)
-; DATOS buffer: de pantalla: 24 de ancho x 40 de alto, leido por columnas
+; DATOS buffer: de pantalla, banda C (24 de ancho x 40 de alto, por columnas): el buffer entero son TRES bandas contiguas en 0x4000-0x4EFF (56+64+40 filas); las bandas A y B caen casi todas por debajo de 0x47A0, fuera de este bloque, y el tramo 0x47A0-0x4B3F hace doble papel: en la cinta trae datos y en marcha es el final de la banda B
 ;   0x4b40..0x4f00  (960 bytes)
 ; DATOS graficos: (337 B; racha 3.49, entropia 4.38, 73 valores: rachas mas largas que el azar)
 ;   0x4f00..0x5051  (337 bytes)
@@ -2060,9 +2060,9 @@ L_BD85:
 	xor a			;bdcd
 	ld (0dcc3h),a		;bdce
 	ld de,0cb09h		;bdd1
-	ld b,030h		;bdd4
+	ld b,030h		;bdd4   ; Rellena la tabla de las 48 estrellas (0xCB09) con alturas al azar menores de 0xA0
 L_BDD6:
-	call L_C83F		;bdd6
+	call azar		;bdd6
 	cp 0a0h			;bdd9
 	inc hl			;bddb
 	jr nc,L_BDD6		;bddc
@@ -2174,13 +2174,13 @@ L_BEB9:
 	ld de,05b32h		;bed2
 	ld b,040h		;bed5
 L_BED7:
-	call L_C83F		;bed7
+	call azar		;bed7
 	and 00fh		;beda
 	sub 007h		;bedc
 	ld (de),a		;bede
 	inc de			;bedf
 	inc hl			;bee0
-	call L_C83F		;bee1
+	call azar		;bee1
 	and 00fh		;bee4
 	sub 00fh		;bee6
 	ld (de),a		;bee8
@@ -2361,8 +2361,8 @@ L_C038:
 
 
 L_C063:
-	jp L_C066		;c063
-L_C066:
+	jp nave_estado		;c063
+nave_estado:		; El despachador del estado de la nave (0xC188): menos de 4 juego normal; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
 	ld hl,(0c184h)		;c066
 	ld a,(0c188h)		;c069
 	cp 004h			;c06c
@@ -2370,7 +2370,7 @@ L_C066:
 	jr z,L_C07A		;c070
 	inc a			;c072
 	ld (0c188h),a		;c073
-	call L_C60C		;c076
+	call mueve_particulas		;c076
 	ret			;c079
 L_C07A:
 	inc a			;c07a
@@ -2378,8 +2378,8 @@ L_C07A:
 	ld a,h			;c07e
 	sub 010h		;c07f
 	ld h,a			;c081
-	call L_C5E3		;c082
-	call L_C60C		;c085
+	call siembra_particulas		;c082
+	call mueve_particulas		;c085
 	ld hl,0ff58h		;c088
 	ld (0c184h),hl		;c08b
 	ret			;c08e
@@ -2544,7 +2544,7 @@ L_C193:
 	ret c			;c1a0
 	jp nz,L_C678		;c1a1
 	ld e,a			;c1a4
-	call L_C83F		;c1a5
+	call azar		;c1a5
 L_C1A8:
 	and 001h		;c1a8
 	add a,e			;c1aa
@@ -2698,7 +2698,7 @@ L_C2B4:
 	jr z,L_C2EA		;c2cf
 	and 007h		;c2d1
 	ex af,af'		;c2d3
-	call L_C83F		;c2d4
+	call azar		;c2d4
 	and 007h		;c2d7
 	jr nz,L_C2EA		;c2d9
 	ld a,(ix+000h)		;c2db
@@ -2803,7 +2803,7 @@ L_C37E:
 	djnz L_C36D		;c37e
 L_C380:
 	ld hl,(0d3cdh)		;c380
-	ld (hl),018h		;c383
+	ld (hl),018h		;c383   ; Pinta una estrella: el patron fijo 0x18 (dos pixeles) donde dicta la tabla de las 48 estrellas de 0xCB09
 L_C385:
 	inc de			;c385
 	dec c			;c386
@@ -2861,7 +2861,7 @@ L_C3CC:
 	jr nc,L_C409		;c3ef
 	ld c,0ffh		;c3f1
 L_C3F3:
-	ldi			;c3f3
+	ldi			;c3f3   ; El blitter de fondo: cuatro ldi por tira de 4 columnas, paso 24, leyendo del pozo de graficos 0x6DE0-0x9ADF; redibuja las tres bandas enteras
 	ldi			;c3f5
 	ldi			;c3f7
 	ldi			;c3f9
@@ -3017,7 +3017,7 @@ L_C4CC:
 L_C4E1:
 	ex de,hl		;c4e1
 	pop hl			;c4e2
-	and (hl)		;c4e3
+	and (hl)		;c4e3   ; Los sprites, con mascara: el and abre el hueco...
 	ld (hl),a		;c4e4
 	inc hl			;c4e5
 	ld a,d			;c4e6
@@ -3067,7 +3067,7 @@ L_C518:
 	ex de,hl		;c518
 	pop hl			;c519
 	or (hl)			;c51a
-	ld (hl),a		;c51b
+	ld (hl),a		;c51b   ; ...y el or pinta el sprite encima; el desplazamiento se precalcula con las cadenas de adc
 	inc hl			;c51c
 	ld a,d			;c51d
 	or (hl)			;c51e
@@ -3230,7 +3230,7 @@ L_C5D2:
 L_C5E0:
 	djnz $-98		;c5e0
 	ret			;c5e2
-L_C5E3:
+siembra_particulas:		; Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
 	ld de,05bb2h		;c5e3
 	ld b,040h		;c5e6
 	ex de,hl		;c5e8
@@ -3251,7 +3251,7 @@ L_C5E9:
 	ld de,0eb21h		;c603
 	call L_E1BC		;c606
 	jp L_E186		;c609
-L_C60C:
+mueve_particulas:		; Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
 	ld hl,05bb2h		;c60c
 	ld iy,003e8h		;c60f
 	ld ix,05b32h		;c613
@@ -3311,7 +3311,7 @@ L_C65A:
 	or (hl)			;c661
 	ld (hl),a		;c662
 	and 018h		;c663
-	out (0feh),a		;c665
+	out (0feh),a		;c665   ; FOSIL DEL SPECTRUM: 0xFE es el puerto del borde del Spectrum; alli cada particula hacia parpadear el borde, en MSX este out no hace nada
 	ld de,00018h		;c667
 	add hl,de		;c66a
 	djnz L_C65A		;c66b
@@ -3511,7 +3511,7 @@ L_C76E:
 	ld a,018h		;c776
 	jr L_C782		;c778
 L_C77A:
-	ldi			;c77a
+	ldi			;c77a   ; El decorado que se pinta DESPUES de los sprites (los pilares del pozo 0x69F0-0x6BE7): por esto la nave pasa por detras de los pilares
 	ldi			;c77c
 	ldi			;c77e
 	ld a,015h		;c780
@@ -3664,7 +3664,7 @@ L_C83B:
 	or h			;c83c
 	ld c,a			;c83d
 	ret			;c83e
-L_C83F:
+azar:		; El generador de azar: identico al de la segunda parte (lee la ROM del BIOS como tabla de entropia), semilla en 0xCA8F sembrada con ld a,r en el arranque
 	push hl			;c83f
 	ld hl,(0ca8fh)		;c840
 	ld a,h			;c843
@@ -3866,7 +3866,7 @@ L_CB9D:
 	ret			;cba5
 L_CBA6:
 	ld (0d3cdh),hl		;cba6
-	call L_C83F		;cba9
+	call azar		;cba9
 	and 001h		;cbac
 	jr z,L_CBDC		;cbae
 	ld a,h			;cbb0
@@ -3998,7 +3998,7 @@ L_CC83:
 	add a,a			;cc8f
 	add a,a			;cc90
 	ld e,a			;cc91
-	call L_C83F		;cc92
+	call azar		;cc92
 	cp e			;cc95
 	ccf			;cc96
 	ret nc			;cc97
@@ -4048,7 +4048,7 @@ L_CCCC:
 	jr z,L_CCE5		;ccd4
 	cp 002h			;ccd6
 	jr nz,L_CCE1		;ccd8
-	call L_C83F		;ccda
+	call azar		;ccda
 	and 001h		;ccdd
 	jr z,L_CCE5		;ccdf
 L_CCE1:
@@ -4115,7 +4115,7 @@ L_CD20:
 	ld d,a			;cd35
 	add a,004h		;cd36
 	ld e,a			;cd38
-	call L_C83F		;cd39
+	call azar		;cd39
 	and 0c0h		;cd3c
 	or e			;cd3e
 	sub 004h		;cd3f
@@ -4231,7 +4231,7 @@ L_CDD8:
 	ld (ix+001h),a		;cdf4
 	ld (ix+002h),l		;cdf7
 	ld (ix+003h),h		;cdfa
-	call L_C83F		;cdfd
+	call azar		;cdfd
 	and 01fh		;ce00
 	jr nz,L_CE18		;ce02
 	push hl			;ce04
@@ -4417,7 +4417,7 @@ L_CF36:
 	ld l,a			;cf64
 L_CF65:
 	ld (0d3c7h),hl		;cf65
-	call L_C83F		;cf68
+	call azar		;cf68
 	and 03fh		;cf6b
 	jr nz,L_CF7D		;cf6d
 	ld bc,00c0ch		;cf6f
@@ -4976,7 +4976,7 @@ L_D330:
 	jp L_D303		;d380
 L_D383:
 	push bc			;d383
-	call L_C83F		;d384
+	call azar		;d384
 	and 001h		;d387
 	ld de,0d3adh		;d389
 	jr z,L_D391		;d38c
@@ -5063,7 +5063,7 @@ L_D3E1:
 	inc (hl)		;d416
 	jp L_C038		;d417
 L_D41A:
-	call L_C83F		;d41a
+	call azar		;d41a
 	and 01fh		;d41d
 	ret nz			;d41f
 	ld a,(0dac5h)		;d420
@@ -5088,11 +5088,11 @@ L_D43B:
 	rla			;d43c
 	djnz L_D43B		;d43d
 	ld e,a			;d43f
-	call L_C83F		;d440
+	call azar		;d440
 	and e			;d443
 	ret nz			;d444
 L_D445:
-	call L_C83F		;d445
+	call azar		;d445
 	cp 0b0h			;d448
 	jr nc,L_D445		;d44a
 	ld c,a			;d44c
@@ -5301,19 +5301,19 @@ L_D5AA:
 	jr z,L_D5C6		;d5b1
 	dec a			;d5b3
 	jr z,L_D5CE		;d5b4
-	call L_C83F		;d5b6
+	call azar		;d5b6
 	and 007h		;d5b9
 	jp L_D5D7		;d5bb
 L_D5BE:
-	call L_C83F		;d5be
+	call azar		;d5be
 	and 001h		;d5c1
 	jp L_D5D7		;d5c3
 L_D5C6:
-	call L_C83F		;d5c6
+	call azar		;d5c6
 	and 003h		;d5c9
 	jp L_D5D7		;d5cb
 L_D5CE:
-	call L_C83F		;d5ce
+	call azar		;d5ce
 	and 007h		;d5d1
 	cp 006h			;d5d3
 	jr nc,L_D5CE		;d5d5
@@ -5342,7 +5342,7 @@ L_D5D7:
 	ld a,003h		;d5f5
 	ld (0ca91h),a		;d5f7
 	ld h,000h		;d5fa
-	call L_C83F		;d5fc
+	call azar		;d5fc
 	and 007h		;d5ff
 	or 080h			;d601
 	ld (0ca8ch),a		;d603
@@ -5361,7 +5361,7 @@ L_D619:
 	ld a,(de)		;d61a
 	cp 006h			;d61b
 	jr nz,L_D626		;d61d
-	call L_C83F		;d61f
+	call azar		;d61f
 	and 004h		;d622
 	add a,006h		;d624
 L_D626:
@@ -5635,7 +5635,7 @@ L_D820:
 	ld a,(0dac5h)		;d82c
 	and a			;d82f
 	ret nz			;d830
-	call L_C83F		;d831
+	call azar		;d831
 	and 07fh		;d834
 	ret nz			;d836
 	jp L_D5AA		;d837
@@ -5702,7 +5702,7 @@ L_D894:
 	jp L_C69F		;d8a0
 L_D8A3:
 	call L_CFF9		;d8a3
-	call L_C83F		;d8a6
+	call azar		;d8a6
 	and 01fh		;d8a9
 	ret nz			;d8ab
 	ld a,(ix+000h)		;d8ac
@@ -5750,7 +5750,7 @@ L_D8F8:
 	ld l,(ix+005h)		;d8fb
 	ld h,(ix+006h)		;d8fe
 	ld (hl),00ah		;d901
-	call L_C83F		;d903
+	call azar		;d903
 	and 03fh		;d906
 	ret nz			;d908
 	ld a,(ix+000h)		;d909
@@ -5824,7 +5824,7 @@ L_D95A:
 	ld a,(0e14eh)		;d991
 	and a			;d994
 	jr nz,L_D9AC		;d995
-	call L_C83F		;d997
+	call azar		;d997
 	and 003h		;d99a
 	jr nz,L_D9AC		;d99c
 	inc a			;d99e
@@ -6192,7 +6192,7 @@ L_DFB1:
 
 
 L_DFD7:
-	call L_C83F		;dfd7
+	call azar		;dfd7
 	and 01fh		;dfda
 	ret nz			;dfdc
 	ld hl,0dfe7h		;dfdd
@@ -6294,7 +6294,7 @@ L_E045:
 
 
 L_E061:
-	call L_C83F		;e061
+	call azar		;e061
 	and 01fh		;e064
 	ret nz			;e066
 	ld l,(ix+001h)		;e067
@@ -6334,7 +6334,7 @@ L_E094:
 	ld a,(ix+000h)		;e094
 	cp 028h			;e097
 	ret nc			;e099
-	call L_C83F		;e09a
+	call azar		;e09a
 	and 00fh		;e09d
 	ret nz			;e09f
 	ld l,(ix+001h)		;e0a0
@@ -6344,7 +6344,7 @@ L_E094:
 	add hl,bc		;e0ab
 	ld b,h			;e0ac
 	ld c,l			;e0ad
-	call L_C83F		;e0ae
+	call azar		;e0ae
 	and 004h		;e0b1
 	jr z,L_E0BE		;e0b3
 	ld a,01eh		;e0b5

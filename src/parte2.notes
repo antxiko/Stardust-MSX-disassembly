@@ -59,7 +59,7 @@ D 0x9FF3 0xA279 la partida grabada de la DEMO de la fase a pie (646 B)
 D 0xA5F0 0xA5F1 relleno o resto (1 B; 1 bytes)
 # 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 # 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
-D 0xACA2 0xAD31 tabla (143 B; racha 17.07, entropia 1.59, 14 valores: pocos valores para ser un dibujo)
+D 0xACA2 0xAD31 variables del juego (143 B): 0xACE7/0xACEC/0xACF6 contadores de cuadro, 0xACE9 estado que solo cambia al andar, 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar
 D 0xB13E 0xB140 relleno o resto (2 B; 2 bytes)
 # 0xB2A6-0xB3AB ESTUVO AQUI como 262 B "sin clasificar" y son CUATRO RUTINAS.
 # Se retira y pasa a src/parte2.entries.
@@ -84,7 +84,7 @@ D 0xB720 0xB9B0 textos de la segunda parte: menu, redefinir teclas, records y me
 #       JAVIER 100000 · JUAN C 080000 · MARTA 060000 · MARIA 050000
 #       (en blanco) 040000 · TOPO 030000 · SOFT 020000 · (en blanco) 010000
 #   JAVIER y JUAN C son los dos Arevalo, que firman los graficos.
-D 0xBC24 0xBC35 tabla (17 B; racha 68.00, entropia 0.87, 2 valores: pocos valores para ser un dibujo)
+D 0xBC24 0xBC35 variables de la cuenta atras: los 6 objetivos (2 B cada uno, 0xBC24-0xBC2F), filas de torre pintadas (0xBC30), punta de la torre en VRAM (0xBC31/32), objetivos restantes (0xBC33, que 0xA415 pone a 6) y un byte sin dueno (0xBC34)
 D 0xBDAA 0xBDAC relleno o resto (2 B; 2 bytes)
 D 0xBFEB 0xC001 relleno (22 B; 22 de 22 bytes son 0xFF)
 D 0xC459 0xC46A variables (17 B): eran 5 B de "relleno o resto" mas 12 que el
@@ -261,3 +261,358 @@ D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
 # LO QUE HABRIA QUE PROBAR: cazar las ESCRITURAS AL BUFFER (0x4000-0x4EFF) y ver
 # que rutina escribe en que banda y con que frecuencia. Eso separa los planos
 # por quien los dibuja, no por como se ven, que es lo que ha fallado.
+
+# --- QUIEN ESCRIBE EN EL BUFFER (medido, 2026-08-06 tarde) -------------------
+#
+# Se hizo lo pendiente: vigilar las escrituras a 0x4000-0x4EFF por banda.
+# Herramienta: tools/omsx_bandas.tcl. Y un dato de metodo que corrige lo que
+# creiamos: TRES PUNTOS DE OBSERVACION DE ESCRITURA SOBRE LAS BANDAS ENTERAS
+# (1344+1536+960 = 3840 bytes) NO CONGELAN el emulador si el callback es barato
+# (sin format ni cadenas): 677.776 escrituras en 20 s emulados y ni se inmuto.
+# El congelado de 0xD674 fue durante una CARGA DE CINTA; en juego normal aguanta.
+#
+# HECHO-VERIFICADO: la fase de a pie tiene CUATRO escritores del buffer, y solo
+# cuatro (dos medidas, t=2400 y t=2535, dump/bandas y dump/bandas_2535):
+#
+#   0xA9AC  blitter de fondo: 4 `ldi` por fila, paso 24, lee de 0x87F3-0x9E72.
+#           88 % de las escrituras. Reparte 35/40/25 entre las bandas, que es
+#           EXACTAMENTE 1344/1536/960, o sea el tamano de cada banda: redibuja
+#           el fondo ENTERO, las tres bandas, 10 veces por segundo.
+#   0xAA51  sprite con mascara (and/or), 3 bytes = 24 px de ancho. Se concentra
+#           en la banda B (70 % en t=2400, 64 % en t=2535): LOS ENEMIGOS VAN
+#           POR EL MEDIO, que es lo que el usuario ve jugando.
+#   0xAB1F  sprite con mascara, 2 bytes = 16 px. Menor, reparte 40-60/50/1-8.
+#   0xB48E  dibuja 16 filas en DAMERO (and 055h / and 0aah alternando), SOLO en
+#           la banda C (100 % de sus 9.300 escrituras), y lee su grafico de
+#           0x6120-0x617F. En t=2535 NO aparecio: es algo que no siempre esta.
+#           OJO ABIERTO: 0x6120 esta POR DEBAJO de 0x61D0, el principio del
+#           bloque [12]. La fase lee de memoria que su bloque no trae: o es
+#           herencia del bloque de naves o alguien lo escribe en marcha. SIN
+#           COMPROBAR cual de las dos.
+#
+# HECHO-VERIFICADO (t=2535, el usuario andando hacia arriba): el maximo del
+# origen que lee el blitter baja DE 8 EN 8 POR CUADRO -8 filas de pixeles = un
+# tile por segundo- y la MISMA secuencia de maximos pasa de la banda A a la B y
+# de la B a la C con ~4 s de retardo entre bandas (se ve en dump/bandas_2535/
+# ritmo.txt: 0x9A72 en A hasta t=2537,5, luego en B hasta 2541,7, luego en C).
+# El contenido BAJA por la pantalla mientras el personaje SUBE, banda a banda.
+# Las tres bandas leen del MISMO pozo de graficos (0x87F3-0x9E72).
+#
+# LOS CUATRO CONTADORES DE 0xACE7/0xACE9/0xACEC/0xACF6: medidos ahora sobre
+# scroll DE VERDAD. 0xACE7/0xACEC/0xACF6 siguen a +1 por cuadro tambien aqui
+# (y avanzaban igual en t=2400 SIN scroll: son contadores de cuadro/animacion,
+# NO de scroll; la "razon 2:1" de ayer no era de dos planos). 0xACE9 es otra
+# cosa: clavado en 86 sin andar, y al andar se MUEVE (86 -> 68 bajando, luego
+# 136-158 subiendo, luego 90-121). Pinta a estado del escenario/posicion, no a
+# contador libre. SIN INTERPRETAR del todo.
+#
+# MEDIDA INVALIDADA Y POR QUE: todo lo de t=2400 vale como INVENTARIO de
+# escritores, pero NO para separar planos: el usuario miro la partida y en ese
+# momento el escenario estaba PARADO, solo se movian los enemigos. La
+# comprobacion "el buffer cambio en 3190/3840 bytes" NO distingue scroll de
+# enemigos. Cuarta vez que muerde lo mismo: comprobar que hay algo que medir
+# significa comprobar LO QUE se quiere medir, no que algo se mueva.
+#
+# MOMENTOS UTILES DEL REPLAY stardust_apie.omr, dichos por el usuario mirandolo
+# (tools/omsx_mira_replay.tcl, reproduce con el reloj en pantalla):
+#   t=2511  anda hacia arriba un poco
+#   t=2535  anda hacia arriba un rato   <- aqui se midio
+#
+# DATOS DEL USUARIO (jugados, sin medir todavia):
+#   - la fase de NAVES tambien tiene dos pisos; la nave puede pasar POR DEBAJO
+#     del piso inferior, y nave y enemigos vuelan por el medio, entre los pisos.
+#     Cuadra con que su volcado (0xF3DC) sea el MISMO de tres bandas que el de
+#     a pie (0xD383), parametro a parametro: A=cielo/arriba, B=el medio donde
+#     se vuela, C=piso inferior. SIN COMPROBAR con una medida en naves.
+#   - los enemigos ANDANDO no pisan el piso inferior: el juego tiene que saber
+#     donde esta ese limite. Buscarlo cuando se mire la logica de movimiento
+#     (un cp contra una Y limite, o un limite de fila en los datos).
+#
+# LO SIGUIENTE, YA ESCRITO Y SIN ESTRENAR: tools/omsx_filas.tcl. Levanta, cuadro
+# a cuadro, la tabla "fila -> origen leido" por banda y por tira de 4 columnas
+# (el blitter dibuja tiras de 4 bytes), cortando los cuadros con un breakpoint
+# de ejecucion en 0xD383 (el volcado a VRAM, 1 vez por cuadro). Comparando esa
+# tabla entre cuadros el desplazamiento sale por igualdad exacta de enteros, sin
+# correlar imagenes. Si conviven dos velocidades, salen como dos pendientes.
+# Lanzarlo en t=2535 (SIN EMPEZAR):
+#   STARDUST_REPLAY=~/.openMSX/replays/stardust_apie.omr \
+#   STARDUST_OUT=dump/filas_2535 STARDUST_T=2535 STARDUST_DUR=10 \
+#   openmsx -machine Philips_VG_8020-20 -script tools/omsx_filas.tcl
+
+# --- LOS PLANOS, MEDIDOS DE VERDAD (sesion autonoma, 2026-08-06 noche) -------
+#
+# La pregunta del usuario era: buscar los diferentes planos de scroll, en la
+# fase de a pie y en la de naves. Respuesta, con cuatro medidas:
+#
+# HECHO-VERIFICADO: EL FONDO DE TILES ES UN SOLO PLANO, EN LAS DOS FASES.
+# tools/omsx_filas.tcl levanta cuadro a cuadro la tabla "fila -> origen que lee
+# el blitter" por banda y por tira de 4 columnas, cortando los cuadros con un
+# bp de ejecucion en el volcado (0xD383 a pie / 0xF3DC naves). El desplazamiento
+# sale comparando esas tablas por IGUALDAD EXACTA de enteros:
+#
+#   a pie  t=2511 (79 cuadros):  +2 filas/cuadro andando (60 pares), 0 parado
+#          (13), -2 andando hacia abajo (4). Las 18 tiras IGUALES, 100 %.
+#   a pie  t=2535 (75 cuadros):  +2 en 71-72 pares, 0 en 2-3. Identico en las
+#          18 tiras, 100 % de acierto.
+#   a pie  t=2118 (112 cuadros): +2 (738 pares de tiras) y 0 (1224), con el
+#          damero activo a la vez. Mismo resultado.
+#   naves  t=950  (128 cuadros): +2 en 119-126 pares por tira, 100 %. Las 18
+#          tiras igual. El blitter de naves es 0xC3F2 (4 ldi en C3F4-C3FA),
+#          lee del pozo 0x6DE0-0x9ADC, reparto 35/40/25 exacto.
+#
+# Y sin desplazamiento HORIZONTAL en ningun caso (probado contra las tiras
+# vecinas a +-4 y +-8 bytes: gana 0 siempre que el contenido es distintivo).
+#
+# O sea: cuando el escenario se mueve, se mueve ENTERO y a UNA velocidad, en
+# las dos fases. La "sensacion de dos pisos a dos velocidades" NO esta en el
+# buffer de fondo. Lo que queda como candidato es el ORDEN DE DIBUJO (que pinta
+# encima de que), no una diferencia de velocidad: en naves la rutina 0xC77B
+# (lee tiles de 0x69F0-0x6BE5, escribe tiras de 3 bytes) es la candidata a
+# repintar el piso POR ENCIMA de los sprites -eso explicaria pasar por debajo
+# del piso inferior-, SIN COMPROBAR.
+#
+# HECHO-VERIFICADO: EL DAMERO (0xB48E) NO ES UN PLANO, ES UN ROTULADOR.
+# Leido del listado (L_B472, b472-b4bb): recibe un codigo en A, recorta si el
+# destino pasa de 0x4EFF (cp 04fh), y estampa el glifo 0x5F00 + codigo*8 a
+# DOBLE ALTURA (cada byte del glifo en dos filas) en dos pasadas: primera
+# borra (rlca/cpl/and), segunda pinta tramada en damero (and 055h / and 0aah
+# alternando filas). L_B4BC (b4bc) imprime una CADENA desde (IX) hasta el 0.
+# Los codigos medidos en partida (origen 0x6120-0x617F) son ASCII 68-79, y en
+# los 55 cuadros con damero de t=2118 escribe SIEMPRE 0x4D94-0x4EFF: las 16
+# filas de abajo de la banda C, la zona del marco, QUIETAS mientras el fondo
+# scrollea debajo. Es el rotulador del marcador/cuenta atras del marco (y del
+# rotulo DEMO en los menus, donde escribe zonas grandes).
+#
+# HECHO-VERIFICADO: LA FUENTE VIENE DEL BLOQUE DE NAVES, Y EXPLICA EL 0x61D0.
+# Los 96 bytes de 0x6120-0x617F en la RAM final son IDENTICOS a los del bloque
+# [10] en ese rango (cotejado byte a byte contra extracted/10_raw_10.bin,
+# offset con flag). La fuente empieza en 0x5F00 (codigo*8) y 0x5F00 + 90*8 =
+# 0x61D0 EXACTO: el bloque [12] carga justo donde acaba el glifo de la 'Y'
+# (codigo 89). La cosa abierta del apartado anterior queda cerrada: la fase de
+# a pie lee de ahi porque REUTILIZA la fuente que dejo cargada el bloque de
+# naves, y la direccion de carga del [12] esta elegida para no machacarla.
+#
+# DONDE VIVE EL DAMERO EN EL REPLAY (tools/omsx_busca_damero.tcl, entero):
+#   t=1863-1896 fuerte (~3500/s)  y  t=3204-3221 fuerte (~4800/s)  <- menus:
+#       en t=1870 el blitter de fondo esta PARADO (0 escrituras en 127 cuadros)
+#   t=2071-2464 flojo (~146/s)  y  t=3268-3494 flojo (~123/s)      <- partida:
+#       rachas de un caracter (32 escrituras por glifo), el marcador
+# Los t=2511/2535 caen en el hueco 2464-3204: por eso ahi salia a cero.
+#
+# UN FALLO DE METODO PARA NO REPETIR: un bp de ejecucion en 0xA9AD no salta
+# NUNCA, porque el ldi empieza en 0xA9AC y 0xA9AD es su segundo byte. El PC que
+# reporta un watchpoint de escritura cae en mitad de la instruccion; para un
+# set_bp hay que usar la direccion DONDE EMPIEZA. (Se pago con una columna a
+# cero en tools/omsx_busca_scroll.tcl.)
+#
+# Y LO QUE SIGUE SIN SABERSE, dicho como tal:
+#   - que texto escribe el marcador (los codigos 68-79 son 'D'-'O' si el mapa
+#     es ASCII puro; los glifos dibujados parecen cajas/pilares 3D, puede ser
+#     una fuente propia donde esos codigos sean digitos). Falta volcar (IX) del
+#     llamador en marcha o dibujar la fuente entera de 0x5F00-0x61CF.
+#   - de donde sale la percepcion de dos velocidades que describe el usuario.
+#     En los cuatro momentos medidos no la hay. O es orden de dibujo (0xC77B
+#     en naves), o es propia de otras zonas/momentos no medidos.
+#   - 0xACE9 NO es la posicion del scroll: en t=2535-2537 el fondo se movia
+#     con 0xACE9 clavado en 86. Se mueve solo a veces al andar. Sin identificar.
+
+# --- EL ROTULADOR, CONFIRMADO LEYENDO SUS CADENAS (2026-08-07) ---------------
+#
+# Un bp en 0xB4BC (el bucle imprime-cadena) volcando IX y los bytes hasta el 0
+# (tools/omsx_rotulo.tcl). CORRIGE una interpretacion del apartado anterior:
+# el rango fijo 0x4D94-0x4EFF con el fondo scrolleando debajo NO es el
+# marcador/cuenta atras. Es el rotulo "DEMO":
+#
+#   t=2118: la unica cadena es "DEMO" (44 45 4D 4F), en 0xB9AB, impresa en
+#           HL=0x4D94, ~4 veces por segundo (el parpadeo de 0xAD27).
+#   t=1870: el MENU de la segunda parte: "JUGAR" (0xB8A0), "JOYSTICK" (0xB8A6),
+#           "TECLADO" (0xB8AF) y el cursor "<>>>>>>" (0xB8C0), redibujados
+#           cada cuadro. Por eso el damero fuerte con el blitter parado.
+#
+# Con esto el mapa del replay queda: 1863-1896 menu, 2071-2464 modo atraccion
+# (DEMO parpadeando), 2464-3204 LA PARTIDA DE VERDAD del usuario (sin rotulo),
+# 3204-3221 menu otra vez, 3268-3494 atraccion. Los textos del menu viven en
+# 0xB8A0-0xB9AF, dato nuevo para el listado.
+#
+# LA FUENTE ES ASCII (dibujada entera en dump/fuente_5f00.png, 90 glifos):
+# digitos en 48-57, 'A'-'Y' en 65-89, y con injertos espanoles: 64 es (c) en
+# vez de @, y en la zona 33-47 hay N con tilde y una interrogacion abierta.
+# Los codigos 68-79 medidos ayer eran, literalmente, las letras de D a O: el
+# minimo y el maximo de "DEMO".
+#
+# LA CUENTA ATRAS DE LAS TORRETAS SIGUE SIN CAZAR: lo medido como "damero en
+# partida" resulto ser la atraccion. En 2464-3204 (partida) el damero esta a
+# cero en lo muestreado, asi que la cuenta atras o usa otro camino o cae en
+# segundos no muestreados. Pendiente: bp en 0xB4BC durante 3100-3204 (el final
+# de la partida, donde el usuario mato las torretas) a ver que imprime.
+
+# --- EL SEGUNDO ROTULADOR: EL DEL MARCO, DIRECTO A VRAM (2026-08-07) ---------
+#
+# Vigilando el puerto 0x98 en los ultimos 20 s de la partida del usuario
+# (t=3185-3205, tools/omsx_vram_apie.tcl) salen, ademas del volcado del buffer
+# (0xD3B3), CUATRO PCs que escriben directo a la VRAM del marco, poco y fino:
+#     0xD2E6  40 escrituras   VRAM 0x1350-0x1457   <- glifos (5 caracteres)
+#     0xD2F9  35               VRAM 0x1390-0x1496   <- filas de 0x7F tras el glifo
+#     0xD265   8               VRAM 0x1490-0x1497   <- UNA celda borrada (8 ceros)
+#     0xD2BD   7               VRAM 0x1118-0x111E   <- filas de 0x7F sueltas
+#
+# Los cuatro son la MISMA rutina, L_D252 (0xD252), leida del listado: un
+# impresor de caracteres que escribe DIRECTO a la VRAM, con la MISMA fuente
+# ASCII de 0x5F00 (ld de,05f00h en d2da, mas codigo*8). Y con codigos de
+# control por debajo de 0x20: A=0 borra la celda (8 ceros por 0xD265), A=1
+# posiciona (lee el parametro de (ix)), A=0x14 otro control. Tras cada glifo
+# pinta filas de 0x7F (0xD2F9 / 0xD2BB), seguramente en la tabla de color.
+#
+# O sea: DOS rotuladores con la misma fuente. El del buffer (L_B472: damero,
+# doble altura, para DEMO y el menu) y el del marco (L_D252: directo a VRAM,
+# para el HUD). El del marco es el CANDIDATO a la cuenta atras de las torretas:
+# estaba actualizando glifos sueltos del marco justo al final de la partida.
+# SIN COMPROBAR que imprime: falta un bp en 0xD252 apuntando A (y el (ix) del
+# modo posicionar) durante 3100-3204.
+
+# --- LA CUENTA ATRAS DE LAS TORRETAS, CAZADA ENTERA (2026-08-07) -------------
+#
+# El camino: no pasa por L_D252 (cero llamadas en toda la partida, medido), asi
+# que se muestreo la VRAM del marco entero cada 0,5 s durante toda la partida
+# (tools/omsx_marco_vram.tcl, 288 celdas, 662 s) y salieron TRES celdas del
+# marco SUPERIOR cambiando en secuencia justo antes del final: fila 0, columnas
+# 15 -> 14 -> 13, desde t=3022. No son digitos: cada celda se va llenando de
+# abajo arriba con filas de 0x7E, una fila cada ~2 s. ES UNA BARRA que crece.
+# Una segunda pasada dirigida al puerto 0x98 en t=3020 dio al escritor: 0xBBC8.
+#
+# EL MECANISMO ENTERO, leido del listado y cuadrando con lo medido:
+#
+#   a415: ld a,006h / ld (0bc33h),a     <- al iniciar el nivel: SEIS objetivos
+#   bb96: ld hl,0bc33h / dec (hl)       <- cada torreta destruida resta uno
+#                                          (en el manejador de su explosion,
+#                                          bucle sobre la tabla de 6 en 0xBC24)
+#   L_BBA2 (llamado del bucle principal en a4c1):
+#     - si (0xBC33) != 0 -> nada        <- la barra solo corre con TODO muerto
+#     - si (0xAD27) & 0x0F != 0 -> nada <- ritmo: 1 de cada 16 del contador de
+#                                          cuadros ~= una fila cada ~2 s
+#     - inc (0xBC30)                    <- 0xBC30 = filas pintadas
+#     - cp 0xA1 -> L_BCEE               <- A LAS 161 FILAS, SE ACABO
+#     - pinta UNA fila 0x7E en (0xBC31) por el puerto 0x98 (out en 0xBBC8)
+#       y avanza el puntero (L_BBD2)    <- 0xBC31/32 = punta de la barra
+#
+#   L_BCEE (el tiempo se agota): dos 0x7E en 0xBDAA, sonido (L_C4D0, 0xCE07),
+#   20 pasadas de destello con los patrones 0x2A54/0x542A (damero), mas sonido.
+#   La secuencia de la destruccion.
+#
+#   a91f: la salida tambien mira 0xBC33==0 (y 0xA6EB >= 0x50): solo se puede
+#   huir con los seis destruidos.
+#
+# OJO CON EL ARRANQUE: las celdas del borde solo vieron LA PUNTA de la torre.
+# Sondeando 0xBC30 en vivo, a t=3059 ya iba por 130 filas: la cuenta atras
+# arranco hacia t~2780 (la sexta torreta cayo entonces), y lo de t=3022 es solo
+# cuando la punta llego a las celdas vigiladas. La torre es alta: sus escrituras
+# recorren la VRAM desde 0x0840 hasta 0x0077, cruzando el limite de tercio del
+# SCREEN 2 con el salto `l|=0x3F / h-=8` de L_BBD2. El usuario la describe
+# jugando como una torre blanca que crece fila de pixeles a fila de pixeles.
+#
+# Y EL TIEMPO AGOTADO SE PROBO EN VIVO (idea del usuario: cargar con la barra a
+# medias y dejar pasar el tiempo). tools/omsx_timeup.tcl: goto 3059, `reverse
+# stop` para desengancharse del replay (nadie toca los mandos), y a esperar:
+# 0xBC30 subio solo de 130 a 161 (ritmo medido ~2,15 s/fila) y L_BCEE DISPARO
+# exactamente a las 161, a t=3127,3. Tras la secuencia de explosion, a los ~11
+# segundos, el juego imprime "B R A V O / HAS CONSEGUIDO UNA / DE LAS MEJORES
+# PUNTUACIONES..." : el tiempo agotado es game over y va directo a la tabla de
+# records, sin FELICIDADES. (Sin captura de pantalla: el renderer del modo
+# script no las soporta; queda el log dump/timeup/timeup.log.)
+#
+# La cuenta de la partida real: el usuario escapo a t=3091 con el contador en
+# ~145 de 161 filas: unos 30 segundos de margen. El tiempo total que da el
+# juego son 161 filas a ~2,15 s = 5,8 minutos para matar... no: para HUIR una
+# vez muerta la sexta torreta.
+#
+# Y LOS TEXTOS DEL FINAL, cazados del bus (tools/omsx_marco.tcl, bp en 0xD252):
+#   t=3091  "!!! FELICIDADES !!! / HAS CONSEGUIDO DESTRUIR / LOS CENTROS
+#            PRINCIPALES / DE LA NAVE INSIGNIA, / Y ADEMAS LOGRASTE HUIR /
+#            TRAS ELLO. / ...YA ERES UN HEROE..."
+#   t=3124  "B R A V O / HAS CONSEGUIDO UNA / DE LAS MEJORES / PUNTUACIONES
+#            DE HOY / ESCRIBE TU NOMBRE"   y el usuario tecleando "ATXIK".
+# El usuario SE PASO el juego en el replay. La ventana de partida real queda:
+# 2464 a 3091 (victoria), records hasta ~3204, menu, atraccion.
+#
+# VARIABLES NUEVAS CON DUENO: 0xBC24-0xBC2F tabla de los 6 objetivos (2 B/u),
+# 0xBC30 filas de barra pintadas, 0xBC31/32 punta de la barra en VRAM, 0xBC33
+# objetivos restantes. Y 0xAD27 confirma su papel de contador de cuadros
+# global: parpadeo del DEMO y ritmo de la cuenta atras.
+
+# --- LA EXPLOSION DEL FINAL FELIZ: 200 PARTICULAS Y EL MISMO FOSIL (2026-08-07)
+#
+# El usuario pregunto por las explosiones con particulas. La del final feliz
+# -al escapar antes de la cuenta atras se ve la nave insignia explotar desde
+# fuera- se localizo muestreando el PC en el hueco entre el FELICIDADES
+# (t=3091) y el BRAVO de los records (t=3124): el codigo caliente esta en
+# 0xBF6F-0xBFB5, machacando el RNG. Leido del listado:
+#
+#   L_BFB6 (0xBFB6)  inicializa 200 PARTICULAS (0xC8) en la tabla 0xBFEB
+#                    (4 bytes: dx, dy, x, y): dx aleatorio -7..+8 sin cero,
+#                    dy aleatorio -13..+2 sin cero ni uno (SESGADO HACIA
+#                    ARRIBA: la metralla sale en fuente).
+#   L_BF6F           las mueve y pinta: posicion+velocidad en un solo
+#                    `add hl,de` de 16 bits, poda (y>=0xA0, x>=0xC0), y pinta
+#                    4 filas de brillo aleatorio (RNG & 0x3C) en el buffer con
+#                    paso 24. SIN gravedad (a diferencia de la de naves).
+#
+#   Y EL MISMO FOSIL DEL SPECTRUM que la explosion de naves: `and 018h /
+#   out (0feh),a` en 0xBFA8, el puerto del borde del Spectrum, inutil en MSX.
+#   Las dos fases traen su copia del efecto, y las dos arrastran el out.
+#
+# NO es la misma maquinaria que el tiempo agotado: los bp en L_BD7B (flash de
+# dameros) y 0xBD23 (comer pixeles de la VRAM) NO saltan durante el final
+# feliz (medido, t=3080-3098 y 3098-3122 a cero). Son DOS efectos distintos:
+#   - tiempo agotado (L_BCEE): flash con dameros 0x2A54/0x542A + decaimiento
+#     (leer VRAM, and con mascara aleatoria, reescribir);
+#   - final feliz (0xBF47+): las 200 particulas de metralla.
+# La secuencia del final feliz remata con tres esperas L_B71A y jp L_A2D2.
+
+# --- Directivas de las rutinas identificadas en las tandas del 2026-08-06/07 --
+L 0xAC06 azar El generador de azar: lee tres bytes de la ROM del BIOS (ventana 0x2000-0x3FFF, puntero en 0xAD28) y los mezcla
+L 0xB472 rotula_glifo Estampa el glifo 0x5F00+A*8 a DOBLE altura y tramado en damero: borra con rlca/cpl/and, pinta con and 0x55/0xAA; recorta al llegar a 0x4F00
+L 0xB4BC rotula_cadena Imprime la cadena de (IX) hasta el 0 con rotula_glifo: el rotulo DEMO y el menu
+L 0xB71A espera Espera de BC vueltas: el paso de las escenas del final
+L 0xBBA2 tic_cuenta_atras El tic de la torre: solo con los 6 objetivos muertos (0xBC33=0) y 1 de cada 16 del contador de cuadros 0xAD27; pinta una fila y a las 161 (0xBC30) salta a tiempo_agotado
+L 0xBBD2 avanza_torre Sube la punta de la torre una fila (0xBC31/32); el salto de tercio del SCREEN 2 es el l|=0x3F / h-=8
+L 0xBCEE tiempo_agotado Se acabo el tiempo: flash de dameros, decaimiento de pixeles al azar, y a la tabla de records: game over sin FELICIDADES
+L 0xBD7B flash_dameros XOR de los tres tercios de la pantalla con el patron DE (0x2A54/0x542A alternados): el destello de la explosion
+L 0xBF6F mueve_metralla Mueve y pinta las 200 particulas del final feliz: posicion+velocidad en un solo add hl,de, poda fuera de pantalla, y 4 filas de brillo al azar en el buffer
+L 0xBFB6 siembra_metralla Siembra las 200 particulas de la nave insignia explotando: dx -7..+8, dy -13..+2 sesgado hacia ARRIBA (metralla en fuente), tabla en 0xBFEB
+L 0xD252 imprime_marco El impresor del marco: DIRECTO a la VRAM con la fuente de 0x5F00; A<0x20 es control (0 borra la celda, 1 posiciona con el parametro de (IX))
+L 0xD383 vuelca_pantalla Vuelca el buffer a la VRAM en TRES bandas: 0x4000/56 filas a 0x0108, 0x4540/64 a 0x0900, 0x4B40/40 a 0x1100
+C 0xA9AC El blitter de fondo: cuatro ldi por tira de 4 columnas, paso 24; redibuja las tres bandas enteras 10 veces por segundo
+C 0xAA70 Los sprites de 24 px de ancho, con mascara and/or, precalculando el desplazamiento con las cadenas de adc
+C 0xAB34 Los sprites de 16 px de ancho, mismo esquema que los de 24
+C 0xBBC8 La fila que crece de la torre blanca de la cuenta atras
+C 0xBFA8 FOSIL DEL SPECTRUM: 0xFE es el puerto del borde (y altavoz) del Spectrum; en MSX este out no hace nada
+
+# --- EL BORDE DEL PISO INFERIOR, EN CODIGO (2026-08-07) ----------------------
+#
+# El usuario jugando: los enemigos andando no pisan el piso inferior, y tocarlo
+# te hace caer al vacio y perder la vida. Lo que se ha encontrado en el codigo:
+#
+# HECHO-VERIFICADO: el borde esta en la constante 0x7C (fila 124 de las 160).
+# L_B9B0 mueve los objetos de la tabla 0xAD04 (contador en 0xAD03, MAXIMO DOS,
+# entradas de 5 bytes) y hace, literal:
+#     b9cb: add a,00ah / cp 07ch / jr c,<vuelo normal>
+#     b9dc: inc (ix+000h)          <- al cruzar el borde: CAE, un +1 por cuadro
+#     b9e2: cp 080h / jp nc,L_BA52 <- y en la fila 128 se borra de la tabla
+#                                     (L_BA52: dec (0xAD03) y compactar)
+# El +10 es el pie del objeto (su origen esta arriba). O sea: borde del piso en
+# Y=114 del origen, y el "vacio" son las 4 filas de caida hasta desaparecer.
+#
+# QUIEN LOS LANZA: L_AC78, llamado desde 0xBB57, DENTRO del bucle de las seis
+# torretas (la tabla 0xBC24 de la cuenta atras): cada torreta viva dispara, con
+# la posicion sacada de su entrada y del scroll (0xAD2C+12), y con sonido
+# (0xCD91). Son LOS DISPAROS DE LAS TORRETAS los que caen al vacio en el borde.
+#
+# SIN ENCONTRAR TODAVIA, dicho como tal: el camino de la MUERTE DEL JUGADOR al
+# tocar el piso (es otro codigo: el jugador no esta en esta tabla) y el clamp
+# de los enemigos andantes. Pista para la proxima: buscar la Y del jugador y
+# los cp contra 0x7C o contra el mapa en el codigo que lee los mandos (0xA6FC).
+
+L 0xB9B0 mueve_tiros_torreta Mueve los tiros de las torretas (tabla 0xAD04, max 2): al cruzar el borde del piso (Y+10 >= 0x7C) caen al vacio y en la fila 0x80 se borran
+L 0xAC78 lanza_tiro_torreta Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (max 2), con su sonido
+C 0xBB57 Cada torreta viva dispara: mete su tiro en la tabla de 0xAD04
+C 0xB9CD El borde del piso inferior: Y+10 contra 0x7C (fila 124); cruzarlo es caer al vacio

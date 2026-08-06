@@ -84,7 +84,7 @@ D 0xE7A3 0xE7E9 tabla de saltos de los 35 opcodes del interprete
 D 0x5300 0x54E0 colores de tiles: 480 bytes con el nibble bajo a 1
 D 0x5640 0x5980 colores de tiles: 832 bytes mas de lo mismo
 D 0x5C31 0x5FFD relleno: 972 bytes
-D 0x4B40 0x4F00 buffer de pantalla: 24 de ancho x 40 de alto, leido por columnas
+D 0x4B40 0x4F00 buffer de pantalla, banda C (24 de ancho x 40 de alto, por columnas): el buffer entero son TRES bandas contiguas en 0x4000-0x4EFF (56+64+40 filas); las bandas A y B caen casi todas por debajo de 0x47A0, fuera de este bloque, y el tramo 0x47A0-0x4B3F hace doble papel: en la cinta trae datos y en marcha es el final de la banda B
 D 0x61D8 0x62D7 Level 1 Data
 D 0x62D7 0x63D4 Level 2 Data
 D 0x63D4 0x64D4 Level 3 Data
@@ -440,3 +440,120 @@ D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,
 # Un byte por llamada. Y el puntero se inicializa al arrancar la demo:
 #     beab: ld hl,0ba20h / ld (0e158h),hl
 0xE158  puntero de la partida grabada de la demo (2 bytes en RAM del juego)
+
+# --- QUIEN ESCRIBE EN EL BUFFER DE PANTALLA (medido, 2026-08-06 noche) -------
+#
+# Sobre el replay stardust_pantallas.omr (la fase de naves jugada por el
+# usuario, t=900-1260), 15 s en t=950 con tres watchpoints de escritura, uno
+# por banda del buffer (tools/omsx_bandas.tcl). 549.219 escrituras, sin
+# congelar el emulador. Los escritores:
+#
+#   0xC3F2  el blitter de fondo: 4 `ldi` (PCs C3F4/C3F6/C3F8/C3FA), lee del
+#           pozo de graficos 0x6DE0-0x9ADC. 43008/49152/30720 escrituras =
+#           exactamente 32 redibujados ENTEROS de cada banda (1344/1536/960).
+#           Redibuja el fondo completo ~2 veces por segundo.
+#   0xC4E2* sprite con mascara de 3 bytes de ancho (and en C4E4/E8/EC, or en
+#           C51B/1F/23), el 54 % en la banda A.
+#   0xC5A8  rotulador que lee de la RAM 0xCA94-0xCAC3 (tabla en RAM, no del
+#           pozo): 157-364 escrituras por banda.
+#   0xC662  escritor suelto (DE 0x0018-0x5C30), 60 % en banda A.
+#   0xC6E9  escritor de 3 bytes que lee de 0xCA84-0xCA8B, 69 % en banda B.
+#   0xC731/0xC740  pareja con DE clavado en 0x0018: relleno con paso fijo.
+#   0xC77B  tiras de 3 `ldi` que leen tiles de OTRO pozo, 0x69F0-0x6BE7.
+#           Candidato a repintar el decorado POR ENCIMA de los sprites (lo que
+#           deja pasar la nave POR DEBAJO del piso inferior). SIN COMPROBAR.
+#   0xC383  escritor que lee de 0xCB09-0xCB38 (RAM).
+#
+# HECHO-VERIFICADO: el fondo de naves tambien es UN SOLO PLANO. Con
+# tools/omsx_filas.tcl en t=950 (BLIT=0xC3F4, VOLCADO=0xF3DC), 128 cuadros:
+# las 18 tiras (3 bandas x 6 columnas de 4 bytes) se desplazan +2 filas por
+# cuadro con el 100 % de igualdad exacta, y sin desplazamiento horizontal.
+# El decorado baja entero y a una sola velocidad; los dos "pisos" del decorado
+# van en el mismo mapa de tiles. La profundidad (pasar por debajo del piso)
+# tiene que ser orden de dibujo, no velocidad; ver 0xC77B arriba.
+#
+# Y el dato que corrige lo del dia: el volcado de naves (0xF3DC) hace TRES
+# llamadas, no una: 0x4000/56 filas -> VRAM 0x0108, 0x4540/64 -> 0x0900,
+# 0x4B40/40 -> 0x1100. Identico parametro a parametro al de a pie (0xD383).
+# El buffer de naves es 0x4000-0x4EFF, 3840 bytes, NO los 960 de 0x4B40 que
+# dicen los docs publicados (pendiente de corregir: docs/FINDINGS.md,
+# docs/THE-CODE.md, la cabecera de este fichero y juego.nocode).
+
+# --- EL ORDEN DE DIBUJO DENTRO DEL CUADRO (medido, 2026-08-07) ---------------
+#
+# tools/omsx_orden.tcl numera cada escritura al buffer con un contador global y
+# corta los cuadros con un bp en el volcado (0xF3DC). Sobre el replay de naves
+# en t=950, 53 cuadros. El orden es SIEMPRE el mismo:
+#
+#   1. 0xC3F2  el blitter: redibuja el fondo ENTERO (960 tiras x 4 ldi)
+#   2. 0xC4E4+0xC51B  los sprites, con mascara (and) y pintado (or)
+#   3. 0xC77B  decorado POR ENCIMA: tiras de 3 ldi desde su pozo 0x69F0-0x6BE7
+#   4. 0xC731/0xC740  otro par tardio (DE clavado en 0x0018)
+#
+# (0xC383 flota: tras el blitter en cuadros sin sprites, media 7,5 en total.)
+#
+# HECHO-VERIFICADO: EL "PASAR POR DEBAJO DEL PISO" ES ORDEN DE DIBUJO. En los
+# cuadros 26-40 de la medida, 0xC77B esta pintando un objeto que BAJA desde lo
+# alto de la pantalla (su destino empieza en 0x400C y el final crece 72 bytes =
+# 3 filas por cuadro), los sprites suben hacia el, y en el cuadro 40 los
+# destinos SE SOLAPAN (0x43CC-0x442C): el sprite se pinta primero y el decorado
+# de 0xC77B encima. La nave queda DEBAJO del decorado, que es exactamente lo
+# que el usuario describe. La profundidad de esta fase no es velocidad (el
+# fondo es un solo plano, ver arriba): es que hay decorado que se repinta
+# despues de los sprites.
+#
+# SIN COMPROBAR: que dibuja exactamente 0xC77B (los tiles de su pozo
+# 0x69F0-0x6BE7 estan sin renderizar) y si el "piso inferior" de abajo usa esta
+# misma via o la de 0xC731/0xC740.
+
+# --- LA EXPLOSION DE LA NAVE: PARTICULAS CON GRAVEDAD Y UN FOSIL DEL SPECTRUM
+#     (leido del listado, 2026-08-07; pregunta del usuario) --------------------
+#
+# La muerte del protagonista es un SISTEMA DE PARTICULAS, y esta entero en
+# 0xC5E3-0xC677:
+#
+#   L_C066 (0xC066)  el despachador del estado de la nave: lee 0xC188 y
+#                    compara con 4. Menos de 4 -> manejo normal (L_C08F).
+#                    IGUAL a 4 -> primer cuadro de la muerte: L_C5E3 + L_C60C,
+#                    y aparca la nave en 0xFF58 (fuera de pantalla).
+#                    Mas de 4 -> sigue llamando a L_C60C cada cuadro.
+#   L_C5E3           inicializa 64 particulas (tablas 0x5B32/0x5BB2) centradas
+#                    en la posicion de la nave (0xC184, corrigiendo h-0x10).
+#   L_C60C-L_C677    las mueve y pinta: posicion+velocidad con `add hl,de`,
+#                    GRAVEDAD (`inc d` cada cuadro: la velocidad vertical
+#                    crece), poda fuera de pantalla (y>=0xA0, x>=0xC0, se
+#                    aparcan en 0xFF00), y pinta PIXELES SUELTOS en el buffer
+#                    con `or (hl)` calculando el bit con un bucle de `rra`.
+#
+#   Y EL FOSIL: `and 018h / out (0feh),a` en 0xC665. El puerto 0xFE es el del
+#   BORDE (y altavoz) del ZX SPECTRUM: en el original cada particula hacia
+#   parpadear el borde. En el MSX ese out no hace nada, pero AHI SIGUE,
+#   ejecutandose en balde en cada particula. La conversion se trajo la
+#   explosion tal cual.
+#
+# EL CIRCULO QUE CIERRA: el POKE de inmortalidad del trainer de Input MSX 19
+# (0xC06E/6F: 38 1F -> 18 EC, ya verificado en el emulador) parchea EXACTAMENTE
+# el `jr c` de este despachador: con el parche nunca se entra por el camino de
+# "estado >= 4", o sea, nunca se llega a la explosion. La inmortalidad es,
+# literalmente, saltarse la llamada al sistema de particulas.
+#
+# EL CAMPO DE ESTRELLAS, de regalo (salio buscando esto): en el arranque del
+# juego (0xBDD1) se rellena la tabla 0xCB09-0xCB38 con 48 valores aleatorios
+# menores que 0xA0 (la altura de la ventana): son las 48 ESTRELLAS del fondo,
+# que el escritor 0xC383 del inventario pinta cada cuadro leyendo esa tabla.
+# El RNG es L_C83F: la MISMA rutina que el L_AC06 de la parte de a pie (lee
+# tres bytes de la ROM del BIOS como tabla de entropia, semilla en 0xCA8F aqui
+# y 0xAD28 alli), sembrada dos veces con `ld a,r` en el arranque.
+
+# --- Directivas de las rutinas identificadas en las tandas del 2026-08-06/07 --
+L 0xC066 nave_estado El despachador del estado de la nave (0xC188): menos de 4 juego normal; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
+L 0xC5E3 siembra_particulas Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
+L 0xC60C mueve_particulas Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
+L 0xC83F azar El generador de azar: identico al de la segunda parte (lee la ROM del BIOS como tabla de entropia), semilla en 0xCA8F sembrada con ld a,r en el arranque
+C 0xC3F3 El blitter de fondo: cuatro ldi por tira de 4 columnas, paso 24, leyendo del pozo de graficos 0x6DE0-0x9ADF; redibuja las tres bandas enteras
+C 0xC383 Pinta una estrella: el patron fijo 0x18 (dos pixeles) donde dicta la tabla de las 48 estrellas de 0xCB09
+C 0xC77A El decorado que se pinta DESPUES de los sprites (los pilares del pozo 0x69F0-0x6BE7): por esto la nave pasa por detras de los pilares
+C 0xC4E3 Los sprites, con mascara: el and abre el hueco...
+C 0xC51B ...y el or pinta el sprite encima; el desplazamiento se precalcula con las cadenas de adc
+C 0xC665 FOSIL DEL SPECTRUM: 0xFE es el puerto del borde del Spectrum; alli cada particula hacia parpadear el borde, en MSX este out no hace nada
+C 0xBDD4 Rellena la tabla de las 48 estrellas (0xCB09) con alturas al azar menores de 0xA0
