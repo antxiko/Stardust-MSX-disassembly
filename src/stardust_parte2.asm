@@ -68,8 +68,14 @@ lb262h:	equ 0x0b262
 ;   0x682e..0x7c78  (5194 bytes)
 ; DATOS graficos: (37 B; racha 4.35, entropia 4.11, 24 valores: rachas mas largas que el azar)
 ;   0x7c78..0x7c9d  (37 bytes)
-; DATOS graficos: (3547 B; racha 3.25, entropia 5.40, 231 valores: rachas mas largas que el azar)
-;   0x7c9d..0x8a78  (3547 bytes)
+; DATOS graficos: (1902 B; parte del rango que estuvo declarado entero como graficos)
+;   0x7c9d..0x840b  (1902 bytes)
+; DATOS el: MAPA de colision de la fase (468 B: 78 filas de 6 celdas de 32x16 px, 280 con suelo; 0 = vacio. Lo lee consulta_mapa via base_mapa; la partida completa recorre las filas 71 a 0)
+;   0x840b..0x85df  (468 bytes)
+; DATOS ceros: bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
+;   0x85df..0x87f3  (532 bytes)
+; DATOS graficos:: el arranque del pozo de tiles del blitter (645 B; el pozo entero es 0x87F3-0x9E72, medido en el puerto 0x98)
+;   0x87f3..0x8a78  (645 bytes)
 ; DATOS graficos: (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
 ;   0x8a78..0x984e  (3542 bytes)
 ; DATOS graficos: tramados (1957 B; rachas cortas y muchos valores, firma del damero)
@@ -1379,7 +1385,7 @@ L_A4A1:
 	call L_A93E		;a4b5
 	call L_AD76		;a4b8
 	call L_BB32		;a4bb
-	call L_A753		;a4be
+	call mueve_enemigos		;a4be
 	call tic_cuenta_atras		;a4c1
 	call mueve_tiros_torreta		;a4c4
 	call L_AECE		;a4c7
@@ -1513,7 +1519,7 @@ L_A5D0:
 	ld a,(0ad0eh)		;a5d0
 	ld hl,(0a6ebh)		;a5d3
 	ld bc,00202h		;a5d6
-	call L_ABA3		;a5d9
+	call aplica_rumbo		;a5d9
 	ld (0a6ebh),hl		;a5dc
 	ld a,(0c469h)		;a5df
 	call L_AB6F		;a5e2
@@ -1546,7 +1552,7 @@ L_A5F1:
 	ld a,l			;a605
 	add a,002h		;a606
 	ld l,a			;a608
-	call L_B18E		;a609
+	call consulta_mapa		;a609
 	ld a,006h		;a60c
 	jr nz,L_A632		;a60e
 	ld a,(0ad0eh)		;a610
@@ -1559,7 +1565,7 @@ L_A61C:
 	ld a,l			;a61c
 	sub 002h		;a61d
 	ld l,a			;a61f
-	call L_B18E		;a620
+	call consulta_mapa		;a620
 	ld a,002h		;a623
 	jr nz,L_A632		;a625
 	ld a,(0ad0eh)		;a627
@@ -1598,7 +1604,7 @@ L_A64D:
 	call L_BC35		;a65f
 	jp L_A5D0		;a662
 L_A665:
-	call L_B18E		;a665
+	call consulta_mapa		;a665
 	jr nz,L_A672		;a668
 	ld a,004h		;a66a
 	ld (0a6edh),a		;a66c
@@ -1732,7 +1738,7 @@ L_A746:
 	rrca			;a750
 	rrca			;a751
 	ret			;a752
-L_A753:
+mueve_enemigos:		; El bucle de los enemigos andantes (tabla 0xACE4, contador 0xACE3): scroll sumado (0xC462), y rumbo por azar entre vagar y perseguir al jugador
 	ld ix,0ace4h		;a753
 	ld a,(0ace3h)		;a757
 	and a			;a75a
@@ -1766,9 +1772,9 @@ L_A787:
 	jr L_A7A2		;a799
 L_A79B:
 	ld de,(0a6ebh)		;a79b
-	call L_ABCA		;a79f
+	call rumbo_al_jugador		;a79f
 L_A7A2:
-	call L_B0C0		;a7a2
+	call borde_pantalla		;a7a2
 	call L_AB98		;a7a5
 	ld (0b13fh),a		;a7a8
 	ld l,(ix+000h)		;a7ab
@@ -1798,11 +1804,11 @@ L_A7D9:
 	ld h,(ix+001h)		;a7dc
 	and 007h		;a7df
 	ld bc,00202h		;a7e1
-	call L_ABA3		;a7e4
+	call aplica_rumbo		;a7e4
 	call L_B0D8		;a7e7
 	push hl			;a7ea
 	push ix			;a7eb
-	call L_B18E		;a7ed
+	call consulta_mapa		;a7ed   ; El paso a prueba: aplicado el rumbo se consulta el mapa, y si la celda es vacio el paso se deshace
 	pop ix			;a7f0
 	pop hl			;a7f2
 	jr nz,L_A7FE		;a7f3
@@ -1924,7 +1930,7 @@ L_A8BA:
 	ret z			;a8cd
 	ld b,002h		;a8ce
 	call L_AB98		;a8d0
-	call L_ABA3		;a8d3
+	call aplica_rumbo		;a8d3
 	ld a,h			;a8d6
 	ld h,068h		;a8d7
 	cp h			;a8d9
@@ -1979,7 +1985,7 @@ L_A930:
 L_A93E:
 	ld iy,0ad2ah		;a93e
 	ld (iy+003h),000h	;a942
-	call L_A9F5		;a946
+	call base_mapa		;a946
 	ld de,04000h		;a949
 L_A94C:
 	ld a,(iy+002h)		;a94c
@@ -2073,7 +2079,7 @@ L_A9EB:
 	add hl,de		;a9f0
 	ex de,hl		;a9f1
 	jp L_A9C2		;a9f2
-L_A9F5:
+base_mapa:		; IX = 0x840B + fila*6: la base del mapa de colision de la fase
 	ld ix,0840bh		;a9f5
 	ld l,(iy+000h)		;a9f9
 	ld h,000h		;a9fc
@@ -2407,7 +2413,7 @@ L_AB9B:
 	ld a,(hl)		;aba0
 	pop hl			;aba1
 	ret			;aba2
-L_ABA3:
+aplica_rumbo:		; Aplica la mascara de rumbo: bits 0/1 mueven la vertical, 2/3 la horizontal; sin recorte
 	push hl			;aba3
 	call L_AB92		;aba4
 	ld de,00000h		;aba7
@@ -2441,7 +2447,7 @@ L_ABC3:
 	add a,e			;abc7
 	ld l,a			;abc8
 	ret			;abc9
-L_ABCA:
+rumbo_al_jugador:		; La direccion dominante hacia DE (el jugador), como mascara de bits de rumbo
 	ld a,b			;abca
 	sub d			;abcb
 	jr c,L_ABD3		;abcc
@@ -2707,7 +2713,7 @@ L_ADAF:
 	jr z,L_ADE8		;adc2
 L_ADC4:
 	ld bc,00707h		;adc4
-	call L_ABA3		;adc7
+	call aplica_rumbo		;adc7
 	ld a,h			;adca
 	cp 0c0h			;adcb
 	jr nc,L_ADE8		;adcd
@@ -2960,7 +2966,7 @@ L_AF21:
 	ld b,h			;af5a
 	ld c,l			;af5b
 	push bc			;af5c
-	call L_ABCA		;af5d
+	call rumbo_al_jugador		;af5d
 	call L_AB98		;af60
 	ex af,af'		;af63
 	pop bc			;af64
@@ -3148,7 +3154,7 @@ L_B0B7:
 	ld a,(0a6ebh)		;b0bb
 	ld l,a			;b0be
 	ret			;b0bf
-L_B0C0:
+borde_pantalla:		; Poda el rumbo en los bordes laterales: X<3 quita el bit de izquierda, X>=174 el de derecha
 	ex af,af'		;b0c0
 	ld a,(ix+000h)		;b0c1
 	add a,010h		;b0c4
@@ -3292,7 +3298,7 @@ L_B167:
 	ld (hl),0feh		;b18a
 	pop hl			;b18c
 	ret			;b18d
-L_B18E:
+consulta_mapa:		; Pasa la posicion a mundo restando el scroll (fila 0xAD2A) y lee la celda mapa[fila*6+X/32] (celdas de 32x16): Z = celda 0 = vacio
 	ld a,h			;b18e
 	ld iy,0ad2ah		;b18f
 	add a,028h		;b193
@@ -3302,7 +3308,7 @@ L_B18E:
 	add a,008h		;b19a
 	ld l,a			;b19c
 	push hl			;b19d
-	call L_A9F5		;b19e
+	call base_mapa		;b19e
 	pop hl			;b1a1
 	ld a,h			;b1a2
 	rlca			;b1a3
@@ -3327,7 +3333,7 @@ L_B18E:
 	and a			;b1bc
 	ret			;b1bd
 L_B1BE:
-	call L_B18E		;b1be
+	call consulta_mapa		;b1be
 	ret nz			;b1c1
 	ld a,h			;b1c2
 	and 0e0h		;b1c3
@@ -3675,7 +3681,7 @@ L_B41F:
 L_B424:
 	ld h,b			;b424
 	ld l,c			;b425
-	call L_B18E		;b426
+	call consulta_mapa		;b426
 	ret z			;b429
 	ld a,b			;b42a
 	cp 0c0h			;b42b

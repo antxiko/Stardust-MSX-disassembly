@@ -14,7 +14,10 @@ D 0x621C 0x6247 tabla (43 B; racha 2.21, entropia 4.27, 23 valores: pocos valore
 D 0x625E 0x6644 graficos (998 B; racha 3.85, entropia 5.55, 199 valores: rachas mas largas que el azar)
 D 0x6788 0x6791 tabla (9 B; racha 4.00, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
 D 0x682E 0x7C78 graficos (5194 B; racha 3.08, entropia 6.49, 245 valores: rachas mas largas que el azar)
-D 0x7C9D 0x8A78 graficos (3547 B; racha 3.25, entropia 5.40, 231 valores: rachas mas largas que el azar)
+D 0x7C9D 0x840B graficos (1902 B; parte del rango que estuvo declarado entero como graficos)
+D 0x840B 0x85DF el MAPA de colision de la fase (468 B: 78 filas de 6 celdas de 32x16 px, 280 con suelo; 0 = vacio. Lo lee consulta_mapa via base_mapa; la partida completa recorre las filas 71 a 0)
+D 0x85DF 0x87F3 ceros bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
+D 0x87F3 0x8A78 graficos: el arranque del pozo de tiles del blitter (645 B; el pozo entero es 0x87F3-0x9E72, medido en el puerto 0x98)
 D 0x8A78 0x984E graficos (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
 #   tramado aun que el rango de aqui abajo). Se contaban como CODIGO: el trazador
 #   entraba por el `jp nz,8A78` fantasma de 0x6209, leido a caballo entre dos
@@ -616,3 +619,53 @@ L 0xB9B0 mueve_tiros_torreta Mueve los tiros de las torretas (tabla 0xAD04, max 
 L 0xAC78 lanza_tiro_torreta Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (max 2), con su sonido
 C 0xBB57 Cada torreta viva dispara: mete su tiro en la tabla de 0xAD04
 C 0xB9CD El borde del piso inferior: Y+10 contra 0x7C (fila 124); cruzarlo es caer al vacio
+
+# --- COMO MIRAN LOS ENEMIGOS EL SUELO, Y EL MAPA QUE FALTABA (2026-08-07) ----
+#
+# Pregunta del usuario: como saben los enemigos andantes donde acaba el piso
+# para no caerse. Respuesta, leida del listado y contrastada con el emulador:
+# NO miran el dibujo. Cada paso se pone A PRUEBA contra un MAPA DE COLISION:
+#
+#   1. El bucle de enemigos (L_A753, tabla 0xACE4, contador 0xACE3) decide el
+#      rumbo con el azar: bit 4 = vagar (tabla de rumbos), si no, PERSEGUIR al
+#      jugador (L_ABCA, con la posicion 0xA6EB). A la posicion se le suma
+#      ademas el paso del scroll (0xC462): van anclados al mundo.
+#   2. La mascara de rumbo pasa por el portero de los bordes LATERALES
+#      (L_B0C0): X<3 pierde el bit de ir a la izquierda, X>=174 el de la
+#      derecha. Nada vertical aqui.
+#   3. Se aplica el paso (L_ABA3, +-2) y se pregunta a consulta_mapa (L_B18E):
+#      pasa la posicion a coordenadas de mundo restando el scroll (fila en
+#      0xAD2A), y lee la celda mapa[fila*6 + X/32], celdas de 32x16 px.
+#      CELDA CERO = VACIO: el paso se DESHACE (a7f3-a7fb recupera la posicion
+#      vieja). Por eso no pisan nunca el piso inferior: debajo de la zona el
+#      mapa es todo ceros y el validador les niega el paso.
+#
+# Y LA CONSULTA REGALO EL MAPA QUE FALTABA. base_mapa (L_A9F5) dice, literal:
+# `ld ix,0840bh`. EL MAPA DE LA FASE DE A PIE ESTA EN 0x840B: 78 filas de 6
+# celdas (468 B, 280 celdas con suelo), zona de 6x78 celdas = 192x1248 px.
+# Caia dentro de un rango declarado "graficos" a bulto; queda partido en
+# cuatro con sus limites verificados:
+#     0x7C9D-0x840B graficos
+#     0x840B-0x85DF EL MAPA          (78 filas x 6)
+#     0x85DF-0x87F3 ceros            (532 B todos 0x00, comprobado)
+#     0x87F3-0x8A78 el arranque del pozo de tiles del blitter (medido en 0x98)
+# El final de los ceros cuadra AL BYTE con el pozo 0x87F3-0x9E72 que ya estaba
+# medido en el puerto 0x98 dias antes. Dos medidas independientes, una costura.
+#
+# CONTRASTADO CON LA PARTIDA (sondeo de 0xAD2A cada 0,5 s, dump/ad2a): la fila
+# de scroll recorre de 71 a 0, o sea la zona ENTERA de abajo arriba, sin pisar
+# jamas las filas de ceros. 0xAD2B siempre 0; 0xAD2C oscila 2-32 (el ajuste
+# fino, sin identificar del todo).
+#
+# SIN CERRAR, dicho como tal: el camino de la muerte del JUGADOR al tocar el
+# piso (el jugador no pasa por L_B18E en este bucle; hay una variante fina,
+# L_B1BE, que anade logica de sub-celda y es la candidata) y que significa
+# exactamente cada valor de celda (los no-cero pintan a indices de tile).
+
+L 0xA753 mueve_enemigos El bucle de los enemigos andantes (tabla 0xACE4, contador 0xACE3): scroll sumado (0xC462), y rumbo por azar entre vagar y perseguir al jugador
+L 0xABCA rumbo_al_jugador La direccion dominante hacia DE (el jugador), como mascara de bits de rumbo
+L 0xABA3 aplica_rumbo Aplica la mascara de rumbo: bits 0/1 mueven la vertical, 2/3 la horizontal; sin recorte
+L 0xB0C0 borde_pantalla Poda el rumbo en los bordes laterales: X<3 quita el bit de izquierda, X>=174 el de derecha
+L 0xB18E consulta_mapa Pasa la posicion a mundo restando el scroll (fila 0xAD2A) y lee la celda mapa[fila*6+X/32] (celdas de 32x16): Z = celda 0 = vacio
+L 0xA9F5 base_mapa IX = 0x840B + fila*6: la base del mapa de colision de la fase
+C 0xA7ED El paso a prueba: aplicado el rumbo se consulta el mapa, y si la celda es vacio el paso se deshace
