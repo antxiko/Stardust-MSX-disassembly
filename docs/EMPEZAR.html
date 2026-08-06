@@ -1,4 +1,4 @@
-<title>Empezar — Colt 36 (1987)</title>
+<title>Empezar — Stardust (1987)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -92,7 +92,7 @@ make test     # solo los tests
 make web      # regenera la web de docs/</code></pre>
 <p><code>make</code> sin más hace el ciclo entero y <b>falla si algo no cuadra</b>: si un listado deja de reproducir su bloque byte a byte, si el trazador se mete en una zona de datos, o si queda un solo byte de la cinta sin asignar.</p>
 <h2 id="sin-la-cinta">Sin la cinta</h2>
-<p>Se pueden leer los listados de <code>src/</code> y las notas, que es donde está el trabajo. Y los tests que no dependen del binario pasan igual: de los <b>17</b>, hay unos cuantos que solo hacen cuentas sobre las cifras publicadas y se ejecutan sin nada más.</p>
+<p>Se pueden leer los listados de <code>src/</code> y las notas, que es donde está el trabajo. Y los tests que no dependen del binario pasan igual: hay unos cuantos que solo hacen cuentas sobre las cifras publicadas y se ejecutan sin nada más.</p>
 <h2 id="como-esta-organizado">Cómo está organizado</h2>
 <p>Cada bloque de la cinta tiene tres ficheros que gobiernan su desensamblado:</p>
 <table><tr><th></th><th></th></tr><tr><td><code>src/X.entries</code></td><td>los puntos de entrada: por dónde empieza a trazar</td></tr><tr><td><code>src/X.nocode</code></td><td>las zonas que NO son código, y por qué se sabe</td></tr><tr><td><code>src/X.notes</code></td><td>las anotaciones y los rangos de datos con su explicación</td></tr></table>
@@ -101,5 +101,5 @@ make web      # regenera la web de docs/</code></pre>
 <h2 id="las-herramientas-que-mas-se-usan">Las herramientas que más se usan</h2>
 <table><tr><th></th><th></th></tr><tr><td><code>tools/perfil.py</code></td><td>radiografía un binario y dice dónde cambia la naturaleza de los datos</td></tr><tr><td><code>tools/clasifica_huecos.py</code></td><td>clasifica un rango midiendo, y dice de qué medida sale</td></tr><tr><td><code>tools/coteja_spectrum.py</code></td><td>coteja este binario contra el de la versión de Spectrum</td></tr><tr><td><code>tools/render_graficos.py</code></td><td>dibuja tiles, sprites y tipografía desde la cinta</td></tr><tr><td><code>tools/omsx_*.tcl</code></td><td>arneses de openMSX: sacan del juego en marcha lo que el binario no dice</td></tr></table>
 <h2 id="si-quieres-tirar-del-hilo">Si quieres tirar del hilo</h2>
-<p>Lo que falta está contado con cifras en <a href="LO-QUE-FALTA.html">Lo que falta</a>. Las dos líneas donde más se puede avanzar ahora mismo son los 1782 bytes sin identificar y las rutinas de la segunda parte, que apenas se ha jugado.</p>
-<footer><p><em>Colt 36</em> lo publicó Topo Soft en 1987; según los créditos del propio juego, los gráficos son de LuigiLopez y la música de Gominolas, y la pantalla de carga está firmada por Cano. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>
+<p>Lo que falta está contado con cifras en <a href="LO-QUE-FALTA.html">Lo que falta</a>. Las dos líneas donde más se puede avanzar ahora mismo son los 6658 bytes sin identificar y las rutinas de la segunda parte, que apenas se ha jugado.</p>
+<footer><p><em>Stardust</em> was published by Topo Soft in 1987. By the game's own credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by <b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, the music by <b>Gominolas</b>, and it is based on an original idea by <b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All rights in the game remain with their holders. This is preservation, study and documentation work.</p></footer></div>

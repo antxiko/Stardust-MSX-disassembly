@@ -1,4 +1,4 @@
-<title>El código — Colt 36 (1987)</title>
+<title>El código — Stardust (1987)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -82,7 +82,8 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <div class="w"><nav class="top"><a href="index.html">Home</a><a href="EMPEZAR.html">Start</a><a href="EL-JUEGO.html">The game</a><a href="LA-CINTA.html">The tape</a><a href="EL-CODIGO.html" style=color:var(--tinta)>The code</a><a href="HALLAZGOS.html">Findings</a><a href="LO-QUE-FALTA.html">What's missing</a><a href="es/index.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
 <h1 id="el-codigo">El código</h1>
 <blockquote><b>Note:</b> this page is not translated yet. The documentation is written in Spanish first and translated afterwards; this is the Spanish text. The figures, addresses and code fragments read the same in both languages.</blockquote>
-<p>Los cinco bloques de la cinta suman <b>93 861 bytes</b>, y de ellos unos 43 700 son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno, todo con su nombre.</p>
+<p>Los cinco bloques de la cinta suman <b>93 861 bytes</b>, y de ellos <b>27 011</b> son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno, todo con su nombre.</p>
+<p>Esa cifra es baja a propósito: sólo cuenta el código al que se llega de verdad siguiendo llamadas y saltos desde un punto de entrada conocido. Hay más código en la cinta, pero mientras no se sepa por dónde se entra no se cuenta, porque darlo por trazado es justo el error que hizo falta deshacer aquí.</p>
 <h2 id="como-se-dibuja-la-pantalla">Cómo se dibuja la pantalla</h2>
 <p>Aquí está la diferencia grande con el original. El Spectrum escribe directamente en su memoria de pantalla, que es RAM normal; el MSX tiene la memoria de vídeo detrás del chip gráfico y hay que enviarla por un puerto. Así que esta versión lleva un <b>buffer intermedio</b> que el original no necesita.</p>
 <p>El buffer está en <b>0x4B40</b> y mide 960 bytes: 40 columnas por 24 filas. Y se recorre <b>por columnas</b>, no por filas:</p>
@@ -117,4 +118,4 @@ f003: ld (0f019h),de    ; y el de otro
 f015: call 0000h        ; ese 0000 no es real: lo rellena HL
 f018: call 0000h        ; y este DE</code></pre>
 <p>En frío eso se lee como <code>call 0</code>, que reiniciaría la máquina. A dónde llama de verdad no está en el binario, está en los registros de quien lo invoque.</p>
-<footer><p><em>Colt 36</em> lo publicó Topo Soft en 1987; según los créditos del propio juego, los gráficos son de LuigiLopez y la música de Gominolas, y la pantalla de carga está firmada por Cano. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>
+<footer><p><em>Stardust</em> was published by Topo Soft in 1987. By the game's own credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by <b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, the music by <b>Gominolas</b>, and it is based on an original idea by <b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All rights in the game remain with their holders. This is preservation, study and documentation work.</p></footer></div>

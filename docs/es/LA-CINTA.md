@@ -65,22 +65,23 @@ que se pisan se contarían mal.
 
 ## Cuánto se trajo del Spectrum
 
-Comparando byte a byte con el binario de la versión de Spectrum, el reparto es
-muy desigual:
+Aquí había un cuadro con porcentajes de coincidencia byte a byte contra el
+binario de la versión de Spectrum. **Se ha retirado**, y conviene explicar por
+qué en vez de borrarlo sin más.
 
-```
-juego de naves      57,3 % identico
-parte de a pie       6,1 %
-pantalla de carga    1,2 %
-cargador turbo       0,0 %
-```
+Los producía `tools/coteja_spectrum.py`, que localizaba cada sección del otro
+binario cogiendo sus primeros 32 bytes y buscándolos con un `find`: se quedaba
+con la **primera** coincidencia, sin comprobar que fuera la única ni que el
+desplazamiento resultante encajara con el del resto de secciones. Como las dos
+versiones comparten buena parte del dibujo, esas agujas caían dentro de la
+tilería, y de ahí salieron tanto los porcentajes como una tanda de nombres de
+rutina colocados en direcciones que son gráficos.
 
-El cargador es **código de MSX de cabo a rabo**, y no podía ser de otra forma:
-tiene que mapear RAM en las páginas, hablar con el chip de sonido y con el
-puerto del motor de la cinta, cosas que en el Spectrum no existen o están en
-otro sitio. La pantalla de carga también es propia de esta versión.
+Lo que sí se sostiene sin esa herramienta, porque se lee en el propio binario de
+MSX: el cargador es **código de MSX de cabo a rabo** —tiene que mapear RAM en
+las páginas y hablar con el chip de sonido y con el puerto del motor de la
+cinta, cosas que en el Spectrum no existen o están en otro sitio— y la pantalla
+de carga va firmada por Cano, o sea que es de esta versión.
 
-De la parte de a pie hay que decir que ese 6,1 % **no significa que se
-rehiciera**: el snapshot con el que se compara se capturó en el menú de la
-primera parte, así que la segunda fase del Spectrum sencillamente no está ahí
-para comparar. El número es un límite de la medida, no una propiedad del juego.
+Cuando la búsqueda esté arreglada y exija coincidencia única y desplazamiento
+coherente, el cuadro volverá con cifras que se puedan defender.

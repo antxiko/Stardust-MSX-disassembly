@@ -141,3 +141,58 @@ D 0x6000 0x61D8 charset: 59 caracteres de 8x8
 D 0x69A8 0x6DE0 graficos de los centinelas: 15 de 24x24
 D 0x6DE0 0xA560 tiles de los niveles: 111 de 32x32, 128 bytes cada uno
 D 0xA560 0xBA20 sprites: 83 de 16x16 con mascara, 64 bytes cada uno
+
+# --- LO QUE DEJO AL DESCUBIERTO QUITAR LAS ENTRADAS DEL COTEJO ---------------
+#
+# Estos 26 rangos, 5305 bytes, figuraban como CODIGO en lo que se publico. No lo
+# eran: solo los alcanzaba el trazador porque estaba sembrado con 41 puntos de
+# entrada que caian dentro de los graficos (ver la explicacion en
+# juego.entries). Al retirarlos, estos tramos se quedaron sin dueno.
+#
+# Antes de ponerles nombre se ha hecho la comprobacion que en este proyecto vale
+# como prueba: muestrear el PC de una partida real de 900 segundos con los POKEs
+# de la revista puestos (tools/omsx_huecos.tcl, 2879 PCs distintos). De los 26
+# rangos, 25 NO se ejecutaron ni una vez. El unico donde cayo el PC fue
+# 0xF972-0xFDE6, y solo en 0xFD9A y 0xFD9F, que son los ganchos H.KEYI y H.TIMI
+# del sistema: ahi lo que se ejecuta es lo que el juego escribe encima al
+# arrancar, no lo que trae la cinta.
+#
+# Asi que no son "codigo al que no se llega". Pero tampoco se sabe que son, y
+# esa es la razon de que todos vayan con la etiqueta conservadora del proyecto,
+# "datos sin clasificar", aunque la medida apunte a algo: la medida es una
+# pista, no una identificacion. Donde el clasificador se moja, se dice en la
+# propia linea.
+#
+# No ejecutarse en 900 segundos tampoco prueba que sean datos: esa partida no
+# llega al fin de partida, ni a la tabla de records, ni a redefinir teclas, ni
+# al modo demo. Lo que se afirma es lo medido y nada mas.
+D 0x4952 0x49E3 datos sin clasificar (145 B; racha 4.28, entropia 4.12, 35 valores: rachas mas largas que el azar; parece graficos)
+D 0x49E5 0x49EB datos sin clasificar (6 B; 6 bytes)
+D 0x49FA 0x4A03 datos sin clasificar (9 B; racha 2.48, entropia 1.97, 4 valores: pocos valores para ser un dibujo; parece tabla)
+D 0x4A07 0x4A0B datos sin clasificar (4 B; 4 bytes)
+D 0x4A0F 0x4A13 datos sin clasificar (4 B; 4 bytes)
+D 0x4A27 0x4AE3 datos sin clasificar (188 B; racha 2.23, entropia 5.58, 75 valores)
+D 0x4B07 0x4B0B datos sin clasificar (4 B; 4 bytes)
+D 0x4B2F 0x4B40 datos sin clasificar (17 B; racha 2.72, entropia 3.62, 13 valores: pocos valores para ser un dibujo; parece tabla)
+D 0x5051 0x511B datos sin clasificar (202 B; racha 3.01, entropia 5.36, 84 valores: rachas mas largas que el azar; parece graficos)
+D 0x512F 0x514A datos sin clasificar (27 B; racha 3.48, entropia 3.96, 19 valores: pocos valores para ser un dibujo; parece tabla)
+D 0x5151 0x5300 datos sin clasificar (431 B; racha 2.51, entropia 4.04, 48 valores)
+D 0x54EA 0x5640 datos sin clasificar (342 B; racha 1.92, entropia 3.29, 13 valores, el nibble bajo es 0x1 en el 86%; parece colores (SCREEN 2))
+D 0xBA20 0xBAD7 datos sin clasificar (183 B; racha 3.53, entropia 3.20, 18 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xBADF 0xBB4E datos sin clasificar (111 B; racha 3.07, entropia 3.21, 12 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xBB53 0xBB73 datos sin clasificar (32 B; racha 2.00, entropia 2.98, 10 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xBB7C 0xBB7E datos sin clasificar (2 B; 2 bytes)
+D 0xBB88 0xBBB2 datos sin clasificar (42 B; racha 3.65, entropia 3.21, 13 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xBBCB 0xBC4F datos sin clasificar (132 B; racha 3.06, entropia 3.58, 15 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xBC54 0xBD85 datos sin clasificar (305 B; racha 3.44, entropia 3.48, 18 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xCA5F 0xCA96 datos sin clasificar (55 B; racha 5.00, entropia 2.95, 14 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xDA82 0xDA83 datos sin clasificar (1 B; 1 bytes)
+D 0xDAD9 0xDF0F datos sin clasificar (1078 B; racha 2.35, entropia 5.49, 125 valores)
+D 0xE001 0xE002 datos sin clasificar (1 B; 1 bytes)
+D 0xE5E7 0xE785 datos sin clasificar (414 B; racha 4.85, entropia 4.08, 95 valores: rachas mas largas que el azar; parece graficos)
+D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
+#   CONVERSION POR / CARLOS ARIAS / GRAFICOS / JUAN CARLOS Y JAVIER AREVALO /
+#   ...ADEMAS DE... / JULIO MARTIN / MUSICA COMPUESTA POR / GOMINOLAS /
+#   BASADO EN UNA IDEA ORIGINAL / JOSE MANUEL MU&OZ / TOPO SOFT.
+#   El '&' es como la fuente del juego codifica la enye)
+D 0xF972 0xFDE7 datos sin clasificar (1141 B; racha 7.87, entropia 1.08, 11 valores: pocos valores para ser un dibujo; parece tabla)

@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from estilo_web import ESTILO                      # noqa: E402
 
 TOTAL = 93861
-SIN_IDENTIFICAR = 1782
+SIN_IDENTIFICAR = 6658
 
 TXT = {
     "es": dict(
@@ -31,7 +31,7 @@ TXT = {
               "el presupuesto cierre al 100 % quiere decir que cada byte de la "
               "cinta tiene dueño —o es código que el trazador alcanza de verdad, "
               "o cae en un rango con nombre y medida—, <b>no</b> que se sepa para "
-              "qué sirve cada uno. Quedan 1782 bytes sin identificar y buena "
+              "qué sirve cada uno. Quedan 6658 bytes sin identificar y buena "
               "parte de las rutinas sin comentar. Está contado con cifras en "
               "<a href='LO-QUE-FALTA.html'>Lo que falta</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
@@ -45,9 +45,9 @@ TXT = {
         otro=("../", "In English"),
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
-        cifras=[("100%", "del binario con dueño"), ("1956", "rutinas identificadas"),
-                ("7+1", "zonas de naves, y una a pie"), ("44.273", "bytes de código"),
-                ("49.588", "bytes de datos"), ("1.782", "bytes sin identificar")],
+        cifras=[("100%", "del binario con dueño"), ("95", "rutinas identificadas"),
+                ("7+1", "zonas de naves, y una a pie"), ("27.011", "bytes de código"),
+                ("66.850", "bytes de datos"), ("6.658", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -66,7 +66,7 @@ TXT = {
         aviso="<b>This is not finished, and work continues.</b> The budget closing "
               "at 100% means every byte on the tape has an owner —either code the "
               "tracer genuinely reaches, or a range with a name and a "
-              "measurement— <b>not</b> that its purpose is known. 1782 bytes "
+              "measurement— <b>not</b> that its purpose is known. 6658 bytes "
               "remain unidentified and much of the code is still uncommented. It "
               "is set out with figures in "
               "<a href='LO-QUE-FALTA.html'>What's missing</a>.",
@@ -81,9 +81,9 @@ TXT = {
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
-        cifras=[("100%", "of the binary owned"), ("1956", "routines identified"),
-                ("7+1", "ship zones, plus one on foot"), ("44,273", "bytes of code"),
-                ("49,588", "bytes of data"), ("1,782", "bytes unidentified")],
+        cifras=[("100%", "of the binary owned"), ("95", "routines identified"),
+                ("7+1", "ship zones, plus one on foot"), ("27,011", "bytes of code"),
+                ("66,850", "bytes of data"), ("6,658", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "
@@ -136,13 +136,23 @@ HALLAZGOS = {
          "<p>Las dos partes del juego comparten esa rutina. De 40 bytes comparados "
          "solo difieren seis, y tres de ellos son <code>and (hl)</code> contra "
          "<code>or (hl)</code>.</p>"),
-        ("Una cobertura que era mentira",
+        ("Una cobertura que era mentira, dos veces",
          "<p>A mitad del trabajo, sembrar el trazador con rutinas sacadas del cotejo "
-         "subió la cobertura <b>del 25 % al 75,8 % de golpe</b>. Parecía el hallazgo "
-         "de la sesión y era contaminación: las tablas de color, el relleno de ceros "
-         "y hasta los datos de nivel aparecían marcados como código al 100 %.</p>"
-         "<p>Lo que la cazó fue tener zonas de datos identificadas por otras vías con "
-         "las que contrastar. La cobertura real, ya limpia, es del 61,6 %.</p>"),
+         "con la versión de Spectrum subió la cobertura <b>del 25 % al 75,8 % de "
+         "golpe</b>. Parecía el hallazgo de la sesión y era contaminación: las tablas "
+         "de color, el relleno de ceros y hasta los datos de nivel aparecían marcados "
+         "como código al 100 %.</p>"
+         "<p>Se arregló declarando esas zonas como datos… y volvió a colarse, porque "
+         "las rutinas se quedaron como <b>puntos de entrada</b>. Cuarenta y una caían "
+         "dentro de los tiles y los sprites, así que el trazador seguía entrando a "
+         "desensamblar dibujos: <b>17.000 bytes de gráficos publicados como "
+         "instrucciones</b>, con la cobertura hinchada del 24,6 % al 61,6 %.</p>"
+         "<p>Nada de lo que se comprobaba podía verlo. El binario reensamblaba igual "
+         "—son los mismos bytes, solo cambia cómo se leen—, el presupuesto cerraba "
+         "igual, y la sanidad del trazado sólo miraba los rangos de un fichero donde "
+         "los gráficos no estaban. Ahora hay una comprobación para exactamente esto: "
+         "<b>ningún punto de entrada puede caer dentro de un rango declarado como "
+         "datos</b>. La cobertura real del bloque es del <b>24,6 %</b>.</p>"),
     ],
     "en": [
         ("This isn't an MSX tape",
@@ -182,13 +192,22 @@ HALLAZGOS = {
          "<p>Both halves of the game share that routine. Of 40 bytes compared only "
          "six differ, and three of those are <code>and (hl)</code> versus "
          "<code>or (hl)</code>.</p>"),
-        ("A coverage figure that was a lie",
+        ("A coverage figure that was a lie, twice over",
          "<p>Midway through, seeding the tracer with routines from the cross-check "
-         "pushed coverage <b>from 25% to 75.8% in one go</b>. It looked like the "
-         "find of the session and it was contamination: colour tables, zero padding "
-         "and even level data were showing up marked as code at 100%.</p>"
-         "<p>What caught it was having data zones identified by other means to check "
-         "against. Real coverage, once clean, is 61.6%.</p>"),
+         "against the Spectrum version pushed coverage <b>from 25% to 75.8% in one "
+         "go</b>. It looked like the find of the session and it was contamination: "
+         "colour tables, zero padding and even level data were showing up marked as "
+         "code at 100%.</p>"
+         "<p>That was fixed by declaring those zones as data… and it crept back in, "
+         "because the routines stayed on as <b>entry points</b>. Forty-one of them "
+         "landed inside the tiles and the sprites, so the tracer kept walking into "
+         "artwork: <b>17,000 bytes of graphics published as instructions</b>, with "
+         "coverage inflated from 24.6% to 61.6%.</p>"
+         "<p>Nothing being checked could see it. The binary still reassembled — same "
+         "bytes, only read differently — the budget still closed, and the trace "
+         "sanity check only looked at ranges in a file the graphics weren't in. There "
+         "is now a check for exactly this: <b>no entry point may fall inside a range "
+         "declared as data</b>. The block's real coverage is <b>24.6%</b>.</p>"),
     ],
 }
 

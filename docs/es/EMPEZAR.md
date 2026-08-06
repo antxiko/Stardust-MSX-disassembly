@@ -27,9 +27,8 @@ datos, o si queda un solo byte de la cinta sin asignar.
 ## Sin la cinta
 
 Se pueden leer los listados de `src/` y las notas, que es donde está el trabajo.
-Y los tests que no dependen del binario pasan igual: de los **17**, hay unos
-cuantos que solo hacen cuentas sobre las cifras publicadas y se ejecutan sin
-nada más.
+Y los tests que no dependen del binario pasan igual: hay unos cuantos que solo
+hacen cuentas sobre las cifras publicadas y se ejecutan sin nada más.
 
 ## Cómo está organizado
 
@@ -60,5 +59,5 @@ divergir: el fichero que se publica es el que se verifica.
 ## Si quieres tirar del hilo
 
 Lo que falta está contado con cifras en [Lo que falta](LO-QUE-FALTA.html). Las
-dos líneas donde más se puede avanzar ahora mismo son los 1782 bytes sin
+dos líneas donde más se puede avanzar ahora mismo son los 6658 bytes sin
 identificar y las rutinas de la segunda parte, que apenas se ha jugado.

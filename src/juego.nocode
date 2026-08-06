@@ -40,6 +40,22 @@
 # buffer intermedio en RAM y una rutina que lo vuelque por un puerto. En la
 # cinta viene grabado con su contenido inicial, que son numeros de casilla.
 0x4B40 0x4EFF   buffer de pantalla: 40 columnas x 24 filas, leido por columnas
+# --- LOS GRAFICOS ------------------------------------------------------------
+# Faltaban aqui, y esa ausencia es la que dejo pasar la contaminacion grande de
+# este proyecto: 41 puntos de entrada sacados del cotejo con el Spectrum caian
+# dentro de estos cuatro rangos, el trazador entraba a desensamblar dibujos, y
+# check_trace.py daba OK porque solo vigila lo que este fichero declara. La
+# cobertura del bloque salia 61,6% cuando de verdad es 25,0%.
+#
+# Que son graficos y no codigo esta comprobado por dos caminos que no dependen
+# uno del otro: la geometria cierra al byte (0x6DE0 + 111*128 = 0xA560, y ahi
+# empiezan los sprites) y al dibujarlos con esa geometria sale una tileria
+# limpia en vez de ruido, que es lo que saldria si el reparto estuviera mal.
+0x6000 0x61D8   charset: 59 caracteres de 8x8
+0x69A8 0x6DE0   graficos de los centinelas: 15 de 24x24
+0x6DE0 0xA560   tiles de los niveles: 111 de 32x32, 128 bytes cada uno
+0xA560 0xBA20   sprites: 83 de 16x16 con mascara, 64 bytes cada uno
+
 0x61D8 0x62D6   Level 1 Data
 0x62D7 0x63D3   Level 2 Data
 0x63D4 0x64D3   Level 3 Data

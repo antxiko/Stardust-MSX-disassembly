@@ -5,9 +5,14 @@
 > figures, addresses and code fragments read the same in both languages.
 
 
-Los cinco bloques de la cinta suman **93 861 bytes**, y de ellos unos 43 700 son
+Los cinco bloques de la cinta suman **93 861 bytes**, y de ellos **27 011** son
 código que el trazador alcanza siguiendo el flujo. El resto son gráficos,
 tablas, buffers y relleno, todo con su nombre.
+
+Esa cifra es baja a propósito: sólo cuenta el código al que se llega de verdad
+siguiendo llamadas y saltos desde un punto de entrada conocido. Hay más código
+en la cinta, pero mientras no se sepa por dónde se entra no se cuenta, porque
+darlo por trazado es justo el error que hizo falta deshacer aquí.
 
 ## Cómo se dibuja la pantalla
 

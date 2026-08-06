@@ -1,4 +1,4 @@
-<title>Hallazgos — Colt 36 (1987)</title>
+<title>Hallazgos — Stardust (1987)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -117,10 +117,10 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>Hay una diferencia de fondo entre las dos máquinas que la conversión no pudo esquivar. El Spectrum escribe <b>directamente</b> en su memoria de pantalla, que es RAM normal en 0x4000. En el MSX la memoria de vídeo está detrás del chip gráfico y no se puede direccionar: hay que enviarla byte a byte por un puerto.</p>
 <p>Por eso esta versión lleva algo que el original no necesita: un <b>buffer de pantalla</b> en RAM, y una rutina que lo vuelca. El buffer está en 0x4B40 y mide <b>960 bytes, 40 columnas por 24 filas</b>, y eso se sabe por dos caminos que coinciden: lo dice el código (<code>ld de,04b40h</code>, <code>ld b,028h</code>, <code>ld c,018h</code>, y 0x4B40 + 40×24 = 0x4F00) y lo confirma el emulador, donde esa rutina hizo <b>3.252.480 escrituras</b> con el puntero llegando exactamente hasta 0x4EFF.</p>
 <p>Cuarenta columnas cuando en pantalla caben treinta y dos: esas ocho de más son el margen que permite el scroll.</p>
-<h2 id="la-musica-se-porto-entera">La música se portó entera</h2>
-<p>Las tablas de música son las mismas, byte a byte:</p>
-<p>754 bytes, los 754 completos, idénticos a los de la versión de Spectrum</p>
-<p>y la segunda parte reutiliza 259 de esos mismos bytes. Las dos mitades del juego suenan con los mismos datos.</p>
+<h2 id="lo-que-decia-aqui-sobre-la-musica-y-por-que-ya-no">Lo que decía aquí sobre la música, y por qué ya no</h2>
+<p>Aquí se afirmaba que las tablas de música se habían portado enteras, con 754 bytes idénticos a los de la versión de Spectrum en 0xAB0E. <b>Se retira.</b></p>
+<p>Esa coincidencia la daba la misma herramienta de cotejo cuya búsqueda resultó estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites (0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se buscaba código, que es exactamente el fallo que contaminó el trazado entero.</p>
+<p>Que las dos partes del juego suenan parecido se puede seguir mirando —y hay una rutina de sonido identificada en el binario de MSX—, pero la afirmación fuerte, la de los 754 bytes, no se sostiene hasta rehacer el cotejo con una búsqueda que exija coincidencia única.</p>
 <h2 id="un-interprete-de-guiones">Un intérprete de guiones</h2>
 <p>Dentro del juego de naves hay una máquina virtual pequeña. Los guiones que gobiernan a los enemigos son bytes, y los que valen 0x80 o más son <b>opcodes</b>:</p>
 <p>e230: ld a,(bc) / cp 080h / jp c,0e231h   ; por debajo de 0x80 no es opcode sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)</p>
@@ -130,4 +130,4 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>No es una captura: está dibujada a partir de los 12.288 bytes que el propio bloque vuelca —6144 de patrón a la memoria de vídeo 0x0000 y 6144 de color a 0x2000—, siguiendo lo que hace su rutina de 0x9C10.</p>
 <p>Tiene truco, y de los que enseñan algo. La tabla que dice qué dibujo va en cada casilla no se rellena en orden 0, 1, 2, 3… sino <b>sumando ocho</b>: 0, 8, 16 … 248, 1, 9, 17 … Son los mismos 256 valores por tercio de pantalla, pero intercalados. Dibujarla suponiendo orden secuencial da ruido convincente, que es el peor tipo de error: parece que el reparto del bloque está mal cuando lo que está mal es cómo lo lees.</p>
 <p>Va firmada <b>CANO</b>, abajo a la izquierda.</p>
-<footer><p><em>Colt 36</em> lo publicó Topo Soft en 1987; según los créditos del propio juego, los gráficos son de LuigiLopez y la música de Gominolas, y la pantalla de carga está firmada por Cano. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>
+<footer><p><em>Stardust</em> lo publicó Topo Soft en 1987. Según la pantalla de créditos del propio juego, la conversión es de <b>Carlos Arias</b>, los gráficos de <b>Juan Carlos y Javier Arévalo</b> —además de <b>Julio Martín</b>—, la música de <b>Gominolas</b>, y está basado en una idea original de <b>José Manuel Muñoz</b>; la pantalla de carga va firmada <b>Cano</b>. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

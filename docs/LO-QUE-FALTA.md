@@ -31,10 +31,19 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**1782 bytes, el 1,9 % de la cinta**, están declarados como «datos sin
+**6658 bytes, el 7,1 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
+
+De esos, **5305 llegaron aquí desde el otro lado**: figuraban como código en la
+primera versión publicada de esta página, y sólo estaban trazados porque el
+trazador venía sembrado con puntos de entrada que caían dentro de los gráficos.
+Al quitarlos se quedaron sin dueño. Antes de etiquetarlos se muestreó el
+contador de programa de una partida real de 900 segundos: **25 de esos 26 rangos
+no se ejecutaron ni una vez**, y el único donde cayó el contador fue en las dos
+direcciones de los ganchos del sistema, que el juego reescribe al arrancar. Así
+que no son «código al que no se llega»; pero tampoco se sabe qué son.
 
 Están repartidos en rangos pequeños dentro de los dos bloques grandes. Se pueden
 listar con:
@@ -51,7 +60,7 @@ salió su clasificación.
 El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
-    juego de naves    61,6 %
+    juego de naves    24,6 %
     parte de a pie    49,4 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
@@ -61,19 +70,23 @@ el emulador las pilló ejecutándose; de otras, no se sabe.
 
 La medida exacta de esa ceguera son los **saltos indirectos**: `jp (hl)`, donde
 el destino no está escrito en el binario sino en un registro, y el trazador se
-para porque no puede saber a dónde va. Hay **diecinueve**, diecisiete en la
-parte de naves y dos en la de a pie, y salen listados en el propio trazado:
+para porque no puede saber a dónde va. Hay **cinco**, tres en la parte de naves
+y dos en la de a pie, y salen listados en el propio trazado:
 
 ```sh
 python3 -c "import json;print(json.load(open('work/juego.trace.json'))['blind'])"
 ```
 
-De los diecinueve solo hay **tres resueltos**, y no leyendo el código sino
-jugando con el emulador delante y anotando el destino cada vez que el salto se
-ejecutaba: los de 0xCB99 y 0xD6B8 en la parte de naves, y el de 0xC544 en la de
-a pie. Los otros dieciséis siguen sin destino conocido. Y uno de ellos —el de
-0x984D, en la segunda parte— **no llegó a dispararse** en los 300 segundos de
-partida que se le dieron, así que ni siquiera está confirmado que se use.
+De los cinco hay **cuatro resueltos**. El de 0xE230 es el despachador del
+intérprete de guiones, y su tabla de 35 punteros se lee del binario. Los otros
+tres —0xCB99 y 0xD6B8 en la parte de naves, 0xC544 en la de a pie— no se
+resolvieron leyendo código sino jugando con el emulador delante y anotando el
+destino cada vez que el salto se ejecutaba, porque las estructuras que llevan
+esos punteros vienen a 0xFF en la cinta y se rellenan jugando.
+
+Queda **uno sin resolver**: el de 0x984D, en la segunda parte, que **no llegó a
+dispararse** en los 300 segundos de partida que se le dieron. Ni siquiera está
+confirmado que se use.
 
 ## Lo que no se ha comprobado
 
@@ -94,18 +107,23 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-1782 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+6658 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 1782 bytes sin clasificar.** La vía que mejor ha funcionado hasta ahora
-  es cotejarlos con la versión de Spectrum: así se identificaron 4311 bytes que
-  antes estaban en ese mismo saco, y así bajó la cifra de 6514 a los 1782 de
-  hoy. Queda apurar los rangos que no casan, que son justo los que la conversión
-  rehízo para el MSX.
+- **Los 6658 bytes sin clasificar.** La vía del cotejo con la versión de
+  Spectrum está de momento cerrada: la herramienta que lo hacía buscaba cada
+  sección con una aguja de 32 bytes y se quedaba con la primera coincidencia,
+  sin comprobar que fuera única ni que el desplazamiento resultante encajara con
+  el del resto, y ahí es donde se generó la contaminación. Hasta que esa
+  búsqueda esté arreglada, nada del cotejo vuelve al proyecto.
+- **Jugar más, y más variado.** Los 26 rangos nuevos no se ejecutaron en una
+  partida de 900 segundos, pero esa partida no llega al fin de partida, ni a la
+  tabla de récords, ni a redefinir teclas, ni al modo demo. Cubrir esas
+  pantallas es lo que más rápido movería la cifra.
 - **Jugar la segunda parte entera**, con el trainer puesto, y capturar sus
   rutinas como se hizo con la primera. Ahí es donde más código sin trazar queda.
 - **El salto indirecto de 0x984D**, que sigue sin dispararse y sin destino
@@ -117,4 +135,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 1782 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 6658 bytes se identifiquen, esta página se hará más corta.

@@ -146,14 +146,20 @@ coinciden: lo dice el código (`ld de,04b40h`, `ld b,028h`, `ld c,018h`, y
 Cuarenta columnas cuando en pantalla caben treinta y dos: esas ocho de más son
 el margen que permite el scroll.
 
-## La música se portó entera
+## Lo que decía aquí sobre la música, y por qué ya no
 
-Las tablas de música son las mismas, byte a byte:
+Aquí se afirmaba que las tablas de música se habían portado enteras, con 754
+bytes idénticos a los de la versión de Spectrum en 0xAB0E. **Se retira.**
 
-    754 bytes, los 754 completos, idénticos a los de la versión de Spectrum
+Esa coincidencia la daba la misma herramienta de cotejo cuya búsqueda resultó
+estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites
+(0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se
+buscaba código, que es exactamente el fallo que contaminó el trazado entero.
 
-y la segunda parte reutiliza 259 de esos mismos bytes. Las dos mitades del juego
-suenan con los mismos datos.
+Que las dos partes del juego suenan parecido se puede seguir mirando —y hay una
+rutina de sonido identificada en el binario de MSX—, pero la afirmación fuerte,
+la de los 754 bytes, no se sostiene hasta rehacer el cotejo con una búsqueda que
+exija coincidencia única.
 
 ## Un intérprete de guiones
 

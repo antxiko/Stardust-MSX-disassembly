@@ -33,6 +33,28 @@ NAV_ES = [("index.html", "Portada"), ("EMPEZAR.html", "Empezar"),
 # el mismo nombre en el otro directorio.
 PAREJA = {}
 
+# El pie va en el idioma de la pagina, y los creditos son los que dice la propia
+# pantalla de creditos del juego (0xF124-0xF2D0 del bloque del juego), leidos del
+# binario: "CONVERSION POR CARLOS ARIAS / GRAFICOS JUAN CARLOS Y JAVIER AREVALO /
+# ...ADEMAS DE... JULIO MARTIN / MUSICA COMPUESTA POR GOMINOLAS / BASADO EN UNA
+# IDEA ORIGINAL DE JOSE MANUEL MU&OZ". La pantalla de carga va firmada CANO.
+PIE = {
+    "es": "<em>Stardust</em> lo publicó Topo Soft en 1987. Según la pantalla de "
+          "créditos del propio juego, la conversión es de <b>Carlos Arias</b>, los "
+          "gráficos de <b>Juan Carlos y Javier Arévalo</b> —además de <b>Julio "
+          "Martín</b>—, la música de <b>Gominolas</b>, y está basado en una idea "
+          "original de <b>José Manuel Muñoz</b>; la pantalla de carga va firmada "
+          "<b>Cano</b>. Todos los derechos sobre el juego siguen siendo de sus "
+          "titulares. Este trabajo es de preservación, estudio y documentación.",
+    "en": "<em>Stardust</em> was published by Topo Soft in 1987. By the game's own "
+          "credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by "
+          "<b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, "
+          "the music by <b>Gominolas</b>, and it is based on an original idea by "
+          "<b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All "
+          "rights in the game remain with their holders. This is preservation, study "
+          "and documentation work.",
+}
+
 
 def enlinea(t):
     """Formato dentro de una linea: codigo, negrita, cursiva, enlaces, imagenes."""
@@ -54,7 +76,8 @@ def enlinea(t):
 
 # La web se sirve desde docs/, asi que lo que este fuera de esa carpeta no
 # existe para el navegador: esos enlaces se mandan al repositorio.
-REPO = os.environ.get("COLT36_REPO", "https://github.com/antxiko/Colt36-disassembly")
+REPO = os.environ.get("STARDUST_REPO",
+                      "https://github.com/antxiko/Stardust-MSX-disassembly")
 
 
 def ruta(href):
@@ -156,12 +179,7 @@ def convierte(texto, titulo, actual, idioma="en"):
         nav += f'<a href="../{otro}" style="margin-left:auto;color:var(--oro)">English</a>' 
     return (f"<title>{html.escape(titulo)}</title>\n<style>{ESTILO}</style>\n"
             f'<div class="w"><nav class="top">{nav}</nav>\n' + "\n".join(out) +
-            '\n<footer><p><em>Colt 36</em> lo publicó Topo Soft en 1987; según los '
-            'créditos del propio juego, los gráficos son de LuigiLopez y la música '
-            'de Gominolas, y la pantalla de carga está firmada por Cano. Todos los '
-            'derechos sobre el juego siguen siendo de sus titulares. Este trabajo es '
-            'de preservación, estudio y documentación.'
-            '</p></footer></div>\n')
+            f'\n<footer><p>{PIE[idioma]}</p></footer></div>\n')
 
 
 def main(docdir, idioma="en"):
@@ -173,7 +191,7 @@ def main(docdir, idioma="en"):
         dst = os.path.join(docdir, fn[:-3] + ".html")
         texto = open(src, encoding="utf-8").read()
         m = re.search(r"^#\s+(.*)$", texto, re.M)
-        titulo = (m.group(1) if m else fn[:-3]) + " — Colt 36 (1987)"
+        titulo = (m.group(1) if m else fn[:-3]) + " — Stardust (1987)"
         open(dst, "w", encoding="utf-8").write(
             convierte(texto, titulo, fn[:-3] + ".html", idioma))
         print(f"  {fn} -> {os.path.basename(dst)}")

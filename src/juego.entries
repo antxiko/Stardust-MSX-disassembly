@@ -180,64 +180,37 @@
 0xF616  vram_F616     escribe en VRAM (448 veces)
 0xF650  vram_F650     escribe en VRAM (42240 veces)
 
-# --- Rutinas identificadas cotejando con la version de ZX Spectrum ------
+# --- POR QUE AQUI NO HAY NADA DEL COTEJO CON EL SPECTRUM ---------------------
 #
-# Los autores originales publicaron el desensamblado de la version de
-# Spectrum en github.com/TheJare/stardust-48k, con permiso de todos ellos, y
-# ahi las rutinas tienen nombre. Pero ellos mismos avisan de que la version
-# de MSX la hizo OTRA GENTE, asi que sus etiquetas no valen aqui por si
-# solas: son una hipotesis.
+# Aqui hubo 41 puntos de entrada sacados de cotejar este binario con el de la
+# version de ZX Spectrum: 31 con nombre de rutina y 10 de "codigo que el
+# trazador no alcanzaba". Se han retirado, y conviene explicar por que para que
+# no vuelvan a entrar.
 #
-# Lo que se ha hecho es COMPROBARLAS. Cada una de estas rutinas aparece
-# IDENTICA byte a byte en los dos binarios, casi siempre desplazada 0x4000
-# -el Spectrum tiene su RAM de 0x4000 arriba y el MSX la reubico- y algunas
-# en la misma direccion. Cuando los bytes son los mismos, el nombre viaja
-# con ellos. Lo cotejado se puede rehacer con tools/coteja_spectrum.py.
-0x8055  player_ai_function_1     Player AI function 1 (118 B identicos al Spectrum)
-0x80CB  generate_new_enemy_shi   Generate new enemy ship (267 B identicos al Spectrum)
-0x81D6  read_player_control_ke   Read Player Control Keys (280 B identicos al Spectrum)
-0x8311  draws_and_advances_the   Draws and advances the starfield (310 B identicos al Spectrum)
-0x8447  render_a_16x16_masked    Render a 16x16 masked sprite (187 B identicos al Spectrum)
-0x8502  convert_coords_in_h_l    Convert coords in H,L to backbuffer address  (166 B identicos al Spectrum)
-0x85A8  draw_player_explosion    Draw Player explosion - and output random so (108 B identicos al Spectrum)
-0x863B  render_sentinel_nodes    Render Sentinel Nodes (5x5) (301 B identicos al Spectrum)
-0x876E  advances_coordinates_i   Advances coordinates in HL by orientation in (99 B identicos al Spectrum)
-0x8810  enemy_fighter_at_posit   Enemy fighter at position BC, and fifth para (750 B identicos al Spectrum)
-0x8B2A  runs_the_logic_heat_se   Runs the logic (heat-seeking) for an enemy m (1028 B identicos al Spectrum)
-0x8F2E  check_an_objet_s_posit   Check an objet's position and dimensions aga (730 B identicos al Spectrum)
-0x9259  update_a_ship_on_the_h   Update a ship on the HUD (277 B identicos al Spectrum)
-0x93D1  play_a_sound_defined_b   Play a sound defined by B bytes at HL (79 B identicos al Spectrum)
-0x9420  render_regular_string    Render regular string (243 B identicos al Spectrum)
-0x9551  render_a_double_height   Render a double-height stippled character (68 B identicos al Spectrum)
-0x9595  render_a_double_height   Render a double-height stippled string (74 B identicos al Spectrum)
-0x95DF  dump_backbuffer_to_scr   Dump backbuffer to screen (464 B identicos al Spectrum)
-0x97D2  setup_and_run_the_demo   Setup and run the Demo (67 B identicos al Spectrum)
-0x9815  wait_for_a_key_press_a   Wait for a key press and figure out which ke (69 B identicos al Spectrum)
-0x985A  render_regular_char_wi   Render regular char with cursor effect (127 B identicos al Spectrum)
-0x98E5  tentative_create_new_e   Tentative - create new enemies randomly (204 B identicos al Spectrum)
-0x99B1  run_entity_logic_not_s   Run Entity logic (not sure what type of enti (125 B identicos al Spectrum)
-0x9A2E  check_current_score_wi   Check current score with High Scores, insert (224 B identicos al Spectrum)
-0x9B0E  main_gameplay_mode       Main Gameplay Mode (118 B identicos al Spectrum)
-0x9B84  inter_level_activity_s   Inter level activity. Show bonus message and (119 B identicos al Spectrum)
-0x9C01  load_2nd_stage           Load 2nd Stage (356 B identicos al Spectrum)
-0x9D65  check_collision_of_ene   Check collision of energy barrier with playe (131 B identicos al Spectrum)
-0x9E40  decompress_level         Decompress level (1101 B identicos al Spectrum)
-0xA28D  run_enemy_missiles       Run enemy missiles (723 B identicos al Spectrum)
-0xAA3C  piece_of_code_copied_i   Piece of code copied into PlayMusic (128 B identicos al Spectrum)
-
-# --- Codigo que el trazador no alcanzaba, cazado por el cotejo ---------------
+# LAS 41 CAIAN DENTRO DE LOS GRAFICOS. 37 dentro de los tiles (0x6DE0-0xA55F) y
+# 4 dentro de los sprites, rangos que este mismo proyecto declara como datos en
+# juego.notes y cuya geometria cierra al byte: 0x6DE0 + 111*128 = 0xA560, y al
+# dibujarlos sale una tileria limpia, no ruido.
 #
-# El presupuesto los tenia como "datos sin clasificar" porque el trazador no
-# llega a ellos siguiendo el flujo. Pero aparecen IDENTICOS byte a byte en el
-# binario de Spectrum, y ahi el fichero de control los marca como codigo. O sea
-# que son rutinas a las que se entra por alguna via que aqui todavia no se ve.
-0x848D  sin_etiqueta             sin etiqueta (117 B identicos al Spectrum)
-0x871F  render_sentinel_nodes    Render Sentinel Nodes (5x5) (79 B identicos al Spectrum)
-0x900F  sin_etiqueta             sin etiqueta (283 B identicos al Spectrum)
-0x9508  sin_etiqueta             sin etiqueta (48 B identicos al Spectrum)
-0x9937  tentative_create_new_e   Tentative - create new enemies randomly (56 B identicos al Spectrum)
-0x9D21  sin_etiqueta             sin etiqueta (68 B identicos al Spectrum)
-0x9E08  check_collision_of_ene   Check collision of enemy with player (56 B identicos al Spectrum)
-0xA7E7  sin_etiqueta             sin etiqueta (105 B identicos al Spectrum)
-0xA8BE  sin_etiqueta             sin etiqueta (146 B identicos al Spectrum)
-0xAEEC  sin_etiqueta             sin etiqueta (30 B identicos al Spectrum)
+# Desensambladas daban basura, que es la senal que habria que haber mirado:
+#     0x8055 "player_ai_function_1"   -> rst 38h / defb 0fdh,0aah,0aah ilegal
+#     0x93D1 "play_a_sound_defined_b" -> ld sp,00e8dh
+#     0x9420 "render_regular_string"  -> jp z,000a6h
+# 0xAA es el patron de trama y 0xFF el relleno: son dibujos, no instrucciones.
+#
+# Lo que costaban: sembraban el trazador dentro de la tileria y subian la
+# cobertura del bloque de 25,0% a 61,6%, con 17058 bytes de graficos publicados
+# como listado de codigo. Es la MISMA contaminacion que describe juego.nocode y
+# que se creia arreglada: se arreglo el .nocode, pero estas entradas se quedaron
+# aqui, y check_trace.py no las veia porque los tiles y los sprites no estaban
+# declarados alli. Ahora si lo estan.
+#
+# Y de donde salio el error: tools/coteja_spectrum.py buscaba cada seccion del
+# Spectrum con un `msx.find()` de 32 bytes, se quedaba con la PRIMERA
+# coincidencia y no comprobaba ni que fuera unica ni que el desplazamiento
+# resultante fuera coherente con el del resto. Como las dos versiones comparten
+# el dibujo, esas agujas caen en la tileria.
+#
+# Para volver a traer nombres del cotejo hacen falta las dos cosas: arreglar esa
+# busqueda, y que el punto de entrada NO caiga en un rango declarado como datos.
+# Lo segundo lo comprueba ahora un test, asi que no se puede colar otra vez.

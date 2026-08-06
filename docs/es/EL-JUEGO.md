@@ -52,8 +52,30 @@ Leídos del binario, tal cual están:
 - El menú: `JOYSTICK`, `TECLADO`, `REDEFINIR TECLAS`, `JUGAR`.
 - La tabla de récords viene de fábrica con nombres de la casa: `JAVIER 100000`,
   `JUAN C 080000`, `MARTA 060000`, `MARIA 050000`, `TOPO 030000`, `SOFT 020000`.
-- Los créditos: `MUSICA COMPUESTA POR GOMINOLAS` y `BASADO EN UNA IDEA ORIGINAL
-  DE JOSE MANUEL MUÑOZ`.
+- Y los créditos, que son lo más interesante de todo el bloque de texto,
+  porque contestan la pregunta de fondo de este desensamblado: **quién hizo la
+  versión de MSX**. Los autores de la versión de ZX Spectrum avisan en su propio
+  repositorio de que ellos no la hicieron, y aquí está el nombre, en el binario:
+
+  ```
+  CONVERSION POR
+  CARLOS ARIAS
+  GRAFICOS
+  JUAN CARLOS Y JAVIER AREVALO
+  ...ADEMAS DE...
+  JULIO MARTIN
+  MUSICA COMPUESTA POR
+  GOMINOLAS
+  BASADO  EN
+  UNA IDEA  ORIGINAL
+  JOSE MANUEL  MU&OZ
+  TOPO SOFT
+  ```
+
+  Los gráficos siguen siendo de los hermanos Arévalo, los mismos de la versión
+  original, lo que encaja con que el dibujo se trajera tal cual. La conversión
+  del código, en cambio, la firma Carlos Arias. Ese `&` de `MU&OZ` no es una
+  errata de la transcripción: es cómo la tipografía del juego codifica la eñe.
 - Y el aviso de que viene lo bueno, justo antes de la segunda carga:
   `HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN
   NO HA LLEGADO`.

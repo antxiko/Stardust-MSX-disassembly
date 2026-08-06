@@ -291,13 +291,30 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
         self.assertEqual(portada().TOTAL,
                          sum(MODULOS.values()) + DESCRIPTOR + BASIC)
 
-    @sin_trazado
-    def test_las_rutinas_identificadas_son_las_etiquetas_del_trazado(self):
-        etiquetas = sum(len(trazado(m)["entries"]) for m in MODULOS)
+    def test_las_rutinas_identificadas_son_las_declaradas_a_mano(self):
+        """Rutinas identificadas = las que alguien ha nombrado, no las etiquetas.
+
+        Esta cifra estuvo publicada como 1956, que era el numero de ETIQUETAS
+        del trazador: todo destino de salto o llamada, incluidos los saltos
+        internos de una misma rutina. En un tramo de 124 bytes hay cuatro. Una
+        rutina identificada es otra cosa: la que aparece en un fichero .entries
+        porque alguien ha averiguado que esta ahi y por que.
+        """
+        declaradas = 0
+        for m in MODULOS:
+            with open(os.path.join(SRC, m + ".entries"), encoding="utf-8") as f:
+                for linea in f:
+                    if re.match(r"0x[0-9A-Fa-f]{4}\s", linea.strip()):
+                        declaradas += 1
         self.assertEqual(self.numero(self.cifra("es", "rutinas identificadas")),
-                         etiquetas)
+                         declaradas)
         self.assertEqual(self.numero(self.cifra("en", "routines identified")),
-                         etiquetas)
+                         declaradas)
+        # Y tiene que ser MUY menor que el numero de etiquetas, o alguien ha
+        # vuelto a confundir las dos cosas.
+        if all(hay(WORK, m + ".trace.json") for m in MODULOS):
+            etiquetas = sum(len(trazado(m)["entries"]) for m in MODULOS)
+            self.assertLess(declaradas, etiquetas / 2)
 
     def test_los_bytes_sin_identificar_son_la_suma_de_sus_rangos(self):
         """La cifra publicada tiene que salir de sumar los rangos declarados."""
@@ -347,12 +364,12 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
 
     @sin_trazado
     def test_los_saltos_indirectos_publicados_son_los_del_trazado(self):
-        """Diecinueve `jp (hl)` ciegos, y solo tres con destino conocido."""
+        """Cinco `jp (hl)` ciegos, cuatro de ellos con destino conocido."""
         ciegos = {m: len(trazado(m)["blind"]) for m in MODULOS}
-        self.assertEqual(ciegos["juego"], 17)
+        self.assertEqual(ciegos["juego"], 3)
         self.assertEqual(ciegos["parte2"], 2)
         total = sum(ciegos.values())
-        self.assertEqual(total, 19)
+        self.assertEqual(total, 5)
 
         # Los resueltos son los despachadores cuyos destinos se anotaron
         # jugando; cada entrada dice de cual viene.
@@ -367,16 +384,79 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
                         despachadores.add(m.group(1).upper())
         self.assertEqual(despachadores, {"CB99", "D6B8", "C544"})
 
-        palabra = {19: "diecinueve", 17: "diecisiete", 16: "dieciséis",
-                   3: "tres", 2: "dos"}
+        palabra = {5: "cinco", 4: "cuatro", 3: "tres", 2: "dos", 1: "uno"}
         for pagina in (os.path.join(DOCS, "LO-QUE-FALTA.md"),
                        os.path.join(DOCS, "es", "LO-QUE-FALTA.md")):
             with open(pagina, encoding="utf-8") as f:
                 texto = f.read()
-            for n in (total, ciegos["juego"], total - len(despachadores),
-                      len(despachadores)):
+            # el total, los del bloque del juego, y cuantos quedan sin resolver
+            for n in (total, ciegos["juego"], total - len(despachadores) - 1):
                 self.assertIn(palabra[n], texto,
                               f"{pagina} no dice '{palabra[n]}' ({n})")
+
+
+class TestLaCoherenciaDelTrazado(unittest.TestCase):
+    """La contradiccion que costo republicar el proyecto entero.
+
+    41 de los 114 puntos de entrada del bloque del juego caian dentro de rangos
+    que el propio proyecto declaraba como graficos. El trazador entraba a
+    desensamblar dibujos y la cobertura pasaba de 24,6 % a 61,6 %, con todo lo
+    demas en verde: el binario reensambla igual porque son los mismos bytes.
+    """
+
+    @staticmethod
+    def zonas_de_datos(modulo):
+        z = []
+        rutas = [(os.path.join(SRC, modulo + ".notes"),
+                  r"^D\s+0x([0-9A-Fa-f]+)\s+0x([0-9A-Fa-f]+)\s+(.*)$"),
+                 (os.path.join(SRC, modulo + ".nocode"),
+                  r"^0x([0-9A-Fa-f]+)\s+0x([0-9A-Fa-f]+)\s+(.*)$")]
+        for ruta, patron in rutas:
+            if not os.path.exists(ruta):
+                continue
+            with open(ruta, encoding="utf-8") as f:
+                for linea in f:
+                    if linea.lstrip().startswith("#"):
+                        continue
+                    m = re.match(patron, linea.strip())
+                    if m:
+                        z.append((int(m.group(1), 16), int(m.group(2), 16),
+                                  m.group(3).strip()))
+        return z
+
+    @staticmethod
+    def entradas(modulo):
+        e = []
+        with open(os.path.join(SRC, modulo + ".entries"), encoding="utf-8") as f:
+            for linea in f:
+                if linea.lstrip().startswith("#"):
+                    continue
+                m = re.match(r"0x([0-9A-Fa-f]{4})\s+(\S+)", linea.strip())
+                if m:
+                    e.append((int(m.group(1), 16), m.group(2)))
+        return e
+
+    def test_ningun_punto_de_entrada_cae_dentro_de_datos(self):
+        for modulo in MODULOS:
+            if not os.path.exists(os.path.join(SRC, modulo + ".entries")):
+                continue
+            zonas = self.zonas_de_datos(modulo)
+            for a, nombre in self.entradas(modulo):
+                for ini, fin, texto in zonas:
+                    self.assertFalse(
+                        ini <= a < fin,
+                        f"{modulo}: la entrada 0x{a:04X} ({nombre}) cae dentro "
+                        f"de 0x{ini:04X}-0x{fin:04X} «{texto[:40]}». O sobra la "
+                        f"entrada, o sobra el rango: las dos no pueden ser.")
+
+    def test_los_graficos_estan_declarados_como_no_codigo(self):
+        """Faltaban en el .nocode, y esa ausencia es lo que dejo pasar el fallo."""
+        with open(os.path.join(SRC, "juego.nocode"), encoding="utf-8") as f:
+            texto = f.read()
+        for ini, fin in ((0x6DE0, 0xA560), (0xA560, 0xBA20),
+                         (0x6000, 0x61D8), (0x69A8, 0x6DE0)):
+            self.assertIn(f"0x{ini:04X} 0x{fin:04X}", texto,
+                          f"el rango 0x{ini:04X}-0x{fin:04X} no esta en el .nocode")
 
 
 if __name__ == "__main__":

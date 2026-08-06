@@ -93,6 +93,14 @@ work/topo.trace.json: tools/z80trace.py src/topo.entries extracted/.stamp
 
 sanity: work/juego.trace.json work/topo.trace.json
 	@echo "=================================================================="
+	@echo " Coherencia: ningun punto de entrada dentro de una zona de datos"
+	@echo "=================================================================="
+	@python3 tools/check_entradas.py src/juego.entries src/juego.notes src/juego.nocode
+	@python3 tools/check_entradas.py src/parte2.entries src/parte2.notes
+	@python3 tools/check_entradas.py src/pre.entries src/pre.notes
+	@python3 tools/check_entradas.py src/loader.entries src/loader.notes
+	@echo ""
+	@echo "=================================================================="
 	@echo " Sanidad del trazado: las zonas de datos no pueden salir como codigo"
 	@echo "=================================================================="
 	python3 tools/check_trace.py work/juego.trace.json src/juego.nocode
