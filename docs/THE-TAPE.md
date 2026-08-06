@@ -72,23 +72,43 @@ until the loader maps RAM over it.
 
 ## How much came across from the Spectrum
 
-There was a table here with byte-for-byte match percentages against the ZX
-Spectrum binary. **It has been withdrawn**, and it is worth explaining why
-rather than quietly deleting it.
+There was a table of percentages here that had to be withdrawn, because the tool
+producing them was unsound: it located each section of the other binary by its
+first 32 bytes and kept the **first** match, without requiring that match to be
+unique or the resulting offset to agree with the rest. Since both versions share
+the artwork, those needles landed inside the tileset.
 
-It was produced by `tools/coteja_spectrum.py`, which located each section of the
-other binary by taking its first 32 bytes and searching for them with a `find`:
-it kept the **first** match, without checking that it was the only one or that
-the resulting offset agreed with the other sections. Since both versions share a
-good deal of the artwork, those needles landed inside the tileset — and out of
-that came both the percentages and a batch of routine names pinned to addresses
-that hold graphics.
+Rewritten, the tool no longer searches section by section: it **aligns the two
+binaries whole**. It indexes the windows of the Spectrum binary, counts which
+offsets keep coming up, and from the dominant ones extracts the maximal runs of
+identical bytes. Every stretch it calls shared comes with its evidence: where it
+starts in each binary, how long it is, and at what offset.
 
-What does stand up without that tool, because it is read from the MSX binary
-itself: the loader is **MSX code from end to end** —it has to map RAM into the
-pages and talk to the sound chip and to the tape motor port, things that on the
-Spectrum either don't exist or live somewhere else— and the loading screen is
-signed by Cano, so it belongs to this version.
+And what comes out reframes how you picture this conversion:
 
-When the search is fixed, and made to require a unique match and a consistent
-offset, the table will come back with figures that can be defended.
+```
+25,015 bytes identical to the Spectrum      53.6% of the block
+   of those, CODE:       81 bytes            0.3%
+   of those, DATA:   24,934 bytes           99.7%
+```
+
+**The code was not shared.** The artwork and the data were carried across byte
+for byte —and to the same address, at offset zero: the graphics occupy
+0x6037–0xA55F and 0xA561–0xBD84 on both machines— and the code was rewritten.
+The only two stretches of code that do match, 55 and 24 bytes, are unrolled runs
+of `adc hl,hl`: they come out identical because they are the same instruction
+repeated many times, not because anyone copied them.
+
+That fits what the game's own credits screen says, crediting the conversion to
+Carlos Arias while the graphics stay with the Arévalo brothers, the same as the
+original.
+
+Of the names in the Spectrum control file, **20 out of 138** are backed by
+identical bytes. Among them the data for the seven zones, the tile geometry
+—"111 tiles at 4x32 bytes per tile", exactly what had been measured here— and
+the `DEMO` message, right where it had been found by searching for the string.
+
+About the **on-foot part** the cross-check can say nothing, and not because of
+the tool: the authors of the Spectrum disassembly warn in their README that "the
+entire on-foot second stage of the game also fell outside the scope". They did
+not disassemble it, and it is not in the snapshot being compared against.

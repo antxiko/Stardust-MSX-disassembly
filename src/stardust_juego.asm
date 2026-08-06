@@ -130,7 +130,7 @@ lef00h:	equ 0x0ef00
 ;   0x6de0..0xa560  (14208 bytes)
 ; DATOS sprites:: 83 de 16x16 con mascara, 64 bytes cada uno
 ;   0xa560..0xba20  (5312 bytes)
-; DATOS datos: sin clasificar (183 B; racha 3.53, entropia 3.20, 18 valores: pocos valores para ser un dibujo; parece tabla)
+; DATOS la: DEMO: los mandos grabados, un byte por fotograma
 ;   0xba20..0xbad7  (183 bytes)
 ; DATOS colores: (SCREEN 2) (8 B; racha 2.00, entropia 1.30, 3 valores, el nibble bajo es 0xA en el 88%)
 ;   0xbad7..0xbadf  (8 bytes)

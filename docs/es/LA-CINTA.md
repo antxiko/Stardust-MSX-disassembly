@@ -65,23 +65,44 @@ que se pisan se contarían mal.
 
 ## Cuánto se trajo del Spectrum
 
-Aquí había un cuadro con porcentajes de coincidencia byte a byte contra el
-binario de la versión de Spectrum. **Se ha retirado**, y conviene explicar por
-qué en vez de borrarlo sin más.
+Aquí hubo un cuadro de porcentajes que hubo que retirar, porque la herramienta
+que los calculaba estaba rota: localizaba cada sección del otro binario por sus
+primeros 32 bytes y se quedaba con la **primera** coincidencia, sin exigir que
+fuera única ni que el desplazamiento encajara con el del resto. Como las dos
+versiones comparten el dibujo, esas agujas caían dentro de la tilería.
 
-Los producía `tools/coteja_spectrum.py`, que localizaba cada sección del otro
-binario cogiendo sus primeros 32 bytes y buscándolos con un `find`: se quedaba
-con la **primera** coincidencia, sin comprobar que fuera la única ni que el
-desplazamiento resultante encajara con el del resto de secciones. Como las dos
-versiones comparten buena parte del dibujo, esas agujas caían dentro de la
-tilería, y de ahí salieron tanto los porcentajes como una tanda de nombres de
-rutina colocados en direcciones que son gráficos.
+Reescrita, la herramienta ya no busca sección por sección: **alinea los dos
+binarios enteros**. Indexa las ventanas del binario de Spectrum, cuenta qué
+desplazamientos aparecen una y otra vez, y con los dominantes extrae las rachas
+máximas de bytes idénticos. Cada tramo que se da por común trae su prueba: dónde
+empieza en cada binario, cuánto mide y con qué desplazamiento.
 
-Lo que sí se sostiene sin esa herramienta, porque se lee en el propio binario de
-MSX: el cargador es **código de MSX de cabo a rabo** —tiene que mapear RAM en
-las páginas y hablar con el chip de sonido y con el puerto del motor de la
-cinta, cosas que en el Spectrum no existen o están en otro sitio— y la pantalla
-de carga va firmada por Cano, o sea que es de esta versión.
+Y lo que sale reformula la idea que uno se hace de esta conversión:
 
-Cuando la búsqueda esté arreglada y exija coincidencia única y desplazamiento
-coherente, el cuadro volverá con cifras que se puedan defender.
+```
+25.015 bytes idénticos al Spectrum      53,6 % del bloque
+   de esos, CÓDIGO:      81 bytes        0,3 %
+   de esos, DATOS:   24.934 bytes       99,7 %
+```
+
+**El código no se compartió.** Se trajeron el dibujo y los datos byte a byte
+—y en la misma dirección, con desplazamiento cero: los gráficos ocupan
+0x6037–0xA55F y 0xA561–0xBD84 en las dos máquinas— y el código se reescribió.
+Los dos únicos tramos de código que coinciden, de 55 y 24 bytes, son tiras
+desenrolladas de `adc hl,hl`: salen iguales porque son la misma instrucción
+repetida muchas veces, no porque nadie las copiara.
+
+Eso encaja con lo que dice la propia pantalla de créditos, que firma la
+conversión Carlos Arias mientras los gráficos siguen siendo de los hermanos
+Arévalo, los mismos del original.
+
+De los nombres del fichero de control del Spectrum, **20 de 138** quedan
+respaldados por bytes idénticos. Entre ellos los datos de las siete zonas, la
+geometría de los tiles —«111 tiles at 4x32 bytes per tile», que es exactamente
+la que habíamos medido aquí— y el mensaje `DEMO`, justo donde lo habíamos
+encontrado buscando la cadena.
+
+De la **parte de a pie** el cotejo no puede decir nada, y no por la herramienta:
+los autores del desensamblado de Spectrum avisan en su README de que *«the
+entire on-foot second stage of the game also fell outside the scope»*. No la
+desensamblaron, y no está en la instantánea con la que se compara.

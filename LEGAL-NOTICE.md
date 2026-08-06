@@ -52,8 +52,11 @@ agree with the rest. Because both versions share the artwork, those needles
 landed inside the tileset, and a batch of routine names ended up attached to
 addresses that hold graphics.
 
-**What came from that cross-check has been removed**, and nothing from it will
-come back until the search is fixed. That took two passes: the entry points
+**The tool has since been rewritten.** It no longer searches section by section:
+it aligns both binaries whole, and only adopts a name when the section falls
+entirely inside a run of bytes verified identical. Under that rule 20 of the
+control file's 138 sections stand up. Everything the old tool had produced was
+removed first. That took two passes: the entry points
 first, and later 28 data ranges that had survived in another file still carrying
 their Spectrum names —"Starfield vertical positions", "Keyboard map", "High
 Score table", and one called "Split text to prevent bug in SkoolKit", after the

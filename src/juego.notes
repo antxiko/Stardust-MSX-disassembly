@@ -168,7 +168,13 @@ D 0x5051 0x511B datos sin clasificar (202 B; racha 3.01, entropia 5.36, 84 valor
 D 0x512F 0x514A datos sin clasificar (27 B; racha 3.48, entropia 3.96, 19 valores: pocos valores para ser un dibujo; parece tabla)
 D 0x5151 0x5300 datos sin clasificar (431 B; racha 2.51, entropia 4.04, 48 valores)
 D 0x54EA 0x5640 datos sin clasificar (342 B; racha 1.92, entropia 3.29, 13 valores, el nibble bajo es 0x1 en el 86%; parece colores (SCREEN 2))
-D 0xBA20 0xBAD7 datos sin clasificar (183 B; racha 3.53, entropia 3.20, 18 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xBA20 0xBAD7 la DEMO: los mandos grabados, un byte por fotograma
+#   Del cotejo con el Spectrum, y respaldado por 183 bytes identicos: el
+#   fichero de control de alli llama a esto "Data for player input in the
+#   demo, one byte per frame". Encaja con lo que se ve: rachas largas del
+#   mismo valor (00, 02...) que son el mando quieto durante varios fotogramas.
+#   O sea que la demo no es una inteligencia artificial jugando: es una
+#   partida grabada que se reproduce.
 D 0xBADF 0xBB4E datos sin clasificar (111 B; racha 3.07, entropia 3.21, 12 valores: pocos valores para ser un dibujo; parece tabla)
 D 0xBB53 0xBB73 datos sin clasificar (32 B; racha 2.00, entropia 2.98, 10 valores: pocos valores para ser un dibujo; parece tabla)
 D 0xBB7C 0xBB7E datos sin clasificar (2 B; 2 bytes)
@@ -327,3 +333,30 @@ D 0xDE03 0xDE18 tabla de zonas: 7 entradas de (puntero, color de SCREEN 2)
 #   Los colores ciclan 0xA1, 0xF1, 0x71 -tinta 10, 15 y 7 sobre fondo negro-.
 D 0xDE18 0xDE9A diccionario de frases del descompresor de niveles
 #   Cada frase: un byte de longitud -incluyendose- y luego sus tokens.
+
+# --- LO QUE DICE EL COTEJO CON EL SPECTRUM, YA CON EL BUSCADOR ARREGLADO ------
+#
+# El buscador viejo cogia los primeros 32 bytes de cada seccion y se quedaba con
+# la PRIMERA coincidencia. El nuevo alinea los dos binarios enteros: indexa las
+# ventanas del de Spectrum, histograma los desplazamientos y extrae las rachas
+# maximas de bytes identicos. Cada tramo trae su prueba.
+#
+# El resultado cambia la tesis del proyecto, asi que conviene tenerlo escrito:
+#
+#     25015 bytes identicos al Spectrum  (53,6 % del bloque)
+#     de esos, CODIGO:  81 bytes  ->  0,3 %
+#     de esos, DATOS:   24934     ->  99,7 %
+#
+# O sea que NO se compartio el codigo. Se trajeron el dibujo y los datos byte a
+# byte -y en la MISMA direccion, con desplazamiento cero- y el codigo se
+# reescribio. Los dos unicos tramos de codigo que coinciden, de 55 y 24 bytes,
+# son tiras desenrolladas de `adc hl,hl`: salen iguales porque son la misma
+# instruccion repetida N veces, no porque nadie las copiara.
+#
+# Por eso el cotejo NO sirve para nombrar el codigo que no alcanzamos: ese
+# codigo no existe en el otro binario.
+#
+# Los desplazamientos que salen, y lo que significan:
+#     +0        los graficos: 0x6037-0xA55F y 0xA561-0xBD84, 23885 bytes
+#     -894      el bloque de textos y el diccionario de niveles
+#     +124      unas tablas alrededor de 0xC9A4
