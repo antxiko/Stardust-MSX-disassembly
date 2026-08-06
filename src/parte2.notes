@@ -5,15 +5,28 @@
 # y la etiqueta lleva detras la medida de la que sale: la racha media de bits
 # iguales, la entropia y cuantos valores distintos usa. Lo que no se ha podido
 # clasificar con confianza pone "datos sin clasificar", que es lo que hay.
+D 0x61D0 0x621C tabla de punteros a los graficos (76 B): palabras little-endian
+#   descendiendo de dos en dos -78BA, 78B8, 78B6...- de las que el 76 % apunta
+#   dentro de 0x682E-0x7C78, declarado graficos. 24 de las 37 diferencias entre
+#   palabras consecutivas son exactamente 2. Es la misma tabla que sigue debajo,
+#   que estaba cortada demasiado tarde.
 D 0x621C 0x6247 tabla (43 B; racha 2.21, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
 D 0x625E 0x6644 graficos (998 B; racha 3.85, entropia 5.55, 199 valores: rachas mas largas que el azar)
 D 0x6788 0x6791 tabla (9 B; racha 4.00, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
 D 0x682E 0x7C78 graficos (5194 B; racha 3.08, entropia 6.49, 245 valores: rachas mas largas que el azar)
 D 0x7C9D 0x8A78 graficos (3547 B; racha 3.25, entropia 5.40, 231 valores: rachas mas largas que el azar)
-D 0x984E 0xA2D2 graficos tramados (2692 B; racha 1.96, entropia 5.26, 156 valores: rachas cortas y muchos valores, firma del damero)
+D 0x8A78 0x984E graficos (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
+#   tramado aun que el rango de aqui abajo). Se contaban como CODIGO: el trazador
+#   entraba por el `jp nz,8A78` fantasma de 0x6209, leido a caballo entre dos
+#   entradas de la tabla de punteros. Una partida completa hasta el final del
+#   juego no ejecuto ni una de sus 3542 direcciones.
+D 0x984E 0xA262 graficos tramados (2580 B; racha 1.96, entropia 5.26, 156 valores: rachas cortas y muchos valores, firma del damero)
+#   OJO: este rango llegaba hasta 0xA2D2 y se tragaba el ARRANQUE del programa,
+#   que esta en 0xA279. Acaba antes: de 0xA262 a 0xA278 hay relleno.
+D 0xA262 0xA279 relleno antes del arranque (23 B: ceros y un 0x10)
 D 0xA5F0 0xA5F1 relleno o resto (1 B; 1 bytes)
-D 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)
-D 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)
+# 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
+# 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 D 0xACA2 0xAD31 tabla (143 B; racha 17.07, entropia 1.59, 14 valores: pocos valores para ser un dibujo)
 D 0xB13E 0xB140 relleno o resto (2 B; 2 bytes)
 # 0xB2A6-0xB3AB ESTUVO AQUI como 262 B "sin clasificar" y son CUATRO RUTINAS.
@@ -70,7 +83,24 @@ D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valore
 # ejecutaban, se retiraron y se declararon como puntos de entrada. Estos son los
 # trozos que quedaron a los lados: el trazador no llega a ellos, y la partida
 # tampoco paso por ahi. Se etiquetan conservador, como todo lo que no se sabe.
-D 0xC788 0xC794 tabla (12 B; racha 2.40, entropia 3.42, 11 valores: pocos valores para ser un dibujo)
+# 0xC788 0xC794 tabla (12 B; racha 2.40, entropia 3.42, 11 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 D 0xC864 0xC865 relleno o resto (1 B; 1 bytes)
-D 0xC880 0xC891 tabla (17 B; racha 2.12, entropia 3.97, 16 valores: pocos valores para ser un dibujo)
+# 0xC880 0xC891 tabla (17 B; racha 2.12, entropia 3.97, 16 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 D 0xCC3D 0xCC3E relleno o resto (1 B; 1 bytes)
+
+# --- LO QUE QUEDO SUELTO AL CORREGIR EL ARRANQUE -----------------------------
+#
+# Estos rangos figuraban como codigo, pero solo porque el trazador llegaba a
+# ellos por la cadena que arrancaba en 0x61D0, que era una suposicion y estaba
+# mal. Desde el arranque bueno (0xA279) el flujo no pasa por aqui, y la partida
+# completa de la fase a pie tampoco ejecuto NI UNA de sus direcciones.
+#
+# Se etiquetan midiendo, con tools/clasifica_huecos.py, y la etiqueta lleva
+# detras la medida de la que sale. Los cuatro primeros caen ademas ENTRE rangos
+# de graficos ya declarados, que es donde cabe esperarlos.
+D 0xC001 0xC3DC graficos (987 B; racha 10.91, entropia 1.35, 29 valores: rachas mas largas que el azar)
+D 0x6644 0x6788 datos sin clasificar (324 B; racha 2.83, entropia 6.28, 132 valores)
+D 0x6791 0x682E datos sin clasificar (157 B; racha 2.89, entropia 5.43, 68 valores)
+D 0x7C78 0x7C9D graficos (37 B; racha 4.35, entropia 4.11, 24 valores: rachas mas largas que el azar)
+D 0x6247 0x625E tabla (23 B; racha 1.92, entropia 3.08, 14 valores: pocos valores para ser un dibujo)
+D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)

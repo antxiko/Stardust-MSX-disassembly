@@ -9,3 +9,22 @@
 0xC459 0xC469   variables: 17 bytes (16 llegan a cero y 0xC468 a 0x10)
 0xC46A 0xC46D   4 bytes sin clasificar, entre las variables y el epilogo
 0xD068 0xD116   variables a cero: 175 bytes
+
+# La TABLA DE PUNTEROS del principio del bloque. Son palabras little-endian
+# descendiendo de dos en dos -78BA, 78B8, 78B6, 78B4...- y el 76 % de ellas
+# apunta dentro de los graficos de 0x682E-0x7C78. Continua en la tabla que ya
+# estaba declarada en 0x621C: es la misma cosa, cortada demasiado tarde.
+0x61D0 0x621B   tabla de punteros a los graficos: 76 bytes
+
+# GRAFICOS que se contaban como codigo, y de largo el error mas gordo del
+# bloque. El trazador entraba aqui por el `jp nz,8A78` fantasma de 0x6209, leido
+# a caballo entre dos entradas de la tabla de arriba.
+# Tres pruebas que no dependen entre si:
+#   - el perfil es el del damero: racha 1.51 y 153 valores, mas tramado aun que
+#     el rango de al lado que ya estaba declarado como tal (1.96);
+#   - esta metido entre dos rangos de graficos, 0x7C9D-0x8A77 y 0x984E en adelante;
+#   - una partida completa hasta el final del juego no ejecuto NI UNA de sus
+#     3542 direcciones.
+# Y su ultimo byte, el 0xE9 de 0x984D, es el que figuraba como el ultimo salto
+# indirecto sin resolver del proyecto. No habia que resolverlo: no es un salto.
+0x8A78 0x984D   graficos: 3542 bytes

@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from estilo_web import ESTILO                      # noqa: E402
 
 TOTAL = 93861
-SIN_IDENTIFICAR = 2868
+SIN_IDENTIFICAR = 3349
 
 TXT = {
     "es": dict(
@@ -31,7 +31,7 @@ TXT = {
               "el presupuesto cierre al 100 % quiere decir que cada byte de la "
               "cinta tiene dueño —o es código que el trazador alcanza de verdad, "
               "o cae en un rango con nombre y medida—, <b>no</b> que se sepa para "
-              "qué sirve cada uno. Quedan 2868 bytes sin identificar y buena "
+              "qué sirve cada uno. Quedan 3349 bytes sin identificar y buena "
               "parte de las rutinas sin comentar. Está contado con cifras en "
               "<a href='LO-QUE-FALTA.html'>Lo que falta</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
@@ -45,9 +45,9 @@ TXT = {
         otro=("../", "In English"),
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
-        cifras=[("100%", "del binario con dueño"), ("136", "rutinas identificadas"),
-                ("7+1", "zonas de naves, y una a pie"), ("28.209", "bytes de código"),
-                ("65.652", "bytes de datos"), ("2.868", "bytes sin identificar")],
+        cifras=[("100%", "del binario con dueño"), ("143", "rutinas identificadas"),
+                ("7+1", "zonas de naves, y una a pie"), ("23.224", "bytes de código"),
+                ("70.637", "bytes de datos"), ("3.349", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -71,7 +71,7 @@ TXT = {
         aviso="<b>This is not finished, and work continues.</b> The budget closing "
               "at 100% means every byte on the tape has an owner —either code the "
               "tracer genuinely reaches, or a range with a name and a "
-              "measurement— <b>not</b> that its purpose is known. 2868 bytes "
+              "measurement— <b>not</b> that its purpose is known. 3349 bytes "
               "remain unidentified and much of the code is still uncommented. It "
               "is set out with figures in "
               "<a href='WHATS-MISSING.html'>What's missing</a>.",
@@ -87,9 +87,9 @@ TXT = {
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
-        cifras=[("100%", "of the binary owned"), ("136", "routines identified"),
-                ("7+1", "ship zones, plus one on foot"), ("28,209", "bytes of code"),
-                ("65,652", "bytes of data"), ("2,868", "bytes unidentified")],
+        cifras=[("100%", "of the binary owned"), ("143", "routines identified"),
+                ("7+1", "ship zones, plus one on foot"), ("23,224", "bytes of code"),
+                ("70,637", "bytes of data"), ("3,349", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "
@@ -177,7 +177,7 @@ HALLAZGOS = {
          "1444</b>: la limpieza era correcta. Y las que faltaban dejaron de ser "
          "una corazonada para pasar a ser código con su cuenta de muestras al "
          "lado. La cobertura real del bloque es del <b>25,7 %</b>, y la de la "
-         "segunda parte subió al <b>51,7 %</b> al aparecer ahí sus dos rutinas "
+         "segunda parte subió al <b>35,0 %</b> al aparecer ahí sus dos rutinas "
          "más trabajadoras, que estaban clasificadas como tablas de datos.</p>"),
     ],
     "en": [
@@ -246,7 +246,7 @@ HALLAZGOS = {
          "the game executed the tracer already reached 1444</b>: the cleanup "
          "was right. And the ones it missed stopped being a hunch and became "
          "code with a sample count beside it. The block's real coverage is "
-         "<b>25.7%</b>, and the second part's rose to <b>51.7%</b> when its two "
+         "<b>25.7%</b>, and the second part's rose to <b>35.0%</b> when its two "
          "hardest-working routines turned up there, both of which had been "
          "classified as data tables.</p>"),
     ],

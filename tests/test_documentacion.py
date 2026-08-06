@@ -379,12 +379,19 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
 
     @sin_trazado
     def test_los_saltos_indirectos_publicados_son_los_del_trazado(self):
-        """Cinco `jp (hl)` ciegos, cuatro de ellos con destino conocido."""
+        """Cuatro `jp (hl)` ciegos, y los cuatro con destino conocido.
+
+        Fueron cinco. El quinto, en 0x984D, nunca se disparo -ni en 300 s de
+        arnes, ni en el replay de 38 minutos, ni en una partida jugada hasta el
+        final del juego- y resulto no ser un salto: es el byte 0xE9 de un dibujo
+        tramado, al que el trazador llegaba desde un punto de entrada equivocado.
+        Al declarar esos graficos como datos desaparecio solo.
+        """
         ciegos = {m: len(trazado(m)["blind"]) for m in MODULOS}
         self.assertEqual(ciegos["juego"], 3)
-        self.assertEqual(ciegos["parte2"], 2)
+        self.assertEqual(ciegos["parte2"], 1)
         total = sum(ciegos.values())
-        self.assertEqual(total, 5)
+        self.assertEqual(total, 4)
 
         # Los resueltos son los despachadores cuyos destinos se anotaron
         # jugando; cada entrada dice de cual viene.
@@ -401,14 +408,22 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
 
         palabras = {"es": {5: "cinco", 4: "cuatro", 3: "tres", 2: "dos", 1: "uno"},
                     "en": {5: "five", 4: "four", 3: "three", 2: "two", 1: "one"}}
+        # Los resueltos son los tres despachadores mas el interprete de 0xE230.
+        sin_resolver = total - len(despachadores) - 1
+        self.assertEqual(sin_resolver, 0, "ha vuelto a aparecer un salto ciego"
+                                          " sin destino conocido")
         for pagina, idioma in ((os.path.join(DOCS, "WHATS-MISSING.md"), "en"),
                                (os.path.join(DOCS, "es", "LO-QUE-FALTA.md"), "es")):
             with open(pagina, encoding="utf-8") as f:
                 texto = f.read().lower()
-            # el total, los del bloque del juego, y cuantos quedan sin resolver
-            for n in (total, ciegos["juego"], total - len(despachadores) - 1):
+            # el total y los del bloque del juego, dichos con todas las letras
+            for n in (total, ciegos["juego"]):
                 p = palabras[idioma][n]
                 self.assertIn(p, texto, f"{pagina} no dice '{p}' ({n})")
+            # y que la pagina diga que no queda ninguno pendiente
+            cierre = "no queda ninguno" if idioma == "es" else "none is left"
+            self.assertIn(cierre, texto,
+                          f"{pagina} no dice que no quede ningun salto ciego")
 
 
 class TestLaCoherenciaDelTrazado(unittest.TestCase):

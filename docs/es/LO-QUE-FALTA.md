@@ -26,7 +26,7 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**2868 bytes, el 3,1 % de la cinta**, están declarados como «datos sin
+**3349 bytes, el 3,6 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
@@ -64,7 +64,46 @@ lados.
 declarado en 0xDAD9, que es **la S de «HAS CONSEGUIDO»**: cortaba una cadena por
 la mitad. Empieza en 0xDAC5, justo después del `ret` de 0xDAC4.
 
-### En la otra dirección: 367 bytes que se contaban como código y no lo son
+### El arranque de la fase a pie estaba mal, y arrastraba 3618 bytes
+
+Éste es el error más grande que ha tenido el bloque de la segunda parte, y lo
+destapó una partida jugada hasta el final del juego.
+
+El fichero de puntos de entrada decía, sin disimulo: *«0x61D0 — el primer byte
+del bloque, a falta de saber el arranque real»*. Era **una suposición**: 0x61D0
+es donde el bloque se *carga*, no donde empieza a ejecutarse. Y de esa
+suposición colgaba todo lo demás:
+
+- a 38 bytes hay una **tabla de punteros** —palabras descendiendo de dos en dos,
+  el 76 % apuntando dentro de los gráficos— que el trazador leía como código;
+- a 57 bytes se topaba con un `C2 78 8A` leído a caballo entre dos entradas de
+  esa tabla, o sea un `jp nz,8A78`, **y se metía dentro del dibujo**;
+- y desde ahí desensamblaba **3542 bytes de gráficos** como instrucciones, con
+  el `0xE9` del final figurando como el último salto ciego del proyecto.
+
+El arranque de verdad se encuentra siguiendo al cargador. En el bloque de naves,
+en cuanto la carga de cinta termina bien:
+
+```
+f7b0: ld a,001h / ld (0a529h),a
+f7b5: jp 0a279h            <- aquí empieza la segunda parte
+```
+
+Y **0xA279 desensambla a un arranque de programa de manual**: corta las
+interrupciones, se monta su propia pila con `ld sp,05b32h`, programa el chip
+gráfico y escribe `JP 0xC46E` en 0xFD9F, que es **H.TIMI, el gancho de
+interrupción del MSX**. La dirección que instala ahí, 0xC46E, es la misma que se
+había identificado por separado mirando la forma de su epílogo: dos caminos
+independientes que dan lo mismo.
+
+Estaba escondido, además, dentro del rango que se declaraba como gráficos: ése
+llegaba hasta 0xA2D2 y **se tragaba el arranque del programa**.
+
+Consecuencia en las cifras: la cobertura de la fase a pie baja del 51,7 % al
+35,0 %, porque desaparecen 3618 bytes que se contaban como código sin serlo. La
+cifra empeora y el trabajo mejora.
+
+### Y 367 bytes más que se contaban como código y no lo son
 
 Buscando código automodificable apareció el error contrario. **Tres bloques de
 variables estaban marcados como código**: 175 bytes en 0xED75 de la parte de
@@ -88,7 +127,7 @@ antes: la cifra de antes estaba inflada.
 
 ### Los que quedan, y una vía que ya se puede cerrar
 
-De los 2868 que siguen sin identificar, **1415 están en 0x4952-0x563F, y ahí el
+De los 3349 que siguen sin identificar, **1415 están en 0x4952-0x563F, y ahí el
 original no puede ayudar**. No por falta de haberlo intentado: en el ZX Spectrum
 esas direcciones son la **memoria de pantalla**, 6144 bytes de píxeles y 768 de
 atributos. Allí no hay juego que mirar, hay imagen.
@@ -115,7 +154,7 @@ El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
     juego de naves    25,7 %
-    parte de a pie    51,7 %
+    parte de a pie    35,0 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
 el flujo**: rutinas a las que solo se entra por saltos calculados, por tablas o
@@ -124,23 +163,33 @@ el emulador las pilló ejecutándose; de otras, no se sabe.
 
 La medida exacta de esa ceguera son los **saltos indirectos**: `jp (hl)`, donde
 el destino no está escrito en el binario sino en un registro, y el trazador se
-para porque no puede saber a dónde va. Hay **cinco**, tres en la parte de naves
-y dos en la de a pie, y salen listados en el propio trazado:
+para porque no puede saber a dónde va. Hay **cuatro**, tres en la parte de naves
+y uno en la de a pie, y salen listados en el propio trazado:
 
 ```sh
 python3 -c "import json;print(json.load(open('work/juego.trace.json'))['blind'])"
 ```
 
-De los cinco hay **cuatro resueltos**. El de 0xE230 es el despachador del
-intérprete de guiones, y su tabla de 35 punteros se lee del binario. Los otros
-tres —0xCB99 y 0xD6B8 en la parte de naves, 0xC544 en la de a pie— no se
-resolvieron leyendo código sino jugando con el emulador delante y anotando el
-destino cada vez que el salto se ejecutaba, porque las estructuras que llevan
-esos punteros vienen a 0xFF en la cinta y se rellenan jugando.
+**Los cuatro están resueltos**, y por primera vez no queda ninguno pendiente.
+El de 0xE230 es el despachador del intérprete de guiones, y su tabla de 35
+punteros se lee del binario. Los otros tres —0xCB99 y 0xD6B8 en la parte de
+naves, 0xC544 en la de a pie— no se resolvieron leyendo código sino jugando con
+el emulador delante y anotando el destino cada vez que el salto se ejecutaba,
+porque las estructuras que llevan esos punteros vienen a 0xFF en la cinta y se
+rellenan jugando.
 
-Queda **uno sin resolver**: el de 0x984D, en la segunda parte, que **no llegó a
-dispararse** en los 300 segundos de partida que se le dieron. Ni siquiera está
-confirmado que se use.
+### El quinto no existía
+
+Aquí figuraba un quinto, en 0x984D, «sin resolver» porque no se disparaba nunca.
+Ahora se sabe por qué: **no es un salto**. Es un `0xE9` dentro de un dibujo:
+
+```
+9840  A5 AA AA 17 55 69 55 0E
+9848  A5 AA AA 17 55 E9 50 0B      <- ese E9
+```
+
+No había que buscarle destino, había que retirarlo. Y detrás de él estaba el
+error más grande que ha tenido este bloque, contado en la sección siguiente.
 
 ## Lo que no se ha comprobado
 
@@ -161,14 +210,14 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-2868 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+3349 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 2868 bytes que siguen sin clasificar.** La vía del cotejo estuvo cerrada
+- **Los 3349 bytes que siguen sin clasificar.** La vía del cotejo estuvo cerrada
   mientras la herramienta buscaba cada sección con una aguja de 32 bytes y se
   quedaba con la primera coincidencia, sin exigir que fuera única ni que el
   desplazamiento encajara con el del resto: ahí se generó la contaminación. Ya
@@ -193,4 +242,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 2868 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 3349 bytes se identifiquen, esta página se hará más corta.

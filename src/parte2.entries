@@ -1,10 +1,37 @@
 # Puntos de entrada de la segunda parte del juego (org 0x61D0), la que se carga
 # al superar la zona 7 y en la que el protagonista va a pie.
 #
-# El descriptor del bloque [11] dice donde se carga (`ld ix,0x61D0`) pero NO
-# donde arranca. De momento se prueba con el principio del bloque, que es lo
-# unico que se puede afirmar sin haber visto la carga ocurrir.
-0x61D0  inicio      el primer byte del bloque (a falta de saber el arranque real)
+# EL ARRANQUE DE VERDAD ES 0xA279, y esto estuvo mal desde el principio.
+#
+# Aqui ponia 0x61D0 "a falta de saber el arranque real", que es donde se CARGA el
+# bloque, no donde empieza a ejecutarse. Y salio caro: a 38 bytes de ahi hay una
+# tabla de punteros que el trazador leia como instrucciones, y a 57 un
+# `C2 78 8A` a caballo entre dos entradas de esa tabla, o sea un `jp nz,8A78`,
+# que lo metia dentro de los graficos. De ahi desensamblaba 3542 bytes de dibujo
+# como si fueran codigo, y de ahi salia el `jp (hl)` fantasma de 0x984D que
+# figuro como el ultimo salto ciego del proyecto sin serlo.
+#
+# El arranque bueno se encuentra siguiendo al cargador: en el bloque de naves,
+# despues de que la carga de cinta termine bien,
+#
+#     f7b0: ld a,001h / ld (0a529h),a
+#     f7b5: jp 0a279h            <- aqui empieza la segunda parte
+#
+# (y ese `ld a,001h` de 0xF7B0 es el que parchea uno de los POKEs de la revista
+# Input MSX 19, en 0xF7B1: le pasa un 0 en vez de un 1 a la variable 0xA529 de
+# la segunda parte.)
+#
+# Y 0xA279 desensambla a un arranque de programa de libro:
+#     a279: di / ld sp,05b32h              <- corta interrupciones y su pila
+#     a27d: in a,(099h) ... out (099h),a   <- programa el VDP
+#     a28a: ld a,0c9h / ld (0fd9ah),a      <- RET en 0xFD9A
+#     a28f: ld a,0c3h / ld (0fd9fh),a      <- JP  en 0xFD9F
+#     a294: ld hl,0c46eh / ld (0fda0h),hl  <- ...a 0xC46E
+# 0xFD9F/0xFDA0 es H.TIMI, el gancho de interrupcion del MSX. O sea que instala
+# 0xC46E como manejador, que es EXACTAMENTE la direccion que se habia declarado
+# aqui abajo por la forma de su epilogo, llegando por otro camino. Se confirman
+# la una a la otra.
+0xA279  arranque    el arranque real: lo dice el `jp 0a279h` de 0xF7B5
 
 # --- Lo que solo se ve con la segunda parte corriendo (tools/omsx_parte2.tcl) --
 #
@@ -119,3 +146,22 @@
 # Y el `call 0c509h` arrastra la rutina de 0xC509, que recorre el otro bloque de
 # variables (`ld ix,0d068h`): otra confirmacion de que ese bloque son datos.
 0xC46E  epilogo_interrupcion   restaura los dos juegos de registros y hace ei/ret
+
+# --- CUATRO RANGOS QUE LA PARTIDA COMPLETA EJECUTO ---------------------------
+#
+# Estaban declarados como "tabla" por medida de entropia, y la partida entera
+# de la fase a pie los ejecuto de verdad. No es una corazonada: son muestras del
+# contador de programa. El de 0xAB41 es el mas llamativo, con 6082.
+#
+# Es el mismo tipo de error que ya aparecio en la parte de naves: etiquetar
+# midiendo en vez de mirando si se ejecuta.
+0xA6EE  ejec_A6EE   ejecutado en la partida (67 muestras); figuraba como tabla
+0xAB41  ejec_AB41   ejecutado en la partida (6082 muestras); figuraba como tabla
+0xC788  ejec_C788   ejecutado en la partida (8 muestras); figuraba como tabla
+0xC880  ejec_C880   ejecutado en la partida (12 muestras); figuraba como tabla
+
+# Y tres tramos mas que la partida ejecuto y a los que el trazador no llega ni
+# siquiera desde el arranque bueno. Se entra en ellos por tabla o por puntero.
+0xAA58  ejec_AA58   ejecutado en la partida (14 direcciones distintas)
+0xAB47  ejec_AB47   ejecutado en la partida (7 direcciones distintas)
+0xC78C  ejec_C78C   ejecutado en la partida (3 direcciones distintas)
