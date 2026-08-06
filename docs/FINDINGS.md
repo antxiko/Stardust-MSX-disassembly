@@ -160,11 +160,13 @@ is ordinary RAM at 0x4000. On the MSX, video memory sits behind the graphics
 chip and cannot be addressed: it has to be sent byte by byte through a port.
 
 So this version carries something the original doesn't need: a **screen buffer**
-in RAM, and a routine that dumps it. The buffer is at 0x4B40 and measures **960
-bytes, 24 wide by 40 tall**, and the size is known through two paths that agree
-without depending on each other: the code says so (`ld de,04b40h`, and 24×40 =
-960, running from 0x4B40 to 0x4EFF) and the emulator confirms it, where that
-routine made **3,252,480 writes** with the pointer reaching exactly 0x4EFF.
+in RAM, and a routine that dumps it. The buffer runs from **0x4000 to 0x4EFF:
+3,840 bytes, 24 wide by 160 tall**, and the dump moves it to VRAM in **three
+bands** —0x4000 with 56 rows, 0x4540 with 64 and 0x4B40 with 40—, one per call
+of the routine, each into its own third of SCREEN 2. The code says so (the
+three calls at 0xF3DC, contiguous and closing to the byte) and the emulator
+confirms it, where that routine made **3,252,480 writes** with the pointer
+walking exactly 0x4000-0x4EFF.
 
 **The axes went out backwards**, and it is worth telling because the error
 spread. The dump's `ld b,028h` was read as "40 columns", but it is the inner
@@ -273,6 +275,94 @@ Along the way the routine confirms where the font lives: it indexes with
 `0x5F00 + code×8`, and with the first code being 0x20 that lands on 0x6000,
 exactly where the 59 characters are. And the stride between screen lines is 24,
 the height of the column-major buffer.
+
+## One plane only, and why it looks like two
+
+Anyone who played it remembers two floors moving at different speeds, with that
+sense of depth. It got looked into properly: watching which routine writes into
+each band of the buffer, and building, frame by frame, the table of "which row
+was drawn from which address", which lets the displacement be measured by exact
+integer equality instead of by comparing images.
+
+The verdict is emphatic: **the background is a single plane**. Across four
+measurements —three moments of the on-foot stage and one of the ship stage—
+the buffer's eighteen strips (three bands by six columns) move **identically**:
++2 rows per frame walking, 0 standing still, −2 backwards, at 100 % exact
+match and with no horizontal displacement at all.
+
+The depth lives somewhere else: in the **drawing order**. Numbering every
+write into the buffer within a frame, the ship stage always produces the same
+sequence: first the whole background, then the sprites, and **after the
+sprites** one more routine (0xC77A) that paints scenery columns from its own
+tile store. It was caught doing it live: a pillar coming down, the ship
+climbing towards it, and when their destinations crossed, the pillar got
+painted on top. The ship doesn't fly *under the floor*: it flies **behind
+whatever gets repainted afterwards**.
+
+## The countdown is a tower that grows
+
+At the end of the on-foot stage there are six targets to destroy, and when the
+sixth one falls a countdown starts. It isn't digits: it is a **white tower
+gaining one pixel row every ~2 seconds**. The whole mechanism is in the
+listing: the level setup leaves a 6 at 0xBC33, every destroyed target
+decrements it, and with the counter at zero each tick paints one row
+(`ld a,07eh / out (098h),a`) and adds one to 0xBC30. The pace comes from the
+global frame counter: one tick every sixteen.
+
+```
+bbb4: cp 0a1h / jp z,0bceeh    ; at 161 rows, time's up
+```
+
+And since in the recorded game the player escaped, the ending got checked by
+**letting it run out**: the game was loaded with the tower half-built, the
+controls were disconnected, and at exactly 161 rows 0xBCEE fired: the
+destruction sequence, then straight to the high-score table. Game over, no
+congratulations. The arithmetic of the real game comes out fine-grained: the
+player escaped with about **30 seconds to spare** out of the 5.8 minutes the
+game allows.
+
+## The explosions carry a Spectrum fossil inside
+
+Both stages have a particle explosion, each with its own copy of the code. The
+ship one —when the protagonist gets shot down— seeds **64 particles** at the
+ship's position and moves them **with gravity**: the vertical speed grows one
+notch per frame, and each particle is a single pixel drawn onto the buffer.
+The happy-ending one —the flagship seen from outside— is **200 shrapnel
+particles** biased upwards, with no gravity.
+
+And in both, inside the loop that paints each particle, sits this:
+
+```
+c663: and 018h / out (0feh),a
+```
+
+**0xFE is the ZX Spectrum's border port.** On the original, every particle
+made the screen border flicker; on the MSX that port does nothing, and the
+instruction is still there, running for nothing on every particle since 1987.
+Both copies of the effect drag it along: the cleanest proof this project has
+produced that these routines came over from the original untouched.
+
+In passing: the randomness of the particles —and of the ship stage's 48-star
+background field, which is random heights drawn with the fixed pattern
+`0x18`— comes from a generator that **reads the BIOS ROM as an entropy
+table**. And the immortality POKE from the Input MSX magazine (the one that
+patches 0xC06E) acts precisely on the dispatcher that decides whether the ship
+is alive or exploding: immortality is, literally, never letting the particle
+system get called.
+
+## Why the second part loads exactly at 0x61D0
+
+The load address of the on-foot stage's block looked arbitrary until the font
+turned up. That stage's two text printers —the one for the DEMO sign and the
+menu, which paints double-height through the checkerboard, and the frame one,
+which writes straight to video memory— use the same ASCII font, indexed as
+`0x5F00 + code×8`. The font is left in place by the ship block, and the
+on-foot stage reuses it.
+
+The arithmetic closes on its own: the last character the font needs is `Y`
+(code 89), and 0x5F00 + 90×8 = **0x61D0 exactly**. The second part's block
+loads at the first free byte after the `Y` glyph: not one byte earlier, so as
+not to eat the inherited font.
 
 ## A script interpreter
 

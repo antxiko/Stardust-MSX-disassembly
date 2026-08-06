@@ -85,8 +85,9 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>That figure is deliberately low: it counts only code genuinely arrived at by following calls and jumps from a known entry point. There is more code on the tape, but until we know how it is entered it is not counted — taking it as traced is precisely the mistake that had to be undone here.</p>
 <h2 id="how-the-screen-gets-drawn">How the screen gets drawn</h2>
 <p>This is the big difference from the original. The Spectrum writes straight into its screen memory, which is ordinary RAM; the MSX has its video memory behind the graphics chip and it has to be sent through a port. So this version carries an <b>intermediate buffer</b> the original doesn&#x27;t need.</p>
-<p>The buffer sits at <b>0x4B40</b> and is 960 bytes: <b>24 wide by 40 tall</b>. And it is walked <b>by columns</b>, not by rows:</p>
-<pre><code>f3ff: ld c,018h        ; 24  &lt;- OUTER loop: steps the buffer one byte at a time
+<p>The buffer runs from <b>0x4000 to 0x4EFF</b> and is 3,840 bytes: <b>24 wide by 160 tall</b>. The dump moves it to VRAM in <b>three bands</b> —0x4000 with 56 rows, 0x4540 with 64 and 0x4B40 with 40, contiguous and closing to the byte—, one per call, each into its own third of SCREEN 2. And each band is walked <b>by columns</b>, not by rows (here the third call, the 40-row one):</p>
+<pre><code>f3f2: ld de,04b40h     ;       the band: its buffer, its target and its height
+f3ff: ld c,018h        ; 24  &lt;- OUTER loop: steps the buffer one byte at a time
 f401:   call 0EE24h    ;        sets the video memory address
 f408:   ld de,00018h   ; 24  &lt;- the STRIDE within the buffer
 f40b:   ld a,(hl) / out (098h),a / add hl,de

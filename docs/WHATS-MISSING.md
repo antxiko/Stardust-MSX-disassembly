@@ -136,7 +136,7 @@ There is no game to look at there, there is a picture.
 And that is precisely why there is something here: this version has those
 addresses free, because on the MSX the video memory sits behind the graphics
 chip and cannot be addressed. It is the same thing that forced the screen buffer
-at 0x4B40 to be added. So those bytes are, by construction, the least likely of
+at 0x4000-0x4EFF to be added. So those bytes are, by construction, the least likely of
 all to have come from the other side. That does not identify them; what it does
 is close a route **with a reason**, instead of leaving it as "not tried".
 

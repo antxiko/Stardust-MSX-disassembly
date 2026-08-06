@@ -135,7 +135,7 @@ atributos. Allí no hay juego que mirar, hay imagen.
 Y es justo la razón por la que aquí hay algo: esta versión tiene esas
 direcciones libres, porque en el MSX la memoria de vídeo está detrás del chip
 gráfico y no se direcciona. Es lo mismo que obligó a añadir el buffer de
-pantalla de 0x4B40. O sea que esos bytes son, por construcción, de los que menos
+pantalla de 0x4000-0x4EFF. O sea que esos bytes son, por construcción, de los que menos
 posibilidades tienen de venir del otro lado. Eso no los identifica; lo que hace
 es cerrar una vía **con un motivo**, en vez de dejarla como «sin probar».
 

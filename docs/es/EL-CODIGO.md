@@ -16,10 +16,14 @@ en su memoria de pantalla, que es RAM normal; el MSX tiene la memoria de vídeo
 detrás del chip gráfico y hay que enviarla por un puerto. Así que esta versión
 lleva un **buffer intermedio** que el original no necesita.
 
-El buffer está en **0x4B40** y mide 960 bytes: **24 de ancho por 40 de alto**.
-Y se recorre **por columnas**, no por filas:
+El buffer va de **0x4000 a 0x4EFF** y mide 3.840 bytes: **24 de ancho por 160
+de alto**. El volcado lo pasa a la VRAM en **tres bandas** —0x4000 con 56
+filas, 0x4540 con 64 y 0x4B40 con 40, contiguas y cerrando al byte—, una por
+llamada y cada una a su tercio del SCREEN 2. Y cada banda se recorre **por
+columnas**, no por filas (aquí la tercera llamada, la de 40 filas):
 
 ```
+f3f2: ld de,04b40h     ;       la banda: su buffer, su destino y su altura
 f3ff: ld c,018h        ; 24  <- bucle EXTERIOR: avanza el buffer de uno en uno
 f401:   call 0EE24h    ;        fija la direccion de memoria de video
 f408:   ld de,00018h   ; 24  <- el PASO dentro del buffer

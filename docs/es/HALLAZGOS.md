@@ -132,11 +132,13 @@ RAM normal en 0x4000. En el MSX la memoria de vídeo está detrás del chip grá
 y no se puede direccionar: hay que enviarla byte a byte por un puerto.
 
 Por eso esta versión lleva algo que el original no necesita: un **buffer de
-pantalla** en RAM, y una rutina que lo vuelca. El buffer está en 0x4B40 y mide
-**960 bytes, 24 de ancho por 40 de alto**, y el tamaño se sabe por dos caminos
-que coinciden: lo dice el código (`ld de,04b40h`, y 24×40 = 960, que llevan de
-0x4B40 a 0x4EFF) y lo confirma el emulador, donde esa rutina hizo **3.252.480
-escrituras** con el puntero llegando exactamente hasta 0x4EFF.
+pantalla** en RAM, y una rutina que lo vuelca. El buffer va de **0x4000 a
+0x4EFF: 3.840 bytes, 24 de ancho por 160 de alto**, y el volcado lo pasa a la
+VRAM en **tres bandas** —0x4000 con 56 filas, 0x4540 con 64 y 0x4B40 con 40—,
+una por cada llamada de la rutina, cada una a su tercio del SCREEN 2. Lo dice
+el código (las tres llamadas de 0xF3DC, contiguas y cerrando al byte) y lo
+confirma el emulador, donde esa rutina hizo **3.252.480 escrituras** con el
+puntero recorriendo exactamente 0x4000-0x4EFF.
 
 **Los ejes estuvieron publicados al revés**, y merece contarse porque el error
 se propagó. El `ld b,028h` del volcado se leyó como «40 columnas», pero es el
@@ -242,6 +244,92 @@ De paso, la rutina confirma dónde está la fuente: indexa con `0x5F00 + código
 y con el primer código 0x20 eso da 0x6000, que es justo donde están los 59
 caracteres. Y el paso entre líneas de pantalla es 24, el alto del buffer por
 columnas.
+
+## Un solo plano, y por qué parece que hay dos
+
+Quien lo jugó recuerda dos pisos moviéndose a velocidades distintas, con su
+sensación de profundidad. Se buscó en serio: vigilando qué rutina escribe en
+cada banda del buffer, y levantando cuadro a cuadro la tabla de «qué fila se
+dibujó desde qué dirección», que permite medir el desplazamiento por igualdad
+exacta de números en vez de comparando imágenes.
+
+El resultado es rotundo: **el fondo es un solo plano**. En cuatro medidas —tres
+momentos de la fase de a pie y uno de la de naves— las dieciocho tiras del
+buffer (tres bandas por seis columnas) se desplazan **igual**: +2 filas por
+cuadro andando, 0 paradas, −2 hacia atrás, con el 100 % de acierto y sin
+desplazamiento horizontal.
+
+La profundidad está en otro sitio: en el **orden de dibujo**. Numerando cada
+escritura al buffer dentro del cuadro, en la fase de naves sale siempre la
+misma secuencia: primero el fondo entero, después los sprites, y **después de
+los sprites** una rutina más (0xC77A) que pinta columnas del decorado leyendo
+de su propio almacén de tiles. Se le vio hacerlo en directo: un pilar bajando,
+la nave subiendo hacia él, y al cruzarse los destinos el pilar quedó pintado
+encima. La nave no pasa *por debajo del piso*: pasa **por detrás de lo que se
+repinta después**.
+
+## La cuenta atrás es una torre que crece
+
+Al final de la fase de a pie hay que destruir seis objetivos, y al caer el
+sexto arranca una cuenta atrás. No son dígitos: es una **torre blanca que gana
+una fila de píxeles cada ~2 segundos**. El mecanismo está entero en el listado:
+el arranque del nivel deja un 6 en 0xBC33, cada objetivo destruido lo resta, y
+con el contador a cero cada tic pinta una fila (`ld a,07eh / out (098h),a`) y
+suma una a 0xBC30. El ritmo lo da el contador de cuadros global: un tic cada
+dieciséis.
+
+```
+bbb4: cp 0a1h / jp z,0bceeh    ; a las 161 filas, se acabó
+```
+
+Y como en la partida grabada el jugador escapó, lo del final se comprobó **
+dejando que se agotara**: se cargó la partida con la torre a medias, se
+desconectó el mando, y a las 161 filas exactas saltó 0xBCEE: la secuencia de
+destrucción, y de ahí directo a la tabla de récords. Game over, sin
+FELICIDADES. Las cuentas de la partida real salen finas: escapó con unos **30
+segundos de margen** de los 5,8 minutos que da el juego.
+
+## Las explosiones llevan un fósil del Spectrum dentro
+
+Las dos fases tienen explosión de partículas, cada una con su copia del código.
+La de naves —cuando derriban al protagonista— siembra **64 partículas** en la
+posición de la nave y las mueve **con gravedad**: la velocidad vertical crece
+un punto por cuadro, y cada partícula es un píxel suelto dibujado sobre el
+buffer. La del final feliz —la nave insignia vista desde fuera— son **200
+partículas de metralla** sesgadas hacia arriba, sin gravedad.
+
+Y en las dos, dentro del bucle que pinta cada partícula, está esto:
+
+```
+c663: and 018h / out (0feh),a
+```
+
+**0xFE es el puerto del borde del ZX Spectrum.** En el original, cada partícula
+hacía parpadear el borde de la pantalla; en el MSX ese puerto no hace nada, y
+ahí sigue la instrucción, ejecutándose en balde en cada partícula desde 1987.
+Las dos copias del efecto la arrastran: la prueba más limpia que ha dado el
+proyecto de que estas rutinas se trajeron del original tal cual.
+
+De paso: el azar de las partículas —y del campo de 48 estrellas del fondo de
+naves, que son alturas aleatorias pintadas con el patrón fijo `0x18`— sale de
+un generador que **lee la ROM del BIOS como tabla de entropía**. Y el POKE de
+inmortalidad de la revista Input MSX (el que parchea 0xC06E) actúa justo en el
+despachador que decide si la nave está viva o explotando: la inmortalidad es,
+literalmente, no dejar que se llame nunca al sistema de partículas.
+
+## Por qué la segunda parte carga justo en 0x61D0
+
+La dirección de carga del bloque de la fase de a pie parecía arbitraria hasta
+que salió la fuente. Los dos rotuladores de esa fase —el del rótulo DEMO y el
+menú, que pinta a doble altura con el damero, y el del marco, que escribe
+directo a la memoria de vídeo— usan la misma fuente ASCII, indexada como
+`0x5F00 + código×8`. La fuente la deja cargada el bloque de naves, y la fase de
+a pie la reutiliza.
+
+La cuenta cierra sola: el último carácter que la fuente necesita es la `Y`
+(código 89), y 0x5F00 + 90×8 = **0x61D0 exacto**. El bloque de la segunda parte
+carga en el primer byte libre después del glifo de la `Y`: ni un byte antes,
+para no comerse la fuente heredada.
 
 ## Un intérprete de guiones
 

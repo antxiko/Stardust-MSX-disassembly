@@ -16,10 +16,14 @@ its screen memory, which is ordinary RAM; the MSX has its video memory behind
 the graphics chip and it has to be sent through a port. So this version carries
 an **intermediate buffer** the original doesn't need.
 
-The buffer sits at **0x4B40** and is 960 bytes: **24 wide by 40 tall**. And it
-is walked **by columns**, not by rows:
+The buffer runs from **0x4000 to 0x4EFF** and is 3,840 bytes: **24 wide by 160
+tall**. The dump moves it to VRAM in **three bands** —0x4000 with 56 rows,
+0x4540 with 64 and 0x4B40 with 40, contiguous and closing to the byte—, one per
+call, each into its own third of SCREEN 2. And each band is walked **by
+columns**, not by rows (here the third call, the 40-row one):
 
 ```
+f3f2: ld de,04b40h     ;       the band: its buffer, its target and its height
 f3ff: ld c,018h        ; 24  <- OUTER loop: steps the buffer one byte at a time
 f401:   call 0EE24h    ;        sets the video memory address
 f408:   ld de,00018h   ; 24  <- the STRIDE within the buffer
