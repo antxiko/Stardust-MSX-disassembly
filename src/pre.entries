@@ -1,0 +1,8 @@
+# Puntos de entrada del bloque [09], el que el cargador ejecuta antes de traerse
+# el juego (org 0x9B8C).
+#
+# El cargador hace `call 09b8ch` justo despues de cargarlo, asi que su unico
+# punto de entrada seguro es su propio principio. Luego lo machaca el bloque del
+# juego, que se carga en 0x47A0 y llega hasta 0xFDE6: de este bloque no queda
+# nada en memoria cuando empieza la partida.
+0x9B8C  arranque    donde el cargador hace `call 09b8ch`

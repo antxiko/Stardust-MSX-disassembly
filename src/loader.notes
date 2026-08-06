@@ -1,0 +1,14 @@
+# Anotaciones del cargador turbo.
+
+# Los 277 bytes que faltan no son datos: son CODIGO, pero no se ejecuta aqui.
+# El cargador se los copia a la pagina 1 y salta alli:
+#     d2f4: ld hl,0d33ah / ld de,04000h / ld bc,0012ch / ldir / jp 04000h
+# O sea que en este bloque estan en 0xD33A pero corren en 0x4000, y por eso el
+# trazador no los alcanza siguiendo el flujo: el salto va a una direccion que en
+# este modulo no existe. Desensamblados con org 0x4000 salen limpios, y son los
+# que cargan los bloques, aplican los POKEs del buzon y saltan al juego.
+#
+# Ojo a un detalle: el LDIR copia 300 bytes (0x12C) desde 0xD33A, pero de aqui
+# al final del bloque solo hay 277. Los 23 que faltan se los lleva de lo que
+# hubiera en RAM detras.
+D 0xD33A 0xD44F codigo que se ejecuta recolocado en la pagina 1 (0x4000)

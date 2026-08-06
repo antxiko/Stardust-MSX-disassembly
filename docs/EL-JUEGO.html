@@ -1,0 +1,103 @@
+<title>El juego — Colt 36 (1987)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,640px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="EMPEZAR.html">Start</a><a href="EL-JUEGO.html" style=color:var(--tinta)>The game</a><a href="LA-CINTA.html">The tape</a><a href="EL-CODIGO.html">The code</a><a href="HALLAZGOS.html">Findings</a><a href="LO-QUE-FALTA.html">What's missing</a><a href="es/index.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="el-juego">El juego</h1>
+<blockquote><b>Note:</b> this page is not translated yet. The documentation is written in Spanish first and translated afterwards; this is the Spanish text. The figures, addresses and code fragments read the same in both languages.</blockquote>
+<p><em>Stardust</em> es un matamarcianos de scroll vertical. Se pilota una nave —el Astrohunter— sobre la superficie de una flota de supercruceros enemigos que va camino de la Tierra, esquivando o destruyendo lo que sale al paso hasta llegar a los generadores de escudo.</p>
+<p>Y luego cambia de juego. Al superar la última zona de naves, el protagonista <b>aterriza y sigue a pie</b>, y esa es la fase final.</p>
+<h2 id="los-graficos-sacados-de-la-cinta">Los gráficos, sacados de la cinta</h2>
+<p>Nada de lo que hay aquí son capturas: todo está dibujado a partir de los bytes del binario, con la geometría que usa el propio juego. Eso es lo que lo convierte en una comprobación y no en una ilustración: si el reparto del bloque estuviera mal, saldría ruido.</p>
+<h3 id="los-111-tiles-del-decorado">Los 111 tiles del decorado</h3>
+<p><img src="imagenes/tiles.png" alt="Los 111 tiles de los niveles"></p>
+<p>Ocupan de 0x6DE0 a 0xA55F y son de <b>32×32 píxeles</b>, cuatro bytes por línea, 128 bytes cada uno. La cuenta cierra sola: 111 × 128 = 14 208, y 0x6DE0 + 14 208 = 0xA560, que es justo donde empiezan los sprites.</p>
+<h3 id="los-83-sprites">Los 83 sprites</h3>
+<p><img src="imagenes/sprites.png" alt="Los 83 sprites del juego"></p>
+<p>De 0xA560 a 0xBA1F, <b>16×16 píxeles con máscara</b>: cada línea trae los bits del dibujo y los de la máscara que dice qué píxeles son suyos. Son 64 bytes por sprite. Esa máscara no es un capricho: es lo que necesita el dibujado por software del Spectrum, que abre hueco con AND antes de pintar con OR.</p>
+<h3 id="la-tipografia-y-los-centinelas">La tipografía y los centinelas</h3>
+<p><img src="imagenes/charset.png" alt="El juego de caracteres"></p>
+<p>59 caracteres de 8×8 en 0x6000, y los quince nodos centinela de 24×24 en 0x69A8.</p>
+<h2 id="el-marcador-y-las-zonas">El marcador y las zonas</h2>
+<p>La pantalla de juego lleva un marco de adornos por los cuatro lados y deja una ventana central para la acción, con la puntuación y el número de zona abajo. El marco es muy de la época y muy de Spectrum: aprovecha que los bordes no cambian para llenarlos de detalle sin coste.</p>
+<h2 id="los-textos-del-juego">Los textos del juego</h2>
+<p>Leídos del binario, tal cual están:</p>
+<ul><li>El menú: <code>JOYSTICK</code>, <code>TECLADO</code>, <code>REDEFINIR TECLAS</code>, <code>JUGAR</code>.</li><li>La tabla de récords viene de fábrica con nombres de la casa: <code>JAVIER 100000</code>, <code>JUAN C 080000</code>, <code>MARTA 060000</code>, <code>MARIA 050000</code>, <code>TOPO 030000</code>, <code>SOFT 020000</code>.</li><li>Los créditos: <code>MUSICA COMPUESTA POR GOMINOLAS</code> y <code>BASADO EN UNA IDEA ORIGINAL DE JOSE MANUEL MUÑOZ</code>.</li><li>Y el aviso de que viene lo bueno, justo antes de la segunda carga: <code>HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN NO HA LLEGADO</code>.</li></ul>
+<footer><p><em>Colt 36</em> lo publicó Topo Soft en 1987; según los créditos del propio juego, los gráficos son de LuigiLopez y la música de Gominolas, y la pantalla de carga está firmada por Cano. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

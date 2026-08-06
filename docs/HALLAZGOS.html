@@ -1,0 +1,134 @@
+<title>Hallazgos — Colt 36 (1987)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,640px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="EMPEZAR.html">Start</a><a href="EL-JUEGO.html">The game</a><a href="LA-CINTA.html">The tape</a><a href="EL-CODIGO.html">The code</a><a href="HALLAZGOS.html" style=color:var(--tinta)>Findings</a><a href="LO-QUE-FALTA.html">What's missing</a><a href="es/index.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="hallazgos">Hallazgos</h1>
+<blockquote><b>Note:</b> this page is not translated yet. The documentation is written in Spanish first and translated afterwards; this is the Spanish text. The figures, addresses and code fragments read the same in both languages.</blockquote>
+<p>Stardust es una conversión del ZX Spectrum, y eso se sabía. Lo que no se esperaba al abrir la cinta es <b>hasta dónde llega la conversión</b>: no se trajeron los gráficos y rehicieron lo demás, se trajeron el sistema de grabación, la rutina de carga y la forma de dibujar. Lo que sigue es lo que apareció al desmontarla, cada cosa con la prueba que la sostiene.</p>
+<h2 id="la-cinta-no-es-una-cinta-de-msx">La cinta no es una cinta de MSX</h2>
+<p>Un juego de MSX se graba en bloques <b>KCS</b>, que es el formato del sistema: lo escribe la propia BIOS y lo lee la propia BIOS. Los otros títulos de Topo Soft para esta máquina lo hacen así.</p>
+<p>Stardust, no. Sus cuatro bloques de datos son <b>bloques del ZX Spectrum</b>, con la estructura de allí: un byte de bandera, los datos, y un byte final que es el XOR de todo lo anterior. Los cuatro traen ese checksum correcto, comprobado uno por uno; es la única verificación de integridad que lleva la cinta.</p>
+<p>Y el cargador es una <b>reimplementación de LD-BYTES</b>, la rutina de carga de la ROM del Spectrum, con su mismo interfaz de registros:</p>
+<p>ld ix,047a0h    ; IX = donde va ld de,0b647h    ; DE = cuantos bytes ld a,000h       ; A  = la bandera que se espera scf             ; carry activado = cargar, no verificar call 0405ch</p>
+<p>Quien haya programado un Spectrum reconoce esa llamada: es la de <code>0x0556</code> de su ROM, parámetro por parámetro.</p>
+<h2 id="los-64k-que-el-spectrum-tiene-y-el-msx-no">Los 64K que el Spectrum tiene y el MSX no</h2>
+<p>Antes de cargar nada, el cargador hace algo que en un juego de MSX normal no haría falta: <b>busca RAM y la mapea en las páginas 1 y 2</b>.</p>
+<p>ld hl,04000h / call sub_d30fh ld hl,08000h / call sub_d30fh</p>
+<p>La rutina de <code>0xD30F</code> prueba a escribir en cada ranura con <code>ENASLT</code> (la llamada <code>0x0024</code> de la BIOS) hasta encontrar RAM. El motivo es que el Spectrum tiene 48K planos de RAM y el MSX no: en el MSX, la mitad baja de la memoria la ocupa la ROM del BASIC. Para que el juego portado encuentre la memoria donde la espera, hay que quitar la ROM de en medio.</p>
+<h2 id="el-cargador-trae-una-puerta-trasera-para-trainers">El cargador trae una puerta trasera para trainers</h2>
+<p>Esta es la mejor. El cargador, antes de arrancar el juego, copia <b>94 bytes</b> desde 0xDAC0 a 0xFDE8 —memoria alta, donde nada los va a machacar— y luego mira qué hay en ellos:</p>
+<p>4040: ld hl,0fde8h / ld b,003h 4045: ld a,(hl) / cp 0c9h / jp nz,0bd85h   ; ¿tres 0xC9 de firma? 404e: ld b,(hl)                            ; B = cuantos parches 4050: ld e,(hl) / ld d,(hl) / ld a,(hl)    ; direccion y valor 4056: ld (de),a / djnz 4050                ; aplicarlos 4059: jp 0bd85h                            ; y ahora si, al juego</p>
+<p>Si esos 94 bytes empiezan por tres <code>0xC9</code>, el cargador los trata como una lista de parches y los aplica sobre el juego recién cargado. Es <b>un aplicador de POKEs de fábrica</b>, metido en el cargador comercial del juego.</p>
+<p>Y la cuenta dice para cuántos: 3 bytes de firma + 1 de contador + <b>30 parches de 3 bytes cada uno = 94</b>. Está dimensionado exactamente para treinta.</p>
+<p>Eso explica por qué los cargadores de las revistas de la época funcionaban tan bien con este juego. El de <em>Input MSX</em> número 19 escribe con <code>FOR I=56000 TO 56012</code>, y 56000 es 0xDAC0: el buzón. Sus tres parches, leídos del binario antes de aplicarlos:</p>
+<p>0xC06E/6F:  38 1F (jr c,+31)  -&gt;  18 EC (jr -20) 0xF7B1:     01 -&gt; 00</p>
+<p>El primero convierte un salto condicional en incondicional, saltándose una comprobación que va justo detrás de <code>ld a,(0c188h) / cp 004h</code>. El segundo cambia el <code>1</code> de un <code>ld a,001h</code> por un <code>0</code>. Aplicados por el propio cargador del juego, la nave aguantó dieciséis minutos seguidos sin morir.</p>
+<h2 id="como-pide-el-juego-la-segunda-parte">Cómo pide el juego la segunda parte</h2>
+<p>Al superar la última zona de naves sale una pantalla que dice</p>
+<p>FELICIDADES HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA PERO LO PEOR AUN NO HA LLEGADO</p>
+<p>y el juego vuelve a la cinta a por la segunda parte, la de a pie.</p>
+<p>Lo interesante es <b>cómo</b> lo hace. La rutina de carga del cargador sobrevive toda la partida en la página 1 —el juego se carga a partir de 0x47A0 y no la pisa— así que lo lógico sería que la llamara. Pues no: un punto de observación sobre ella no saltó <b>ni una vez en 4000 segundos de juego</b>. El juego trae la suya:</p>
+<p>f7f6: ld hl,0f89fh / push hl    ; empuja a mano la direccion de vuelta f7fb: ld a,008h / out (0abh),a  ; enciende el MOTOR de la cinta f7ff: ld a,00eh / out (0a0h),a  ; registro 14 del PSG, el del bit de cinta</p>
+<p>Tampoco es una copia de la otra: se buscó su firma byte a byte en los tres bloques y no aparece en ninguno.</p>
+<p>Se caza poniendo un punto de observación no sobre una rutina, sino sobre el <b>destino</b>: cualquier escritura en 0x61D0, que es donde el descriptor dice que va la segunda parte. Salta con el contador de programa en 0xF849. Y lo que queda ahí después coincide con el bloque de la cinta salvo 180 bytes de 29861 —el 99,4 %—, que son las variables que la segunda parte ya había tocado cuando se miró.</p>
+<h2 id="dos-motores-distintos-en-una-cinta">Dos motores distintos en una cinta</h2>
+<p>Las dos partes del juego no comparten motor, y se ve en el tamaño de sus objetos. En las dos, cada entidad lleva apuntada en su estructura la rutina que la gobierna, y el juego salta ahí con un <code>jp (hl)</code>. Capturando esos saltos con el juego en marcha:</p>
+<p>la parte de naves:  los IX van de 8 en 8    (0xCB3A, 0xCB42 · 0xC8D8, 0xC8E0…) la parte de a pie:  los IX van de 46 en 46  (0xD068, 0xD096, 0xD0C4)</p>
+<p>Las entidades de la segunda parte llevan una estructura casi seis veces mayor.</p>
+<p>Lo que sí comparten es el oficio de dibujar. Comparando 40 bytes de la rutina de sprites de una parte con la de la otra, <b>solo difieren seis</b>, y tres de ellos son <code>and (hl)</code> contra <code>or (hl)</code>. Es la técnica del Spectrum, que no tiene sprites por hardware: se desplaza el dibujo bit a bit con una tira desenrollada de <code>adc hl,hl</code>, se abre hueco con AND y se pinta con OR.</p>
+<h2 id="lo-que-el-msx-obligo-a-cambiar">Lo que el MSX obligó a cambiar</h2>
+<p>Hay una diferencia de fondo entre las dos máquinas que la conversión no pudo esquivar. El Spectrum escribe <b>directamente</b> en su memoria de pantalla, que es RAM normal en 0x4000. En el MSX la memoria de vídeo está detrás del chip gráfico y no se puede direccionar: hay que enviarla byte a byte por un puerto.</p>
+<p>Por eso esta versión lleva algo que el original no necesita: un <b>buffer de pantalla</b> en RAM, y una rutina que lo vuelca. El buffer está en 0x4B40 y mide <b>960 bytes, 40 columnas por 24 filas</b>, y eso se sabe por dos caminos que coinciden: lo dice el código (<code>ld de,04b40h</code>, <code>ld b,028h</code>, <code>ld c,018h</code>, y 0x4B40 + 40×24 = 0x4F00) y lo confirma el emulador, donde esa rutina hizo <b>3.252.480 escrituras</b> con el puntero llegando exactamente hasta 0x4EFF.</p>
+<p>Cuarenta columnas cuando en pantalla caben treinta y dos: esas ocho de más son el margen que permite el scroll.</p>
+<h2 id="la-musica-se-porto-entera">La música se portó entera</h2>
+<p>Las tablas de música son las mismas, byte a byte:</p>
+<p>754 bytes, los 754 completos, idénticos a los de la versión de Spectrum</p>
+<p>y la segunda parte reutiliza 259 de esos mismos bytes. Las dos mitades del juego suenan con los mismos datos.</p>
+<h2 id="un-interprete-de-guiones">Un intérprete de guiones</h2>
+<p>Dentro del juego de naves hay una máquina virtual pequeña. Los guiones que gobiernan a los enemigos son bytes, y los que valen 0x80 o más son <b>opcodes</b>:</p>
+<p>e230: ld a,(bc) / cp 080h / jp c,0e231h   ; por debajo de 0x80 no es opcode sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)</p>
+<p>y <code>0xE5C0</code> es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de 0xE7A3 tiene <b>35 entradas</b>, y que son 35 y no más no es una estimación: la tabla acaba en 0xE7E8 y el código del opcode 0x90 empieza pegado, en 0xE7E9.</p>
+<h2 id="la-pantalla-de-carga">La pantalla de carga</h2>
+<p><img src="imagenes/carga.png" alt="La pantalla que se ve mientras carga"></p>
+<p>No es una captura: está dibujada a partir de los 12.288 bytes que el propio bloque vuelca —6144 de patrón a la memoria de vídeo 0x0000 y 6144 de color a 0x2000—, siguiendo lo que hace su rutina de 0x9C10.</p>
+<p>Tiene truco, y de los que enseñan algo. La tabla que dice qué dibujo va en cada casilla no se rellena en orden 0, 1, 2, 3… sino <b>sumando ocho</b>: 0, 8, 16 … 248, 1, 9, 17 … Son los mismos 256 valores por tercio de pantalla, pero intercalados. Dibujarla suponiendo orden secuencial da ruido convincente, que es el peor tipo de error: parece que el reparto del bloque está mal cuando lo que está mal es cómo lo lees.</p>
+<p>Va firmada <b>CANO</b>, abajo a la izquierda.</p>
+<footer><p><em>Colt 36</em> lo publicó Topo Soft en 1987; según los créditos del propio juego, los gráficos son de LuigiLopez y la música de Gominolas, y la pantalla de carga está firmada por Cano. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

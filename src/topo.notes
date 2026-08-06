@@ -1,0 +1,44 @@
+# TOPO: el logo animado de Topo Soft, lo primero que se ve al cargar la cinta.
+#
+# Se carga en 0x9470 con el BLOAD"cas:",R de la linea 20 del cargador y se
+# ejecuta en su primera direccion. Al terminar hace RET y el cargador sigue por
+# la linea 30, que trae la pantalla de carga.
+#
+# Corre con el interprete BASIC vivo y la memoria sin conmutar, asi que puede
+# llamar al sistema con normalidad.
+#
+# Este bloque no es exclusivo de Colt 36: es la pieza de presentacion de la casa,
+# y el juego la lleva tal cual.
+#
+# Ademas es el bloque que peor sobrevive. Se carga en 0x9470..0xA50D y luego se
+# le cargan encima la pantalla de carga y el bloque de datos; de sus 4254 bytes
+# solo quedan sin pisar 1780 (0x949D..0x9B90), y esos caen justo debajo del techo
+# de memoria que fija el CLEAR, o sea en la zona que el interprete usa de pila y
+# de espacio de cadenas. Aun asi el cadaver no desaparece del todo: medido a los
+# 80 segundos de partida seguian intactos 1629 de esos bytes, 893 de ellos
+# seguidos en 0x949D..0x9819. El interprete solo se come de verdad la parte alta,
+# de 0x98B0 en adelante.
+
+B 0x9470 ############################################################
+B 0x9470 EL LOGO DE TOPO SOFT
+B 0x9470 ############################################################
+B 0x9470 Una animacion corta: los trozos del logo entran recorriendo
+B 0x9470 una trayectoria y al llegar se quedan. Se temporiza esperando
+B 0x9470 barridos de pantalla, no contando vueltas de un bucle, asi que
+B 0x9470 va al mismo ritmo en cualquier maquina.
+B 0x9470 Verificado en openMSX: el juego pasa por 0x9470 a los 69,7 s
+B 0x9470 de empezar a cargar la cinta.
+
+L 0x9470 topo_inicio      Punto de entrada: el exec que declara la cabecera BIN
+C 0x9470 aqui solo hay un salto; el codigo util empieza mas adelante
+L 0x9473 topo_anima       La animacion del logo
+C 0x947C compara HL con DE para saber si el recorrido ha terminado
+C 0x949F espera tres barridos de pantalla: asi se temporiza la animacion
+
+D 0x9694 0x96B2 tabla_trozos   Quince posiciones dentro de los dibujos de abajo, una por trozo del logo. El codigo indexa aqui para saber donde empieza cada uno
+D 0x96B2 0x96CC secuencia_1    Lista de numeros de dibujo que se van sucediendo, cerrada con 0xFF
+D 0x96CC 0x96E9 recorrido      La trayectoria de entrada: catorce parejas de coordenadas, cerradas con 0xFF
+D 0x96E9 0x96F4 secuencia_2    Segunda lista de numeros de dibujo, tambien cerrada con 0xFF, y dos bytes de relleno
+D 0x96F4 0x96F8 punteros       Dos variables de trabajo de 16 bits que el propio codigo reescribe mientras anima
+D 0x96F8 0x9728 tabla_vram     Veinticuatro direcciones de memoria de video, de 0xC000 a 0xD700 de 256 en 256: una por cada franja donde se va escribiendo el logo
+D 0x9728 0xA50E dibujos_logo   Los 3558 bytes de los trozos del logo, en el orden al que apunta la tabla de arriba

@@ -1,0 +1,38 @@
+# Anotaciones del bloque parte2.
+
+# ------------------------------------- lo que quedaba sin explicar
+# Cada uno de estos rangos esta clasificado MIDIENDO, con tools/clasifica_huecos.py,
+# y la etiqueta lleva detras la medida de la que sale: la racha media de bits
+# iguales, la entropia y cuantos valores distintos usa. Lo que no se ha podido
+# clasificar con confianza pone "datos sin clasificar", que es lo que hay.
+D 0x621C 0x6247 tabla (43 B; racha 2.21, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
+D 0x625E 0x6644 graficos (998 B; racha 3.85, entropia 5.55, 199 valores: rachas mas largas que el azar)
+D 0x6788 0x6791 tabla (9 B; racha 4.00, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
+D 0x682E 0x7C78 graficos (5194 B; racha 3.08, entropia 6.49, 245 valores: rachas mas largas que el azar)
+D 0x7C9D 0x8A78 graficos (3547 B; racha 3.25, entropia 5.40, 231 valores: rachas mas largas que el azar)
+D 0x984E 0xA2D2 graficos tramados (2692 B; racha 1.96, entropia 5.26, 156 valores: rachas cortas y muchos valores, firma del damero)
+D 0xA5F0 0xA5F1 relleno o resto (1 B; 1 bytes)
+D 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)
+D 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)
+D 0xACA2 0xAD31 tabla (143 B; racha 17.07, entropia 1.59, 14 valores: pocos valores para ser un dibujo)
+D 0xB13E 0xB140 relleno o resto (2 B; 2 bytes)
+D 0xB2A6 0xB3AC datos sin clasificar (262 B; racha 2.14, entropia 5.31, 64 valores)
+D 0xB51B 0xB65B relleno (320 B; 320 de 320 bytes son 0xFF)
+D 0xB720 0xB9B0 datos sin clasificar (656 B; racha 2.44, entropia 4.76, 77 valores)
+D 0xBC24 0xBC35 tabla (17 B; racha 68.00, entropia 0.87, 2 valores: pocos valores para ser un dibujo)
+D 0xBDAA 0xBDAC relleno o resto (2 B; 2 bytes)
+D 0xBFEB 0xC001 relleno (22 B; 22 de 22 bytes son 0xFF)
+D 0xC459 0xC45E relleno o resto (5 B; 5 bytes)
+D 0xC788 0xC7A7 tabla (31 B; racha 2.21, entropia 4.31, 22 valores: pocos valores para ser un dibujo)
+D 0xC804 0xC83E datos sin clasificar (58 B; racha 2.42, entropia 4.95, 37 valores)
+D 0xC864 0xC891 datos sin clasificar (45 B; racha 2.14, entropia 4.69, 28 valores)
+D 0xC8F7 0xCAA0 graficos (425 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
+D 0xCB0F 0xCB14 relleno o resto (5 B; 5 bytes)
+D 0xCB26 0xCB27 relleno o resto (1 B; 1 bytes)
+D 0xCBDB 0xCBF0 tabla (21 B; racha 2.43, entropia 3.16, 11 valores: pocos valores para ser un dibujo)
+D 0xCC3D 0xCC53 tabla (22 B; racha 2.79, entropia 3.94, 17 valores: pocos valores para ser un dibujo)
+D 0xCC99 0xCCAB tabla (18 B; racha 3.43, entropia 3.28, 11 valores: pocos valores para ser un dibujo)
+D 0xCDC0 0xCDD0 tabla (16 B; racha 2.37, entropia 2.27, 7 valores: pocos valores para ser un dibujo)
+D 0xD13A 0xD13C relleno o resto (2 B; 2 bytes)
+D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valores para ser un dibujo)
+D 0xD48C 0xD675 tabla (489 B; racha 4.67, entropia 2.83, 22 valores: pocos valores para ser un dibujo)

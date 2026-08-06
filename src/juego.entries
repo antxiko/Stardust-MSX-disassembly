@@ -1,0 +1,243 @@
+# Puntos de entrada del bloque del juego de naves (org 0x47A0).
+#
+# De momento solo hay uno seguro, y lo declara el propio cargador: el `jp 0bd85h`
+# con que el codigo copiado a la pagina 1 le pasa el mando. Todo lo demas que se
+# anada aqui tiene que salir de haber leido el codigo, no de una corazonada: una
+# semilla mala mete el trazador dentro de los graficos y da cobertura falsa, que
+# es peor que no tener cobertura.
+0xBD85  arranque    donde salta el cargador: pone la pila, el VDP y los hooks
+
+# La rutina de interrupcion. El trazador no puede llegar aqui solo, porque no se
+# la llama con un CALL: el arranque la ENGANCHA escribiendo en los hooks del
+# sistema, y a partir de ahi la llama el propio MSX cincuenta veces por segundo.
+#     bd96: ld a,0c9h  / ld (0fd9ah),a     -> RET en H.KEYI, o sea desactivado
+#     bd9b: ld a,0c3h  / ld (0fd9fh),a     -> JP  en H.TIMI...
+#     bda0: ld hl,0e15ah / ld (0fda0h),hl  -> ...a esta direccion
+0xE15A  interrupcion  enganchada en H.TIMI (0xFD9F) por el arranque
+
+# Los 35 opcodes del interprete de guiones. El despachador esta en 0xE230:
+#     ld a,(bc) / cp 080h / jp c,0e231h   -> por debajo de 0x80 no es opcode
+#     sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)
+# y 0xE5C0 es 'HL = tabla + A*2, HL = (HL)'. O sea que la tabla de 0xE7A3
+# son 35 punteros y el trazador no puede seguirlos solo: van aqui a mano.
+# La tabla acaba en 0xE7E8 y el codigo del opcode 0x90 empieza en 0xE7E9,
+# pegado a ella, que es lo que confirma que son 35 y no mas.
+0xE3EF  op_80       opcode 0x80 del interprete de guiones
+0xE40D  op_81       opcode 0x81 del interprete de guiones
+0xE477  op_82       opcode 0x82 del interprete de guiones
+0xE3F8  op_83       opcode 0x83 del interprete de guiones
+0xE473  op_84       opcode 0x84 del interprete de guiones
+0xE445  op_85       opcode 0x85 del interprete de guiones
+0xE546  op_86       opcode 0x86 del interprete de guiones
+0xE4A6  op_87       opcode 0x87 del interprete de guiones
+0xE45F  op_88       opcode 0x88 del interprete de guiones
+0xE4EF  op_89       opcode 0x89 del interprete de guiones
+0xE492  op_8A       opcode 0x8A del interprete de guiones
+0xE418  op_8B       opcode 0x8B del interprete de guiones
+0xE54F  op_8C       opcode 0x8C del interprete de guiones
+0xE56B  op_8D       opcode 0x8D del interprete de guiones
+0xE57C  op_8E       opcode 0x8E del interprete de guiones
+0xE846  op_8F       opcode 0x8F del interprete de guiones
+0xE7E9  op_90       opcode 0x90 del interprete de guiones
+0xE7F6  op_91       opcode 0x91 del interprete de guiones
+0xE810  op_92       opcode 0x92 del interprete de guiones
+0xE81F  op_93       opcode 0x93 del interprete de guiones
+0xE82C  op_94       opcode 0x94 del interprete de guiones
+0xE839  op_95       opcode 0x95 del interprete de guiones
+0xE88F  op_96       opcode 0x96 del interprete de guiones
+0xE8A2  op_97       opcode 0x97 del interprete de guiones
+0xE8B5  op_98       opcode 0x98 del interprete de guiones
+0xE8C8  op_99       opcode 0x99 del interprete de guiones
+0xE8DB  op_9A       opcode 0x9A del interprete de guiones
+0xE92A  op_9B       opcode 0x9B del interprete de guiones
+0xE971  op_9C       opcode 0x9C del interprete de guiones
+0xE987  op_9D       opcode 0x9D del interprete de guiones
+0xE99D  op_9E       opcode 0x9E del interprete de guiones
+0xE9DC  op_9F       opcode 0x9F del interprete de guiones
+0xE9FA  op_A0       opcode 0xA0 del interprete de guiones
+0xEA14  op_A1       opcode 0xA1 del interprete de guiones
+0xEA38  op_A2       opcode 0xA2 del interprete de guiones
+
+# --- Lo que solo se sabe ejecutando el juego (openMSX, tools/omsx_traza.tcl) ---
+#
+# Muestreando el PC durante la partida salieron 460 direcciones distintas dentro
+# de este bloque, y 59 de ellas caian en zonas que el trazado daba por datos.
+# Casi todas son esta rutina, que no la llama NADIE con un call o un jp: no hay
+# una sola referencia directa a 0xF02C en los 46 KB del bloque. Se ejecuta,
+# porque el emulador la pillo ejecutandose, y ese es el motivo de que este aqui:
+# la prueba es la ejecucion, no una corazonada.
+0xF02C  huerfana    ejecutada de verdad (vista en el emulador), sin llamador directo
+
+# El despachador automodificable de 0xF000. Merece una explicacion porque es la
+# razon de que un trazador estatico no pueda cubrir esta zona:
+#     f000: ld (0f016h),hl    <- se escribe el operando de un CALL
+#     f003: ld (0f019h),de    <- y el de otro
+#     ...
+#     f015: call 0000h        <- ese 0000 no es real: se rellena al vuelo con HL
+#     f018: call 0000h        <- y este con DE
+# O sea que a donde se llama no esta en el binario, esta en los registros de
+# quien llame a 0xF000. Desensamblado en frio parece un `call 0` que reiniciaria
+# la maquina.
+0xF000  despachador  se parchea sus propios CALL con las rutinas que le pasan
+
+# --- Rutinas de comportamiento de los objetos (openMSX, tools/omsx_juega.tcl) --
+#
+# Los `jp (hl)` de 0xCB99 y 0xD6B8 saltan a la rutina que cada objeto lleva
+# apuntada en (ix+3)/(ix+4). Esa tabla viene TODA a 0xFF en la cinta y se rellena
+# jugando, asi que leyendo el binario no hay manera: estas ocho direcciones estan
+# capturadas de una partida de verdad, anotando el destino cada vez que el salto
+# se ejecutaba.
+#
+# Lo que se vio, y que ademas describe como esta organizado el juego:
+#   0xCB99 -> siempre 0xC189, con ix = 0xCB3A y 0xCB42
+#   0xD6B8 -> siete rutinas, con ix = 0xC8D8, 0xC8E0, 0xC8E8, 0xC8F0, 0xC8F8
+# Los ix van de ocho en ocho: son tablas de objetos con estructuras de 8 bytes,
+# dos de un tipo y cinco de otro.
+0xC189  obj_C189    comportamiento de objeto, via jp (hl) de 0xCB99
+0xD8A3  obj_D8A3    comportamiento de objeto, via jp (hl) de 0xD6B8
+0xD8CD  obj_D8CD    comportamiento de objeto, via jp (hl) de 0xD6B8
+0xD8F4  obj_D8F4    comportamiento de objeto, via jp (hl) de 0xD6B8
+0xD8F8  obj_D8F8    comportamiento de objeto, via jp (hl) de 0xD6B8
+0xD933  obj_D933    comportamiento de objeto, via jp (hl) de 0xD6B8
+0xD959  obj_D959    comportamiento de objeto, via jp (hl) de 0xD6B8
+0xD95A  obj_D95A    comportamiento de objeto, via jp (hl) de 0xD6B8
+
+# Dos tramos mas que la partida demostro que se ejecutan y a los que el trazado
+# no llega. Del muestreo del PC salieron 1889 direcciones distintas y solo 118
+# bytes caian fuera de lo ya trazado: estos dos tramos, la rutina huerfana de
+# 0xF02C que ya esta arriba, y los hooks del sistema.
+0xC4C5  ejec_C4C5   ejecutado en partida, sin llamador directo localizado
+0xC590  ejec_C590   ejecutado en partida, sin llamador directo localizado
+
+# Tres tiras DESENROLLADAS en las que se entra por la mitad. Es una tecnica de
+# la epoca para no pagar el bucle: se escriben N copias seguidas de la misma
+# instruccion y se salta a la altura que corresponda para hacer los pasos que
+# hagan falta. El trazador no puede seguirlas porque el salto es calculado, y
+# ademas lee un `jp` que pasa por encima de todas ellas.
+#     0xC4CC  adc hl,hl / adc a,a  x N   desplazamiento de 24 bits
+#     0xC596  adc hl,hl            x N   desplazamiento de 16 bits
+#     0xF086  ldi                  x N   copia desenrollada
+# Que se entra dentro esta comprobado: la partida ejecuto 0xC4D5, 0xC598 y
+# 0xF088, que caen a media tira.
+0xC4CC  tira_24bits  entrada por la mitad de una tira de adc hl,hl / adc a,a
+0xC596  tira_16bits  entrada por la mitad de una tira de adc hl,hl
+0xF086  tira_ldi     entrada por la mitad de una tira de ldi
+
+# --- La rutina de carga PROPIA del juego (la multicarga) ---------------------
+#
+# Al superar la ultima zona de naves, el juego vuelve a la cinta a por la
+# segunda parte, la de a pie. Y no lo hace con la rutina del cargador: la de
+# 0x405C sobrevive en la pagina 1 durante toda la partida, pero un punto de
+# observacion sobre ella no salto NI UNA VEZ en 4000 segundos de juego.
+#
+# Lo que hace es traer la suya. Se caza poniendo un watchpoint de escritura
+# sobre 0x61D0, que es donde el descriptor dice que va la segunda parte: salta,
+# y el PC esta en 0xF849 con 0xF89F y 0xF78F en la pila.
+#     f7f6: ld hl,0f89fh / push hl    <- se empuja a mano la direccion de vuelta
+#     f7fb: ld a,008h / out (0abh),a  <- enciende el motor de la cinta
+#     f7ff: ld a,00eh / out (0a0h),a  <- registro 14 del PSG, el del bit de cinta
+# No es una copia de la del cargador: se busco su firma byte a byte en los tres
+# bloques y no aparece en ninguno.
+0xF7F6  carga_cinta   rutina de carga propia: enciende el motor y lee el bit
+0xF849  carga_byte    donde deposita lo leido (visto escribiendo en 0x61D0)
+0xF89F  carga_vuelta  la direccion de retorno que empuja 0xF7F6
+0xF78F  carga_pide    quien pide la carga (estaba en la pila)
+
+# --- Las rutinas que escriben en VRAM (tools/omsx_vram.tcl) -------------------
+#
+# El metodo no es mio, lo aporto un lector y es mucho mejor que adivinar
+# geometrias sobre los datos: en vez de mirar los bytes, se vigila el PUERTO
+# 0x98 -por donde el VDP recibe los datos- y se apunta que PC hace cada
+# escritura. Lo que sale de ahi son, por definicion, las rutinas de dibujado.
+#
+# Diecisiete rutinas escriben en VRAM durante una partida. La principal, con
+# diferencia, es la de 0xF40C: 3.252.480 escrituras, con HL entre 0x4000 y
+# 0x4EFF. Su cuerpo dice como esta montado el motor grafico:
+#     f3f2: ld de,04b40h   <- el buffer de pantalla, en RAM
+#     f3f5: ld hl,01100h   <- la direccion de VRAM
+#     f3f8: ld b,028h      <- 40 columnas
+#     f3ff: ld c,018h      <- 24 filas
+#     f408: ld de,00018h   <- y el PASO entre bytes: 24
+#     f40b: ld a,(hl) / out (098h),a / add hl,de / djnz
+# O sea que el buffer esta organizado POR COLUMNAS, 40 de ancho por 24 de alto.
+# Cuarenta es mas que las 32 que caben en pantalla: ese margen es lo que permite
+# el scroll.
+0xF3F1  vuelca_pantalla  el volcado principal: 3,2 millones de escrituras a VRAM
+0xF3FF  vuelca_columnas  su nucleo, con el paso de 24 bytes
+0xD488  vram_D488     escribe en VRAM (704 veces)
+0xEFBB  vram_EFBB     escribe en VRAM (1280 veces)
+0xF0CC  vram_F0CC     escribe en VRAM (24208 veces)
+0xF0EC  vram_F0EC     escribe en VRAM (26880 veces)
+0xF0FB  vram_F0FB     escribe en VRAM (14848 veces)
+0xF313  vram_F313     escribe en VRAM (480 veces)
+0xF34C  vram_F34C     escribe en VRAM (480 veces)
+0xF3B4  vram_F3B4     escribe en VRAM (17888 veces)
+0xF433  vram_F433     escribe en VRAM (512 veces)
+0xF53B  vram_F53B     escribe en VRAM (320 veces)
+0xF593  vram_F593     escribe en VRAM (182 veces)
+0xF5BC  vram_F5BC     escribe en VRAM (1400 veces)
+0xF5CF  vram_F5CF     escribe en VRAM (1316 veces)
+0xF616  vram_F616     escribe en VRAM (448 veces)
+0xF650  vram_F650     escribe en VRAM (42240 veces)
+
+# --- Rutinas identificadas cotejando con la version de ZX Spectrum ------
+#
+# Los autores originales publicaron el desensamblado de la version de
+# Spectrum en github.com/TheJare/stardust-48k, con permiso de todos ellos, y
+# ahi las rutinas tienen nombre. Pero ellos mismos avisan de que la version
+# de MSX la hizo OTRA GENTE, asi que sus etiquetas no valen aqui por si
+# solas: son una hipotesis.
+#
+# Lo que se ha hecho es COMPROBARLAS. Cada una de estas rutinas aparece
+# IDENTICA byte a byte en los dos binarios, casi siempre desplazada 0x4000
+# -el Spectrum tiene su RAM de 0x4000 arriba y el MSX la reubico- y algunas
+# en la misma direccion. Cuando los bytes son los mismos, el nombre viaja
+# con ellos. Lo cotejado se puede rehacer con tools/coteja_spectrum.py.
+0x8055  player_ai_function_1     Player AI function 1 (118 B identicos al Spectrum)
+0x80CB  generate_new_enemy_shi   Generate new enemy ship (267 B identicos al Spectrum)
+0x81D6  read_player_control_ke   Read Player Control Keys (280 B identicos al Spectrum)
+0x8311  draws_and_advances_the   Draws and advances the starfield (310 B identicos al Spectrum)
+0x8447  render_a_16x16_masked    Render a 16x16 masked sprite (187 B identicos al Spectrum)
+0x8502  convert_coords_in_h_l    Convert coords in H,L to backbuffer address  (166 B identicos al Spectrum)
+0x85A8  draw_player_explosion    Draw Player explosion - and output random so (108 B identicos al Spectrum)
+0x863B  render_sentinel_nodes    Render Sentinel Nodes (5x5) (301 B identicos al Spectrum)
+0x876E  advances_coordinates_i   Advances coordinates in HL by orientation in (99 B identicos al Spectrum)
+0x8810  enemy_fighter_at_posit   Enemy fighter at position BC, and fifth para (750 B identicos al Spectrum)
+0x8B2A  runs_the_logic_heat_se   Runs the logic (heat-seeking) for an enemy m (1028 B identicos al Spectrum)
+0x8F2E  check_an_objet_s_posit   Check an objet's position and dimensions aga (730 B identicos al Spectrum)
+0x9259  update_a_ship_on_the_h   Update a ship on the HUD (277 B identicos al Spectrum)
+0x93D1  play_a_sound_defined_b   Play a sound defined by B bytes at HL (79 B identicos al Spectrum)
+0x9420  render_regular_string    Render regular string (243 B identicos al Spectrum)
+0x9551  render_a_double_height   Render a double-height stippled character (68 B identicos al Spectrum)
+0x9595  render_a_double_height   Render a double-height stippled string (74 B identicos al Spectrum)
+0x95DF  dump_backbuffer_to_scr   Dump backbuffer to screen (464 B identicos al Spectrum)
+0x97D2  setup_and_run_the_demo   Setup and run the Demo (67 B identicos al Spectrum)
+0x9815  wait_for_a_key_press_a   Wait for a key press and figure out which ke (69 B identicos al Spectrum)
+0x985A  render_regular_char_wi   Render regular char with cursor effect (127 B identicos al Spectrum)
+0x98E5  tentative_create_new_e   Tentative - create new enemies randomly (204 B identicos al Spectrum)
+0x99B1  run_entity_logic_not_s   Run Entity logic (not sure what type of enti (125 B identicos al Spectrum)
+0x9A2E  check_current_score_wi   Check current score with High Scores, insert (224 B identicos al Spectrum)
+0x9B0E  main_gameplay_mode       Main Gameplay Mode (118 B identicos al Spectrum)
+0x9B84  inter_level_activity_s   Inter level activity. Show bonus message and (119 B identicos al Spectrum)
+0x9C01  load_2nd_stage           Load 2nd Stage (356 B identicos al Spectrum)
+0x9D65  check_collision_of_ene   Check collision of energy barrier with playe (131 B identicos al Spectrum)
+0x9E40  decompress_level         Decompress level (1101 B identicos al Spectrum)
+0xA28D  run_enemy_missiles       Run enemy missiles (723 B identicos al Spectrum)
+0xAA3C  piece_of_code_copied_i   Piece of code copied into PlayMusic (128 B identicos al Spectrum)
+
+# --- Codigo que el trazador no alcanzaba, cazado por el cotejo ---------------
+#
+# El presupuesto los tenia como "datos sin clasificar" porque el trazador no
+# llega a ellos siguiendo el flujo. Pero aparecen IDENTICOS byte a byte en el
+# binario de Spectrum, y ahi el fichero de control los marca como codigo. O sea
+# que son rutinas a las que se entra por alguna via que aqui todavia no se ve.
+0x848D  sin_etiqueta             sin etiqueta (117 B identicos al Spectrum)
+0x871F  render_sentinel_nodes    Render Sentinel Nodes (5x5) (79 B identicos al Spectrum)
+0x900F  sin_etiqueta             sin etiqueta (283 B identicos al Spectrum)
+0x9508  sin_etiqueta             sin etiqueta (48 B identicos al Spectrum)
+0x9937  tentative_create_new_e   Tentative - create new enemies randomly (56 B identicos al Spectrum)
+0x9D21  sin_etiqueta             sin etiqueta (68 B identicos al Spectrum)
+0x9E08  check_collision_of_ene   Check collision of enemy with player (56 B identicos al Spectrum)
+0xA7E7  sin_etiqueta             sin etiqueta (105 B identicos al Spectrum)
+0xA8BE  sin_etiqueta             sin etiqueta (146 B identicos al Spectrum)
+0xAEEC  sin_etiqueta             sin etiqueta (30 B identicos al Spectrum)

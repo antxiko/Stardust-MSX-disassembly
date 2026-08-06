@@ -1,0 +1,50 @@
+# Puntos de entrada de la segunda parte del juego (org 0x61D0), la que se carga
+# al superar la zona 7 y en la que el protagonista va a pie.
+#
+# El descriptor del bloque [11] dice donde se carga (`ld ix,0x61D0`) pero NO
+# donde arranca. De momento se prueba con el principio del bloque, que es lo
+# unico que se puede afirmar sin haber visto la carga ocurrir.
+0x61D0  inicio      el primer byte del bloque (a falta de saber el arranque real)
+
+# --- Lo que solo se ve con la segunda parte corriendo (tools/omsx_parte2.tcl) --
+#
+# Se parte del savestate guardado justo despues de que el juego volviera a la
+# cinta a por ella, asi que no hay que jugarse otra vez los 21 minutos de naves.
+#
+# Su `jp (hl)` de 0xC544 funciona igual que los de la parte de naves -cada objeto
+# lleva apuntada su rutina de comportamiento- pero con una diferencia que dice
+# mucho: aqui los IX van de 46 en 46 (0xD068, 0xD096, 0xD0C4), no de 8 en 8. Las
+# entidades de la parte de a pie llevan una estructura casi seis veces mas
+# grande. Son dos motores distintos, no el mismo juego con otros graficos.
+#
+# El otro salto indirecto, el de 0x984D, NO llego a dispararse en 300 segundos:
+# queda pendiente y hay que decirlo, no darlo por cubierto.
+0xC703  obj_C703    comportamiento de objeto, via jp (hl) de 0xC544
+0xC70C  obj_C70C    comportamiento de objeto, via jp (hl) de 0xC544
+0xC721  obj_C721    comportamiento de objeto, via jp (hl) de 0xC544
+0xC72C  obj_C72C    comportamiento de objeto, via jp (hl) de 0xC544
+0xC75A  obj_C75A    comportamiento de objeto, via jp (hl) de 0xC544
+0xC774  obj_C774    comportamiento de objeto, via jp (hl) de 0xC544
+0xC7A7  obj_C7A7    comportamiento de objeto, via jp (hl) de 0xC544
+0xC7BB  obj_C7BB    comportamiento de objeto, via jp (hl) de 0xC544
+0xC85B  obj_C85B    comportamiento de objeto, via jp (hl) de 0xC544
+0xC891  obj_C891    comportamiento de objeto, via jp (hl) de 0xC544
+
+# Y siete tramos que la partida ejecuto y a los que el trazado no llega.
+0xAA51  ejec_AA51   ejecutado en partida, sin llamador directo localizado
+0xAA88  ejec_AA88   ejecutado en partida, sin llamador directo localizado
+0xAB1C  ejec_AB1C   ejecutado en partida, sin llamador directo localizado
+0xB268  ejec_B268   ejecutado en partida, sin llamador directo localizado
+0xC712  ejec_C712   ejecutado en partida, sin llamador directo localizado
+0xC7B7  ejec_C7B7   ejecutado en partida, sin llamador directo localizado
+0xC8BB  ejec_C8BB   ejecutado en partida, sin llamador directo localizado
+
+# Las tiras DESENROLLADAS del dibujado de sprites por software, en las que se
+# entra por la mitad. Son la misma rutina que en la parte de naves: comparados
+# 40 bytes de 0xAA88 con los de 0xC4C5 del otro bloque, solo difieren SEIS, y
+# tres de ellos son `and (hl)` (0xA6) contra `or (hl)` (0xB6). Ahi esta el
+# oficio del Spectrum: como no hay sprites por hardware, se desplaza el dibujo
+# bit a bit con `adc hl,hl / adc a,a` hasta la posicion exacta, se abre hueco
+# con AND y se pinta con OR. Se lo trajeron al MSX, que si tiene sprites.
+0xAA8F  tira_bits_1  entrada por la mitad de la tira de desplazamiento
+0xAB22  tira_bits_2  entrada por la mitad de la tira de desplazamiento

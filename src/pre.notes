@@ -1,0 +1,17 @@
+# Anotaciones del bloque pre.
+
+# El grueso del bloque es una pantalla de SCREEN 2 completa. Lo dice su propia
+# rutina de volcado, la de 0x9C10:
+#     ld hl,00000h / call 9bffh    -> direcciona la VRAM en 0x0000, los PATRONES
+#     ld hl,09c40h / ld bc,01800h  -> 6144 bytes desde 0x9C40
+#     ld hl,02000h / call 9bffh    -> direcciona 0x2000, los COLORES
+#     ld hl,0b440h / ld bc,01800h  -> 6144 bytes desde 0xB440
+# y las cuentas cierran solas: 0x9C40 + 6144 = 0xB440, y 0xB440 + 6144 = 0xCC40,
+# que es el final exacto del bloque. Dibujada con tools/render_carga.py sale la
+# ilustracion firmada CANO, que es la prueba de que el reparto es este.
+D 0x9C40 0xB440 patrones de la pantalla de carga: 6144 bytes a la VRAM 0x0000
+D 0xB440 0xCC40 colores de la pantalla de carga: 6144 bytes a la VRAM 0x2000
+# Y entre el codigo y los patrones quedan unos pocos bytes: los 8 de la tabla de
+# registros del VDP que programa la rutina de 0x9BA3, y el relleno hasta 0x9C40.
+D 0x9BB6 0x9BBE los 8 valores que se escriben en los registros 0 a 7 del VDP
+D 0x9C35 0x9C40 relleno hasta el principio de los patrones

@@ -1,0 +1,143 @@
+# Anotaciones del bloque del juego de naves (org 0x47A0).
+#
+# Formato: direccion, y el comentario que saldra en el listado.
+
+# ---------------------------------------------------------------- el buffer
+# Aqui vive la pantalla mientras el juego trabaja sobre ella. Sale de leer la
+# rutina de volcado y esta confirmado en el emulador al byte:
+#   - el codigo lo dice: `ld de,04b40h`, 40 columnas (`ld b,028h`) por 24 filas
+#     (`ld c,018h`), o sea 960 bytes, que van de 0x4B40 a 0x4EFF;
+#   - y el emulador lo confirma: vigilando el puerto 0x98, la rutina de 0xF40C
+#     hizo 3.252.480 escrituras con HL entre 0x4000 y 0x4EFF. Ese 0x4EFF es
+#     exactamente el ultimo byte del buffer.
+# Cuarenta columnas es mas de las 32 que caben en pantalla: ese margen de mas es
+# lo que permite el scroll.
+0x4B40  buffer de pantalla: 40 columnas x 24 filas, 960 bytes, leido por columnas
+
+# ------------------------------------------------------- graficos y colores
+# La zona grande de datos no es una sola cosa. Perfilandola por trozos (racha,
+# entropia y numero de valores distintos, ver tools/perfil.py) aparecen zonas de
+# naturaleza distinta, y dos se identifican con seguridad.
+#
+# Las tablas de COLOR se reconocen por su firma: en SCREEN 2 un byte de color es
+# tinta<<4|fondo, asi que en un decorado sobre fondo negro el nibble bajo es 1
+# casi siempre. Midiendo eso salen dos zonas donde pasa en mas del 90%:
+0x5300  colores de tiles: 480 bytes con el nibble bajo a 1 (tinta sobre negro)
+0x5640  colores de tiles: 832 bytes mas de lo mismo
+
+# Y un tramo largo de ceros, que hay que contar como relleno y no como datos:
+0x5C31  relleno: 972 bytes seguidos a cero
+
+# ------------------------------------------------------ rutinas de dibujado
+# Las diecisiete que escriben en VRAM, cazadas vigilando el puerto 0x98 durante
+# una partida. El numero es cuantas escrituras hizo cada una en 120 segundos.
+0xF3F1  volcado principal de la pantalla: 3.252.480 escrituras a VRAM
+0xF3FF  su nucleo: recorre el buffer por columnas, con paso de 24 bytes
+0xF650  vuelca en VRAM (42.240 escrituras)
+0xF0EC  vuelca en VRAM (26.880 escrituras)
+0xF0CC  vuelca en VRAM (24.208 escrituras)
+0xF3B4  vuelca en VRAM (17.888 escrituras)
+0xF0FB  vuelca en VRAM (14.848 escrituras)
+
+# ------------------------------------------------- el dibujado de sprites
+# Tira desenrollada en la que se entra por la mitad para desplazar el sprite los
+# bits que hagan falta. La segunda parte del juego trae la misma rutina: de 40
+# bytes comparados solo difieren seis, y tres son `and (hl)` contra `or (hl)`.
+# Es el oficio del Spectrum, que no tiene sprites por hardware: se desplaza el
+# dibujo bit a bit, se abre hueco con AND y se pinta con OR.
+0xC4C5  desplazamiento de sprite, tira desenrollada de adc hl,hl / adc a,a
+
+# ------------------------------------------------------------------ musica
+# La musica se porto TAL CUAL: los 754 bytes de las tablas de script de musica
+# aparecen identicos byte a byte en los dos binarios, con el mismo
+# desplazamiento de 0x4000 que el resto de lo portado.
+#   MSX 0xAB0E  <->  Spectrum 0xEB0E   754 bytes, los 754
+# Y la segunda parte del juego, la de a pie, reutiliza 259 de esos mismos bytes
+# en su 0x7852. O sea que las dos partes suenan con los mismos datos.
+0xAB0E  tablas de la musica: 754 bytes identicos a los de la version de Spectrum
+
+# ---------------------------------------------------- rangos de datos
+# Los mismos que src/juego.nocode, aqui en el formato que lee el
+# presupuesto. Cada uno esta avalado o por una medida hecha sobre este
+# binario, o por aparecer identico byte a byte en la version de Spectrum.
+D 0xE7A3 0xE7E9 tabla de saltos de los 35 opcodes del interprete
+D 0x5300 0x54E0 colores de tiles: 480 bytes con el nibble bajo a 1
+D 0x5640 0x5980 colores de tiles: 832 bytes mas de lo mismo
+D 0x5C31 0x5FFD relleno: 972 bytes
+D 0x4B40 0x4F00 buffer de pantalla: 40 columnas x 24 filas, leido por columnas
+D 0x61D8 0x62D7 Level 1 Data
+D 0x62D7 0x63D4 Level 2 Data
+D 0x63D4 0x64D4 Level 3 Data
+D 0x64D4 0x65DB Level 4 Data
+D 0x65DB 0x66EA Level 5 Data
+D 0x66EA 0x67E4 Level 6 Data
+D 0x67E4 0x68FF Level 7 Data
+
+# ------------------------------------- lo que quedaba sin explicar
+# Cada uno de estos rangos esta clasificado MIDIENDO, con tools/clasifica_huecos.py,
+# y la etiqueta lleva detras la medida de la que sale: la racha media de bits
+# iguales, la entropia y cuantos valores distintos usa. Lo que no se ha podido
+# clasificar con confianza pone "datos sin clasificar", que es lo que hay.
+D 0x47A0 0x4952 graficos (434 B; racha 4.21, entropia 5.08, 84 valores: rachas mas largas que el azar)
+D 0x49E3 0x49E5 relleno o resto (2 B; 2 bytes)
+D 0x49EB 0x49FA tabla (15 B; racha 2.67, entropia 1.99, 4 valores: pocos valores para ser un dibujo)
+D 0x4A03 0x4A07 relleno o resto (4 B; 4 bytes)
+D 0x4A0B 0x4A0F relleno o resto (4 B; 4 bytes)
+D 0x4A13 0x4A27 tabla (20 B; racha 2.76, entropia 2.47, 6 valores: pocos valores para ser un dibujo)
+D 0x4AE3 0x4B07 tabla (36 B; racha 2.50, entropia 2.00, 4 valores: pocos valores para ser un dibujo)
+D 0x4B0B 0x4B2F datos sin clasificar (36 B; racha 2.13, entropia 4.57, 26 valores)
+D 0x4F00 0x5051 graficos (337 B; racha 3.49, entropia 4.38, 73 valores: rachas mas largas que el azar)
+D 0x511B 0x512F tabla (20 B; racha 4.10, entropia 2.68, 9 valores: pocos valores para ser un dibujo)
+D 0x514A 0x5151 relleno o resto (7 B; 7 bytes)
+D 0x54E0 0x54EA colores (SCREEN 2) (10 B; racha 1.67, entropia 0.88, 2 valores, el nibble bajo es 0x1 en el 100%)
+D 0x5980 0x5C31 tabla (689 B; racha 4.20, entropia 2.68, 14 valores: pocos valores para ser un dibujo)
+D 0x5FFD 0x6150 graficos (339 B; racha 4.22, entropia 4.33, 50 valores: rachas mas largas que el azar)
+D 0x68FF 0x69A8 relleno (169 B; 169 de 169 bytes son 0x00)
+D 0xBAD7 0xBADF colores (SCREEN 2) (8 B; racha 2.00, entropia 1.30, 3 valores, el nibble bajo es 0xA en el 88%)
+D 0xBB4E 0xBB53 relleno o resto (5 B; 5 bytes)
+D 0xBB73 0xBB7C tabla (9 B; racha 2.18, entropia 1.75, 4 valores: pocos valores para ser un dibujo)
+D 0xBB7E 0xBB88 tabla (10 B; racha 2.16, entropia 0.72, 2 valores: pocos valores para ser un dibujo)
+D 0xBBB2 0xBBCB tabla (25 B; racha 2.30, entropia 2.95, 9 valores: pocos valores para ser un dibujo)
+D 0xBC4F 0xBC54 relleno o resto (5 B; 5 bytes)
+D 0xC05C 0xC063 relleno o resto (7 B; 7 bytes)
+D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
+D 0xC190 0xC1BD datos sin clasificar (45 B; racha 2.24, entropia 4.47, 29 valores)
+D 0xC4FC 0xC525 tabla (41 B; racha 1.89, entropia 3.64, 18 valores: pocos valores para ser un dibujo)
+D 0xC5B5 0xC5D2 tabla (29 B; racha 1.63, entropia 3.36, 15 valores: pocos valores para ser un dibujo)
+D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
+D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
+D 0xCE73 0xCEBC datos sin clasificar (73 B; racha 2.46, entropia 5.25, 45 valores)
+D 0xD314 0xD3CF datos sin clasificar (187 B; racha 2.55, entropia 5.95, 86 valores)
+D 0xD6C5 0xD6EA tabla (37 B; racha 2.49, entropia 4.15, 23 valores: pocos valores para ser un dibujo)
+D 0xD9DB 0xDA06 datos sin clasificar (43 B; racha 2.26, entropia 4.69, 29 valores)
+D 0xDA3D 0xDA55 tabla (24 B; racha 2.02, entropia 4.14, 19 valores: pocos valores para ser un dibujo)
+D 0xDA72 0xDA82 tabla (16 B; racha 2.25, entropia 3.62, 13 valores: pocos valores para ser un dibujo)
+D 0xDA83 0xDAD9 datos sin clasificar (86 B; racha 2.17, entropia 5.59, 54 valores)
+D 0xDFD4 0xE001 datos sin clasificar (45 B; racha 2.31, entropia 4.55, 28 valores)
+D 0xE002 0xE0F8 datos sin clasificar (246 B; racha 2.31, entropia 5.63, 75 valores)
+D 0xE14E 0xE15A relleno (12 B; 12 de 12 bytes son 0x00)
+D 0xE5E2 0xE5E7 relleno o resto (5 B; 5 bytes)
+D 0xE7F4 0xE7F6 relleno o resto (2 B; 2 bytes)
+D 0xE80B 0xE80C relleno o resto (1 B; 1 bytes)
+D 0xE8C0 0xE8C8 tabla (8 B; racha 2.13, entropia 2.50, 6 valores: pocos valores para ser un dibujo)
+D 0xE922 0xE92A tabla (8 B; racha 2.46, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
+D 0xE97E 0xE987 tabla (9 B; racha 3.43, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
+D 0xEAB9 0xEADD tabla (36 B; racha 2.36, entropia 3.97, 21 valores: pocos valores para ser un dibujo)
+D 0xF07B 0xF080 relleno o resto (5 B; 5 bytes)
+D 0xF120 0xF124 relleno o resto (4 B; 4 bytes)
+D 0xF393 0xF394 relleno o resto (1 B; 1 bytes)
+D 0xF77D 0xF77E relleno o resto (1 B; 1 bytes)
+D 0xF7C7 0xF7F6 tabla (47 B; racha 1.95, entropia 3.71, 15 valores: pocos valores para ser un dibujo)
+D 0xF8C8 0xF972 tabla (170 B; racha 8.14, entropia 1.05, 3 valores: pocos valores para ser un dibujo)
+
+# ------------------------------------------------- los graficos, identificados
+# Las geometrias salen de tools/ExtractImages.cpp del desensamblado de la
+# version de Spectrum, donde el formato esta escrito en codigo. Pero eso es otro
+# binario, asi que aqui se comprueban de dos maneras y las dos salen: la cuenta
+# cierra -0x6DE0 + 111*128 = 0xA560, justo donde empiezan los sprites- y, sobre
+# todo, dibujados salen graficos reconocibles en vez de ruido. Se rehace con
+# tools/render_graficos.py.
+D 0x6000 0x61D8 charset: 59 caracteres de 8x8
+D 0x69A8 0x6DE0 graficos de los centinelas: 15 de 24x24
+D 0x6DE0 0xA560 tiles de los niveles: 111 de 32x32, 128 bytes cada uno
+D 0xA560 0xBA20 sprites: 83 de 16x16 con mascara, 64 bytes cada uno

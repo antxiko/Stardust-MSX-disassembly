@@ -1,0 +1,57 @@
+# Deja un unico despliegue de Pages: el que esta sirviendo.
+#
+# GitHub crea un deployment nuevo cada vez que reconstruye la web, asi que sin
+# esto se van acumulando decenas de entradas en el historial del repositorio.
+# Ninguna sirve para nada una vez superada: la web la sirve solo la ultima.
+#
+# Se dispara con `page_build`, que es justo el evento que GitHub emite cuando
+# acaba de publicar la web, de modo que la limpieza va siempre detras del
+# despliegue bueno y nunca lo pisa.
+
+name: Limpia despliegues antiguos
+
+on:
+  page_build:
+  workflow_dispatch:      # y a mano, por si se quiere pasar la escoba
+
+permissions:
+  deployments: write
+
+concurrency:
+  group: limpia-despliegues
+  cancel-in-progress: false
+
+jobs:
+  limpiar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Borrar los despliegues ya superados
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          LISTA="repos/$REPO/deployments?environment=github-pages&per_page=100"
+
+          # La API los devuelve del mas nuevo al mas viejo: el primero es el vivo.
+          ACTIVO=$(gh api "$LISTA" --jq '.[0].id // empty')
+          if [ -z "$ACTIVO" ]; then
+            echo "No hay despliegues; nada que limpiar."
+            exit 0
+          fi
+          echo "Se conserva el despliegue activo: $ACTIVO"
+
+          BORRADOS=0
+          for ID in $(gh api "$LISTA" --jq ".[] | select(.id != $ACTIVO) | .id"); do
+            # GitHub no deja borrar un deployment activo, asi que primero se marca
+            # como inactivo. Si ya lo estaba, este paso no hace nada.
+            gh api -X POST "repos/$REPO/deployments/$ID/statuses" \
+              -f state=inactive --silent 2>/dev/null || true
+            if gh api -X DELETE "repos/$REPO/deployments/$ID" --silent; then
+              echo "  borrado $ID"
+              BORRADOS=$((BORRADOS + 1))
+            else
+              echo "  no se pudo borrar $ID (se deja como esta)"
+            fi
+          done
+          echo "Despliegues borrados: $BORRADOS"

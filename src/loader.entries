@@ -1,0 +1,3 @@
+# El cargador turbo (org 0xD2F0). Su unico punto de entrada es el que declara la
+# cabecera BIN y que llama el BASIC con DEFUSR=54000.
+0xD2F0  arranque   lo llama el cargador BASIC con A=USR(0)
