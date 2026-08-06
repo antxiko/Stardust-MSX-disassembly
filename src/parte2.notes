@@ -156,3 +156,41 @@ D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
 0xA4D1  rotulo_demo   dibuja DEMO abajo a la derecha; sabe que hay demo mirando el operando parcheado de 0xA689
 0xA6EE  lee_demo      lee un byte de la partida grabada y avanza el puntero de 0xC460
 0xB4BC  render_cadena la del tramado: dibuja con las mascaras de 0xB4A9/0xB4AF
+
+# --- LOS DOS PLANOS DE SCROLL (medido, 2026-08-06) ---------------------------
+#
+# Un jugador que se paso el juego conto que la fase de a pie tiene DOS PISOS que
+# se mueven a velocidades distintas, el de abajo mas lento, dando sensacion de
+# profundidad. Esto es lo que se ha podido MEDIR de eso, y lo que no.
+#
+# HECHO-VERIFICADO 1: los planos NO se separan mirando la VRAM. Vigilando el
+# puerto 0x98 durante la partida grabada solo aparecen cuatro rutinas que
+# escriben, y una hace el 98 % del trabajo:
+#     0xD3B3   595.200 escrituras   HL 0x4000-0x4EFF   VRAM 0x0108-0x16E7
+# O sea que los dos planos se componen ANTES, dentro del buffer de RAM, y de ahi
+# sale un unico volcado. (tools/omsx_vram_apie.tcl)
+#
+# HECHO-VERIFICADO 2: el buffer NO se desplaza en horizontal. Correlando cada
+# una de sus 40 filas entre fotos separadas, el desplazamiento es CERO en las
+# cuarenta, con aciertos del 90-98 %.
+#
+# HECHO-VERIFICADO 3: si se desplaza a lo largo de sus COLUMNAS, y a DOS
+# VELOCIDADES DISTINTAS a la vez:
+#     columnas 17, 19, 20, 21, 22, 23   ->  +8,00 filas   100 % de acierto
+#     columnas 0-3, 10-11, 14-15        ->  +3,60 filas   100 % de acierto
+# Razon ~2,2:1. (tools/omsx_planos.tcl, sobre el replay en t=2400)
+#
+# HECHO-VERIFICADO 4: en RAM hay contadores que avanzan a esos dos ritmos, con
+# la razon exacta 2:1 y ciclo de 0 a 8, que es la forma de un desplazamiento
+# dentro de un tile de ocho pixeles:
+#     0xACE7, 0xACEC, 0xACF6   +1 por cuadro
+#     0xACE9                   +2 por cuadro
+# No se referencian con direccionamiento absoluto: se llega a ellos por registro
+# indice, y caen dentro del rango 0xACA2-0xAD31 que este fichero declara como
+# "tabla" y que en realidad es un bloque de variables (0xAD27, ahi dentro, es el
+# contador de cuadros que hace parpadear el rotulo DEMO).
+#
+# LO QUE NO ESTA ESTABLECIDO, y conviene no dar por hecho: CUAL de los dos
+# grupos es el piso de arriba y cual el de abajo. Para eso hay que atar las
+# columnas del buffer a la geometria de la pantalla, y precisamente los ejes de
+# este buffer ya se leyeron al reves una vez. Queda pendiente.
