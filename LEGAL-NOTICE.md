@@ -77,7 +77,7 @@ binary and applied in the emulator.
 
 **A full playthrough recorded by Araubi** (openMSX replay, 2021), which is what
 made it possible to trace the code behind the screens a scripted run never
-reaches.
+reaches. Thank you.
 
 ## If you are one of the authors
 

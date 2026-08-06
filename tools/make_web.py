@@ -52,6 +52,11 @@ TXT = {
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
                  "estuviera mal, saldría ruido en vez de una tilería.",
+        pie_gracias="<b>Gracias a Araubi.</b> Su grabación de una partida "
+                    "completa en el emulador es lo que ha permitido trazar el "
+                    "código de las pantallas a las que una partida automática no "
+                    "llega nunca, y llegar a la segunda parte del juego. Buena "
+                    "parte de lo que hay en esta página sale de ahí.",
         pie_leg="Trabajo de documentación y preservación sobre un juego de 1987. "
                 "El código y los gráficos son de sus autores y de Topo Soft. La "
                 "imagen de cinta no se distribuye. Parte del análisis se apoya en "
@@ -89,6 +94,11 @@ TXT = {
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "
                  "would come out instead of a tileset.",
+        pie_gracias="<b>Thanks to Araubi.</b> Their recording of a complete "
+                    "playthrough in the emulator is what made it possible to trace "
+                    "the code behind the screens a scripted run never reaches, and "
+                    "to get to the second part of the game. A good deal of what is "
+                    "on this page comes from it.",
         pie_leg="Documentation and preservation work on a 1987 game. The code and "
                 "artwork belong to their authors and to Topo Soft. The tape image "
                 "is not distributed. Part of the analysis leans on the ZX Spectrum "
@@ -287,7 +297,7 @@ def main(argv):
   <p class="n">{t['nota_scr']}</p>
   <div class="galeria">{imgs}</div>
 </section>
-<footer><p>{t['pie_leg']}</p></footer>
+<footer><p>{t['pie_gracias']}</p><p>{t['pie_leg']}</p></footer>
 """
     with open(salida, "w", encoding="utf-8") as f:
         f.write(html)

@@ -54,6 +54,10 @@ citan en la documentación. Se han verificado contra este binario y aplicados en
 el emulador, y sirvieron para llegar a la segunda parte del juego y ver la
 multicarga en funcionamiento.
 
+**Una partida completa grabada por Araubi** (replay de openMSX, 2021), que es lo
+que ha permitido trazar el código de las pantallas a las que una partida
+automática no llega nunca. Gracias.
+
 ## Si eres uno de los autores
 
 Si trabajaste en *Stardust* o eres titular de derechos sobre el juego, y

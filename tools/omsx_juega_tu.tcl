@@ -16,8 +16,15 @@
 #
 #     reverse savereplay stardust_pantallas
 #
-# Uso:  STARDUST_ESTADO=<nombre del savestate> openmsx -machine <maq> -script este.tcl
+# Uso:  STARDUST_ESTADO=<savestate> [STARDUST_REPLAY=<nombre>] \
+#           openmsx -machine <maquina> -script este.tcl
+#
+# STARDUST_REPLAY da nombre a la grabacion. Tiene valor por defecto por comodidad,
+# pero conviene pasarlo SIEMPRE: el guardado automatico machaca el fichero, y una
+# sesion de la parte de a pie grabada encima de la de las pantallas se lleva por
+# delante un trabajo que costo horas.
 set ESTADO $::env(STARDUST_ESTADO)
+set REPLAY [expr {[info exists ::env(STARDUST_REPLAY)] ? $::env(STARDUST_REPLAY) : "stardust_pantallas"}]
 set L [open "/tmp/omsx_juega_tu.log" w]
 proc say {m} { global L; puts $L "\[[format %8.2f [machine_info time]]\] $m"; flush $L }
 
@@ -39,7 +46,11 @@ say "GRABANDO. El mando es tuyo."
 # grabacion que solo existe en memoria es una grabacion que se va a perder.
 set ::guardados 0
 proc autoguarda {} {
-    set r [catch {reverse savereplay stardust_pantallas} msg]
+    # OJO: el `global`. Sin el, la primera version parametrizada de esto fallaba
+    # en CADA guardado con "can't read REPLAY: no such variable" y la sesion se
+    # quedaba sin grabar en disco, avisando solo en el log.
+    global REPLAY
+    set r [catch {reverse savereplay $REPLAY} msg]
     if {$r} {
         say "AVISO: no se pudo guardar ($msg)"
     } else {
@@ -49,5 +60,5 @@ proc autoguarda {} {
     after time 60 autoguarda
 }
 after time 60 autoguarda
-say "Se guarda solo cada minuto en ~/.openMSX/replays/stardust_pantallas.omr"
+say "Se guarda solo cada minuto en ~/.openMSX/replays/$REPLAY.omr"
 say "Puedes cerrar la ventana cuando quieras: se pierde como mucho el ultimo minuto."
