@@ -119,6 +119,7 @@ imagenes: extracted/.stamp
 	@mkdir -p docs/imagenes
 	python3 tools/render_carga.py work/pre.raw docs/imagenes/carga.png
 	python3 tools/render_graficos.py work/juego.raw docs/imagenes
+	python3 tools/render_niveles.py work/juego.raw docs/imagenes
 
 verify: listados sanity imagenes
 	@echo "=================================================================="

@@ -5983,6 +5983,10 @@ L_DA55:
 ;   0xdad9..0xdf0f  (1078 bytes)
 ; DATOS tabla: de teclas: 7 entradas de (mascara, valor de puerto)
 ;   0xdcb1..0xdcbf  (14 bytes)
+; DATOS tabla: de zonas: 7 entradas de (puntero, color de SCREEN 2)
+;   0xde03..0xde18  (21 bytes)
+; DATOS diccionario: de frases del descompresor de niveles
+;   0xde18..0xde9a  (130 bytes)
 ; ----------------------------------------------------------------------
 	defb 0cdh,055h,0dah,0ddh,036h,000h,000h,0c0h,03ah,084h,0c1h,0feh,058h,0c0h,03ah,0a3h	; da72  .U..6...:...X.:.
 	defb 0c9h,0feh,008h,0c0h,021h,09dh,0dah,022h,064h,0c0h,021h,059h,0d9h,022h,0ddh,0d0h	; da82  ....!.."d.!Y."..

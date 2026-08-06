@@ -52,9 +52,19 @@ agree with the rest. Because both versions share the artwork, those needles
 landed inside the tileset, and a batch of routine names ended up attached to
 addresses that hold graphics.
 
-**Everything that came from that cross-check has been removed from this
-repository**, and nothing from it will come back until the search is fixed. What
-is published now rests only on the MSX binary and on the emulator. There is a
+**What came from that cross-check has been removed**, and nothing from it will
+come back until the search is fixed. That took two passes: the entry points
+first, and later 28 data ranges that had survived in another file still carrying
+their Spectrum names —"Starfield vertical positions", "Keyboard map", "High
+Score table", and one called "Split text to prevent bug in SkoolKit", after the
+Spectrum's own disassembly tool. All of them sat inside ranges this project had
+already identified as artwork.
+
+One thing is kept from that batch, and not because of where it came from: the
+addresses of the seven zone maps, which have since been verified here by
+expanding them —each one yields a valid compressed stream of exactly 450 tile
+indices. What is published now rests only on the MSX binary and on the
+emulator. There is a
 check, `tools/check_entradas.py`, that refuses any entry point falling inside a
 range declared as data, which is exactly the shape that error took.
 

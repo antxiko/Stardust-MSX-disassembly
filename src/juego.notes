@@ -298,3 +298,32 @@ D 0xE0CF 0xE0D2 relleno o resto (3 B; 3 bytes)
 # El 0xDDF2 de ahi es la cadena DEMO dentro del bloque de textos, y encaja con
 # que el rotulo aparezca abajo a la derecha: 0x4D94 esta en el buffer de
 # pantalla, que va de 0x4B40 a 0x4EFF.
+
+# --- LOS MAPAS DE LAS SIETE ZONAS, Y COMO VAN COMPRIMIDOS --------------------
+#
+# Cada zona ocupa unos 250 bytes, y eso no da para un mapa: van comprimidos con
+# un DICCIONARIO DE FRASES RECURSIVO. La rutina esta en 0xDA06 y el esquema es:
+# cada byte del flujo es un token; con el bit 7 a cero es un literal que va al
+# buffer, con el bit 7 a uno los siete bits bajos indexan una frase del
+# diccionario, y esa frase se expande llamando a la MISMA rutina, asi que una
+# frase puede contener otras. Es una gramatica, no un copia-pega. El 0xFF acaba.
+#
+# Las frases del diccionario son de longitud variable y cada una empieza por su
+# propio tamano -contandose a si misma-, que es como se salta de una a la
+# siguiente sin tabla de indices.
+0xDA06  descomprime_token  expande un token del nivel: literal, o frase del diccionario
+0xDA33  descomprime_nivel  el bucle: IX=0x5C50 (destino) y HL=los datos comprimidos
+0xBEED  carga_zona         lee la tabla de zonas con el numero de zona de 0xE157
+
+# La geometria sale de dos comprobaciones que se sostienen solas:
+#   - las SIETE zonas expanden a exactamente 450 bytes. Siete flujos distintos
+#     cayendo en el mismo tamano no es casualidad.
+#   - 450 = 10 x 45, y el 10 no se elige: el buffer de pantalla tiene 40
+#     columnas y los tiles miden 4 caracteres, 40/4 = 10.
+#   - cada byte es un indice de tile, y van de 0 a 110 cuando hay exactamente
+#     111 tiles. La zona 7 usa el 110, el ultimo.
+# Se rehace con tools/descomprime_nivel.py y se dibuja con render_niveles.py.
+D 0xDE03 0xDE18 tabla de zonas: 7 entradas de (puntero, color de SCREEN 2)
+#   Los colores ciclan 0xA1, 0xF1, 0x71 -tinta 10, 15 y 7 sobre fondo negro-.
+D 0xDE18 0xDE9A diccionario de frases del descompresor de niveles
+#   Cada frase: un byte de longitud -incluyendose- y luego sus tokens.

@@ -39,6 +39,38 @@ OR.
 
 59 characters of 8×8 at 0x6000, and the fifteen 24×24 sentinel nodes at 0x69A8.
 
+## The seven zone maps
+
+Each zone takes about **250 bytes** on the tape, nowhere near enough for a map.
+They are **compressed**, and the scheme is a pretty one: a *recursive* phrase
+dictionary. Every byte of the stream is a token; with bit 7 clear it is a tile
+number that goes straight into the map, and with bit 7 set the low seven bits
+index a phrase in the dictionary. That phrase is expanded by calling the same
+routine, so **a phrase can contain other phrases**. It is a grammar, not a
+copy-paste. An 0xFF ends the level.
+
+Expanded, all seven zones come to **exactly 450 bytes**. Seven different streams
+landing on the same size is the sign that the decompressor is reading it right.
+And 450 = 10 × 45: the width isn't a choice, it follows from the screen buffer
+being 40 columns wide and each tile being four characters.
+
+Every byte is a tile index, and they run from 0 to 110 when there are exactly
+111 tiles. Zone 7 uses number 110, the last one. Another check that falls out on
+its own.
+
+Each zone's colour comes from the same table as its pointer, and the seven cycle
+through three: red, white and cyan.
+
+![Zone 1 map](imagenes/zona1.png)
+![Zone 2 map](imagenes/zona2.png)
+![Zone 3 map](imagenes/zona3.png)
+![Zone 4 map](imagenes/zona4.png)
+![Zone 5 map](imagenes/zona5.png)
+![Zone 6 map](imagenes/zona6.png)
+![Zone 7 map](imagenes/zona7.png)
+
+They are rebuilt with `tools/descomprime_nivel.py` and `tools/render_niveles.py`.
+
 ## The panel and the zones
 
 The play screen carries a decorated frame on all four sides and leaves a central

@@ -38,6 +38,37 @@ software del Spectrum, que abre hueco con AND antes de pintar con OR.
 
 59 caracteres de 8×8 en 0x6000, y los quince nodos centinela de 24×24 en 0x69A8.
 
+## Los mapas de las siete zonas
+
+Cada zona ocupa unos **250 bytes** en la cinta, que no da ni de lejos para un
+mapa. Van **comprimidos**, y el esquema es bonito: un diccionario de frases
+*recursivo*. Cada byte del flujo es un token; si tiene el bit 7 a cero es un
+número de tile que va directo al mapa, y si lo tiene a uno los siete bits bajos
+indexan una frase del diccionario. Esa frase se expande llamando a la misma
+rutina, así que **una frase puede contener otras**. Es una gramática, no un
+copia-pega. Un 0xFF acaba el nivel.
+
+Al expandirlos, las siete zonas dan **exactamente 450 bytes**. Que siete flujos
+distintos caigan en el mismo tamaño es la señal de que el descompresor lee bien.
+Y 450 = 10 × 45: el ancho no se elige, sale de que el buffer de pantalla tiene
+40 columnas y cada tile mide cuatro caracteres.
+
+Cada byte es un índice de tile, y van de 0 a 110 cuando hay exactamente 111
+tiles. La zona 7 usa el 110, el último. Otra comprobación que sale sola.
+
+El color de cada zona viene de la misma tabla que el puntero, y las siete ciclan
+entre tres: rojo, blanco y cian.
+
+![Mapa de la zona 1](../imagenes/zona1.png)
+![Mapa de la zona 2](../imagenes/zona2.png)
+![Mapa de la zona 3](../imagenes/zona3.png)
+![Mapa de la zona 4](../imagenes/zona4.png)
+![Mapa de la zona 5](../imagenes/zona5.png)
+![Mapa de la zona 6](../imagenes/zona6.png)
+![Mapa de la zona 7](../imagenes/zona7.png)
+
+Se rehacen con `tools/descomprime_nivel.py` y `tools/render_niveles.py`.
+
 ## El marcador y las zonas
 
 La pantalla de juego lleva un marco de adornos por los cuatro lados y deja una

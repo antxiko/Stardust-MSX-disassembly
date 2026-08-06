@@ -118,9 +118,6 @@ This isn't parked. The open lines, in order of what would pay off most:
   table. What is left to visit the same way is the second part, on foot.
 - **The unclassified bytes.** The cross-check route is closed until the search
   is fixed to demand a unique match and a consistent offset.
-- **The level maps.** The seven ship levels are located and declared (0x61D8 to
-  0x68FE, around 250 bytes each) and they are **compressed**, which is why they
-  take so little. Drawing them means working out the decompressor.
 - **The indirect jump at 0x984D**, still unfired and with no known destination.
 - **Commenting the routines** one by one. They are bounded and named; what they
   do is still to be written down.

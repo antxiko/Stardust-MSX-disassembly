@@ -94,6 +94,13 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <h3 id="the-charset-and-the-sentinels">The charset and the sentinels</h3>
 <p><img src="imagenes/charset.png" alt="The character set"></p>
 <p>59 characters of 8×8 at 0x6000, and the fifteen 24×24 sentinel nodes at 0x69A8.</p>
+<h2 id="the-seven-zone-maps">The seven zone maps</h2>
+<p>Each zone takes about <b>250 bytes</b> on the tape, nowhere near enough for a map. They are <b>compressed</b>, and the scheme is a pretty one: a <em>recursive</em> phrase dictionary. Every byte of the stream is a token; with bit 7 clear it is a tile number that goes straight into the map, and with bit 7 set the low seven bits index a phrase in the dictionary. That phrase is expanded by calling the same routine, so <b>a phrase can contain other phrases</b>. It is a grammar, not a copy-paste. An 0xFF ends the level.</p>
+<p>Expanded, all seven zones come to <b>exactly 450 bytes</b>. Seven different streams landing on the same size is the sign that the decompressor is reading it right. And 450 = 10 × 45: the width isn&#x27;t a choice, it follows from the screen buffer being 40 columns wide and each tile being four characters.</p>
+<p>Every byte is a tile index, and they run from 0 to 110 when there are exactly 111 tiles. Zone 7 uses number 110, the last one. Another check that falls out on its own.</p>
+<p>Each zone&#x27;s colour comes from the same table as its pointer, and the seven cycle through three: red, white and cyan.</p>
+<p><img src="imagenes/zona1.png" alt="Zone 1 map"> <img src="imagenes/zona2.png" alt="Zone 2 map"> <img src="imagenes/zona3.png" alt="Zone 3 map"> <img src="imagenes/zona4.png" alt="Zone 4 map"> <img src="imagenes/zona5.png" alt="Zone 5 map"> <img src="imagenes/zona6.png" alt="Zone 6 map"> <img src="imagenes/zona7.png" alt="Zone 7 map"></p>
+<p>They are rebuilt with <code>tools/descomprime_nivel.py</code> and <code>tools/render_niveles.py</code>.</p>
 <h2 id="the-panel-and-the-zones">The panel and the zones</h2>
 <p>The play screen carries a decorated frame on all four sides and leaves a central window for the action, with the score and the zone number along the bottom. The frame is very much of its time and very much of the Spectrum: it takes advantage of the fact that the borders never change to fill them with detail at no cost.</p>
 <h2 id="the-game-s-text">The game&#x27;s text</h2>
