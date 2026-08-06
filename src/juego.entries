@@ -241,3 +241,39 @@
 0xC50C  ejec_C50C    ejecutado en partida (3977 muestras)
 0xC5C1  ejec_C5C1    ejecutado en partida (71 muestras)
 0xF07B  ejec_F07B    ejecutado en partida (4 muestras)
+
+# --- LAS PANTALLAS QUE UNA PARTIDA NORMAL NO TOCA ----------------------------
+#
+# Salen de una grabacion corta hecha a mano (tools/omsx_juega_tu.tcl para jugar,
+# tools/omsx_pantallas.tcl para muestrear) en la que se visitaron a proposito el
+# fin de partida, la entrada de record, la demo entera, el menu con sus dos
+# opciones de control, redefinir teclas y el scroll de la tabla de records.
+#
+# Es la parte del juego que ningun arnes automatico alcanza: un bot que aporrea
+# el disparo no entra en un menu ni escribe un nombre. Seis minutos de juego a
+# mano dieron 2180 direcciones distintas, 76 de ellas fuera de lo trazado.
+#
+# El grupo grande de 0xDFD7 en adelante es el menu y la redefinicion de teclas;
+# el de 0xD394 y 0xD9E4, la entrada de record y su scroll.
+0xC193  ejec_C193    ejecutado a mano (3 muestras)
+0xC1A8  ejec_C1A8    ejecutado a mano (2 muestras)
+0xC503  ejec_C503    ejecutado a mano (29 muestras)
+0xC5B5  ejec_C5B5    ejecutado a mano (48 muestras)
+0xCE73  ejec_CE73    ejecutado a mano (6 muestras)
+0xD330  ejec_D330    ejecutado a mano (2 muestras)
+0xD394  ejec_D394    ejecutado a mano (37 muestras)
+0xD6D6  ejec_D6D6    ejecutado a mano (4 muestras)
+0xD6E5  ejec_D6E5    ejecutado a mano (2 muestras)
+0xD9DB  ejec_D9DB    ejecutado a mano (2 muestras)
+0xD9E4  ejec_D9E4    ejecutado a mano (11 muestras)
+0xDFD7  ejec_DFD7    ejecutado a mano (3 muestras)
+0xDFE3  ejec_DFE3    ejecutado a mano (3 muestras)
+0xE008  ejec_E008    ejecutado a mano (2 muestras)
+0xE016  ejec_E016    ejecutado a mano (3 muestras)
+0xE030  ejec_E030    ejecutado a mano (1 muestra)
+0xE045  ejec_E045    ejecutado a mano (1 muestra)
+0xE061  ejec_E061    ejecutado a mano (5 muestras)
+0xE075  ejec_E075    ejecutado a mano (1 muestra)
+0xE094  ejec_E094    ejecutado a mano (8 muestras)
+0xE0D2  ejec_E0D2    ejecutado a mano (2 muestras)
+0xE0E0  ejec_E0E0    ejecutado a mano (3 muestras)

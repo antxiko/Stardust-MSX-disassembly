@@ -103,15 +103,9 @@ D 0xC05C 0xC063 relleno o resto (7 B; 7 bytes)
 D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
 D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
 D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
-D 0xCE73 0xCEBC datos sin clasificar (73 B; racha 2.46, entropia 5.25, 45 valores)
-D 0xD314 0xD3CF datos sin clasificar (187 B; racha 2.55, entropia 5.95, 86 valores)
-D 0xD6C5 0xD6EA tabla (37 B; racha 2.49, entropia 4.15, 23 valores: pocos valores para ser un dibujo)
-D 0xD9DB 0xDA06 datos sin clasificar (43 B; racha 2.26, entropia 4.69, 29 valores)
 D 0xDA3D 0xDA55 tabla (24 B; racha 2.02, entropia 4.14, 19 valores: pocos valores para ser un dibujo)
 D 0xDA72 0xDA82 tabla (16 B; racha 2.25, entropia 3.62, 13 valores: pocos valores para ser un dibujo)
 D 0xDA83 0xDAD9 datos sin clasificar (86 B; racha 2.17, entropia 5.59, 54 valores)
-D 0xDFD4 0xE001 datos sin clasificar (45 B; racha 2.31, entropia 4.55, 28 valores)
-D 0xE002 0xE0F8 datos sin clasificar (246 B; racha 2.31, entropia 5.63, 75 valores)
 D 0xE14E 0xE15A relleno (12 B; 12 de 12 bytes son 0x00)
 D 0xE5E2 0xE5E7 relleno o resto (5 B; 5 bytes)
 D 0xE7F4 0xE7F6 relleno o resto (2 B; 2 bytes)
@@ -183,7 +177,51 @@ D 0xBBCB 0xBC4F datos sin clasificar (132 B; racha 3.06, entropia 3.58, 15 valor
 D 0xBC54 0xBD85 datos sin clasificar (305 B; racha 3.44, entropia 3.48, 18 valores: pocos valores para ser un dibujo; parece tabla)
 D 0xCA5F 0xCA96 datos sin clasificar (55 B; racha 5.00, entropia 2.95, 14 valores: pocos valores para ser un dibujo; parece tabla)
 D 0xDA82 0xDA83 datos sin clasificar (1 B; 1 bytes)
-D 0xDAD9 0xDF0F datos sin clasificar (1078 B; racha 2.35, entropia 5.49, 125 valores)
+D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
+#   Cada entrada son dos bytes: la MASCARA del bit dentro de la fila, y el valor
+#   que hay que escribir en el puerto 0xAA del PPI para seleccionar esa fila,
+#   que es 0xF0 or fila. Las siete van en el mismo orden en que el juego las
+#   pregunta al redefinir: ABAJO, ARRIBA, DERECHA, IZQUIERDA, DISPARO, PARAR,
+#   ABANDONAR.
+#
+#   Se localizo redefiniendolas a mano en el emulador (K I L J A P Q) y buscando
+#   despues esas siete mascaras en la RAM: aparecen aqui, con paso 2, y los
+#   bytes intercalados son 0xF4 0xF3 0xF4 0xF3 0xF2 0xF4 0xF4, o sea las filas
+#   4 3 4 3 2 4 4, que son exactamente las de esas teclas en la matriz del MSX.
+#
+#   LO QUE TRAE DE FABRICA, leido de la cinta:
+#       ARRIBA    0x40 0xF4   fila 4 bit 6   Q
+#       ABAJO     0x40 0xF2   fila 2 bit 6   A
+#       IZQUIERDA 0x10 0xF4   fila 4 bit 4   O
+#       DERECHA   0x20 0xF4   fila 4 bit 5   P
+#       DISPARO   0x01 0xF8   fila 8 bit 0   ESPACIO
+#       PARAR     0x20 0xF3   fila 3 bit 5   H
+#       ABANDONAR 0x10 0xF3   fila 3 bit 4   G
+#   Q-A-O-P-espacio es la disposicion clasica del ZX Spectrum. Otra cosa mas que
+#   la conversion se trajo tal cual: en un juego pensado para MSX no habria
+#   ninguna razon para elegir justo esas.
+#
+#   Y explica la cadena de teclado que hay unas lineas mas arriba en el bloque de
+#   textos: sus 48 caracteres son 6 filas de 8, o sea la matriz del MSX puesta en
+#   fila, y con ella se traduce (fila, bit) al caracter que se muestra en
+#   pantalla al redefinir.
+
+D 0xDAD9 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
+#   (1078 B, 63 % imprimible). Estuvo como "datos sin clasificar" hasta que
+#   un jugador conto que el rotulo DEMO parpadea abajo a la derecha: buscando
+#   esa cadena aparece en 0xDDF2, dentro de este rango, y con ella el resto.
+#   Contiene, por orden: el mensaje de la multicarga (HAS CONSEGUIDO PENETRAR
+#   LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN NO HA LLEGADO / PULSA
+#   ALGUNA TECLA SI QUIERES DESCUBRIRLO); los siete rotulos de redefinir
+#   teclas (ABAJO, ARRIBA, DERECHA, IZQUIERDA, DISPARO, PARAR, ABANDONAR); el
+#   mapa de teclado con que se muestra la tecla pulsada, que empieza por
+#   0123456789-=#"$&';,./% y sigue con el alfabeto y los nombres de las
+#   especiales (SHIFT, CTRL, GRAPH, CAPS, CODE, F 1..F 5, ESC, TAB, STOP,
+#   SELECT, ENTER, SPACE, HOME, INS, DEL); el menu (STARDUST, JOYSTICK,
+#   TECLADO, REDEFINIR TECLAS, JUGAR); la tabla de records de fabrica; la
+#   pantalla de entrada de record (B R A V O / HAS CONSEGUIDO UNA / DE LAS
+#   MEJORES / PUNTUACIONES DE HOY / ESCRIBE TU NOMBRE); y DEMO y BONUS 5000.
+#   Que no se ejecute nunca cuadra con que sea texto y no codigo.
 D 0xE001 0xE002 datos sin clasificar (1 B; 1 bytes)
 D 0xE5E7 0xE785 datos sin clasificar (414 B; racha 4.85, entropia 4.08, 95 valores: rachas mas largas que el azar; parece graficos)
 D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
@@ -198,6 +236,21 @@ D 0xF972 0xFDE7 datos sin clasificar (1141 B; racha 7.87, entropia 1.08, 11 valo
 # ejecutaban, se retiraron y se declararon como puntos de entrada. Estos son los
 # trozos que quedaron a los lados: el trazador no llega a ellos, y la partida
 # tampoco paso por ahi. Se etiquetan conservador, como todo lo que no se sabe.
-D 0xC190 0xC1AF tabla (31 B; racha 2.32, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
-D 0xC503 0xC50C tabla (9 B; racha 1.67, entropia 1.58, 3 valores: pocos valores para ser un dibujo)
-D 0xC5B5 0xC5C1 tabla (12 B; racha 1.68, entropia 2.79, 8 valores: pocos valores para ser un dibujo)
+
+# --- Bordes de las rutinas que aparecieron en la sesion a mano ---------------
+# Lo mismo que arriba: al comprobar que varios rangos se ejecutaban se
+# retiraron y entraron como puntos de entrada; estos son los trozos de los
+# lados, a los que ni el trazador llega ni la partida paso.
+D 0xC190 0xC193 relleno o resto (3 B; 3 bytes)
+D 0xC5BB 0xC5C1 relleno o resto (6 B; 6 bytes)
+D 0xD314 0xD330 tabla (28 B; racha 2.77, entropia 4.16, 20 valores: pocos valores para ser un dibujo)
+D 0xD3AD 0xD3CF tabla (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valores para ser un dibujo)
+D 0xD6C5 0xD6D6 tabla (17 B; racha 2.39, entropia 3.73, 14 valores: pocos valores para ser un dibujo)
+D 0xDFD4 0xDFD7 relleno o resto (3 B; 3 bytes)
+D 0xDFE7 0xE001 tabla (26 B; racha 2.21, entropia 4.10, 20 valores: pocos valores para ser un dibujo)
+D 0xE002 0xE008 relleno o resto (6 B; 6 bytes)
+D 0xE02A 0xE030 relleno o resto (6 B; 6 bytes)
+D 0xE03D 0xE045 tabla (8 B; racha 1.94, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
+D 0xE05E 0xE061 relleno o resto (3 B; 3 bytes)
+D 0xE091 0xE094 relleno o resto (3 B; 3 bytes)
+D 0xE0CF 0xE0D2 relleno o resto (3 B; 3 bytes)

@@ -6,7 +6,7 @@ del ZX Spectrum que se trajo hasta el sistema de grabación**.
 
 ⚠️ **Esto no está terminado, y se sigue trabajando en ello.** Que el presupuesto
 cierre al 100 % significa que cada byte tiene un nombre y una medida detrás, no
-que se sepa para qué sirve: quedan **6568 bytes sin identificar** y buena parte
+que se sepa para qué sirve: quedan **4896 bytes sin identificar** y buena parte
 del código sin comentar. Lo que falta, con sus cifras, está en
 [la página de lo que falta](https://antxiko.github.io/Stardust-MSX-disassembly/es/LO-QUE-FALTA.html).
 
@@ -52,7 +52,7 @@ Ojo con ese 100 %, que es fácil de leer mal: quiere decir que **cada byte tiene
 dueño** —o es código que el trazador alcanza de verdad, o cae en un rango con
 nombre y medida—, no que se sepa para qué sirve cada uno. Los rangos cuyo nombre
 es «datos sin clasificar» cuentan como explicados en el sentido de estar
-acotados y medidos, no en el de estar entendidos. Son 6568 bytes y están
+acotados y medidos, no en el de estar entendidos. Son 4896 bytes y están
 [contados uno a uno](https://antxiko.github.io/Stardust-MSX-disassembly/es/LO-QUE-FALTA.html).
 
 Hay además un **presupuesto**, que es una comprobación distinta: cada byte tiene

@@ -26,7 +26,7 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**6568 bytes, el 7,0 % de la cinta**, están declarados como «datos sin
+**4896 bytes, el 5,2 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
@@ -55,7 +55,7 @@ salió su clasificación.
 El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
-    juego de naves    24,7 %
+    juego de naves    25,9 %
     parte de a pie    51,3 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
@@ -102,23 +102,23 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-6568 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+4896 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 6568 bytes sin clasificar.** La vía del cotejo con la versión de
+- **Los 4896 bytes sin clasificar.** La vía del cotejo con la versión de
   Spectrum está de momento cerrada: la herramienta que lo hacía buscaba cada
   sección con una aguja de 32 bytes y se quedaba con la primera coincidencia,
   sin comprobar que fuera única ni que el desplazamiento resultante encajara con
   el del resto, y ahí es donde se generó la contaminación. Hasta que esa
   búsqueda esté arreglada, nada del cotejo vuelve al proyecto.
-- **Jugar más, y más variado.** Los 26 rangos nuevos no se ejecutaron en una
-  partida de 900 segundos, pero esa partida no llega al fin de partida, ni a la
-  tabla de récords, ni a redefinir teclas, ni al modo demo. Cubrir esas
-  pantallas es lo que más rápido movería la cifra.
+- **Seguir jugando a mano.** Las pantallas que un arnés no alcanza —fin de
+  partida, entrada de récord, demo, menú y redefinir teclas— ya se han visitado
+  en una sesión grabada, y de ahí salieron 22 rutinas y la tabla de teclas. Lo
+  que queda por visitar de la misma forma es la segunda parte, la de a pie.
 - **Jugar la segunda parte entera**, con el trainer puesto, y capturar sus
   rutinas como se hizo con la primera. Ahí es donde más código sin trazar queda.
 - **El salto indirecto de 0x984D**, que sigue sin dispararse y sin destino
@@ -130,4 +130,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 6568 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 4896 bytes se identifiquen, esta página se hará más corta.

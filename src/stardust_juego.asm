@@ -2548,17 +2548,32 @@ L_C189:
 	ret			;c18f
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (31 B; racha 2.32, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
-;   0xc190..0xc1af  (31 bytes)
+; DATOS relleno: o resto (3 B; 3 bytes)
+;   0xc190..0xc193  (3 bytes)
 ; ----------------------------------------------------------------------
-	defb 0ddh,07eh,002h,0ddh,06eh,005h,0ddh,066h,006h,077h,03ch,0ddh,077h,002h,0feh,02ch	; c190  .~..n..f.w<.w..,
-	defb 0d8h,0c2h,078h,0c6h,05fh,0cdh,03fh,0c8h,0e6h,001h,083h,0ddh,077h,002h,0c9h	; c1a0  ..x._.?.....w..
+	defb 0ddh,07eh,002h	; c190  .~.
 
 ; ======================================================================
-; CODIGO 0xc1af..0xc503  (852 bytes)
+; CODIGO 0xc193..0xc5bb  (1064 bytes)
 ; ======================================================================
 
 
+L_C193:
+	ld l,(ix+005h)		;c193
+	ld h,(ix+006h)		;c196
+	ld (hl),a		;c199
+	inc a			;c19a
+	ld (ix+002h),a		;c19b
+	cp 02ch			;c19e
+	ret c			;c1a0
+	jp nz,L_C678		;c1a1
+	ld e,a			;c1a4
+	call L_C83F		;c1a5
+L_C1A8:
+	and 001h		;c1a8
+	add a,e			;c1aa
+	ld (ix+002h),a		;c1ab
+	ret			;c1ae
 L_C1AF:
 	ld ix,(0e158h)		;c1af
 	ld a,(ix+000h)		;c1b3
@@ -2990,7 +3005,7 @@ L_C4AE:
 	inc de			;c4b4
 	inc hl			;c4b5
 	inc hl			;c4b6
-	jr $+110		;c4b7
+	jr L_C525		;c4b7
 L_C4B9:
 	ld a,0ffh		;c4b9
 	push de			;c4bb
@@ -3056,18 +3071,13 @@ L_C4FC:
 	ld h,l			;c4fd
 	ld l,000h		;c4fe
 	jp L_C518		;c500
-
-; ----------------------------------------------------------------------
-; DATOS tabla: (9 B; racha 1.67, entropia 1.58, 3 valores: pocos valores para ser un dibujo)
-;   0xc503..0xc50c  (9 bytes)
-; ----------------------------------------------------------------------
-	defb 0edh,06ah,08fh,0edh,06ah,08fh,0edh,06ah,08fh	; c503  .j..j..j.
-
-; ======================================================================
-; CODIGO 0xc50c..0xc5b5  (169 bytes)
-; ======================================================================
-
-
+L_C503:
+	adc hl,hl		;c503
+	adc a,a			;c505
+	adc hl,hl		;c506
+	adc a,a			;c508
+	adc hl,hl		;c509
+	adc a,a			;c50b
 L_C50C:
 	adc hl,hl		;c50c
 	adc a,a			;c50e
@@ -3200,12 +3210,16 @@ L_C5A4:
 	ld l,a			;c5b2
 L_C5B3:
 	jr L_C5B3		;c5b3
+L_C5B5:
+	ld h,l			;c5b5
+	ld l,000h		;c5b6
+	jp L_C5C9		;c5b8
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (12 B; racha 1.68, entropia 2.79, 8 valores: pocos valores para ser un dibujo)
-;   0xc5b5..0xc5c1  (12 bytes)
+; DATOS relleno: o resto (6 B; 6 bytes)
+;   0xc5bb..0xc5c1  (6 bytes)
 ; ----------------------------------------------------------------------
-	defb 065h,02eh,000h,0c3h,0c9h,0c5h,0edh,06ah,0edh,06ah,0edh,06ah	; c5b5  e......j.j.j
+	defb 0edh,06ah,0edh,06ah,0edh,06ah	; c5bb  .j.j.j
 
 ; ======================================================================
 ; CODIGO 0xc5c1..0xc8d7  (790 bytes)
@@ -3217,6 +3231,7 @@ L_C5C1:
 	adc hl,hl		;c5c3
 	adc hl,hl		;c5c5
 	adc hl,hl		;c5c7
+L_C5C9:
 	ld a,l			;c5c9
 	ld c,h			;c5ca
 	pop hl			;c5cb
@@ -3844,7 +3859,7 @@ L_C8AD:
 	defb 0ffh,0ffh,0ffh	; cb77  ...
 
 ; ======================================================================
-; CODIGO 0xcb7a..0xce73  (761 bytes)
+; CODIGO 0xcb7a..0xd314  (1946 bytes)
 ; ======================================================================
 
 
@@ -4306,22 +4321,38 @@ L_CE51:
 	pop de			;ce6d
 	ldir			;ce6e
 	jp L_CE4B		;ce70
-
-; ----------------------------------------------------------------------
-; DATOS datos: sin clasificar (73 B; racha 2.46, entropia 5.25, 45 valores)
-;   0xce73..0xcebc  (73 bytes)
-; ----------------------------------------------------------------------
-	defb 0cdh,0f5h,0d1h,0ddh,07eh,000h,0feh,02dh,0d8h,03ah,0c5h,0d3h,0a7h,0c0h,03ah,091h	; ce73  ....~..-.:....:.
-	defb 0cah,0feh,080h,0c0h,0fdh,021h,0c7h,0d3h,0ddh,07eh,000h,087h,0c6h,008h,067h,0ddh	; ce83  .....!...~....g.
-	defb 07eh,001h,06fh,087h,0c6h,010h,032h,0c5h,0d3h,0fdh,075h,000h,0fdh,074h,001h,0fdh	; ce93  ~.o...2...u..t..
-	defb 036h,002h,0f9h,0fdh,075h,003h,0fdh,074h,004h,0fdh,036h,005h,0f2h,03eh,010h,032h	; cea3  6...u..t..6..>.2
-	defb 0c6h,0d3h,0afh,011h,055h,0edh,0c3h,08fh,0e1h	; ceb3  ....U....
-
-; ======================================================================
-; CODIGO 0xcebc..0xd314  (1112 bytes)
-; ======================================================================
-
-
+L_CE73:
+	call L_D1F5		;ce73
+	ld a,(ix+000h)		;ce76
+	cp 02dh			;ce79
+	ret c			;ce7b
+	ld a,(0d3c5h)		;ce7c
+	and a			;ce7f
+	ret nz			;ce80
+	ld a,(0ca91h)		;ce81
+	cp 080h			;ce84
+	ret nz			;ce86
+	ld iy,0d3c7h		;ce87
+	ld a,(ix+000h)		;ce8b
+	add a,a			;ce8e
+	add a,008h		;ce8f
+	ld h,a			;ce91
+	ld a,(ix+001h)		;ce92
+	ld l,a			;ce95
+	add a,a			;ce96
+	add a,010h		;ce97
+	ld (0d3c5h),a		;ce99
+	ld (iy+000h),l		;ce9c
+	ld (iy+001h),h		;ce9f
+	ld (iy+002h),0f9h	;cea2
+	ld (iy+003h),l		;cea6
+	ld (iy+004h),h		;cea9
+	ld (iy+005h),0f2h	;ceac
+	ld a,010h		;ceb0
+	ld (0d3c6h),a		;ceb2
+	xor a			;ceb5
+	ld de,0ed55h		;ceb6
+	jp L_E18F		;ceb9
 L_CEBC:
 	ld a,(0d3c5h)		;cebc
 	cp 00ah			;cebf
@@ -4911,21 +4942,102 @@ L_D303:
 	jp L_F3A3		;d311
 
 ; ----------------------------------------------------------------------
-; DATOS datos: sin clasificar (187 B; racha 2.55, entropia 5.95, 86 valores)
-;   0xd314..0xd3cf  (187 bytes)
+; DATOS tabla: (28 B; racha 2.77, entropia 4.16, 20 valores: pocos valores para ser un dibujo)
+;   0xd314..0xd330  (28 bytes)
 ; ----------------------------------------------------------------------
 	defb 0cdh,0f5h,0d1h,0ddh,07eh,002h,0feh,046h,020h,002h,03eh,0ffh,0feh,008h,028h,004h	; d314  ....~..F .>...(.
-	defb 03ch,0ddh,077h,002h,087h,087h,087h,05fh,0ddh,07eh,001h,093h,06fh,0ddh,066h,000h	; d324  <.w...._.~..o.f.
-	defb 0cbh,024h,0e5h,0cbh,03dh,0cbh,03dh,0cbh,03dh,0cdh,041h,0c5h,0ddh,07eh,002h,087h	; d334  .$..=.=.=.A..~..
-	defb 0c6h,004h,047h,0cdh,083h,0d3h,03eh,001h,011h,0a1h,0eah,0cdh,08fh,0e1h,0e1h,03ah	; d344  ..G...>........:
-	defb 088h,0c1h,0feh,004h,0d0h,07ch,0c6h,020h,067h,0e5h,03ah,085h,0c1h,06fh,011h,00ch	; d354  .....|. g.:..o..
-	defb 006h,001h,002h,001h,0cdh,07ah,0cdh,0e1h,0d8h,0ddh,07eh,002h,087h,087h,087h,087h	; d364  .....z....~.....
-	defb 0c6h,01eh,057h,065h,03ah,084h,0c1h,06fh,0cdh,07ah,0cdh,0d8h,0c3h,003h,0d3h,0c5h	; d374  ..We:..o.z......
-	defb 0cdh,03fh,0c8h,0e6h,001h,011h,0adh,0d3h,028h,003h,011h,0b5h,0d3h,006h,008h,0e5h	; d384  .?......(.......
-	defb 01ah,00fh,02fh,0a6h,077h,01ah,0b6h,077h,07dh,0c6h,018h,06fh,07ch,0ceh,000h,067h	; d394  ../.w..w}..o|..g
-	defb 013h,010h,0edh,0e1h,023h,0c1h,010h,0d7h,0c9h,044h,055h,07bh,0dfh,0f6h,0aah,029h	; d3a4  ....#....DU{...)
-	defb 008h,008h,029h,0adh,0fbh,0afh,0dah,052h,042h,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	; d3b4  ..)....RB.......
-	defb 0ffh,000h,000h,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,000h,000h	; d3c4  ...........
+	defb 03ch,0ddh,077h,002h,087h,087h,087h,05fh,0ddh,07eh,001h,093h	; d324  <.w...._.~..
+
+; ======================================================================
+; CODIGO 0xd330..0xd3ad  (125 bytes)
+; ======================================================================
+
+
+L_D330:
+	ld l,a			;d330
+	ld h,(ix+000h)		;d331
+	sla h			;d334
+	push hl			;d336
+	srl l			;d337
+	srl l			;d339
+	srl l			;d33b
+	call L_C541		;d33d
+	ld a,(ix+002h)		;d340
+	add a,a			;d343
+	add a,004h		;d344
+	ld b,a			;d346
+	call L_D383		;d347
+	ld a,001h		;d34a
+	ld de,0eaa1h		;d34c
+	call L_E18F		;d34f
+	pop hl			;d352
+	ld a,(0c188h)		;d353
+	cp 004h			;d356
+	ret nc			;d358
+	ld a,h			;d359
+	add a,020h		;d35a
+	ld h,a			;d35c
+	push hl			;d35d
+	ld a,(0c185h)		;d35e
+	ld l,a			;d361
+	ld de,0060ch		;d362
+	ld bc,00102h		;d365
+	call L_CD7A		;d368
+	pop hl			;d36b
+	ret c			;d36c
+	ld a,(ix+002h)		;d36d
+	add a,a			;d370
+	add a,a			;d371
+	add a,a			;d372
+	add a,a			;d373
+	add a,01eh		;d374
+	ld d,a			;d376
+	ld h,l			;d377
+	ld a,(0c184h)		;d378
+	ld l,a			;d37b
+	call L_CD7A		;d37c
+	ret c			;d37f
+	jp L_D303		;d380
+L_D383:
+	push bc			;d383
+	call L_C83F		;d384
+	and 001h		;d387
+	ld de,0d3adh		;d389
+	jr z,L_D391		;d38c
+	ld de,0d3b5h		;d38e
+L_D391:
+	ld b,008h		;d391
+	push hl			;d393
+L_D394:
+	ld a,(de)		;d394
+	rrca			;d395
+	cpl			;d396
+	and (hl)		;d397
+	ld (hl),a		;d398
+	ld a,(de)		;d399
+	or (hl)			;d39a
+	ld (hl),a		;d39b
+	ld a,l			;d39c
+	add a,018h		;d39d
+	ld l,a			;d39f
+	ld a,h			;d3a0
+	adc a,000h		;d3a1
+	ld h,a			;d3a3
+	inc de			;d3a4
+	djnz L_D394		;d3a5
+	pop hl			;d3a7
+	inc hl			;d3a8
+	pop bc			;d3a9
+	djnz L_D383		;d3aa
+	ret			;d3ac
+
+; ----------------------------------------------------------------------
+; DATOS tabla: (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valores para ser un dibujo)
+;   0xd3ad..0xd3cf  (34 bytes)
+; ----------------------------------------------------------------------
+	defb 044h,055h,07bh,0dfh,0f6h,0aah,029h,008h,008h,029h,0adh,0fbh,0afh,0dah,052h,042h	; d3ad  DU{...)..)....RB
+	defb 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,000h,000h,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	; d3bd  ................
+	defb 000h,000h	; d3cd  ..
 
 ; ======================================================================
 ; CODIGO 0xd3cf..0xd6c5  (758 bytes)
@@ -5359,18 +5471,29 @@ L_D6BC:
 	ret			;d6c4
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (37 B; racha 2.49, entropia 4.15, 23 valores: pocos valores para ser un dibujo)
-;   0xd6c5..0xd6ea  (37 bytes)
+; DATOS tabla: (17 B; racha 2.39, entropia 3.73, 14 valores: pocos valores para ser un dibujo)
+;   0xd6c5..0xd6d6  (17 bytes)
 ; ----------------------------------------------------------------------
 	defb 0cdh,0eah,0d6h,0ddh,07eh,000h,03dh,020h,008h,0cdh,03fh,0c8h,0e6h,007h,0ddh,077h	; d6c5  ....~.= ..?....w
-	defb 007h,0ddh,07eh,007h,0ddh,034h,007h,0e6h,007h,0c0h,0ddh,06eh,005h,0ddh,066h,006h	; d6d5  ..~..4.....n..f.
-	defb 03eh,007h,0aeh,077h,0c9h	; d6e5  >..w.
+	defb 007h	; d6d5  .
 
 ; ======================================================================
-; CODIGO 0xd6ea..0xd9db  (753 bytes)
+; CODIGO 0xd6d6..0xda3d  (871 bytes)
 ; ======================================================================
 
 
+L_D6D6:
+	ld a,(ix+007h)		;d6d6
+	inc (ix+007h)		;d6d9
+	and 007h		;d6dc
+	ret nz			;d6de
+	ld l,(ix+005h)		;d6df
+	ld h,(ix+006h)		;d6e2
+L_D6E5:
+	ld a,007h		;d6e5
+	xor (hl)		;d6e7
+	ld (hl),a		;d6e8
+	ret			;d6e9
 L_D6EA:
 	ld h,(ix+000h)		;d6ea
 	ld l,(ix+001h)		;d6ed
@@ -5757,20 +5880,27 @@ L_D9CA:
 	xor 001h		;d9d7
 	ld (hl),a		;d9d9
 	ret			;d9da
-
-; ----------------------------------------------------------------------
-; DATOS datos: sin clasificar (43 B; racha 2.26, entropia 4.69, 29 valores)
-;   0xd9db..0xda06  (43 bytes)
-; ----------------------------------------------------------------------
-	defb 03ah,088h,0c1h,0feh,004h,0d0h,0ddh,066h,000h,0cbh,024h,03ah,085h,0c1h,06fh,011h	; d9db  :......f..$:..o.
-	defb 00ch,038h,001h,002h,004h,0cdh,07ah,0cdh,0d8h,0ddh,066h,001h,03ah,084h,0c1h,06fh	; d9eb  .8....z...f.:..o
-	defb 016h,012h,006h,007h,0cdh,07ah,0cdh,0d8h,0c3h,003h,0d3h	; d9fb  .....z.....
-
-; ======================================================================
-; CODIGO 0xda06..0xda3d  (55 bytes)
-; ======================================================================
-
-
+L_D9DB:
+	ld a,(0c188h)		;d9db
+	cp 004h			;d9de
+	ret nc			;d9e0
+	ld h,(ix+000h)		;d9e1
+L_D9E4:
+	sla h			;d9e4
+	ld a,(0c185h)		;d9e6
+	ld l,a			;d9e9
+	ld de,0380ch		;d9ea
+	ld bc,00402h		;d9ed
+	call L_CD7A		;d9f0
+	ret c			;d9f3
+	ld h,(ix+001h)		;d9f4
+	ld a,(0c184h)		;d9f7
+	ld l,a			;d9fa
+	ld d,012h		;d9fb
+	ld b,007h		;d9fd
+	call L_CD7A		;d9ff
+	ret c			;da02
+	jp L_D303		;da03
 L_DA06:
 	ld a,(hl)		;da06
 	cp 0ffh			;da07
@@ -5849,8 +5979,10 @@ L_DA55:
 ;   0xda82..0xda83  (1 bytes)
 ; DATOS datos: sin clasificar (86 B; racha 2.17, entropia 5.59, 54 valores)
 ;   0xda83..0xdad9  (86 bytes)
-; DATOS datos: sin clasificar (1078 B; racha 2.35, entropia 5.49, 125 valores)
+; DATOS textos: del juego: menu, redefinir teclas, records y mensajes
 ;   0xdad9..0xdf0f  (1078 bytes)
+; DATOS tabla: de teclas: 7 entradas de (mascara, valor de puerto)
+;   0xdcb1..0xdcbf  (14 bytes)
 ; ----------------------------------------------------------------------
 	defb 0cdh,055h,0dah,0ddh,036h,000h,000h,0c0h,03ah,084h,0c1h,0feh,058h,0c0h,03ah,0a3h	; da72  .U..6...:...X.:.
 	defb 0c9h,0feh,008h,0c0h,021h,09dh,0dah,022h,064h,0c0h,021h,059h,0d9h,022h,0ddh,0d0h	; da82  ....!.."d.!Y."..
@@ -6036,38 +6168,217 @@ L_DFB1:
 	jp L_DFAB		;dfd1
 
 ; ----------------------------------------------------------------------
-; DATOS datos: sin clasificar (45 B; racha 2.31, entropia 4.55, 28 valores)
-;   0xdfd4..0xe001  (45 bytes)
+; DATOS relleno: o resto (3 B; 3 bytes)
+;   0xdfd4..0xdfd7  (3 bytes)
+; ----------------------------------------------------------------------
+	defb 0cdh,0f5h,0d1h	; dfd4  ...
+
+; ======================================================================
+; CODIGO 0xdfd7..0xdfe7  (16 bytes)
+; ======================================================================
+
+
+L_DFD7:
+	call L_C83F		;dfd7
+	and 01fh		;dfda
+	ret nz			;dfdc
+	ld hl,0dfe7h		;dfdd
+	ld (ix+003h),l		;dfe0
+L_DFE3:
+	ld (ix+004h),h		;dfe3
+	ret			;dfe6
+
+; ----------------------------------------------------------------------
+; DATOS tabla: (26 B; racha 2.21, entropia 4.10, 20 valores: pocos valores para ser un dibujo)
+;   0xdfe7..0xe001  (26 bytes)
 ; DATOS datos: sin clasificar (1 B; 1 bytes)
 ;   0xe001..0xe002  (1 bytes)
-; DATOS datos: sin clasificar (246 B; racha 2.31, entropia 5.63, 75 valores)
-;   0xe002..0xe0f8  (246 bytes)
+; DATOS relleno: o resto (6 B; 6 bytes)
+;   0xe002..0xe008  (6 bytes)
 ; ----------------------------------------------------------------------
-	defb 0cdh,0f5h,0d1h,0cdh,03fh,0c8h,0e6h,01fh,0c0h,021h,0e7h,0dfh,0ddh,075h,003h,0ddh	; dfd4  ....?....!...u..
-	defb 074h,004h,0c9h,0ddh,034h,002h,0cdh,0f5h,0d1h,0ddh,06eh,005h,0ddh,066h,006h,034h	; dfe4  t...4.....n..f.4
-	defb 07eh,0feh,03bh,0d8h,021h,002h,0e0h,0ddh,075h,003h,0ddh,074h,004h,0c9h,0cdh,0f5h	; dff4  ~.;.!...u..t....
-	defb 0d1h,0cdh,03fh,0c8h,0e6h,01fh,0c0h,0ddh,06eh,001h,0ddh,066h,000h,0cbh,024h,001h	; e004  ..?.....n..f..$.
-	defb 00ch,00ch,009h,044h,04dh,0c5h,0edh,05bh,084h,0c1h,0cdh,003h,0c8h,0cdh,0d3h,0c7h	; e014  ...DM..[........
-	defb 008h,0c1h,0cdh,083h,0cch,0c9h,0cdh,0f5h,0d1h,0ddh,07eh,000h,0feh,010h,0d8h,021h	; e024  ..........~....!
-	defb 03dh,0e0h,0ddh,075h,003h,0ddh,074h,004h,0c9h,0cdh,0f5h,0d1h,03ah,08eh,0cah,0e6h	; e034  =..u..t.....:...
-	defb 001h,0c0h,0ddh,034h,002h,0ddh,06eh,005h,0ddh,066h,006h,034h,07eh,0feh,042h,0d8h	; e044  ...4..n..f.4~.B.
-	defb 021h,05eh,0e0h,0ddh,075h,003h,0ddh,074h,004h,0c9h,0cdh,0f5h,0d1h,0cdh,03fh,0c8h	; e054  !^..u..t......?.
-	defb 0e6h,01fh,0c0h,0ddh,06eh,001h,0ddh,066h,000h,0cbh,024h,001h,00ch,00ch,009h,044h	; e064  ....n..f..$....D
-	defb 04dh,0afh,008h,0cdh,0adh,0c8h,0d0h,03eh,03fh,0ddh,077h,002h,0ddh,06eh,005h,0ddh	; e074  M......>?.w..n..
-	defb 066h,006h,077h,021h,03dh,0e0h,0ddh,075h,003h,0ddh,074h,004h,0c9h,0cdh,0dbh,0d9h	; e084  f.w!=..u..t.....
-	defb 0ddh,07eh,000h,0feh,028h,0d0h,0cdh,03fh,0c8h,0e6h,00fh,0c0h,0ddh,06eh,001h,0ddh	; e094  .~..(..?.....n..
-	defb 066h,000h,0cbh,024h,001h,008h,050h,009h,044h,04dh,0cdh,03fh,0c8h,0e6h,004h,028h	; e0a4  f..$..P.DM.?...(
-	defb 009h,03eh,01eh,008h,0cdh,020h,0cdh,0c3h,0c4h,0e0h,03eh,01bh,008h,0cdh,082h,0c8h	; e0b4  .>... ....>.....
-	defb 0d0h,021h,0cfh,0e0h,0ddh,075h,003h,0ddh,074h,004h,0c9h,0cdh,0dbh,0d9h,0ddh,034h	; e0c4  .!...u..t......4
-	defb 002h,03eh,001h,011h,098h,0eah,0cdh,08fh,0e1h,0ddh,06eh,005h,0ddh,066h,006h,034h	; e0d4  .>........n..f.4
-	defb 07eh,0feh,036h,0d8h,03eh,032h,077h,0ddh,077h,002h,021h,091h,0e0h,0ddh,075h,003h	; e0e4  ~.6.>2w.w.!...u.
-	defb 0ddh,074h,004h,0c9h	; e0f4  .t..
+	defb 0ddh,034h,002h,0cdh,0f5h,0d1h,0ddh,06eh,005h,0ddh,066h,006h,034h,07eh,0feh,03bh	; dfe7  .4.....n..f.4~.;
+	defb 0d8h,021h,002h,0e0h,0ddh,075h,003h,0ddh,074h,004h,0c9h,0cdh,0f5h,0d1h,0cdh,03fh	; dff7  .!...u..t......?
+	defb 0c8h	; e007  .
 
 ; ======================================================================
-; CODIGO 0xe0f8..0xe14e  (86 bytes)
+; CODIGO 0xe008..0xe02a  (34 bytes)
 ; ======================================================================
 
 
+L_E008:
+	and 01fh		;e008
+	ret nz			;e00a
+	ld l,(ix+001h)		;e00b
+	ld h,(ix+000h)		;e00e
+	sla h			;e011
+	ld bc,00c0ch		;e013
+L_E016:
+	add hl,bc		;e016
+	ld b,h			;e017
+	ld c,l			;e018
+	push bc			;e019
+	ld de,(0c184h)		;e01a
+	call L_C803		;e01e
+	call L_C7D3		;e021
+	ex af,af'		;e024
+	pop bc			;e025
+	call L_CC83		;e026
+	ret			;e029
+
+; ----------------------------------------------------------------------
+; DATOS relleno: o resto (6 B; 6 bytes)
+;   0xe02a..0xe030  (6 bytes)
+; ----------------------------------------------------------------------
+	defb 0cdh,0f5h,0d1h,0ddh,07eh,000h	; e02a  ....~.
+
+; ======================================================================
+; CODIGO 0xe030..0xe03d  (13 bytes)
+; ======================================================================
+
+
+L_E030:
+	cp 010h			;e030
+	ret c			;e032
+	ld hl,0e03dh		;e033
+	ld (ix+003h),l		;e036
+	ld (ix+004h),h		;e039
+	ret			;e03c
+
+; ----------------------------------------------------------------------
+; DATOS tabla: (8 B; racha 1.94, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
+;   0xe03d..0xe045  (8 bytes)
+; ----------------------------------------------------------------------
+	defb 0cdh,0f5h,0d1h,03ah,08eh,0cah,0e6h,001h	; e03d  ...:....
+
+; ======================================================================
+; CODIGO 0xe045..0xe05e  (25 bytes)
+; ======================================================================
+
+
+L_E045:
+	ret nz			;e045
+	inc (ix+002h)		;e046
+	ld l,(ix+005h)		;e049
+	ld h,(ix+006h)		;e04c
+	inc (hl)		;e04f
+	ld a,(hl)		;e050
+	cp 042h			;e051
+	ret c			;e053
+	ld hl,0e05eh		;e054
+	ld (ix+003h),l		;e057
+	ld (ix+004h),h		;e05a
+	ret			;e05d
+
+; ----------------------------------------------------------------------
+; DATOS relleno: o resto (3 B; 3 bytes)
+;   0xe05e..0xe061  (3 bytes)
+; ----------------------------------------------------------------------
+	defb 0cdh,0f5h,0d1h	; e05e  ...
+
+; ======================================================================
+; CODIGO 0xe061..0xe091  (48 bytes)
+; ======================================================================
+
+
+L_E061:
+	call L_C83F		;e061
+	and 01fh		;e064
+	ret nz			;e066
+	ld l,(ix+001h)		;e067
+	ld h,(ix+000h)		;e06a
+	sla h			;e06d
+	ld bc,00c0ch		;e06f
+	add hl,bc		;e072
+	ld b,h			;e073
+	ld c,l			;e074
+L_E075:
+	xor a			;e075
+	ex af,af'		;e076
+	call L_C8AD		;e077
+	ret nc			;e07a
+	ld a,03fh		;e07b
+	ld (ix+002h),a		;e07d
+	ld l,(ix+005h)		;e080
+	ld h,(ix+006h)		;e083
+	ld (hl),a		;e086
+	ld hl,0e03dh		;e087
+	ld (ix+003h),l		;e08a
+	ld (ix+004h),h		;e08d
+	ret			;e090
+
+; ----------------------------------------------------------------------
+; DATOS relleno: o resto (3 B; 3 bytes)
+;   0xe091..0xe094  (3 bytes)
+; ----------------------------------------------------------------------
+	defb 0cdh,0dbh,0d9h	; e091  ...
+
+; ======================================================================
+; CODIGO 0xe094..0xe0cf  (59 bytes)
+; ======================================================================
+
+
+L_E094:
+	ld a,(ix+000h)		;e094
+	cp 028h			;e097
+	ret nc			;e099
+	call L_C83F		;e09a
+	and 00fh		;e09d
+	ret nz			;e09f
+	ld l,(ix+001h)		;e0a0
+	ld h,(ix+000h)		;e0a3
+	sla h			;e0a6
+	ld bc,05008h		;e0a8
+	add hl,bc		;e0ab
+	ld b,h			;e0ac
+	ld c,l			;e0ad
+	call L_C83F		;e0ae
+	and 004h		;e0b1
+	jr z,L_E0BE		;e0b3
+	ld a,01eh		;e0b5
+	ex af,af'		;e0b7
+	call L_CD20		;e0b8
+	jp L_E0C4		;e0bb
+L_E0BE:
+	ld a,01bh		;e0be
+	ex af,af'		;e0c0
+	call L_C882		;e0c1
+L_E0C4:
+	ret nc			;e0c4
+	ld hl,0e0cfh		;e0c5
+	ld (ix+003h),l		;e0c8
+	ld (ix+004h),h		;e0cb
+	ret			;e0ce
+
+; ----------------------------------------------------------------------
+; DATOS relleno: o resto (3 B; 3 bytes)
+;   0xe0cf..0xe0d2  (3 bytes)
+; ----------------------------------------------------------------------
+	defb 0cdh,0dbh,0d9h	; e0cf  ...
+
+; ======================================================================
+; CODIGO 0xe0d2..0xe14e  (124 bytes)
+; ======================================================================
+
+
+L_E0D2:
+	inc (ix+002h)		;e0d2
+	ld a,001h		;e0d5
+	ld de,0ea98h		;e0d7
+	call L_E18F		;e0da
+	ld l,(ix+005h)		;e0dd
+L_E0E0:
+	ld h,(ix+006h)		;e0e0
+	inc (hl)		;e0e3
+	ld a,(hl)		;e0e4
+	cp 036h			;e0e5
+	ret c			;e0e7
+	ld a,032h		;e0e8
+	ld (hl),a		;e0ea
+	ld (ix+002h),a		;e0eb
+	ld hl,0e091h		;e0ee
+	ld (ix+003h),l		;e0f1
+	ld (ix+004h),h		;e0f4
+	ret			;e0f7
 L_E0F8:
 	bit 4,a			;e0f8
 	ld bc,(0e14fh)		;e0fa

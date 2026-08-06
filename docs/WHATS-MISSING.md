@@ -27,7 +27,7 @@ Here is the honest breakdown.
 
 ## What is left to identify
 
-**6568 bytes, 7.0% of the tape**, are declared as "unclassified data". For each
+**4896 bytes, 5.2% of the tape**, are declared as "unclassified data". For each
 one we know where it starts, where it ends and what it measures —average run of
 equal bits, entropy, and how many distinct values it uses— but not what it is or
 what it is used for.
@@ -56,7 +56,7 @@ classification came from.
 The budget measures bytes; coverage measures something else. Of the code in the
 two big blocks, the tracer reaches this:
 
-    ship game        24.7 %
+    ship game        25.9 %
     on-foot part     51.3 %
 
 The rest is data, yes, but there is also **code that isn't arrived at by
@@ -105,17 +105,17 @@ next looking in the wrong place.
 
 The criterion across the whole series is that every claim can be checked against
 the binary. That includes claims about what is **not** known: which is why the
-6568 bytes are bounded one by one instead of swept under the carpet, and why the
+4896 bytes are bounded one by one instead of swept under the carpet, and why the
 coverage figures come out of the tracer rather than out of an impression.
 
 ## What is being worked on now
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **Playing more, and more varied.** The recorded playthrough that produced the
-  current figures never reaches game over, the high-score table, the redefine
-  keys screen or the attract-mode demo. Covering those screens is what would
-  move the figure fastest.
+- **More hand-played sessions.** The screens no harness reaches —game over,
+  the high-score entry, the demo, the menu and redefine keys— have now been
+  visited in a recorded session, and that yielded 22 routines and the key
+  table. What is left to visit the same way is the second part, on foot.
 - **The unclassified bytes.** The cross-check route is closed until the search
   is fixed to demand a unique match and a consistent offset.
 - **The level maps.** The seven ship levels are located and declared (0x61D8 to
@@ -129,4 +129,4 @@ If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and
 the notes files where each finding gets recorded.
 
-When those 6568 bytes are identified, this page will get shorter.
+When those 4896 bytes are identified, this page will get shorter.
