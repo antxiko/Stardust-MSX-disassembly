@@ -1,4 +1,4 @@
-<title>La cinta — Stardust (1987)</title>
+<title>Getting started — Stardust (1987)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -79,32 +79,26 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
   border:1px solid var(--linea);border-radius:3px}
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Home</a><a href="EMPEZAR.html">Start</a><a href="EL-JUEGO.html">The game</a><a href="LA-CINTA.html" style=color:var(--tinta)>The tape</a><a href="EL-CODIGO.html">The code</a><a href="HALLAZGOS.html">Findings</a><a href="LO-QUE-FALTA.html">What's missing</a><a href="es/index.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
-<h1 id="la-cinta">La cinta</h1>
-<blockquote><b>Note:</b> this page is not translated yet. The documentation is written in Spanish first and translated afterwards; this is the Spanish text. The figures, addresses and code fragments read the same in both languages.</blockquote>
-<p>94 228 bytes de fichero TSX, que al abrirlos dan <b>93 861 bytes de contenido</b> repartidos en siete bloques. Lo raro empieza en el primer vistazo: dos de ellos están grabados como manda el MSX y <b>cuatro no</b>.</p>
-<h2 id="los-siete-bloques">Los siete bloques</h2>
-<table><tr><th></th><th>bloque</th><th>bytes</th><th>dónde va</th><th>qué es</th></tr><tr><td>1</td><td><code>STARDU</code></td><td>256</td><td>—</td><td>el cargador BASIC, texto plano</td></tr><tr><td>2</td><td><code>TOPO</code></td><td>4254</td><td>0x9470</td><td>el logo animado de la casa</td></tr><tr><td>3</td><td><code>LOADER</code></td><td>351</td><td>0xD2F0</td><td>el cargador turbo</td></tr><tr><td>4</td><td>—</td><td>12 468</td><td>0x9B8C</td><td>la pantalla de carga, y se ejecuta</td></tr><tr><td>5</td><td>—</td><td>46 663</td><td>0x47A0</td><td>el juego de naves, zonas 1 a 7</td></tr><tr><td>6</td><td>—</td><td>8</td><td>—</td><td>un descriptor de ocho bytes</td></tr><tr><td>7</td><td>—</td><td>29 861</td><td>0x61D0</td><td>la segunda parte, la de a pie</td></tr></table>
-<p>Los tres primeros son <b>bloques KCS</b>, el formato de cinta del MSX, con su cabecera y su nombre de fichero. Los cuatro siguientes son <b>bloques del ZX Spectrum</b>: una bandera, los datos y un XOR de comprobación. Los cuatro traen ese XOR correcto, comprobado uno a uno.</p>
-<h2 id="la-cadena-de-carga">La cadena de carga</h2>
-<p>Empieza en el cargador BASIC, que son cinco líneas:</p>
-<pre><code>10 COLOR 1,1,1:SCREEN 2
-20 BLOAD&quot;cas:&quot;,R          &#x27; el logo, que se ejecuta solo
-30 BLOAD&quot;cas:&quot;            &#x27; el cargador turbo, que NO se ejecuta
-40 CLS:COLOR 0,0,0:SCREEN 2
-50 DEFUSR=54000!:A=USR(0) &#x27; 54000 = 0xD2F0: ahora si</code></pre>
-<p>Y sigue en el cargador turbo, que hace esto por orden:</p>
-<ol><li>Busca RAM y la mapea en las páginas 1 y 2, para tener los 64K planos.</li><li>Se copia 300 bytes a sí mismo en 0x4000 y salta allí.</li><li>Salva 94 bytes de 0xDAC0 a 0xFDE8 (el buzón de parches) y pone la pila.</li><li>Carga el bloque de la pantalla <b>y lo ejecuta</b>.</li><li>Carga el bloque del juego encima, machacando al anterior.</li><li>Aplica los parches del buzón, si los hay.</li><li>Salta a 0xBD85, que es el juego.</li></ol>
-<p>El descriptor de ocho bytes y el último bloque no los carga él: los pide el propio juego al superar la última zona.</p>
-<h2 id="los-bloques-se-pisan-unos-a-otros">Los bloques se pisan unos a otros</h2>
-<p>Esto es lo que obliga a mirar la cinta de otra forma. En memoria, los bloques <b>no conviven</b>:</p>
-<pre><code>pantalla de carga   0x9B8C - 0xCC3F
-juego de naves      0x47A0 - 0xFDE6    &lt;- machaca a la pantalla entera
-segunda parte       0x61D0 - 0xD674    &lt;- cae dentro del juego</code></pre>
-<p>O sea que no hay una imagen de 64K que contenga todo el juego, sino <b>tres fotos de la memoria en momentos distintos</b>. Cada listado va con el <code>org</code> de donde se ejecuta de verdad, y el presupuesto de bytes se suma sobre los bloques de la cinta y no sobre el mapa de memoria: si se sumara sobre la memoria, los bytes que se pisan se contarían mal.</p>
-<h2 id="cuanto-se-trajo-del-spectrum">Cuánto se trajo del Spectrum</h2>
-<p>Aquí había un cuadro con porcentajes de coincidencia byte a byte contra el binario de la versión de Spectrum. <b>Se ha retirado</b>, y conviene explicar por qué en vez de borrarlo sin más.</p>
-<p>Los producía <code>tools/coteja_spectrum.py</code>, que localizaba cada sección del otro binario cogiendo sus primeros 32 bytes y buscándolos con un <code>find</code>: se quedaba con la <b>primera</b> coincidencia, sin comprobar que fuera la única ni que el desplazamiento resultante encajara con el del resto de secciones. Como las dos versiones comparten buena parte del dibujo, esas agujas caían dentro de la tilería, y de ahí salieron tanto los porcentajes como una tanda de nombres de rutina colocados en direcciones que son gráficos.</p>
-<p>Lo que sí se sostiene sin esa herramienta, porque se lee en el propio binario de MSX: el cargador es <b>código de MSX de cabo a rabo</b> —tiene que mapear RAM en las páginas y hablar con el chip de sonido y con el puerto del motor de la cinta, cosas que en el Spectrum no existen o están en otro sitio— y la pantalla de carga va firmada por Cano, o sea que es de esta versión.</p>
-<p>Cuando la búsqueda esté arreglada y exija coincidencia única y desplazamiento coherente, el cuadro volverá con cifras que se puedan defender.</p>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html" style=color:var(--tinta)>Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="WHATS-MISSING.html">What's missing</a><a href="es/EMPEZAR.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="getting-started">Getting started</h1>
+<h2 id="what-you-need">What you need</h2>
+<p><code>pasmo</code> and <code>z80dasm</code> to assemble and disassemble, and Python 3 for the tools. For screenshots and for the harnesses that pull data out of the running game, <code>openmsx</code>.</p>
+<p><b>The tape is not distributed</b> with this repository — only the documentation work. You need your own copy, named <code>stardust.tsx</code> in the root of the project, and it has to give this sha256:</p>
+<p>8f4fb3840e5ad043d8d694faeaa86a6e4a5cd2cabe5dd99fec08e5cf0a7dbb13</p>
+<h2 id="the-commands">The commands</h2>
+<pre><code>make          # extracts the blocks, generates the listings and checks everything
+make test     # the tests only
+make web      # rebuilds the site under docs/</code></pre>
+<p><code>make</code> on its own runs the whole cycle and <b>fails if anything doesn&#x27;t add up</b>: if a listing stops reproducing its block byte for byte, if the tracer wanders into a data zone, if an entry point sits inside a range declared as data, or if a single byte of the tape is left unaccounted for.</p>
+<h2 id="without-the-tape">Without the tape</h2>
+<p>You can read the listings in <code>src/</code> and the notes, which is where the work is. And the tests that don&#x27;t depend on the binary pass all the same: several of them just do arithmetic on the published figures and run with nothing else.</p>
+<h2 id="how-it-is-laid-out">How it is laid out</h2>
+<p>Each block on the tape has three files that govern its disassembly:</p>
+<table><tr><th></th><th></th></tr><tr><td><code>src/X.entries</code></td><td>the entry points: where tracing starts</td></tr><tr><td><code>src/X.nocode</code></td><td>the zones that are NOT code, and how that is known</td></tr><tr><td><code>src/X.notes</code></td><td>the annotations, and the data ranges with their explanation</td></tr></table>
+<p>Those produce the <code>src/stardust_X.asm</code> files, which are <b>never edited by hand</b>: they are generated. If you want to change a comment, it goes in the <code>.notes</code>.</p>
+<p>That separation is what keeps the listing and its verification from drifting apart: the file that gets published is the file that gets checked.</p>
+<h2 id="the-tools-you-ll-reach-for-most">The tools you&#x27;ll reach for most</h2>
+<table><tr><th></th><th></th></tr><tr><td><code>tools/perfil.py</code></td><td>X-rays a binary and says where the nature of the data changes</td></tr><tr><td><code>tools/clasifica_huecos.py</code></td><td>classifies a range by measuring it, and says which measurement the label came from</td></tr><tr><td><code>tools/check_entradas.py</code></td><td>refuses any entry point that falls inside a range declared as data</td></tr><tr><td><code>tools/render_graficos.py</code></td><td>draws tiles, sprites and charset straight from the tape</td></tr><tr><td><code>tools/omsx_*.tcl</code></td><td>openMSX harnesses: they pull out of the running game what the binary won&#x27;t say</td></tr><tr><td><code>tools/omsx_replay.tcl</code></td><td>replays a recorded playthrough and samples the program counter</td></tr></table>
+<h2 id="if-you-want-to-pull-on-a-thread">If you want to pull on a thread</h2>
+<p>What&#x27;s missing is set out with figures in <a href="WHATS-MISSING.html">What&#x27;s missing</a>. The two lines where most ground can be gained right now are the 6568 unidentified bytes and the routines of the second part, which has barely been played.</p>
 <footer><p><em>Stardust</em> was published by Topo Soft in 1987. By the game's own credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by <b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, the music by <b>Gominolas</b>, and it is based on an original idea by <b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All rights in the game remain with their holders. This is preservation, study and documentation work.</p></footer></div>

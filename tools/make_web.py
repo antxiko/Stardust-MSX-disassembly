@@ -69,15 +69,16 @@ TXT = {
               "measurement— <b>not</b> that its purpose is known. 6568 bytes "
               "remain unidentified and much of the code is still uncommented. It "
               "is set out with figures in "
-              "<a href='LO-QUE-FALTA.html'>What's missing</a>.",
+              "<a href='WHATS-MISSING.html'>What's missing</a>.",
         ficha=["Topo Soft · <b>1987</b>", "A <b>ZX Spectrum</b> conversion",
                "<b>Multiload</b> from tape", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "The numbers"), ("#findings", "What turned up"),
              ("#screens", "The graphics"), ("#method", "How it was done")],
-        docnav=[("EMPEZAR.html", "Getting started"), ("EL-JUEGO.html", "The game"),
-                ("LA-CINTA.html", "The tape"), ("EL-CODIGO.html", "The code"),
-                ("HALLAZGOS.html", "Findings"),
-                ("LO-QUE-FALTA.html", "What's missing")],
+        docnav=[("GETTING-STARTED.html", "Getting started"),
+                ("THE-GAME.html", "The game"),
+                ("THE-TAPE.html", "The tape"), ("THE-CODE.html", "The code"),
+                ("FINDINGS.html", "Findings"),
+                ("WHATS-MISSING.html", "What's missing")],
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",

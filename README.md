@@ -8,7 +8,7 @@ that brought the tape system across with it**.
 every byte has a name and a measurement behind it, not that its purpose is
 known: **6568 bytes remain unidentified** and much of the code is still
 uncommented. What's missing, with figures, is on
-[the what's-missing page](https://antxiko.github.io/Stardust-MSX-disassembly/LO-QUE-FALTA.html).
+[the what's-missing page](https://antxiko.github.io/Stardust-MSX-disassembly/WHATS-MISSING.html).
 
 📖 **[Full documentation](https://antxiko.github.io/Stardust-MSX-disassembly/)**
 · [En castellano](https://antxiko.github.io/Stardust-MSX-disassembly/es/)

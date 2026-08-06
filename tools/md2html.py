@@ -20,18 +20,28 @@ from estilo_web import ESTILO  # noqa: E402
 
 # Un menu por idioma. La web se publica en ingles en la raiz de docs/ y en
 # castellano bajo docs/es/.
-NAV_EN = [("index.html", "Home"), ("EMPEZAR.html", "Start"),
-          ("EL-JUEGO.html", "The game"), ("LA-CINTA.html", "The tape"),
-          ("EL-CODIGO.html", "The code"), ("HALLAZGOS.html", "Findings"),
-          ("LO-QUE-FALTA.html", "What's missing")]
+NAV_EN = [("index.html", "Home"), ("GETTING-STARTED.html", "Start"),
+          ("THE-GAME.html", "The game"), ("THE-TAPE.html", "The tape"),
+          ("THE-CODE.html", "The code"), ("FINDINGS.html", "Findings"),
+          ("WHATS-MISSING.html", "What's missing")]
 NAV_ES = [("index.html", "Portada"), ("EMPEZAR.html", "Empezar"),
           ("EL-JUEGO.html", "El juego"), ("LA-CINTA.html", "La cinta"),
           ("EL-CODIGO.html", "El código"), ("HALLAZGOS.html", "Hallazgos"),
           ("LO-QUE-FALTA.html", "Lo que falta")]
 
-# Aqui cada documento se llama igual en los dos idiomas, asi que la pareja es
-# el mismo nombre en el otro directorio.
+# Cada documento se llama distinto en cada idioma, asi que el selector de idioma
+# necesita saber cual es la pareja de cada pagina. Sin esto, cambiar de idioma te
+# devuelve a la portada y pierdes por donde ibas.
+_PAREJAS = [("GETTING-STARTED.html", "EMPEZAR.html"),
+            ("THE-GAME.html", "EL-JUEGO.html"),
+            ("THE-TAPE.html", "LA-CINTA.html"),
+            ("THE-CODE.html", "EL-CODIGO.html"),
+            ("FINDINGS.html", "HALLAZGOS.html"),
+            ("WHATS-MISSING.html", "LO-QUE-FALTA.html")]
 PAREJA = {}
+for _en, _es in _PAREJAS:
+    PAREJA[_en] = _es
+    PAREJA[_es] = _en
 
 # El pie va en el idioma de la pagina, y los creditos son los que dice la propia
 # pantalla de creditos del juego (0xF124-0xF2D0 del bloque del juego), leidos del

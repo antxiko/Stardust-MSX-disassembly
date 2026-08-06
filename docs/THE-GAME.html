@@ -1,4 +1,4 @@
-<title>El juego — Stardust (1987)</title>
+<title>The game — Stardust (1987)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -79,28 +79,27 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
   border:1px solid var(--linea);border-radius:3px}
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Home</a><a href="EMPEZAR.html">Start</a><a href="EL-JUEGO.html" style=color:var(--tinta)>The game</a><a href="LA-CINTA.html">The tape</a><a href="EL-CODIGO.html">The code</a><a href="HALLAZGOS.html">Findings</a><a href="LO-QUE-FALTA.html">What's missing</a><a href="es/index.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
-<h1 id="el-juego">El juego</h1>
-<blockquote><b>Note:</b> this page is not translated yet. The documentation is written in Spanish first and translated afterwards; this is the Spanish text. The figures, addresses and code fragments read the same in both languages.</blockquote>
-<p><em>Stardust</em> es un matamarcianos de scroll vertical. Se pilota una nave —el Astrohunter— sobre la superficie de una flota de supercruceros enemigos que va camino de la Tierra, esquivando o destruyendo lo que sale al paso hasta llegar a los generadores de escudo.</p>
-<p>Y luego cambia de juego. Al superar la última zona de naves, el protagonista <b>aterriza y sigue a pie</b>, y esa es la fase final.</p>
-<h2 id="los-graficos-sacados-de-la-cinta">Los gráficos, sacados de la cinta</h2>
-<p>Nada de lo que hay aquí son capturas: todo está dibujado a partir de los bytes del binario, con la geometría que usa el propio juego. Eso es lo que lo convierte en una comprobación y no en una ilustración: si el reparto del bloque estuviera mal, saldría ruido.</p>
-<h3 id="los-111-tiles-del-decorado">Los 111 tiles del decorado</h3>
-<p><img src="imagenes/tiles.png" alt="Los 111 tiles de los niveles"></p>
-<p>Ocupan de 0x6DE0 a 0xA55F y son de <b>32×32 píxeles</b>, cuatro bytes por línea, 128 bytes cada uno. La cuenta cierra sola: 111 × 128 = 14 208, y 0x6DE0 + 14 208 = 0xA560, que es justo donde empiezan los sprites.</p>
-<h3 id="los-83-sprites">Los 83 sprites</h3>
-<p><img src="imagenes/sprites.png" alt="Los 83 sprites del juego"></p>
-<p>De 0xA560 a 0xBA1F, <b>16×16 píxeles con máscara</b>: cada línea trae los bits del dibujo y los de la máscara que dice qué píxeles son suyos. Son 64 bytes por sprite. Esa máscara no es un capricho: es lo que necesita el dibujado por software del Spectrum, que abre hueco con AND antes de pintar con OR.</p>
-<h3 id="la-tipografia-y-los-centinelas">La tipografía y los centinelas</h3>
-<p><img src="imagenes/charset.png" alt="El juego de caracteres"></p>
-<p>59 caracteres de 8×8 en 0x6000, y los quince nodos centinela de 24×24 en 0x69A8.</p>
-<h2 id="el-marcador-y-las-zonas">El marcador y las zonas</h2>
-<p>La pantalla de juego lleva un marco de adornos por los cuatro lados y deja una ventana central para la acción, con la puntuación y el número de zona abajo. El marco es muy de la época y muy de Spectrum: aprovecha que los bordes no cambian para llenarlos de detalle sin coste.</p>
-<h2 id="los-textos-del-juego">Los textos del juego</h2>
-<p>Leídos del binario, tal cual están:</p>
-<ul><li>El menú: <code>JOYSTICK</code>, <code>TECLADO</code>, <code>REDEFINIR TECLAS</code>, <code>JUGAR</code>.</li><li>La tabla de récords viene de fábrica con nombres de la casa: <code>JAVIER 100000</code>, <code>JUAN C 080000</code>, <code>MARTA 060000</code>, <code>MARIA 050000</code>, <code>TOPO 030000</code>, <code>SOFT 020000</code>.</li><li>Y los créditos, que son lo más interesante de todo el bloque de texto, porque contestan la pregunta de fondo de este desensamblado: <b>quién hizo la versión de MSX</b>. Los autores de la versión de ZX Spectrum avisan en su propio repositorio de que ellos no la hicieron, y aquí está el nombre, en el binario:</li></ul>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html" style=color:var(--tinta)>The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="WHATS-MISSING.html">What's missing</a><a href="es/EL-JUEGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="the-game">The game</h1>
+<p><em>Stardust</em> is a vertically scrolling shoot&#x27;em up. You fly a ship —the Astrohunter— over the surface of a fleet of enemy supercruisers heading for Earth, dodging or destroying whatever comes at you until you reach the shield generators.</p>
+<p>And then it changes game. On clearing the last ship zone the character <b>lands and carries on on foot</b>, and that is the final stage.</p>
+<h2 id="the-graphics-taken-out-of-the-tape">The graphics, taken out of the tape</h2>
+<p>None of what follows is a screenshot: it is all drawn from the bytes of the binary, using the geometry the game itself uses. That is what makes it a check rather than an illustration — if the block&#x27;s layout were wrong, noise would come out.</p>
+<h3 id="the-111-scenery-tiles">The 111 scenery tiles</h3>
+<p><img src="imagenes/tiles.png" alt="The 111 level tiles"></p>
+<p>They run from 0x6DE0 to 0xA55F and are <b>32×32 pixels</b>, four bytes per line, 128 bytes each. The arithmetic closes on its own: 111 × 128 = 14,208, and 0x6DE0 + 14,208 = 0xA560, which is exactly where the sprites begin.</p>
+<h3 id="the-83-sprites">The 83 sprites</h3>
+<p><img src="imagenes/sprites.png" alt="The game&#x27;s 83 sprites"></p>
+<p>From 0xA560 to 0xBA1F, <b>16×16 pixels with a mask</b>: each line carries the bits of the drawing and the bits of the mask that says which pixels belong to it. That is 64 bytes per sprite. The mask is not a flourish — it is what the Spectrum&#x27;s software drawing needs, opening a hole with AND before painting with OR.</p>
+<h3 id="the-charset-and-the-sentinels">The charset and the sentinels</h3>
+<p><img src="imagenes/charset.png" alt="The character set"></p>
+<p>59 characters of 8×8 at 0x6000, and the fifteen 24×24 sentinel nodes at 0x69A8.</p>
+<h2 id="the-panel-and-the-zones">The panel and the zones</h2>
+<p>The play screen carries a decorated frame on all four sides and leaves a central window for the action, with the score and the zone number along the bottom. The frame is very much of its time and very much of the Spectrum: it takes advantage of the fact that the borders never change to fill them with detail at no cost.</p>
+<h2 id="the-game-s-text">The game&#x27;s text</h2>
+<p>Read out of the binary, exactly as it sits there:</p>
+<ul><li>The menu: <code>JOYSTICK</code>, <code>TECLADO</code>, <code>REDEFINIR TECLAS</code>, <code>JUGAR</code> — joystick, keyboard, redefine keys, play.</li><li>The high-score table ships from the factory with in-house names: <code>JAVIER 100000</code>, <code>JUAN C 080000</code>, <code>MARTA 060000</code>, <code>MARIA 050000</code>, <code>TOPO 030000</code>, <code>SOFT 020000</code>.</li><li>And the credits, which are the most interesting thing in the whole text block, because they answer the question underlying this disassembly: <b>who made the MSX version</b>. The authors of the ZX Spectrum version warn in their own repository that they did not make it, and here is the name, in the binary:</li></ul>
 <p>``<code> CONVERSION POR CARLOS ARIAS GRAFICOS JUAN CARLOS Y JAVIER AREVALO ...ADEMAS DE... JULIO MARTIN MUSICA COMPUESTA POR GOMINOLAS BASADO  EN UNA IDEA  ORIGINAL JOSE MANUEL  MU&amp;OZ TOPO SOFT </code>``</p>
-<p>Los gráficos siguen siendo de los hermanos Arévalo, los mismos de la versión original, lo que encaja con que el dibujo se trajera tal cual. La conversión del código, en cambio, la firma Carlos Arias. Ese <code>&amp;</code> de <code>MU&amp;OZ</code> no es una errata de la transcripción: es cómo la tipografía del juego codifica la eñe.</p>
-<ul><li>Y el aviso de que viene lo bueno, justo antes de la segunda carga: <code>HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN NO HA LLEGADO</code>.</li></ul>
+<p>&quot;Conversion by Carlos Arias; graphics by Juan Carlos and Javier Arévalo; and also Julio Martín; music composed by Gominolas; based on an original idea by José Manuel Muñoz.&quot; The graphics are still the Arévalo brothers&#x27;, the same as the original version, which fits with the artwork having been carried across as it was. The conversion of the code, on the other hand, is signed by Carlos Arias. That <code>&amp;</code> in <code>MU&amp;OZ</code> is not a transcription slip: it is how the game&#x27;s charset encodes the letter ñ.</p>
+<ul><li>And the notice that the good part is coming, right before the second load: <code>HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN NO HA LLEGADO</code> — you have broken through the flagship&#x27;s defences, but the worst is yet to come.</li></ul>
 <footer><p><em>Stardust</em> was published by Topo Soft in 1987. By the game's own credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by <b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, the music by <b>Gominolas</b>, and it is based on an original idea by <b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All rights in the game remain with their holders. This is preservation, study and documentation work.</p></footer></div>

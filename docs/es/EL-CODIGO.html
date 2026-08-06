@@ -79,9 +79,9 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
   border:1px solid var(--linea);border-radius:3px}
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html" style=color:var(--tinta)>El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="LO-QUE-FALTA.html">Lo que falta</a><a href="../index.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html" style=color:var(--tinta)>El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="LO-QUE-FALTA.html">Lo que falta</a><a href="../THE-CODE.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
 <h1 id="el-codigo">El código</h1>
-<p>Los cinco bloques de la cinta suman <b>93 861 bytes</b>, y de ellos <b>27 011</b> son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno, todo con su nombre.</p>
+<p>Los cinco bloques de la cinta suman <b>93 861 bytes</b>, y de ellos <b>27 635</b> son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno, todo con su nombre.</p>
 <p>Esa cifra es baja a propósito: sólo cuenta el código al que se llega de verdad siguiendo llamadas y saltos desde un punto de entrada conocido. Hay más código en la cinta, pero mientras no se sepa por dónde se entra no se cuenta, porque darlo por trazado es justo el error que hizo falta deshacer aquí.</p>
 <h2 id="como-se-dibuja-la-pantalla">Cómo se dibuja la pantalla</h2>
 <p>Aquí está la diferencia grande con el original. El Spectrum escribe directamente en su memoria de pantalla, que es RAM normal; el MSX tiene la memoria de vídeo detrás del chip gráfico y hay que enviarla por un puerto. Así que esta versión lleva un <b>buffer intermedio</b> que el original no necesita.</p>

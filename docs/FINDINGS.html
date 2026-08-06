@@ -1,0 +1,149 @@
+<title>Findings — Stardust (1987)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,640px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html" style=color:var(--tinta)>Findings</a><a href="WHATS-MISSING.html">What's missing</a><a href="es/HALLAZGOS.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="findings">Findings</h1>
+<p>Stardust is a ZX Spectrum conversion, and that much was known. What wasn&#x27;t expected on opening the tape is <b>how far the conversion goes</b>: they didn&#x27;t bring the graphics across and rebuild the rest, they brought the recording system, the load routine and the way of drawing. What follows is what turned up on taking it apart, each thing with the evidence that holds it up.</p>
+<h2 id="who-actually-made-this-version">Who actually made this version</h2>
+<p>The ZX Spectrum authors warn in their own repository that the MSX version was done by other people. The game answers the question itself, in its credits screen, at 0xF124:</p>
+<pre><code>CONVERSION POR
+CARLOS ARIAS
+GRAFICOS
+JUAN CARLOS Y JAVIER AREVALO
+...ADEMAS DE...
+JULIO MARTIN
+MUSICA COMPUESTA POR
+GOMINOLAS
+BASADO  EN
+UNA IDEA  ORIGINAL
+JOSE MANUEL  MU&amp;OZ
+TOPO SOFT</code></pre>
+<p>The conversion is <b>Carlos Arias</b>. The graphics stay with the Arévalo brothers, the same as the original version, which fits with the artwork having been carried over as it stood.</p>
+<h2 id="this-isn-t-an-msx-tape">This isn&#x27;t an MSX tape</h2>
+<p>MSX games are recorded in <b>KCS</b> blocks, the system&#x27;s own format: the BIOS writes them and the BIOS reads them.</p>
+<p>Not Stardust. Its four data blocks are <b>ZX Spectrum blocks</b>, with the structure from over there: a flag byte, the data, and a final byte that is the XOR of everything before it. All four carry that checksum correctly, verified one by one; it is the only integrity check the tape has.</p>
+<p>And the loader is a <b>reimplementation of LD-BYTES</b>, the Spectrum ROM&#x27;s load routine, with the same register interface:</p>
+<p>ld ix,047a0h    ; IX = where it goes ld de,0b647h    ; DE = how many bytes ld a,000h       ; A  = the flag expected scf             ; carry set = load, don&#x27;t verify call 0405ch</p>
+<p>Anyone who has programmed a Spectrum will recognise that call: it is the one at <code>0x0556</code> in its ROM, parameter for parameter.</p>
+<h2 id="the-64k-the-spectrum-has-and-the-msx-doesn-t">The 64K the Spectrum has and the MSX doesn&#x27;t</h2>
+<p>Before loading anything, the loader does something an ordinary MSX game would never need to: it <b>hunts for RAM and maps it into pages 1 and 2</b>.</p>
+<p>ld hl,04000h / call sub_d30fh ld hl,08000h / call sub_d30fh</p>
+<p>The routine at <code>0xD30F</code> tries writing into each slot with <code>ENASLT</code> (the BIOS call at <code>0x0024</code>) until it finds RAM. The reason is that the Spectrum has 48K of flat RAM and the MSX doesn&#x27;t: on the MSX the lower half of memory is taken by the BASIC ROM. For the ported game to find memory where it expects it, the ROM has to be got out of the way.</p>
+<h2 id="the-loader-ships-with-a-back-door-for-trainers">The loader ships with a back door for trainers</h2>
+<p>This is the best one. Before starting the game, the loader copies <b>94 bytes</b> from 0xDAC0 to 0xFDE8 —high memory, where nothing is going to overwrite them— and then looks at what is in them:</p>
+<p>4040: ld hl,0fde8h / ld b,003h 4045: ld a,(hl) / cp 0c9h / jp nz,0bd85h   ; three 0xC9 as a signature? 404e: ld b,(hl)                            ; B = how many patches 4050: ld e,(hl) / ld d,(hl) / ld a,(hl)    ; address and value 4056: ld (de),a / djnz 4050                ; apply them 4059: jp 0bd85h                            ; and now, off to the game</p>
+<p>If those 94 bytes begin with three <code>0xC9</code>, the loader treats them as a list of patches and applies them to the freshly loaded game. It is <b>a factory-fitted POKE applier</b>, inside the game&#x27;s commercial loader.</p>
+<p>And the arithmetic says how many it was built for: 3 bytes of signature + 1 counter + <b>30 patches of 3 bytes each = 94</b>. Sized for exactly thirty.</p>
+<p>That explains why the magazine loaders of the period worked so well with this game. The one in <em>Input MSX</em> number 19 writes with <code>FOR I=56000 TO 56012</code>, and 56000 is 0xDAC0: the mailbox. Its three patches, read out of the binary before applying them:</p>
+<p>0xC06E/6F:  38 1F (jr c,+31)  -&gt;  18 EC (jr -20) 0xF7B1:     01 -&gt; 00</p>
+<p>The first turns a conditional jump into an unconditional one, skipping a check that sits right behind <code>ld a,(0c188h) / cp 004h</code>. The second changes the <code>1</code> of an <code>ld a,001h</code> into a <code>0</code>. Applied by the game&#x27;s own loader, the ship survived sixteen minutes straight.</p>
+<h2 id="how-the-game-asks-for-the-second-part">How the game asks for the second part</h2>
+<p>On clearing the last ship zone a screen comes up reading</p>
+<p>FELICIDADES HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA PERO LO PEOR AUN NO HA LLEGADO</p>
+<p>and the game goes back to the cassette for the second part, the one on foot.</p>
+<p>The interesting bit is <b>how</b>. The loader&#x27;s load routine survives in page 1 for the whole game —the game loads from 0x47A0 up and doesn&#x27;t tread on it— so the obvious thing would be for it to call that. It doesn&#x27;t: a watchpoint on it never fired <b>once in 4000 seconds of play</b>. The game brings its own:</p>
+<p>f7f6: ld hl,0f89fh / push hl    ; the return address, pushed by hand f7fb: ld a,008h / out (0abh),a  ; switches on the tape MOTOR f7ff: ld a,00eh / out (0a0h),a  ; PSG register 14, the tape-bit one</p>
+<p>Nor is it a copy of the other one: its signature was searched for byte by byte across the three blocks and appears in none of them.</p>
+<p>It is caught by putting a watchpoint not on a routine but on the <b>destination</b>: any write to 0x61D0, where the descriptor says the second part goes. It fires with the program counter at 0xF849. And what is left there afterwards matches the tape&#x27;s block except for 180 bytes out of 29,861 —99.4%— which are the variables the second part had already touched by the time it was looked at.</p>
+<p><b>One open question, and it is left open.</b> Replaying a complete recorded playthrough, a breakpoint on 0xF7F6 never fired, and during the second load the program counter falls in ROM (0x1B09–0x1B2B). That doesn&#x27;t square with the finding above, which was measured with the magazine&#x27;s POKEs applied. Until it is measured properly, neither version is being written down as settled.</p>
+<h2 id="two-different-engines-on-one-tape">Two different engines on one tape</h2>
+<p>The two halves of the game don&#x27;t share an engine, and it shows in the size of their objects. In both, each entity carries a pointer to its governing routine in its structure, and the game jumps there with a <code>jp (hl)</code>. Capturing those jumps with the game running:</p>
+<p>the ship part:  the IX values go up in 8s   (0xCB3A, 0xCB42 · 0xC8D8, 0xC8E0…) the foot part:  the IX values go up in 46s  (0xD068, 0xD096, 0xD0C4)</p>
+<p>The entities of the second part carry a structure almost six times bigger.</p>
+<p>What they do share is the craft of drawing. Comparing 40 bytes of the sprite routine of one part against the other, <b>only six differ</b>, and three of those are <code>and (hl)</code> against <code>or (hl)</code>. It is the Spectrum technique, from a machine with no hardware sprites: the image is shifted bit by bit with an unrolled run of <code>adc hl,hl</code>, a hole is opened with AND, and it is painted with OR.</p>
+<h2 id="what-the-msx-forced-them-to-change">What the MSX forced them to change</h2>
+<p>There is a difference of substance between the two machines that the conversion could not dodge. The Spectrum writes <b>directly</b> into its screen memory, which is ordinary RAM at 0x4000. On the MSX, video memory sits behind the graphics chip and cannot be addressed: it has to be sent byte by byte through a port.</p>
+<p>So this version carries something the original doesn&#x27;t need: a <b>screen buffer</b> in RAM, and a routine that dumps it. The buffer is at 0x4B40 and measures <b>960 bytes, 40 columns by 24 rows</b>, and that is known through two paths that agree without depending on each other: the code says so (<code>ld de,04b40h</code>, <code>ld b,028h</code>, <code>ld c,018h</code>, and 0x4B40 + 40×24 = 0x4F00) and the emulator confirms it, where that routine made <b>3,252,480 writes</b> with the pointer reaching exactly 0x4EFF.</p>
+<p>Forty columns when only thirty-two fit on screen: those extra eight are the margin that makes the scrolling possible.</p>
+<h2 id="what-this-page-used-to-say-about-the-music-and-why-it-doesn-t">What this page used to say about the music, and why it doesn&#x27;t</h2>
+<p>It used to claim here that the music tables had been carried across whole, with 754 bytes identical to the ZX Spectrum version&#x27;s at 0xAB0E. <b>That is withdrawn.</b></p>
+<p>The match came from the same cross-check tool whose search turned out to be unsound, and 0xAB0E falls inside the range this project declares as sprites (0xA560–0xBA20). So the &quot;finding&quot; amounted to locating artwork where code was being looked for, which is exactly the fault that contaminated the whole trace.</p>
+<p>That the two halves of the game sound alike can still be looked into —and there is a sound routine identified in the MSX binary— but the strong claim, the one about the 754 bytes, does not stand until the cross-check is redone with a search that demands a unique match.</p>
+<h2 id="a-script-interpreter">A script interpreter</h2>
+<p>Inside the ship game there is a small virtual machine. The scripts that govern the enemies are bytes, and the ones valued 0x80 or above are <b>opcodes</b>:</p>
+<p>e230: ld a,(bc) / cp 080h / jp c,0e231h   ; below 0x80 it isn&#x27;t an opcode sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)</p>
+<p>and <code>0xE5C0</code> is exactly &quot;HL = table + A×2, HL = (HL)&quot;. The table at 0xE7A3 has <b>35 entries</b>, and that it is 35 and no more is not an estimate: the table ends at 0xE7E8 and the code for opcode 0x90 starts right up against it, at 0xE7E9.</p>
+<h2 id="the-loading-screen">The loading screen</h2>
+<p><img src="imagenes/carga.png" alt="The screen you watch while it loads"></p>
+<p>Not a screenshot: it is drawn from the 12,288 bytes the block itself dumps —6144 of pattern to video memory 0x0000 and 6144 of colour to 0x2000— following what its routine at 0x9C10 does.</p>
+<p>There is a catch to it, and an instructive one. The table saying which tile goes in each cell is not filled in the order 0, 1, 2, 3… but <b>by adding eight</b>: 0, 8, 16 … 248, 1, 9, 17 … The same 256 values per screen third, but interleaved. Drawing it assuming sequential order gives convincing noise, which is the worst kind of error: it looks as though the block&#x27;s layout is wrong when what is wrong is how you&#x27;re reading it.</p>
+<p>It is signed <b>CANO</b>, bottom left.</p>
+<footer><p><em>Stardust</em> was published by Topo Soft in 1987. By the game's own credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by <b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, the music by <b>Gominolas</b>, and it is based on an original idea by <b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All rights in the game remain with their holders. This is preservation, study and documentation work.</p></footer></div>

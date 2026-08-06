@@ -337,18 +337,23 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
 
     @sin_trazado
     def test_la_cobertura_publicada_es_la_que_da_el_trazado(self):
-        esperado = {"juego de naves": trazado("juego")["report"]["coverage"],
-                    "parte de a pie": trazado("parte2")["report"]["coverage"]}
-        for pagina in (os.path.join(DOCS, "LO-QUE-FALTA.md"),
-                       os.path.join(DOCS, "es", "LO-QUE-FALTA.md")):
+        esperado = {"juego": trazado("juego")["report"]["coverage"],
+                    "parte2": trazado("parte2")["report"]["coverage"]}
+        # La pagina inglesa usa otros nombres de bloque y el punto decimal.
+        for pagina, etiquetas, coma in (
+                (os.path.join(DOCS, "WHATS-MISSING.md"),
+                 {"ship game": "juego", "on-foot part": "parte2"}, "."),
+                (os.path.join(DOCS, "es", "LO-QUE-FALTA.md"),
+                 {"juego de naves": "juego", "parte de a pie": "parte2"}, ",")):
             with open(pagina, encoding="utf-8") as f:
                 texto = f.read()
-            for bloque, cobertura in esperado.items():
-                m = re.search(bloque + r"\s+([\d]+,[\d])\s*%", texto)
+            for bloque, modulo in etiquetas.items():
+                m = re.search(bloque + r"\s+([\d]+" + re.escape(coma) + r"[\d])\s*%",
+                              texto)
                 self.assertIsNotNone(
                     m, f"no aparece la cobertura de '{bloque}' en {pagina}")
                 self.assertEqual(float(m.group(1).replace(",", ".")),
-                                 round(cobertura * 100, 1),
+                                 round(esperado[modulo] * 100, 1),
                                  f"cobertura desactualizada en {pagina}")
 
     @sin_trazado
@@ -384,15 +389,16 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
                         despachadores.add(m.group(1).upper())
         self.assertEqual(despachadores, {"CB99", "D6B8", "C544"})
 
-        palabra = {5: "cinco", 4: "cuatro", 3: "tres", 2: "dos", 1: "uno"}
-        for pagina in (os.path.join(DOCS, "LO-QUE-FALTA.md"),
-                       os.path.join(DOCS, "es", "LO-QUE-FALTA.md")):
+        palabras = {"es": {5: "cinco", 4: "cuatro", 3: "tres", 2: "dos", 1: "uno"},
+                    "en": {5: "five", 4: "four", 3: "three", 2: "two", 1: "one"}}
+        for pagina, idioma in ((os.path.join(DOCS, "WHATS-MISSING.md"), "en"),
+                               (os.path.join(DOCS, "es", "LO-QUE-FALTA.md"), "es")):
             with open(pagina, encoding="utf-8") as f:
-                texto = f.read()
+                texto = f.read().lower()
             # el total, los del bloque del juego, y cuantos quedan sin resolver
             for n in (total, ciegos["juego"], total - len(despachadores) - 1):
-                self.assertIn(palabra[n], texto,
-                              f"{pagina} no dice '{palabra[n]}' ({n})")
+                p = palabras[idioma][n]
+                self.assertIn(p, texto, f"{pagina} no dice '{p}' ({n})")
 
 
 class TestLaCoherenciaDelTrazado(unittest.TestCase):

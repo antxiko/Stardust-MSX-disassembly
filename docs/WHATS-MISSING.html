@@ -1,0 +1,116 @@
+<title>What&#x27;s missing — Stardust (1987)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,640px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="WHATS-MISSING.html" style=color:var(--tinta)>What's missing</a><a href="es/LO-QUE-FALTA.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="what-s-missing">What&#x27;s missing</h1>
+<p>This page exists so that the &quot;100%&quot; on the front page isn&#x27;t read as something it isn&#x27;t. <b>This disassembly is not finished, and work continues.</b></p>
+<p>What follows is the state as of today, with exact figures for what is left. It is published this way on purpose: a half-done piece of work that says clearly where it stands is more useful than one that looks closed.</p>
+<h2 id="what-that-100-means-and-what-it-doesn-t">What that 100% means, and what it doesn&#x27;t</h2>
+<p>The byte budget says:</p>
+<p>TOTAL 93861 bytes, 93861 explicados (100.00%), 0 sin explicar</p>
+<p>That means one very specific thing: <b>every byte on the tape has an owner</b>. Either it is code the tracer genuinely reaches by following the flow, or it falls inside a range declared with a name and an explanation of how that is known.</p>
+<p>What it does <b>not</b> mean is that the purpose of every byte is known. There are ranges whose name is, literally, &quot;unclassified data&quot;, and those count as explained in the sense of being measured and bounded, not in the sense of being understood. Confusing the two would be selling smoke.</p>
+<p>Here is the honest breakdown.</p>
+<h2 id="what-is-left-to-identify">What is left to identify</h2>
+<p><b>6568 bytes, 7.0% of the tape</b>, are declared as &quot;unclassified data&quot;. For each one we know where it starts, where it ends and what it measures —average run of equal bits, entropy, and how many distinct values it uses— but not what it is or what it is used for.</p>
+<p>Most of those arrived here from the other direction: they were listed as <b>code</b> in the first published version of this page, and were only traced because the tracer had been seeded with entry points that fell inside the graphics. Once those were removed, the bytes were left ownerless. Before labelling them, the program counter of a real 900-second playthrough was sampled: <b>25 of those 26 ranges did not execute even once</b>, and the only one the counter fell into was at the two system hook addresses, which the game overwrites on startup. So they are not &quot;code we can&#x27;t reach&quot;; but neither is it known what they are.</p>
+<p>They are spread across small ranges inside the two big blocks. You can list them with:</p>
+<pre><code>grep &quot;datos sin clasificar&quot; src/juego.notes src/parte2.notes</code></pre>
+<p>and measure them again with <code>tools/clasifica_huecos.py</code>, which is where their classification came from.</p>
+<h2 id="what-is-left-to-trace">What is left to trace</h2>
+<p>The budget measures bytes; coverage measures something else. Of the code in the two big blocks, the tracer reaches this:</p>
+<p>ship game        24.7 % on-foot part     51.3 %</p>
+<p>The rest is data, yes, but there is also <b>code that isn&#x27;t arrived at by following the flow</b>: routines entered only through computed jumps, through tables, or through pointers filled in while playing. Some are known to exist because the emulator caught them running; others aren&#x27;t known at all.</p>
+<p>The precise measure of that blindness is the <b>indirect jumps</b>: <code>jp (hl)</code>, where the destination isn&#x27;t written in the binary but sits in a register, and the tracer stops because it cannot know where it goes. There are <b>five</b>, three in the ship part and two in the one on foot, and they are listed in the trace itself:</p>
+<pre><code>python3 -c &quot;import json;print(json.load(open(&#x27;work/juego.trace.json&#x27;))[&#x27;blind&#x27;])&quot;</code></pre>
+<p>Of the five, <b>four are resolved</b>. The one at 0xE230 is the script interpreter&#x27;s dispatcher, and its table of 35 pointers is read from the binary. The other three —0xCB99 and 0xD6B8 in the ship part, 0xC544 in the one on foot— were not resolved by reading code but by playing with the emulator open and noting the destination each time the jump executed, because the structures carrying those pointers arrive all 0xFF on the tape and are filled in while playing.</p>
+<p><b>One is unresolved</b>: the one at 0xC544&#x27;s neighbour, 0x984D, in the second part, which <b>never fired</b> — not in the 300 seconds it was first given, and not in a complete 38-minute playthrough either. It isn&#x27;t even confirmed to be used.</p>
+<h2 id="what-hasn-t-been-checked">What hasn&#x27;t been checked</h2>
+<ul><li>The second part has been seen to start and run, and now to be played through, but the code behind its later screens is still thin.</li><li>The cross-check against the ZX Spectrum version has been withdrawn entirely. The tool that produced it located sections by their first 32 bytes and kept the first match, without demanding a unique match or a consistent offset.</li><li>The listings&#x27; comments cover the main routines and the data zones, but <b>most routines still have no comment explaining what they do</b>. They have a name and they are bounded; that isn&#x27;t the same thing.</li></ul>
+<h2 id="why-it-is-published-like-this">Why it is published like this</h2>
+<p>Because a half-done disassembly that says clearly where it stands is useful, and one that pretends to be complete is worse than nothing: it sends whoever comes next looking in the wrong place.</p>
+<p>The criterion across the whole series is that every claim can be checked against the binary. That includes claims about what is <b>not</b> known: which is why the 6568 bytes are bounded one by one instead of swept under the carpet, and why the coverage figures come out of the tracer rather than out of an impression.</p>
+<h2 id="what-is-being-worked-on-now">What is being worked on now</h2>
+<p>This isn&#x27;t parked. The open lines, in order of what would pay off most:</p>
+<ul><li><b>Playing more, and more varied.</b> The recorded playthrough that produced the current figures never reaches game over, the high-score table, the redefine keys screen or the attract-mode demo. Covering those screens is what would move the figure fastest.</li><li><b>The unclassified bytes.</b> The cross-check route is closed until the search is fixed to demand a unique match and a consistent offset.</li><li><b>The level maps.</b> The seven ship levels are located and declared (0x61D8 to 0x68FE, around 250 bytes each) and they are <b>compressed</b>, which is why they take so little. Drawing them means working out the decompressor.</li><li><b>The indirect jump at 0x984D</b>, still unfired and with no known destination.</li><li><b>Commenting the routines</b> one by one. They are bounded and named; what they do is still to be written down.</li></ul>
+<p>If you have an idea about any of that, or you want to look at it yourself, everything needed is in the repository: the listings, the measuring tools and the notes files where each finding gets recorded.</p>
+<p>When those 6568 bytes are identified, this page will get shorter.</p>
+<footer><p><em>Stardust</em> was published by Topo Soft in 1987. By the game's own credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by <b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, the music by <b>Gominolas</b>, and it is based on an original idea by <b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All rights in the game remain with their holders. This is preservation, study and documentation work.</p></footer></div>

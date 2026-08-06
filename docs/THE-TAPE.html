@@ -1,4 +1,4 @@
-<title>El código — Stardust (1987)</title>
+<title>The tape — Stardust (1987)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -79,43 +79,32 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
   border:1px solid var(--linea);border-radius:3px}
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Home</a><a href="EMPEZAR.html">Start</a><a href="EL-JUEGO.html">The game</a><a href="LA-CINTA.html">The tape</a><a href="EL-CODIGO.html" style=color:var(--tinta)>The code</a><a href="HALLAZGOS.html">Findings</a><a href="LO-QUE-FALTA.html">What's missing</a><a href="es/index.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
-<h1 id="el-codigo">El código</h1>
-<blockquote><b>Note:</b> this page is not translated yet. The documentation is written in Spanish first and translated afterwards; this is the Spanish text. The figures, addresses and code fragments read the same in both languages.</blockquote>
-<p>Los cinco bloques de la cinta suman <b>93 861 bytes</b>, y de ellos <b>27 011</b> son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno, todo con su nombre.</p>
-<p>Esa cifra es baja a propósito: sólo cuenta el código al que se llega de verdad siguiendo llamadas y saltos desde un punto de entrada conocido. Hay más código en la cinta, pero mientras no se sepa por dónde se entra no se cuenta, porque darlo por trazado es justo el error que hizo falta deshacer aquí.</p>
-<h2 id="como-se-dibuja-la-pantalla">Cómo se dibuja la pantalla</h2>
-<p>Aquí está la diferencia grande con el original. El Spectrum escribe directamente en su memoria de pantalla, que es RAM normal; el MSX tiene la memoria de vídeo detrás del chip gráfico y hay que enviarla por un puerto. Así que esta versión lleva un <b>buffer intermedio</b> que el original no necesita.</p>
-<p>El buffer está en <b>0x4B40</b> y mide 960 bytes: 40 columnas por 24 filas. Y se recorre <b>por columnas</b>, no por filas:</p>
-<pre><code>f3f2: ld de,04b40h   ; el buffer
-f3f5: ld hl,01100h   ; la direccion de memoria de video
-f3f8: ld b,028h      ; 40 columnas
-f3ff: ld c,018h      ; 24 filas
-f408: ld de,00018h   ; el paso entre bytes: 24
-f40b: ld a,(hl) / out (098h),a / add hl,de / djnz</code></pre>
-<p>Cuarenta columnas cuando en pantalla caben treinta y dos: esas ocho de más son el margen del scroll. Esa rutina hizo <b>3.252.480 escrituras</b> en dos minutos de partida, que es de largo la que más trabaja del juego.</p>
-<p>Vigilando el puerto por donde entra la memoria de vídeo salen <b>diecisiete rutinas</b> que escriben en ella. Ese método —mirar quién escribe, en vez de adivinar qué son los datos— es lo que permitió acotar el buffer al byte.</p>
-<h2 id="los-sprites-a-la-manera-del-spectrum">Los sprites, a la manera del Spectrum</h2>
-<p>El Spectrum no tiene sprites por hardware, así que hay que dibujarlos a mano: se desplaza el dibujo bit a bit hasta la posición exacta, se abre hueco en el fondo con AND y se pinta con OR. Para no pagar el bucle del desplazamiento, se escribe la instrucción repetida N veces y se entra por la mitad:</p>
-<pre><code>c4c5: ld a,h / ld h,l / ld l,0ffh
-c4c9: jp 0c4e1h          ; el salto que pasa por encima de toda la tira
-c4cc: adc hl,hl / adc a,a / adc hl,hl / adc a,a / ...</code></pre>
-<p>Esa técnica es la que despista al trazador: el <code>jp</code> salta la tira entera, y a los <code>adc</code> se entra por un salto calculado que no está en el binario. Se sabe que se ejecutan porque el emulador los pilló ejecutándose a media tira.</p>
-<p>Y el MSX <b>sí tiene sprites por hardware</b>, que aquí no se usan para esto: la conversión se trajo el método de la máquina de origen.</p>
-<h2 id="un-interprete-de-guiones">Un intérprete de guiones</h2>
-<p>El comportamiento de los enemigos no está escrito como código, sino como guiones que interpreta una máquina virtual pequeña. Los bytes por debajo de 0x80 son datos; de 0x80 para arriba son opcodes:</p>
-<pre><code>e230: ld a,(bc) / cp 080h / jp c,0e231h
-      sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)</code></pre>
-<p>con <code>0xE5C0</code> haciendo «HL = tabla + A×2, HL = (HL)». Son <b>35 opcodes</b>, y esa tabla de saltos es también la primera trampa del trazado: si no se declara como datos, el trazador se mete dentro y empieza a desensamblar direcciones como si fueran instrucciones.</p>
-<h2 id="cada-objeto-lleva-su-rutina">Cada objeto lleva su rutina</h2>
-<p>Las dos partes del juego resuelven igual el comportamiento de las entidades: cada una guarda en su estructura un puntero a la rutina que la gobierna, y el juego salta ahí con <code>jp (hl)</code>. Esas estructuras vienen <b>a 0xFF en la cinta</b> y se rellenan jugando, así que los destinos no se pueden leer del binario: hay que capturarlos con el juego en marcha.</p>
-<p>Haciéndolo salen ocho rutinas en la parte de naves y diez en la de a pie. Y el tamaño de las estructuras delata que son motores distintos: <b>8 bytes</b> por entidad en la primera parte, <b>46</b> en la segunda.</p>
-<h2 id="codigo-que-se-escribe-a-si-mismo">Código que se escribe a sí mismo</h2>
-<p>Hay un despachador que se parchea sus propias llamadas:</p>
-<pre><code>f000: ld (0f016h),hl    ; se escribe el operando de un CALL
-f003: ld (0f019h),de    ; y el de otro
-...
-f015: call 0000h        ; ese 0000 no es real: lo rellena HL
-f018: call 0000h        ; y este DE</code></pre>
-<p>En frío eso se lee como <code>call 0</code>, que reiniciaría la máquina. A dónde llama de verdad no está en el binario, está en los registros de quien lo invoque.</p>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html" style=color:var(--tinta)>The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="WHATS-MISSING.html">What's missing</a><a href="es/LA-CINTA.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="the-tape">The tape</h1>
+<p>94,228 bytes of TSX file, which open up into <b>93,861 bytes of content</b> spread across seven blocks. The odd part shows up at first glance: three of them are recorded the way the MSX expects and <b>four are not</b>.</p>
+<h2 id="the-seven-blocks">The seven blocks</h2>
+<table><tr><th></th><th>block</th><th>bytes</th><th>goes to</th><th>what it is</th></tr><tr><td>1</td><td><code>STARDU</code></td><td>256</td><td>—</td><td>the BASIC loader, plain text</td></tr><tr><td>2</td><td><code>TOPO</code></td><td>4254</td><td>0x9470</td><td>the publisher&#x27;s animated logo</td></tr><tr><td>3</td><td><code>LOADER</code></td><td>351</td><td>0xD2F0</td><td>the turbo loader</td></tr><tr><td>4</td><td>—</td><td>12,468</td><td>0x9B8C</td><td>the loading screen, and it executes</td></tr><tr><td>5</td><td>—</td><td>46,663</td><td>0x47A0</td><td>the ship game, zones 1 to 7</td></tr><tr><td>6</td><td>—</td><td>8</td><td>—</td><td>an eight-byte descriptor</td></tr><tr><td>7</td><td>—</td><td>29,861</td><td>0x61D0</td><td>the second part, the one on foot</td></tr></table>
+<p>The first three are <b>KCS blocks</b>, the MSX&#x27;s own tape format, with their header and their filename. The four that follow are <b>ZX Spectrum blocks</b>: a flag byte, the data, and an XOR check byte. All four carry that XOR correctly, verified one by one.</p>
+<h2 id="the-loading-chain">The loading chain</h2>
+<p>It starts in the BASIC loader, which is five lines:</p>
+<pre><code>10 COLOR 1,1,1:SCREEN 2
+20 BLOAD&quot;cas:&quot;,R          &#x27; the logo, which runs by itself
+30 BLOAD&quot;cas:&quot;            &#x27; the turbo loader, which does NOT run
+40 CLS:COLOR 0,0,0:SCREEN 2
+50 DEFUSR=54000!:A=USR(0) &#x27; 54000 = 0xD2F0: now it does</code></pre>
+<p>And it carries on in the turbo loader, which does this in order:</p>
+<ol><li>Hunts for RAM and maps it into pages 1 and 2, to get a flat 64K.</li><li>Copies 300 bytes of itself to 0x4000 and jumps there.</li><li>Saves 94 bytes from 0xDAC0 to 0xFDE8 (the patch mailbox) and sets the stack.</li><li>Loads the loading-screen block <b>and executes it</b>.</li><li>Loads the game block on top, wiping out the previous one.</li><li>Applies the patches from the mailbox, if there are any.</li><li>Jumps to 0xBD85, which is the game.</li></ol>
+<p>The eight-byte descriptor and the last block are not loaded by it: the game itself asks for them on clearing the last zone.</p>
+<h2 id="the-blocks-tread-on-each-other">The blocks tread on each other</h2>
+<p>This is what forces you to look at the tape differently. In memory, the blocks <b>do not coexist</b>:</p>
+<pre><code>loading screen   0x9B8C - 0xCC3F
+ship game        0x47A0 - 0xFDE6    &lt;- wipes out the whole loading screen
+second part      0x61D0 - 0xD674    &lt;- lands inside the game</code></pre>
+<p>So there is no single 64K image holding the whole game, but <b>three photographs of memory at different moments</b>. Each listing carries the <code>org</code> of where it really runs, and the byte budget is summed over the tape&#x27;s blocks rather than over the memory map: summing over memory would count the bytes that overlap wrongly.</p>
+<p>This is not a technicality. It is the trap this disassembly fell into more than once — an address without an instant attached to it means nothing here. Sampling the program counter of a real playthrough, 122 addresses looked like code executing inside the tileset, and not one of them was: 66 belonged to the TOPO logo, 9 to the loading screen, and 56 were below 0x8000, which is the BASIC ROM until the loader maps RAM over it.</p>
+<h2 id="how-much-came-across-from-the-spectrum">How much came across from the Spectrum</h2>
+<p>There was a table here with byte-for-byte match percentages against the ZX Spectrum binary. <b>It has been withdrawn</b>, and it is worth explaining why rather than quietly deleting it.</p>
+<p>It was produced by <code>tools/coteja_spectrum.py</code>, which located each section of the other binary by taking its first 32 bytes and searching for them with a <code>find</code>: it kept the <b>first</b> match, without checking that it was the only one or that the resulting offset agreed with the other sections. Since both versions share a good deal of the artwork, those needles landed inside the tileset — and out of that came both the percentages and a batch of routine names pinned to addresses that hold graphics.</p>
+<p>What does stand up without that tool, because it is read from the MSX binary itself: the loader is <b>MSX code from end to end</b> —it has to map RAM into the pages and talk to the sound chip and to the tape motor port, things that on the Spectrum either don&#x27;t exist or live somewhere else— and the loading screen is signed by Cano, so it belongs to this version.</p>
+<p>When the search is fixed, and made to require a unique match and a consistent offset, the table will come back with figures that can be defended.</p>
 <footer><p><em>Stardust</em> was published by Topo Soft in 1987. By the game's own credits screen, the conversion is by <b>Carlos Arias</b>, the graphics by <b>Juan Carlos and Javier Arévalo</b> —along with <b>Julio Martín</b>—, the music by <b>Gominolas</b>, and it is based on an original idea by <b>José Manuel Muñoz</b>; the loading screen is signed <b>Cano</b>. All rights in the game remain with their holders. This is preservation, study and documentation work.</p></footer></div>
