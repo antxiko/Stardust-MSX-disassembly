@@ -5,14 +5,30 @@
 # ---------------------------------------------------------------- el buffer
 # Aqui vive la pantalla mientras el juego trabaja sobre ella. Sale de leer la
 # rutina de volcado y esta confirmado en el emulador al byte:
-#   - el codigo lo dice: `ld de,04b40h`, 40 columnas (`ld b,028h`) por 24 filas
-#     (`ld c,018h`), o sea 960 bytes, que van de 0x4B40 a 0x4EFF;
+#   - son 960 bytes, de 0x4B40 a 0x4EFF;
 #   - y el emulador lo confirma: vigilando el puerto 0x98, la rutina de 0xF40C
 #     hizo 3.252.480 escrituras con HL entre 0x4000 y 0x4EFF. Ese 0x4EFF es
 #     exactamente el ultimo byte del buffer.
-# Cuarenta columnas es mas de las 32 que caben en pantalla: ese margen de mas es
-# lo que permite el scroll.
-0x4B40  buffer de pantalla: 40 columnas x 24 filas, 960 bytes, leido por columnas
+#
+# CUIDADO CON LOS EJES, que aqui se leyeron al reves durante todo un ciclo de
+# publicacion. El `ld b,028h` se conto como "40 columnas" y no lo es:
+#
+#   f3ff: ld c,018h        ; 24  <- bucle EXTERIOR
+#   f401:   call 0EE24h    ;        fija la direccion de VRAM
+#   f408:   ld de,00018h   ; 24  <- el PASO dentro del buffer
+#   f40b:   ld a,(hl) / out (098h),a / add hl,de
+#   f40f:   djnz           ; 40  <- bucle INTERIOR, B=0x28
+#
+# El interior recorre el buffer A SALTOS DE 24, o sea que recoge 40 bytes de una
+# misma columna; el exterior avanza el buffer DE UNO EN UNO, 24 veces. El eje
+# rapido es el 24. Son 24 DE ANCHO POR 40 DE ALTO.
+#
+# Y se comprueba dibujandolo: partiendo el buffer de 24 en 24 sale la tabla de
+# records legible, con su tramado; de 40 en 40 sale ruido. Ademas cuadra con lo
+# que se ve jugando: 24 bytes son 192 pixeles, mas estrecho que los 256 de la
+# pantalla -de ahi el marco fijo a los lados-, y lo que sobra esta A LO ALTO,
+# que es justo por donde scrollea.
+0x4B40  buffer de pantalla: 24 de ancho x 40 de alto, 960 bytes, leido por columnas
 
 # ------------------------------------------------------- graficos y colores
 # La zona grande de datos no es una sola cosa. Perfilandola por trozos (racha,
@@ -61,11 +77,14 @@
 # Los mismos que src/juego.nocode, aqui en el formato que lee el
 # presupuesto. Cada uno esta avalado o por una medida hecha sobre este
 # binario, o por aparecer identico byte a byte en la version de Spectrum.
+D 0xED75 0xEE24 variables a cero del interprete de guiones (175 B): las lee y
+#   escribe con ld a,(nn) desde catorce sitios; el trazador las contaba como
+#   codigo porque 0x00 desensambla a nop
 D 0xE7A3 0xE7E9 tabla de saltos de los 35 opcodes del interprete
 D 0x5300 0x54E0 colores de tiles: 480 bytes con el nibble bajo a 1
 D 0x5640 0x5980 colores de tiles: 832 bytes mas de lo mismo
 D 0x5C31 0x5FFD relleno: 972 bytes
-D 0x4B40 0x4F00 buffer de pantalla: 40 columnas x 24 filas, leido por columnas
+D 0x4B40 0x4F00 buffer de pantalla: 24 de ancho x 40 de alto, leido por columnas
 D 0x61D8 0x62D7 Level 1 Data
 D 0x62D7 0x63D4 Level 2 Data
 D 0x63D4 0x64D4 Level 3 Data

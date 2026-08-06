@@ -1,0 +1,11 @@
+# Zonas del bloque de la segunda parte que NO son codigo, para que el trazador
+# no entre en ellas. Hasta ahora este fichero no existia y el trazador de la
+# parte de a pie iba sin red.
+#
+# Las dos son variables a cero: 0x00 desensambla a `nop`, asi que al caer el
+# flujo dentro se recorrian una a una y se contaban como instrucciones. Que son
+# variables lo dice el propio listado, que las lee con `ld a,(nn)` desde 30
+# sitios distintos y las escribe desde otros tantos.
+0xC459 0xC469   variables: 17 bytes (16 llegan a cero y 0xC468 a 0x10)
+0xC46A 0xC46D   4 bytes sin clasificar, entre las variables y el epilogo
+0xD068 0xD116   variables a cero: 175 bytes

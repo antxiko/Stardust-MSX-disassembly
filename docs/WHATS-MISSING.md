@@ -27,12 +27,12 @@ Here is the honest breakdown.
 
 ## What is left to identify
 
-**2864 bytes, 3.1% of the tape**, are declared as "unclassified data". For each
+**2868 bytes, 3.1% of the tape**, are declared as "unclassified data". For each
 one we know where it starts, where it ends and what it measures —average run of
 equal bits, entropy, and how many distinct values it uses— but not what it is or
 what it is used for.
 
-There used to be 4089. **1225 have been identified**, and with them the on-foot
+There used to be 4089. **1221 have been identified**, and with them the on-foot
 part is left without a single unclassified range: every one that remains is in
 the ship game's block.
 
@@ -66,9 +66,31 @@ code on either side.
 as starting at 0xDAD9, which is **the S of "HAS CONSEGUIDO"**: it cut a string in
 half. It starts at 0xDAC5, right after the `ret` at 0xDAC4.
 
+### The other way round: 367 bytes counted as code that aren't
+
+Looking for self-modifying code turned up the opposite error. **Three blocks of
+variables were marked as code**: 175 bytes at 0xED75 in the ship part, and 17 at
+0xC459 and 175 at 0xD068 in the on-foot one. They arrive from tape as zeros, and
+0x00 disassembles to `nop`, so when the flow fell into them the tracer walked
+them one at a time and counted them as instructions.
+
+That they are variables is stated by the listing itself, which **reads and
+writes them with absolute addressing from more than seventy places**. An
+instruction is not read byte by byte from half the program.
+
+One of those bytes did real damage: the 0x10 at 0xC468 was read as a `djnz` and
+sent the tracer into a stretch of code by a path that does not exist. Declaring
+the variables as data left that stretch orphaned, and it turned out to be the
+second part's **interrupt handler epilogue** —21 bytes ending in `ei / ret` that
+fit exactly— entered through a pointer, which is why following the flow never
+reaches it. It is now declared as what it is.
+
+That is why the code bytes go down and the data bytes go up against what was
+published before: the earlier figure was inflated.
+
 ### What is left, and one route that can now be closed
 
-Of the 2864 still unidentified, **1415 are in 0x4952-0x563F, and there the
+Of the 2868 still unidentified, **1415 are in 0x4952-0x563F, and there the
 original cannot help**. Not for want of trying: on the ZX Spectrum those
 addresses are the **screen memory**, 6144 bytes of pixels and 768 of attributes.
 There is no game to look at there, there is a picture.
@@ -94,8 +116,8 @@ classification came from.
 The budget measures bytes; coverage measures something else. Of the code in the
 two big blocks, the tracer reaches this:
 
-    ship game        26.1 %
-    on-foot part     52.3 %
+    ship game        25.7 %
+    on-foot part     51.7 %
 
 The rest is data, yes, but there is also **code that isn't arrived at by
 following the flow**: routines entered only through computed jumps, through
@@ -143,7 +165,7 @@ next looking in the wrong place.
 
 The criterion across the whole series is that every claim can be checked against
 the binary. That includes claims about what is **not** known: which is why the
-2864 bytes are bounded one by one instead of swept under the carpet, and why the
+2868 bytes are bounded one by one instead of swept under the carpet, and why the
 coverage figures come out of the tracer rather than out of an impression.
 
 ## What is being worked on now
@@ -154,7 +176,7 @@ This isn't parked. The open lines, in order of what would pay off most:
   the high-score entry, the demo, the menu and redefine keys— have now been
   visited in a recorded session, and that yielded 22 routines and the key
   table. What is left to visit the same way is the second part, on foot.
-- **The 2864 bytes still unclassified.** The cross-check route was closed while
+- **The 2868 bytes still unclassified.** The cross-check route was closed while
   the tool looked for each section with a 32-byte needle and kept the first
   match, demanding neither that it be unique nor that the resulting offset
   agree with the rest: that is where the contamination came from. It has been
@@ -172,4 +194,4 @@ If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and
 the notes files where each finding gets recorded.
 
-When those 2864 bytes are identified, this page will get shorter.
+When those 2868 bytes are identified, this page will get shorter.

@@ -78,7 +78,7 @@ lef00h:	equ 0x0ef00
 ;   0x4b0b..0x4b2f  (36 bytes)
 ; DATOS datos: sin clasificar (17 B; racha 2.72, entropia 3.62, 13 valores: pocos valores para ser un dibujo; parece tabla)
 ;   0x4b2f..0x4b40  (17 bytes)
-; DATOS buffer: de pantalla: 40 columnas x 24 filas, leido por columnas
+; DATOS buffer: de pantalla: 24 de ancho x 40 de alto, leido por columnas
 ;   0x4b40..0x4f00  (960 bytes)
 ; DATOS graficos: (337 B; racha 3.49, entropia 4.38, 73 valores: rachas mas largas que el azar)
 ;   0x4f00..0x5051  (337 bytes)
@@ -7885,7 +7885,7 @@ L_EA6E:
 	defb 028h,02bh,030h,02bh	; ead9  (+0+
 
 ; ======================================================================
-; CODIGO 0xeadd..0xf120  (1603 bytes)
+; CODIGO 0xeadd..0xed75  (664 bytes)
 ; ======================================================================
 
 
@@ -8449,181 +8449,28 @@ L_EC2D:
 	inc (hl)		;ed72
 	add a,h			;ed73
 	add a,d			;ed74
-	nop			;ed75
-	nop			;ed76
-	nop			;ed77
-	nop			;ed78
-	nop			;ed79
-	nop			;ed7a
-	nop			;ed7b
-	nop			;ed7c
-	nop			;ed7d
-	nop			;ed7e
-	nop			;ed7f
-	nop			;ed80
-	nop			;ed81
-	nop			;ed82
-	nop			;ed83
-	nop			;ed84
-	nop			;ed85
-	nop			;ed86
-	nop			;ed87
-	nop			;ed88
-	nop			;ed89
-	nop			;ed8a
-	nop			;ed8b
-	nop			;ed8c
-	nop			;ed8d
-	nop			;ed8e
-	nop			;ed8f
-	nop			;ed90
-	nop			;ed91
-	nop			;ed92
-	nop			;ed93
-	nop			;ed94
-	nop			;ed95
-	nop			;ed96
-	nop			;ed97
-	nop			;ed98
-	nop			;ed99
-	nop			;ed9a
-	nop			;ed9b
-	nop			;ed9c
-	nop			;ed9d
-	nop			;ed9e
-	nop			;ed9f
-	nop			;eda0
-	nop			;eda1
-	nop			;eda2
-	nop			;eda3
-	nop			;eda4
-	nop			;eda5
-	nop			;eda6
-	nop			;eda7
-	nop			;eda8
-	nop			;eda9
-	nop			;edaa
-	nop			;edab
-	nop			;edac
-	nop			;edad
-	nop			;edae
-	nop			;edaf
-	nop			;edb0
-	nop			;edb1
-	nop			;edb2
-	nop			;edb3
-	nop			;edb4
-	nop			;edb5
-	nop			;edb6
-	nop			;edb7
-	nop			;edb8
-	nop			;edb9
-	nop			;edba
-	nop			;edbb
-	nop			;edbc
-	nop			;edbd
-	nop			;edbe
-	nop			;edbf
-	nop			;edc0
-	nop			;edc1
-	nop			;edc2
-	nop			;edc3
-	nop			;edc4
-	nop			;edc5
-	nop			;edc6
-	nop			;edc7
-	nop			;edc8
-	nop			;edc9
-	nop			;edca
-	nop			;edcb
-	nop			;edcc
-	nop			;edcd
-	nop			;edce
-	nop			;edcf
-	nop			;edd0
-	nop			;edd1
-	nop			;edd2
-	nop			;edd3
-	nop			;edd4
-	nop			;edd5
-	nop			;edd6
-	nop			;edd7
-	nop			;edd8
-	nop			;edd9
-	nop			;edda
-	nop			;eddb
-	nop			;eddc
-	nop			;eddd
-	nop			;edde
-	nop			;eddf
-	nop			;ede0
-	nop			;ede1
-	nop			;ede2
-	nop			;ede3
-	nop			;ede4
-	nop			;ede5
-	nop			;ede6
-	nop			;ede7
-	nop			;ede8
-	nop			;ede9
-	nop			;edea
-	nop			;edeb
-	nop			;edec
-	nop			;eded
-	nop			;edee
-	nop			;edef
-	nop			;edf0
-	nop			;edf1
-	nop			;edf2
-	nop			;edf3
-	nop			;edf4
-	nop			;edf5
-	nop			;edf6
-	nop			;edf7
-	nop			;edf8
-	nop			;edf9
-	nop			;edfa
-	nop			;edfb
-	nop			;edfc
-	nop			;edfd
-	nop			;edfe
-	nop			;edff
-	nop			;ee00
-	nop			;ee01
-	nop			;ee02
-	nop			;ee03
-	nop			;ee04
-	nop			;ee05
-	nop			;ee06
-	nop			;ee07
-	nop			;ee08
-	nop			;ee09
-	nop			;ee0a
-	nop			;ee0b
-	nop			;ee0c
-	nop			;ee0d
-	nop			;ee0e
-	nop			;ee0f
-	nop			;ee10
-	nop			;ee11
-	nop			;ee12
-	nop			;ee13
-	nop			;ee14
-	nop			;ee15
-	nop			;ee16
-	nop			;ee17
-	nop			;ee18
-	nop			;ee19
-	nop			;ee1a
-	nop			;ee1b
-	nop			;ee1c
-	nop			;ee1d
-	nop			;ee1e
-	nop			;ee1f
-	nop			;ee20
-	nop			;ee21
-	nop			;ee22
-	nop			;ee23
+
+; ----------------------------------------------------------------------
+; DATOS variables: a cero del interprete de guiones (175 B): las lee y
+;   0xed75..0xee24  (175 bytes)
+; ----------------------------------------------------------------------
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; ed75  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; ed85  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; ed95  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; eda5  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; edb5  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; edc5  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; edd5  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; ede5  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; edf5  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; ee05  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; ee15  ...............
+
+; ======================================================================
+; CODIGO 0xee24..0xf120  (764 bytes)
+; ======================================================================
+
+
 L_EE24:
 	di			;ee24
 	push af			;ee25

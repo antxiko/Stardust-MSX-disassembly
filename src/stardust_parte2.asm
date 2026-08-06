@@ -9299,33 +9299,20 @@ L_C42A:
 	jp L_C42A		;c456
 
 ; ----------------------------------------------------------------------
-; DATOS relleno: o resto (5 B; 5 bytes)
-;   0xc459..0xc45e  (5 bytes)
+; DATOS variables: (17 B): eran 5 B de "relleno o resto" mas 12 que el
+;   0xc459..0xc46a  (17 bytes)
+; DATOS datos: sin clasificar (4 B): entre las variables y el epilogo de
+;   0xc46a..0xc46e  (4 bytes)
 ; ----------------------------------------------------------------------
-	defb 000h,000h,000h,000h,000h	; c459  .....
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,010h	; c459  ................
+	defb 000h,0e1h,0b1h,0a1h,071h	; c469  ....q
 
 ; ======================================================================
-; CODIGO 0xc45e..0xc788  (810 bytes)
+; CODIGO 0xc46e..0xc788  (794 bytes)
 ; ======================================================================
 
 
-L_C45E:
-	nop			;c45e
-	nop			;c45f
-	nop			;c460
-	nop			;c461
-	nop			;c462
-	nop			;c463
-	nop			;c464
-	nop			;c465
-	nop			;c466
-	nop			;c467
-	djnz L_C46A		;c468
-L_C46A:
-	pop hl			;c46a
-	or c			;c46b
-	and c			;c46c
-	ld (hl),c		;c46d
+L_C46E:
 	di			;c46e
 	pop hl			;c46f
 	call L_C509		;c470
@@ -10765,7 +10752,7 @@ L_CD89:
 	defb 018h,024h,018h,024h,018h,024h,01dh,029h,01fh,02bh,018h,024h,018h,018h,018h,08bh	; cdc0  .$.$.$.).+.$....
 
 ; ======================================================================
-; CODIGO 0xcdd0..0xd13a  (874 bytes)
+; CODIGO 0xcdd0..0xd068  (664 bytes)
 ; ======================================================================
 
 
@@ -11331,181 +11318,28 @@ L_CF20:
 	inc (hl)		;d065
 	add a,h			;d066
 	add a,d			;d067
-	nop			;d068
-	nop			;d069
-	nop			;d06a
-	nop			;d06b
-	nop			;d06c
-	nop			;d06d
-	nop			;d06e
-	nop			;d06f
-	nop			;d070
-	nop			;d071
-	nop			;d072
-	nop			;d073
-	nop			;d074
-	nop			;d075
-	nop			;d076
-	nop			;d077
-	nop			;d078
-	nop			;d079
-	nop			;d07a
-	nop			;d07b
-	nop			;d07c
-	nop			;d07d
-	nop			;d07e
-	nop			;d07f
-	nop			;d080
-	nop			;d081
-	nop			;d082
-	nop			;d083
-	nop			;d084
-	nop			;d085
-	nop			;d086
-	nop			;d087
-	nop			;d088
-	nop			;d089
-	nop			;d08a
-	nop			;d08b
-	nop			;d08c
-	nop			;d08d
-	nop			;d08e
-	nop			;d08f
-	nop			;d090
-	nop			;d091
-	nop			;d092
-	nop			;d093
-	nop			;d094
-	nop			;d095
-	nop			;d096
-	nop			;d097
-	nop			;d098
-	nop			;d099
-	nop			;d09a
-	nop			;d09b
-	nop			;d09c
-	nop			;d09d
-	nop			;d09e
-	nop			;d09f
-	nop			;d0a0
-	nop			;d0a1
-	nop			;d0a2
-	nop			;d0a3
-	nop			;d0a4
-	nop			;d0a5
-	nop			;d0a6
-	nop			;d0a7
-	nop			;d0a8
-	nop			;d0a9
-	nop			;d0aa
-	nop			;d0ab
-	nop			;d0ac
-	nop			;d0ad
-	nop			;d0ae
-	nop			;d0af
-	nop			;d0b0
-	nop			;d0b1
-	nop			;d0b2
-	nop			;d0b3
-	nop			;d0b4
-	nop			;d0b5
-	nop			;d0b6
-	nop			;d0b7
-	nop			;d0b8
-	nop			;d0b9
-	nop			;d0ba
-	nop			;d0bb
-	nop			;d0bc
-	nop			;d0bd
-	nop			;d0be
-	nop			;d0bf
-	nop			;d0c0
-	nop			;d0c1
-	nop			;d0c2
-	nop			;d0c3
-	nop			;d0c4
-	nop			;d0c5
-	nop			;d0c6
-	nop			;d0c7
-	nop			;d0c8
-	nop			;d0c9
-	nop			;d0ca
-	nop			;d0cb
-	nop			;d0cc
-	nop			;d0cd
-	nop			;d0ce
-	nop			;d0cf
-	nop			;d0d0
-	nop			;d0d1
-	nop			;d0d2
-	nop			;d0d3
-	nop			;d0d4
-	nop			;d0d5
-	nop			;d0d6
-	nop			;d0d7
-	nop			;d0d8
-	nop			;d0d9
-	nop			;d0da
-	nop			;d0db
-	nop			;d0dc
-	nop			;d0dd
-	nop			;d0de
-	nop			;d0df
-	nop			;d0e0
-	nop			;d0e1
-	nop			;d0e2
-	nop			;d0e3
-	nop			;d0e4
-	nop			;d0e5
-	nop			;d0e6
-	nop			;d0e7
-	nop			;d0e8
-	nop			;d0e9
-	nop			;d0ea
-	nop			;d0eb
-	nop			;d0ec
-	nop			;d0ed
-	nop			;d0ee
-	nop			;d0ef
-	nop			;d0f0
-	nop			;d0f1
-	nop			;d0f2
-	nop			;d0f3
-	nop			;d0f4
-	nop			;d0f5
-	nop			;d0f6
-	nop			;d0f7
-	nop			;d0f8
-	nop			;d0f9
-	nop			;d0fa
-	nop			;d0fb
-	nop			;d0fc
-	nop			;d0fd
-	nop			;d0fe
-	nop			;d0ff
-	nop			;d100
-	nop			;d101
-	nop			;d102
-	nop			;d103
-	nop			;d104
-	nop			;d105
-	nop			;d106
-	nop			;d107
-	nop			;d108
-	nop			;d109
-	nop			;d10a
-	nop			;d10b
-	nop			;d10c
-	nop			;d10d
-	nop			;d10e
-	nop			;d10f
-	nop			;d110
-	nop			;d111
-	nop			;d112
-	nop			;d113
-	nop			;d114
-	nop			;d115
-	nop			;d116
+
+; ----------------------------------------------------------------------
+; DATOS variables: a cero (175 B): el trazador las contaba como codigo
+;   0xd068..0xd117  (175 bytes)
+; ----------------------------------------------------------------------
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d068  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d078  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d088  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d098  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0a8  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0b8  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0c8  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0d8  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0e8  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0f8  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d108  ...............
+
+; ======================================================================
+; CODIGO 0xd117..0xd13a  (35 bytes)
+; ======================================================================
+
+
 L_D117:
 	di			;d117
 	push af			;d118

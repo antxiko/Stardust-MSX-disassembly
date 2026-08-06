@@ -8,10 +8,17 @@ De donde sale la geometria, que es la parte que hay que justificar:
     bytes. Que siete flujos independientes caigan en el mismo tamano no es
     casualidad: es la senal de que el descompresor lee bien.
 
-  - 450 = 10 x 45. Y que el ancho sea 10 no es una eleccion: el buffer de
-    pantalla tiene 40 columnas de caracteres, los tiles miden 32 pixeles -o sea
-    4 caracteres-, y 40/4 = 10. El mapa es una tira de 10 tiles de ancho por 45
-    de alto, que es lo que cabe esperar de un matamarcianos de scroll vertical.
+  - 450 = 6 x 75. Que el ancho sea 6 no es una eleccion: el buffer de pantalla
+    mide 24 caracteres de ancho, los tiles miden 32 pixeles -o sea 4
+    caracteres-, y 24/4 = 6. El mapa es una tira de 6 tiles de ancho por 75 de
+    alto, que es lo que cabe esperar de un matamarcianos de scroll vertical.
+
+    ESTO ESTUVO PUBLICADO COMO 10 x 45, y estaba mal. El error venia de leer el
+    `ld b,028h` del volcado como "40 columnas" cuando es el bucle INTERIOR, que
+    recorre una columna de 40 bytes a saltos de 24 (ver src/juego.notes). Con el
+    ancho bueno los mapas salen simetricos izquierda-derecha y con las
+    estructuras enteras; con el de 10 salian cortadas y sin simetria. Es la
+    comprobacion que dice el parrafo de abajo, y en su momento no se miro.
 
   - Cada byte es un indice de tile. Van de 0 a 110, y hay exactamente 111 tiles
     (0x6DE0 + 111*128 = 0xA560, donde empiezan los sprites). La zona 7 usa el
@@ -36,8 +43,8 @@ from render_maps import png                     # noqa: E402
 
 ORG = 0x47A0
 TILES = 0x6DE0          # 111 tiles de 32x32, 4 bytes por linea, 128 B cada uno
-ANCHO = 10              # tiles de ancho: 40 columnas del buffer / 4 por tile
-ALTO = 45               # 450 bytes / 10
+ANCHO = 6               # tiles de ancho: 24 caracteres del buffer / 4 por tile
+ALTO = 75               # 450 bytes / 6
 
 # La paleta del TMS9918, solo los tonos que hacen falta para estos colores.
 PALETA = {

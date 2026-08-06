@@ -16,20 +16,30 @@ en su memoria de pantalla, que es RAM normal; el MSX tiene la memoria de vídeo
 detrás del chip gráfico y hay que enviarla por un puerto. Así que esta versión
 lleva un **buffer intermedio** que el original no necesita.
 
-El buffer está en **0x4B40** y mide 960 bytes: 40 columnas por 24 filas. Y se
-recorre **por columnas**, no por filas:
+El buffer está en **0x4B40** y mide 960 bytes: **24 de ancho por 40 de alto**.
+Y se recorre **por columnas**, no por filas:
 
 ```
-f3f2: ld de,04b40h   ; el buffer
-f3f5: ld hl,01100h   ; la direccion de memoria de video
-f3f8: ld b,028h      ; 40 columnas
-f3ff: ld c,018h      ; 24 filas
-f408: ld de,00018h   ; el paso entre bytes: 24
-f40b: ld a,(hl) / out (098h),a / add hl,de / djnz
+f3ff: ld c,018h        ; 24  <- bucle EXTERIOR: avanza el buffer de uno en uno
+f401:   call 0EE24h    ;        fija la direccion de memoria de video
+f408:   ld de,00018h   ; 24  <- el PASO dentro del buffer
+f40b:   ld a,(hl) / out (098h),a / add hl,de
+f40f:   djnz           ; 40  <- bucle INTERIOR, con B=0x28
 ```
 
-Cuarenta columnas cuando en pantalla caben treinta y dos: esas ocho de más son
-el margen del scroll. Esa rutina hizo **3.252.480 escrituras** en dos minutos de
+Conviene pararse en los ejes, porque **aquí se leyeron al revés y estuvo
+publicado mal**. El `ld b,028h` parece decir «40 columnas» y no lo dice: es el
+bucle interior, y recorre el buffer a saltos de 24, o sea que recoge 40 bytes de
+**una misma columna**. El que cuenta columnas es el exterior, que avanza el
+buffer de uno en uno 24 veces.
+
+Se comprueba dibujándolo: partiendo el buffer de 24 en 24 sale la tabla de
+récords legible, con su tramado; de 40 en 40 sale ruido. Y cuadra con lo que se
+ve jugando: 24 bytes son 192 píxeles, más estrecho que los 256 de la pantalla
+—de ahí el marco fijo a los lados—, y lo que sobra está **a lo alto**, que es
+justo por donde scrollea.
+
+Esa rutina hizo **3.252.480 escrituras** en dos minutos de
 partida, que es de largo la que más trabaja del juego.
 
 Vigilando el puerto por donde entra la memoria de vídeo salen **diecisiete

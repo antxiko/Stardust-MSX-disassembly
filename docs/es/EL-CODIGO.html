@@ -85,14 +85,15 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>Esa cifra es baja a propósito: sólo cuenta el código al que se llega de verdad siguiendo llamadas y saltos desde un punto de entrada conocido. Hay más código en la cinta, pero mientras no se sepa por dónde se entra no se cuenta, porque darlo por trazado es justo el error que hizo falta deshacer aquí.</p>
 <h2 id="como-se-dibuja-la-pantalla">Cómo se dibuja la pantalla</h2>
 <p>Aquí está la diferencia grande con el original. El Spectrum escribe directamente en su memoria de pantalla, que es RAM normal; el MSX tiene la memoria de vídeo detrás del chip gráfico y hay que enviarla por un puerto. Así que esta versión lleva un <b>buffer intermedio</b> que el original no necesita.</p>
-<p>El buffer está en <b>0x4B40</b> y mide 960 bytes: 40 columnas por 24 filas. Y se recorre <b>por columnas</b>, no por filas:</p>
-<pre><code>f3f2: ld de,04b40h   ; el buffer
-f3f5: ld hl,01100h   ; la direccion de memoria de video
-f3f8: ld b,028h      ; 40 columnas
-f3ff: ld c,018h      ; 24 filas
-f408: ld de,00018h   ; el paso entre bytes: 24
-f40b: ld a,(hl) / out (098h),a / add hl,de / djnz</code></pre>
-<p>Cuarenta columnas cuando en pantalla caben treinta y dos: esas ocho de más son el margen del scroll. Esa rutina hizo <b>3.252.480 escrituras</b> en dos minutos de partida, que es de largo la que más trabaja del juego.</p>
+<p>El buffer está en <b>0x4B40</b> y mide 960 bytes: <b>24 de ancho por 40 de alto</b>. Y se recorre <b>por columnas</b>, no por filas:</p>
+<pre><code>f3ff: ld c,018h        ; 24  &lt;- bucle EXTERIOR: avanza el buffer de uno en uno
+f401:   call 0EE24h    ;        fija la direccion de memoria de video
+f408:   ld de,00018h   ; 24  &lt;- el PASO dentro del buffer
+f40b:   ld a,(hl) / out (098h),a / add hl,de
+f40f:   djnz           ; 40  &lt;- bucle INTERIOR, con B=0x28</code></pre>
+<p>Conviene pararse en los ejes, porque <b>aquí se leyeron al revés y estuvo publicado mal</b>. El <code>ld b,028h</code> parece decir «40 columnas» y no lo dice: es el bucle interior, y recorre el buffer a saltos de 24, o sea que recoge 40 bytes de <b>una misma columna</b>. El que cuenta columnas es el exterior, que avanza el buffer de uno en uno 24 veces.</p>
+<p>Se comprueba dibujándolo: partiendo el buffer de 24 en 24 sale la tabla de récords legible, con su tramado; de 40 en 40 sale ruido. Y cuadra con lo que se ve jugando: 24 bytes son 192 píxeles, más estrecho que los 256 de la pantalla —de ahí el marco fijo a los lados—, y lo que sobra está <b>a lo alto</b>, que es justo por donde scrollea.</p>
+<p>Esa rutina hizo <b>3.252.480 escrituras</b> en dos minutos de partida, que es de largo la que más trabaja del juego.</p>
 <p>Vigilando el puerto por donde entra la memoria de vídeo salen <b>diecisiete rutinas</b> que escriben en ella. Ese método —mirar quién escribe, en vez de adivinar qué son los datos— es lo que permitió acotar el buffer al byte.</p>
 <h2 id="los-sprites-a-la-manera-del-spectrum">Los sprites, a la manera del Spectrum</h2>
 <p>El Spectrum no tiene sprites por hardware, así que hay que dibujarlos a mano: se desplaza el dibujo bit a bit hasta la posición exacta, se abre hueco en el fondo con AND y se pinta con OR. Para no pagar el bucle del desplazamiento, se escribe la instrucción repetida N veces y se entra por la mitad:</p>

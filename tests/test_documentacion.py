@@ -155,16 +155,26 @@ class TestElMotorGrafico(unittest.TestCase):
     """El buffer de pantalla y como se vuelca."""
 
     @sin_juego
-    def test_el_buffer_es_de_40_columnas_por_24_filas(self):
+    def test_el_buffer_es_de_24_de_ancho_por_40_de_alto(self):
+        """Los ejes, que estuvieron publicados al reves.
+
+        El `ld b,028h` se conto como "40 columnas" y no lo es: es el bucle
+        INTERIOR, que recorre el buffer a saltos de 24 (ld de,00018h) y por
+        tanto recoge 40 bytes de UNA columna. El que cuenta columnas es el
+        exterior, `ld c,018h`, que avanza el buffer de uno en uno 24 veces.
+        De ahi salio ademas el ancho equivocado de los mapas de nivel.
+        """
         # f3f2: ld de,04b40h / ld hl,01100h / ld b,028h
         d = juego(0xF3F2, 0xF3FA)
         self.assertEqual(d[0], 0x11)                             # ld de,nn
         self.assertEqual(d[1] | (d[2] << 8), 0x4B40)
         self.assertEqual(d[6], 0x06)                             # ld b,n
-        self.assertEqual(d[7], 0x28)                             # 40 columnas
-        self.assertEqual(juego(0xF3FF, 0xF401), b"\x0E\x18")     # ld c,24 filas
+        self.assertEqual(d[7], 0x28)                             # 40 = el ALTO
+        self.assertEqual(juego(0xF3FF, 0xF401), b"\x0E\x18")     # ld c,24 = el ANCHO
+        # el paso del bucle interior es el ancho: por eso 24 es el eje rapido
+        self.assertEqual(juego(0xF408, 0xF40B), b"\x11\x18\x00")  # ld de,00018h
         # y el buffer acaba justo donde dice la cuenta
-        self.assertEqual(0x4B40 + 40 * 24, 0x4F00)
+        self.assertEqual(0x4B40 + 24 * 40, 0x4F00)
 
     @sin_juego
     def test_el_volcado_avanza_de_24_en_24(self):

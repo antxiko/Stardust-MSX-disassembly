@@ -45,13 +45,15 @@
 0x5640 0x597F   colores de tiles: 832 bytes mas de lo mismo
 # Y un tramo largo de ceros: 951 bytes a 0x00 y 73 a 0xFF.
 0x5C31 0x5FFC   relleno: 972 bytes
-# El buffer de pantalla, 40 columnas x 24 filas. Aqui hay una diferencia de
+# El buffer de pantalla, 24 de ancho x 40 de alto (ver src/juego.notes: el
+# `ld b,028h` del volcado NO son columnas, es el bucle interior que recorre una
+# columna a saltos de 24). Aqui hay una diferencia de
 # fondo entre las dos maquinas: el Spectrum escribe DIRECTAMENTE en su memoria
 # de pantalla, que es RAM normal en 0x4000, mientras que en el MSX la VRAM esta
 # detras del VDP y no se puede direccionar. Por eso esta version necesita un
 # buffer intermedio en RAM y una rutina que lo vuelque por un puerto. En la
 # cinta viene grabado con su contenido inicial, que son numeros de casilla.
-0x4B40 0x4EFF   buffer de pantalla: 40 columnas x 24 filas, leido por columnas
+0x4B40 0x4EFF   buffer de pantalla: 24 de ancho x 40 de alto, leido por columnas
 # --- LOS GRAFICOS ------------------------------------------------------------
 # Faltaban aqui, y esa ausencia es la que dejo pasar la contaminacion grande de
 # este proyecto: 41 puntos de entrada sacados del cotejo con el Spectrum caian
@@ -80,3 +82,13 @@
 0x65DB 0x66E9   zona 5: mapa comprimido (271 B -> 450 tiles)
 0x66EA 0x67E3   zona 6: mapa comprimido (250 B -> 450 tiles)
 0x67E4 0x68FE   zona 7: mapa comprimido (283 B -> 450 tiles)
+
+# Variables a cero que el trazador se tragaba como codigo. Son 175 bytes de
+# 0x00, y 0x00 desensambla a `nop`: al caer el flujo dentro, el trazador las
+# recorria una a una y las contaba como instrucciones.
+#
+# Que son variables y no codigo lo dice el propio listado, que las LEE con
+# `ld a,(nn)` desde catorce sitios (0xEE09 desde 0xE38B/0xE49B/0xE4F0, 0xEE19
+# desde seis sitios distintos, etc.) y las ESCRIBE desde otros tantos. Una
+# instruccion no se lee ni se escribe byte a byte desde medio programa.
+0xED75 0xEE23   variables a cero del interprete de guiones: 175 bytes

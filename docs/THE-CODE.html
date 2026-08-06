@@ -85,14 +85,15 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>That figure is deliberately low: it counts only code genuinely arrived at by following calls and jumps from a known entry point. There is more code on the tape, but until we know how it is entered it is not counted — taking it as traced is precisely the mistake that had to be undone here.</p>
 <h2 id="how-the-screen-gets-drawn">How the screen gets drawn</h2>
 <p>This is the big difference from the original. The Spectrum writes straight into its screen memory, which is ordinary RAM; the MSX has its video memory behind the graphics chip and it has to be sent through a port. So this version carries an <b>intermediate buffer</b> the original doesn&#x27;t need.</p>
-<p>The buffer sits at <b>0x4B40</b> and is 960 bytes: 40 columns by 24 rows. And it is walked <b>by columns</b>, not by rows:</p>
-<pre><code>f3f2: ld de,04b40h   ; the buffer
-f3f5: ld hl,01100h   ; the video memory address
-f3f8: ld b,028h      ; 40 columns
-f3ff: ld c,018h      ; 24 rows
-f408: ld de,00018h   ; and the stride between bytes: 24
-f40b: ld a,(hl) / out (098h),a / add hl,de / djnz</code></pre>
-<p>Forty columns when only thirty-two fit on screen: those extra eight are the scrolling margin. That routine made <b>3,252,480 writes</b> in two minutes of play, which makes it by far the hardest-working code in the game.</p>
+<p>The buffer sits at <b>0x4B40</b> and is 960 bytes: <b>24 wide by 40 tall</b>. And it is walked <b>by columns</b>, not by rows:</p>
+<pre><code>f3ff: ld c,018h        ; 24  &lt;- OUTER loop: steps the buffer one byte at a time
+f401:   call 0EE24h    ;        sets the video memory address
+f408:   ld de,00018h   ; 24  &lt;- the STRIDE within the buffer
+f40b:   ld a,(hl) / out (098h),a / add hl,de
+f40f:   djnz           ; 40  &lt;- INNER loop, with B=0x28</code></pre>
+<p>The axes are worth dwelling on, because <b>they were read backwards here and went out wrong</b>. The <code>ld b,028h</code> looks like it says &quot;40 columns&quot; and it does not: it is the inner loop, and it walks the buffer in steps of 24, so it collects 40 bytes from <b>a single column</b>. The one counting columns is the outer loop, which steps the buffer one byte at a time, 24 times.</p>
+<p>Drawing it settles it: split the buffer 24 at a time and the high-score table comes out legible, halftone and all; split it 40 at a time and it is noise. And it matches what you see while playing: 24 bytes are 192 pixels, narrower than the screen&#x27;s 256 —hence the fixed frame down the sides— and the surplus is in the <b>vertical</b>, which is exactly where it scrolls.</p>
+<p>That routine made <b>3,252,480 writes</b> in two minutes of play, which makes it by far the hardest-working code in the game.</p>
 <p>Watching the port that video memory arrives through turns up <b>seventeen routines</b> that write to it. That method —look at who writes, instead of guessing what the data is— is what allowed the buffer to be pinned down to the byte.</p>
 <h2 id="sprites-the-spectrum-way">Sprites, the Spectrum way</h2>
 <p>The Spectrum has no hardware sprites, so they have to be drawn by hand: the image is shifted bit by bit to the exact position, a hole is opened in the background with AND, and it is painted with OR. To avoid paying for the shift loop, the instruction is written out N times and entered in the middle:</p>

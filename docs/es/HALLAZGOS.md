@@ -133,13 +133,21 @@ y no se puede direccionar: hay que enviarla byte a byte por un puerto.
 
 Por eso esta versión lleva algo que el original no necesita: un **buffer de
 pantalla** en RAM, y una rutina que lo vuelca. El buffer está en 0x4B40 y mide
-**960 bytes, 40 columnas por 24 filas**, y eso se sabe por dos caminos que
-coinciden: lo dice el código (`ld de,04b40h`, `ld b,028h`, `ld c,018h`, y
-0x4B40 + 40×24 = 0x4F00) y lo confirma el emulador, donde esa rutina hizo
-**3.252.480 escrituras** con el puntero llegando exactamente hasta 0x4EFF.
+**960 bytes, 24 de ancho por 40 de alto**, y el tamaño se sabe por dos caminos
+que coinciden: lo dice el código (`ld de,04b40h`, y 24×40 = 960, que llevan de
+0x4B40 a 0x4EFF) y lo confirma el emulador, donde esa rutina hizo **3.252.480
+escrituras** con el puntero llegando exactamente hasta 0x4EFF.
 
-Cuarenta columnas cuando en pantalla caben treinta y dos: esas ocho de más son
-el margen que permite el scroll.
+**Los ejes estuvieron publicados al revés**, y merece contarse porque el error
+se propagó. El `ld b,028h` del volcado se leyó como «40 columnas», pero es el
+bucle interior y recorre el buffer a saltos de 24: recoge 40 bytes de una misma
+columna. Quien cuenta columnas es el exterior, `ld c,018h`, que avanza de uno en
+uno 24 veces.
+
+Lo caza dibujarlo: de 24 en 24 sale la tabla de récords legible; de 40 en 40,
+ruido. Y encaja con lo que se ve jugando, que es de donde salió la duda: 24
+bytes son 192 píxeles, más estrecho que la pantalla —por eso el marco de los
+lados no se mueve—, y lo que sobra está a lo alto, que es por donde scrollea.
 
 ## Lo que decía aquí sobre la música, y por qué ya no
 

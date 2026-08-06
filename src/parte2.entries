@@ -103,3 +103,19 @@
 0xB30A  dato_a_codigo_B30A   pre-desplazado de sprites, variante 2
 0xB36E  dato_a_codigo_B36E   pre-desplazado de sprites, variante 3
 0xB396  dato_a_codigo_B396   pre-desplazado de sprites, variante 4
+
+# El EPILOGO DE INTERRUPCION de 0xC46E. Nadie lo llama desde el codigo trazado:
+# se entra ahi porque el manejador esta enganchado por puntero, igual que en la
+# parte de naves. Antes se alcanzaba por accidente -el trazador leia el 0x10 de
+# la variable 0xC468 como un `djnz` y saltaba a 0xC46A-, y al declarar esas
+# variables como datos se quedo huerfano.
+#
+# Que 0xC46E es la frontera buena lo dice el propio codigo: desde ahi salen 21
+# bytes que desensamblan a un epilogo de interrupcion de libro y acaban EXACTO
+# en 0xC483, que es donde el listado vuelve a coger:
+#     c46e: di / pop hl / call 0c509h
+#     c473: pop ix / pop iy / pop af / pop bc / pop de / pop hl
+#     c47b: ex af,af' / exx / pop af / pop bc / pop de / pop hl / ei / ret
+# Y el `call 0c509h` arrastra la rutina de 0xC509, que recorre el otro bloque de
+# variables (`ld ix,0d068h`): otra confirmacion de que ese bloque son datos.
+0xC46E  epilogo_interrupcion   restaura los dos juegos de registros y hace ei/ret

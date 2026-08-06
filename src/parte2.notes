@@ -42,7 +42,15 @@ D 0xB720 0xB9B0 textos de la segunda parte: menu, redefinir teclas, records y me
 D 0xBC24 0xBC35 tabla (17 B; racha 68.00, entropia 0.87, 2 valores: pocos valores para ser un dibujo)
 D 0xBDAA 0xBDAC relleno o resto (2 B; 2 bytes)
 D 0xBFEB 0xC001 relleno (22 B; 22 de 22 bytes son 0xFF)
-D 0xC459 0xC45E relleno o resto (5 B; 5 bytes)
+D 0xC459 0xC46A variables (17 B): eran 5 B de "relleno o resto" mas 12 que el
+#   trazador contaba como codigo. Son una sola cosa: el listado las lee y escribe
+#   con direccionamiento absoluto desde 35 sitios (0xC462 desde ocho, 0xC468
+#   desde siete...). Dieciseis llegan a cero de la cinta y 0xC468 a 0x10, que es
+#   justo lo que hacia que el trazador lo leyera como un `djnz` y saltara a
+#   0xC46A. De ahi salia el codigo de mas abajo, por un camino que no existe.
+#   El limite de arriba lo pone el `jp L_C42A` de 0xC456, que ocupa hasta 0xC458.
+D 0xC46A 0xC46E datos sin clasificar (4 B): entre las variables y el epilogo de
+#   0xC46E. No se referencian desde ningun sitio y no se sabe que son.
 # 0xC804-0xC83D ESTUVO AQUI como 58 B "sin clasificar" y es CODIGO. Se retira y
 # pasa a src/parte2.entries.
 D 0xC8F7 0xCAA0 graficos (425 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
@@ -51,6 +59,9 @@ D 0xCB26 0xCB27 relleno o resto (1 B; 1 bytes)
 D 0xCBDB 0xCBF0 tabla (21 B; racha 2.43, entropia 3.16, 11 valores: pocos valores para ser un dibujo)
 D 0xCC99 0xCCAB tabla (18 B; racha 3.43, entropia 3.28, 11 valores: pocos valores para ser un dibujo)
 D 0xCDC0 0xCDD0 tabla (16 B; racha 2.37, entropia 2.27, 7 valores: pocos valores para ser un dibujo)
+D 0xD068 0xD117 variables a cero (175 B): el trazador las contaba como codigo
+#   porque 0x00 desensambla a nop. El listado las lee con ld a,(nn) desde once
+#   sitios (0xD0FC desde 0xC69F/0xC7B0/0xC805, 0xD10C desde tres mas...).
 D 0xD13A 0xD13C relleno o resto (2 B; 2 bytes)
 D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valores para ser un dibujo)
 

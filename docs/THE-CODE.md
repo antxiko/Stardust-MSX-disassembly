@@ -16,20 +16,30 @@ its screen memory, which is ordinary RAM; the MSX has its video memory behind
 the graphics chip and it has to be sent through a port. So this version carries
 an **intermediate buffer** the original doesn't need.
 
-The buffer sits at **0x4B40** and is 960 bytes: 40 columns by 24 rows. And it is
-walked **by columns**, not by rows:
+The buffer sits at **0x4B40** and is 960 bytes: **24 wide by 40 tall**. And it
+is walked **by columns**, not by rows:
 
 ```
-f3f2: ld de,04b40h   ; the buffer
-f3f5: ld hl,01100h   ; the video memory address
-f3f8: ld b,028h      ; 40 columns
-f3ff: ld c,018h      ; 24 rows
-f408: ld de,00018h   ; and the stride between bytes: 24
-f40b: ld a,(hl) / out (098h),a / add hl,de / djnz
+f3ff: ld c,018h        ; 24  <- OUTER loop: steps the buffer one byte at a time
+f401:   call 0EE24h    ;        sets the video memory address
+f408:   ld de,00018h   ; 24  <- the STRIDE within the buffer
+f40b:   ld a,(hl) / out (098h),a / add hl,de
+f40f:   djnz           ; 40  <- INNER loop, with B=0x28
 ```
 
-Forty columns when only thirty-two fit on screen: those extra eight are the
-scrolling margin. That routine made **3,252,480 writes** in two minutes of play,
+The axes are worth dwelling on, because **they were read backwards here and went
+out wrong**. The `ld b,028h` looks like it says "40 columns" and it does not: it
+is the inner loop, and it walks the buffer in steps of 24, so it collects 40
+bytes from **a single column**. The one counting columns is the outer loop,
+which steps the buffer one byte at a time, 24 times.
+
+Drawing it settles it: split the buffer 24 at a time and the high-score table
+comes out legible, halftone and all; split it 40 at a time and it is noise. And
+it matches what you see while playing: 24 bytes are 192 pixels, narrower than
+the screen's 256 —hence the fixed frame down the sides— and the surplus is in
+the **vertical**, which is exactly where it scrolls.
+
+That routine made **3,252,480 writes** in two minutes of play,
 which makes it by far the hardest-working code in the game.
 
 Watching the port that video memory arrives through turns up **seventeen

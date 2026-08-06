@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from estilo_web import ESTILO                      # noqa: E402
 
 TOTAL = 93861
-SIN_IDENTIFICAR = 2864
+SIN_IDENTIFICAR = 2868
 
 TXT = {
     "es": dict(
@@ -31,7 +31,7 @@ TXT = {
               "el presupuesto cierre al 100 % quiere decir que cada byte de la "
               "cinta tiene dueño —o es código que el trazador alcanza de verdad, "
               "o cae en un rango con nombre y medida—, <b>no</b> que se sepa para "
-              "qué sirve cada uno. Quedan 2864 bytes sin identificar y buena "
+              "qué sirve cada uno. Quedan 2868 bytes sin identificar y buena "
               "parte de las rutinas sin comentar. Está contado con cifras en "
               "<a href='LO-QUE-FALTA.html'>Lo que falta</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
@@ -45,9 +45,9 @@ TXT = {
         otro=("../", "In English"),
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
-        cifras=[("100%", "del binario con dueño"), ("135", "rutinas identificadas"),
-                ("7+1", "zonas de naves, y una a pie"), ("28.575", "bytes de código"),
-                ("65.286", "bytes de datos"), ("2.864", "bytes sin identificar")],
+        cifras=[("100%", "del binario con dueño"), ("136", "rutinas identificadas"),
+                ("7+1", "zonas de naves, y una a pie"), ("28.209", "bytes de código"),
+                ("65.652", "bytes de datos"), ("2.868", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -71,7 +71,7 @@ TXT = {
         aviso="<b>This is not finished, and work continues.</b> The budget closing "
               "at 100% means every byte on the tape has an owner —either code the "
               "tracer genuinely reaches, or a range with a name and a "
-              "measurement— <b>not</b> that its purpose is known. 2864 bytes "
+              "measurement— <b>not</b> that its purpose is known. 2868 bytes "
               "remain unidentified and much of the code is still uncommented. It "
               "is set out with figures in "
               "<a href='WHATS-MISSING.html'>What's missing</a>.",
@@ -87,9 +87,9 @@ TXT = {
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
-        cifras=[("100%", "of the binary owned"), ("135", "routines identified"),
-                ("7+1", "ship zones, plus one on foot"), ("28,575", "bytes of code"),
-                ("65,286", "bytes of data"), ("2,864", "bytes unidentified")],
+        cifras=[("100%", "of the binary owned"), ("136", "routines identified"),
+                ("7+1", "ship zones, plus one on foot"), ("28,209", "bytes of code"),
+                ("65,652", "bytes of data"), ("2,868", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "
@@ -137,9 +137,15 @@ HALLAZGOS = {
          "normal. En el MSX la memoria de vídeo está detrás del chip gráfico y hay "
          "que enviarla por un puerto, byte a byte.</p>"
          "<p>Por eso esta versión lleva un <b>buffer de pantalla</b> que el original "
-         "no necesita: 960 bytes en 0x4B40, de 40 columnas por 24 filas, que se "
-         "recorren por columnas. Cuarenta cuando en pantalla caben treinta y dos: "
-         "esas ocho de más son el margen del scroll.</p>"),
+         "no necesita: 960 bytes en 0x4B40, de <b>24 de ancho por 40 de alto</b>, que "
+         "se recorren por columnas. Veinticuatro bytes son 192 píxeles, más estrecho "
+         "que la pantalla: por eso el marco de los lados no se mueve. Y lo que sobra "
+         "está a lo alto, que es por donde scrollea.</p>"
+         "<p>Los ejes estuvieron publicados <b>al revés</b>: el <code>ld b,028h</code> del "
+         "volcado se leyó como «40 columnas» y es el bucle interior, que recoge 40 "
+         "bytes de una misma columna a saltos de 24. El error se propagó al ancho de "
+         "los mapas de nivel. Lo caza dibujarlo: de 24 en 24 sale la tabla de récords "
+         "legible; de 40 en 40, ruido.</p>"),
         ("Sprites dibujados a mano",
          "<p>El MSX tiene sprites por hardware. Aquí no se usan: se dibujan por "
          "software, a la manera del Spectrum, desplazando el dibujo bit a bit y "
@@ -170,8 +176,8 @@ HALLAZGOS = {
          "<b>1489 direcciones que el juego ejecutó, el trazador ya alcanzaba "
          "1444</b>: la limpieza era correcta. Y las que faltaban dejaron de ser "
          "una corazonada para pasar a ser código con su cuenta de muestras al "
-         "lado. La cobertura real del bloque es del <b>26,1 %</b>, y la de la "
-         "segunda parte subió al <b>52,3 %</b> al aparecer ahí sus dos rutinas "
+         "lado. La cobertura real del bloque es del <b>25,7 %</b>, y la de la "
+         "segunda parte subió al <b>51,7 %</b> al aparecer ahí sus dos rutinas "
          "más trabajadoras, que estaban clasificadas como tablas de datos.</p>"),
     ],
     "en": [
@@ -202,9 +208,15 @@ HALLAZGOS = {
          "RAM. On the MSX, video memory sits behind the graphics chip and has to be "
          "sent through a port, byte by byte.</p>"
          "<p>So this version carries a <b>screen buffer</b> the original doesn't "
-         "need: 960 bytes at 0x4B40, 40 columns by 24 rows, walked by columns. "
-         "Forty when only thirty-two fit on screen: those extra eight are the "
-         "scrolling margin.</p>"),
+         "need: 960 bytes at 0x4B40, <b>24 wide by 40 tall</b>, walked by columns. "
+         "Twenty-four bytes are 192 pixels, narrower than the screen: which is why "
+         "the frame down the sides never moves. And the surplus is vertical, which "
+         "is the way it scrolls.</p>"
+         "<p>The axes went out <b>backwards</b>: the dump's <code>ld b,028h</code> was "
+         "read as \"40 columns\" and it is the inner loop, collecting 40 bytes from a "
+         "single column in steps of 24. The error spread to the width of the level "
+         "maps. Drawing it catches it: 24 at a time gives a legible high-score table; "
+         "40 at a time, noise.</p>"),
         ("Sprites drawn by hand",
          "<p>The MSX has hardware sprites. They aren't used here: sprites are drawn "
          "in software, the Spectrum way, shifting the image bit by bit and "
@@ -234,7 +246,7 @@ HALLAZGOS = {
          "the game executed the tracer already reached 1444</b>: the cleanup "
          "was right. And the ones it missed stopped being a hunch and became "
          "code with a sample count beside it. The block's real coverage is "
-         "<b>26.1%</b>, and the second part's rose to <b>52.3%</b> when its two "
+         "<b>25.7%</b>, and the second part's rose to <b>51.7%</b> when its two "
          "hardest-working routines turned up there, both of which had been "
          "classified as data tables.</p>"),
     ],

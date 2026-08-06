@@ -54,7 +54,7 @@ cuerpos: extract
 work/juego.trace.json: tools/z80trace.py src/juego.entries src/juego.nocode extracted/.stamp
 	python3 tools/z80trace.py work/juego.raw 0x47A0 src/juego.entries work/juego src/juego.nocode
 
-work/parte2.trace.json: tools/z80trace.py src/parte2.entries extracted/.stamp
+work/parte2.trace.json: tools/z80trace.py src/parte2.entries src/parte2.nocode extracted/.stamp
 	python3 tools/z80trace.py work/parte2.raw 0x61D0 src/parte2.entries work/parte2
 
 work/pre.trace.json: tools/z80trace.py src/pre.entries extracted/.stamp

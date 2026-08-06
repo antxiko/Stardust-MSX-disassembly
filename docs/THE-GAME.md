@@ -51,8 +51,10 @@ copy-paste. An 0xFF ends the level.
 
 Expanded, all seven zones come to **exactly 450 bytes**. Seven different streams
 landing on the same size is the sign that the decompressor is reading it right.
-And 450 = 10 × 45: the width isn't a choice, it follows from the screen buffer
-being 40 columns wide and each tile being four characters.
+And 450 = 6 × 75: the width isn't a choice, it follows from the screen buffer
+being 24 characters wide and each tile being four. (This went out as 10 × 45,
+from reading the buffer's axes backwards; with the right width the maps come out
+symmetrical and with their structures whole.)
 
 Every byte is a tile index, and they run from 0 to 110 when there are exactly
 111 tiles. Zone 7 uses number 110, the last one. Another check that falls out on

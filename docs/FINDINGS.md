@@ -161,13 +161,22 @@ chip and cannot be addressed: it has to be sent byte by byte through a port.
 
 So this version carries something the original doesn't need: a **screen buffer**
 in RAM, and a routine that dumps it. The buffer is at 0x4B40 and measures **960
-bytes, 40 columns by 24 rows**, and that is known through two paths that agree
-without depending on each other: the code says so (`ld de,04b40h`, `ld b,028h`,
-`ld c,018h`, and 0x4B40 + 40×24 = 0x4F00) and the emulator confirms it, where
-that routine made **3,252,480 writes** with the pointer reaching exactly 0x4EFF.
+bytes, 24 wide by 40 tall**, and the size is known through two paths that agree
+without depending on each other: the code says so (`ld de,04b40h`, and 24×40 =
+960, running from 0x4B40 to 0x4EFF) and the emulator confirms it, where that
+routine made **3,252,480 writes** with the pointer reaching exactly 0x4EFF.
 
-Forty columns when only thirty-two fit on screen: those extra eight are the
-margin that makes the scrolling possible.
+**The axes went out backwards**, and it is worth telling because the error
+spread. The dump's `ld b,028h` was read as "40 columns", but it is the inner
+loop and it walks the buffer in steps of 24: it collects 40 bytes from a single
+column. The one counting columns is the outer loop, `ld c,018h`, stepping one
+byte at a time, 24 times.
+
+Drawing it catches it: 24 at a time gives a legible high-score table; 40 at a
+time, noise. And it fits what you see while playing, which is where the doubt
+came from: 24 bytes are 192 pixels, narrower than the screen —which is why the
+frame down the sides never moves— and the surplus is vertical, which is the way
+it scrolls.
 
 ## What this page used to say about the music, and why it doesn't
 

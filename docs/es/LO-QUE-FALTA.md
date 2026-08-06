@@ -26,12 +26,12 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**2864 bytes, el 3,1 % de la cinta**, están declarados como «datos sin
+**2868 bytes, el 3,1 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
 
-Eran 4089. **Se han identificado 1225**, y con ellos la parte de a pie se ha
+Eran 4089. **Se han identificado 1221**, y con ellos la parte de a pie se ha
 quedado sin ni un solo rango sin clasificar: todos los que quedan están en el
 bloque del juego de naves.
 
@@ -64,9 +64,31 @@ lados.
 declarado en 0xDAD9, que es **la S de «HAS CONSEGUIDO»**: cortaba una cadena por
 la mitad. Empieza en 0xDAC5, justo después del `ret` de 0xDAC4.
 
+### En la otra dirección: 367 bytes que se contaban como código y no lo son
+
+Buscando código automodificable apareció el error contrario. **Tres bloques de
+variables estaban marcados como código**: 175 bytes en 0xED75 de la parte de
+naves, y 17 en 0xC459 y 175 en 0xD068 de la de a pie. Llegan de la cinta a cero,
+y 0x00 desensambla a `nop`, así que al caer el flujo dentro el trazador los
+recorría uno a uno y los contaba como instrucciones.
+
+Que son variables lo dice el propio listado, que **las lee y las escribe con
+direccionamiento absoluto desde más de setenta sitios**. Una instrucción no se
+lee byte a byte desde medio programa.
+
+Uno de esos bytes hacía daño de verdad: el 0x10 de 0xC468 se leía como un `djnz`
+y mandaba al trazador a un trozo de código por un camino que no existe. Al
+declarar las variables como datos ese trozo se quedó huérfano, y resultó ser el
+**epílogo del manejador de interrupción** de la segunda parte —21 bytes que
+acaban en `ei / ret` y encajan al byte—, al que se entra por puntero y por eso
+no se alcanza siguiendo el flujo. Ahora está declarado como lo que es.
+
+Por eso los bytes de código bajan y los de datos suben respecto a lo publicado
+antes: la cifra de antes estaba inflada.
+
 ### Los que quedan, y una vía que ya se puede cerrar
 
-De los 2864 que siguen sin identificar, **1415 están en 0x4952-0x563F, y ahí el
+De los 2868 que siguen sin identificar, **1415 están en 0x4952-0x563F, y ahí el
 original no puede ayudar**. No por falta de haberlo intentado: en el ZX Spectrum
 esas direcciones son la **memoria de pantalla**, 6144 bytes de píxeles y 768 de
 atributos. Allí no hay juego que mirar, hay imagen.
@@ -92,8 +114,8 @@ salió su clasificación.
 El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
-    juego de naves    26,1 %
-    parte de a pie    52,3 %
+    juego de naves    25,7 %
+    parte de a pie    51,7 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
 el flujo**: rutinas a las que solo se entra por saltos calculados, por tablas o
@@ -139,14 +161,14 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-2864 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+2868 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 2864 bytes que siguen sin clasificar.** La vía del cotejo estuvo cerrada
+- **Los 2868 bytes que siguen sin clasificar.** La vía del cotejo estuvo cerrada
   mientras la herramienta buscaba cada sección con una aguja de 32 bytes y se
   quedaba con la primera coincidencia, sin exigir que fuera única ni que el
   desplazamiento encajara con el del resto: ahí se generó la contaminación. Ya
@@ -171,4 +193,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 2864 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 2868 bytes se identifiquen, esta página se hará más corta.
