@@ -121,6 +121,20 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>Aquí se afirmaba que las tablas de música se habían portado enteras, con 754 bytes idénticos a los de la versión de Spectrum en 0xAB0E. <b>Se retira.</b></p>
 <p>Esa coincidencia la daba la misma herramienta de cotejo cuya búsqueda resultó estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites (0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se buscaba código, que es exactamente el fallo que contaminó el trazado entero.</p>
 <p>Que las dos partes del juego suenan parecido se puede seguir mirando —y hay una rutina de sonido identificada en el binario de MSX—, pero la afirmación fuerte, la de los 754 bytes, no se sostiene hasta rehacer el cotejo con una búsqueda que exija coincidencia única.</p>
+<h2 id="la-misma-letra-nitida-o-transparente">La misma letra, nítida o transparente</h2>
+<p>En la tabla de récords el texto sale con los píxeles separados, como si fuera medio transparente, y en cambio el rótulo <code>DEMO</code> se ve totalmente nítido. Parecen dos tipografías. Es la misma rutina, y la diferencia está hecha <b>parcheando el código al vuelo</b>.</p>
+<p>La rutina que dibuja un carácter lo hace a doble altura: cada línea de la fuente se pinta dos veces, y cada copia va enmascarada con un patrón distinto.</p>
+<pre><code>d4d0: ld a,(de) / and 055h / or (hl) / ld (hl),a / add hl,bc
+      ld a,(de) / and 0aah / or (hl) / ld (hl),a / add hl,bc</code></pre>
+<p><code>0x55</code> y <code>0xAA</code> son <code>01010101</code> y <code>10101010</code>: píxeles alternos, y desplazados de una línea a la siguiente. Sale un damero, que a la vista es un medio tono.</p>
+<p>Y ahora lo bueno: esas dos máscaras <b>no son constantes</b>. Son los operandos de esos dos <code>and</code>, en 0xD4D3 y 0xD4D9, y el juego los reescribe antes de dibujar:</p>
+<pre><code>bfb4: ld a,0ffh / ld (0d4d3h),a / ld (0d4d9h),a   ; máscara neutra
+bfbc: ld ix,0ddf2h                                ; la cadena &quot;DEMO&quot;
+bfc0: ld hl,04d94h / call 0d4e5h                  ; dibujar
+bfc6: ld a,055h / ld (0d4d3h),a
+bfcb: ld a,0aah / ld (0d4d9h),a                   ; y restaurar</code></pre>
+<p>Con <code>0xFF</code> el <code>and</code> no quita nada y salen todos los píxeles. Es código automodificable usado como si fuera un parámetro.</p>
+<p>De paso, la rutina confirma dónde está la fuente: indexa con <code>0x5F00 + código×8</code>, y con el primer código 0x20 eso da 0x6000, que es justo donde están los 59 caracteres. Y el paso entre líneas de pantalla es 24, el alto del buffer por columnas.</p>
 <h2 id="un-interprete-de-guiones">Un intérprete de guiones</h2>
 <p>Dentro del juego de naves hay una máquina virtual pequeña. Los guiones que gobiernan a los enemigos son bytes, y los que valen 0x80 o más son <b>opcodes</b>:</p>
 <p>e230: ld a,(bc) / cp 080h / jp c,0e231h   ; por debajo de 0x80 no es opcode sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)</p>

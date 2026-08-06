@@ -254,3 +254,47 @@ D 0xE03D 0xE045 tabla (8 B; racha 1.94, entropia 3.00, 8 valores: pocos valores 
 D 0xE05E 0xE061 relleno o resto (3 B; 3 bytes)
 D 0xE091 0xE094 relleno o resto (3 B; 3 bytes)
 D 0xE0CF 0xE0D2 relleno o resto (3 B; 3 bytes)
+
+# --- LA TIPOGRAFIA GRANDE DE LOS RECORDS -------------------------------------
+#
+# Un jugador lo describio asi: en la tabla de records el texto sale con los
+# pixeles separados, como simulando transparencia, y en cambio el rotulo DEMO se
+# ve totalmente nitido. Parecian dos rutinas distintas. No lo son: es la MISMA, y
+# la diferencia esta hecha parcheando el codigo al vuelo.
+0xD4E5  render_cadena   dibuja una cadena terminada en cero: lee de (IX), llama al render de caracter y avanza HL
+0xD49B  render_caracter dibuja un caracter a DOBLE ALTURA sobre el buffer
+0xD4D0  render_tramado  el bucle que dibuja cada linea dos veces, con las dos mascaras
+0xBFB4  demo_nitido     pone las dos mascaras a 0xFF para escribir DEMO sin tramar, y las restaura
+
+# Como funciona, leido del listado:
+#
+#   d49b: la fuente se indexa con 0x5F00 + codigo*8. Con el primer codigo 0x20
+#         eso da 0x6000, que es justo donde esta el juego de caracteres. El paso
+#         entre lineas de pantalla es 0x18 = 24, el alto del buffer por columnas.
+#   d4b7: primera pasada, `cpl / and (hl)`: borra del fondo los pixeles del
+#         caracter, ocho lineas.
+#   d4d0: segunda pasada, y aqui esta el truco. Cada linea de la fuente se
+#         dibuja DOS veces -de ahi la doble altura- y cada copia va enmascarada
+#         con un patron distinto:
+#               ld a,(de) / and 055h / or (hl) / ld (hl),a / add hl,bc
+#               ld a,(de) / and 0aah / or (hl) / ld (hl),a / add hl,bc
+#         0x55 y 0xAA son 01010101 y 10101010: pixeles alternos, y desplazados
+#         entre una linea y la siguiente. Sale un damero, que a la vista es un
+#         medio tono. Eso es lo que se ve como transparencia.
+#
+# Y LO NITIDO. Las dos mascaras no son constantes: son los OPERANDOS de esos dos
+# `and`, en 0xD4D3 y 0xD4D9, y el juego los reescribe. Antes de dibujar DEMO:
+#
+#       bfb4: ld a,0ffh / ld (0d4d3h),a / ld (0d4d9h),a   <- mascara neutra
+#       bfbc: ld ix,0ddf2h                                <- la cadena "DEMO"
+#       bfc0: ld hl,04d94h / call 0d4e5h                  <- dibujar
+#       bfc6: ld a,055h / ld (0d4d3h),a
+#       bfcb: ld a,0aah / ld (0d4d9h),a                   <- y restaurar
+#
+# Con 0xFF el `and` no quita nada y salen todos los pixeles: nitido. Es codigo
+# automodificable usado como si fuera un parametro, y explica por que el mismo
+# tipo de letra se ve de dos maneras.
+#
+# El 0xDDF2 de ahi es la cadena DEMO dentro del bloque de textos, y encaja con
+# que el rotulo aparezca abajo a la derecha: 0x4D94 esta en el buffer de
+# pantalla, que va de 0x4B40 a 0x4EFF.

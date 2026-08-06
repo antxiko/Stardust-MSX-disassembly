@@ -156,6 +156,43 @@ rutina de sonido identificada en el binario de MSX—, pero la afirmación fuert
 la de los 754 bytes, no se sostiene hasta rehacer el cotejo con una búsqueda que
 exija coincidencia única.
 
+## La misma letra, nítida o transparente
+
+En la tabla de récords el texto sale con los píxeles separados, como si fuera
+medio transparente, y en cambio el rótulo `DEMO` se ve totalmente nítido.
+Parecen dos tipografías. Es la misma rutina, y la diferencia está hecha
+**parcheando el código al vuelo**.
+
+La rutina que dibuja un carácter lo hace a doble altura: cada línea de la fuente
+se pinta dos veces, y cada copia va enmascarada con un patrón distinto.
+
+```
+d4d0: ld a,(de) / and 055h / or (hl) / ld (hl),a / add hl,bc
+      ld a,(de) / and 0aah / or (hl) / ld (hl),a / add hl,bc
+```
+
+`0x55` y `0xAA` son `01010101` y `10101010`: píxeles alternos, y desplazados de
+una línea a la siguiente. Sale un damero, que a la vista es un medio tono.
+
+Y ahora lo bueno: esas dos máscaras **no son constantes**. Son los operandos de
+esos dos `and`, en 0xD4D3 y 0xD4D9, y el juego los reescribe antes de dibujar:
+
+```
+bfb4: ld a,0ffh / ld (0d4d3h),a / ld (0d4d9h),a   ; máscara neutra
+bfbc: ld ix,0ddf2h                                ; la cadena "DEMO"
+bfc0: ld hl,04d94h / call 0d4e5h                  ; dibujar
+bfc6: ld a,055h / ld (0d4d3h),a
+bfcb: ld a,0aah / ld (0d4d9h),a                   ; y restaurar
+```
+
+Con `0xFF` el `and` no quita nada y salen todos los píxeles. Es código
+automodificable usado como si fuera un parámetro.
+
+De paso, la rutina confirma dónde está la fuente: indexa con `0x5F00 + código×8`,
+y con el primer código 0x20 eso da 0x6000, que es justo donde están los 59
+caracteres. Y el paso entre líneas de pantalla es 24, el alto del buffer por
+columnas.
+
 ## Un intérprete de guiones
 
 Dentro del juego de naves hay una máquina virtual pequeña. Los guiones que

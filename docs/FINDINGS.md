@@ -185,6 +185,44 @@ is a sound routine identified in the MSX binary— but the strong claim, the one
 about the 754 bytes, does not stand until the cross-check is redone with a
 search that demands a unique match.
 
+## The same lettering, sharp or see-through
+
+On the high-score table the text comes out with its pixels separated, as though
+half transparent, while the `DEMO` label is perfectly sharp. They look like two
+typefaces. It is the same routine, and the difference is made by **patching the
+code on the fly**.
+
+The routine that draws a character draws it at double height: each line of the
+font is painted twice, and each copy is masked with a different pattern.
+
+```
+d4d0: ld a,(de) / and 055h / or (hl) / ld (hl),a / add hl,bc
+      ld a,(de) / and 0aah / or (hl) / ld (hl),a / add hl,bc
+```
+
+`0x55` and `0xAA` are `01010101` and `10101010`: alternating pixels, offset from
+one line to the next. The result is a checkerboard, which reads as a half tone.
+
+And here is the trick: those two masks **are not constants**. They are the
+operands of those two `and` instructions, at 0xD4D3 and 0xD4D9, and the game
+rewrites them before drawing:
+
+```
+bfb4: ld a,0ffh / ld (0d4d3h),a / ld (0d4d9h),a   ; neutral mask
+bfbc: ld ix,0ddf2h                                ; the "DEMO" string
+bfc0: ld hl,04d94h / call 0d4e5h                  ; draw
+bfc6: ld a,055h / ld (0d4d3h),a
+bfcb: ld a,0aah / ld (0d4d9h),a                   ; and put them back
+```
+
+With `0xFF` the `and` removes nothing and every pixel comes through. It is
+self-modifying code used as if it were a parameter.
+
+Along the way the routine confirms where the font lives: it indexes with
+`0x5F00 + code×8`, and with the first code being 0x20 that lands on 0x6000,
+exactly where the 59 characters are. And the stride between screen lines is 24,
+the height of the column-major buffer.
+
 ## A script interpreter
 
 Inside the ship game there is a small virtual machine. The scripts that govern

@@ -137,6 +137,20 @@ TOPO SOFT</code></pre>
 <p>It used to claim here that the music tables had been carried across whole, with 754 bytes identical to the ZX Spectrum version&#x27;s at 0xAB0E. <b>That is withdrawn.</b></p>
 <p>The match came from the same cross-check tool whose search turned out to be unsound, and 0xAB0E falls inside the range this project declares as sprites (0xA560–0xBA20). So the &quot;finding&quot; amounted to locating artwork where code was being looked for, which is exactly the fault that contaminated the whole trace.</p>
 <p>That the two halves of the game sound alike can still be looked into —and there is a sound routine identified in the MSX binary— but the strong claim, the one about the 754 bytes, does not stand until the cross-check is redone with a search that demands a unique match.</p>
+<h2 id="the-same-lettering-sharp-or-see-through">The same lettering, sharp or see-through</h2>
+<p>On the high-score table the text comes out with its pixels separated, as though half transparent, while the <code>DEMO</code> label is perfectly sharp. They look like two typefaces. It is the same routine, and the difference is made by <b>patching the code on the fly</b>.</p>
+<p>The routine that draws a character draws it at double height: each line of the font is painted twice, and each copy is masked with a different pattern.</p>
+<pre><code>d4d0: ld a,(de) / and 055h / or (hl) / ld (hl),a / add hl,bc
+      ld a,(de) / and 0aah / or (hl) / ld (hl),a / add hl,bc</code></pre>
+<p><code>0x55</code> and <code>0xAA</code> are <code>01010101</code> and <code>10101010</code>: alternating pixels, offset from one line to the next. The result is a checkerboard, which reads as a half tone.</p>
+<p>And here is the trick: those two masks <b>are not constants</b>. They are the operands of those two <code>and</code> instructions, at 0xD4D3 and 0xD4D9, and the game rewrites them before drawing:</p>
+<pre><code>bfb4: ld a,0ffh / ld (0d4d3h),a / ld (0d4d9h),a   ; neutral mask
+bfbc: ld ix,0ddf2h                                ; the &quot;DEMO&quot; string
+bfc0: ld hl,04d94h / call 0d4e5h                  ; draw
+bfc6: ld a,055h / ld (0d4d3h),a
+bfcb: ld a,0aah / ld (0d4d9h),a                   ; and put them back</code></pre>
+<p>With <code>0xFF</code> the <code>and</code> removes nothing and every pixel comes through. It is self-modifying code used as if it were a parameter.</p>
+<p>Along the way the routine confirms where the font lives: it indexes with <code>0x5F00 + code×8</code>, and with the first code being 0x20 that lands on 0x6000, exactly where the 59 characters are. And the stride between screen lines is 24, the height of the column-major buffer.</p>
 <h2 id="a-script-interpreter">A script interpreter</h2>
 <p>Inside the ship game there is a small virtual machine. The scripts that govern the enemies are bytes, and the ones valued 0x80 or above are <b>opcodes</b>:</p>
 <p>e230: ld a,(bc) / cp 080h / jp c,0e231h   ; below 0x80 it isn&#x27;t an opcode sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)</p>
