@@ -136,15 +136,21 @@ measured properly, neither version is being written down as settled.
 
 ## Two different engines on one tape
 
-The two halves of the game don't share an engine, and it shows in the size of
-their objects. In both, each entity carries a pointer to its governing routine
-in its structure, and the game jumps there with a `jp (hl)`. Capturing those
-jumps with the game running:
+The two halves of the game don't share an engine, and it shows in how they
+carry their creatures. In the ship part each entity points to its governing
+routine inside its 8-byte structure, and the game jumps there with a `jp (hl)`:
+capturing those jumps with the game running, the IX values go up in 8s (0xCB3A,
+0xCB42 · 0xC8D8, 0xC8E0…).
 
-    the ship part:  the IX values go up in 8s   (0xCB3A, 0xCB42 · 0xC8D8, 0xC8E0…)
-    the foot part:  the IX values go up in 46s  (0xD068, 0xD096, 0xD0C4)
-
-The entities of the second part carry a structure almost six times bigger.
+The foot part doesn't treat its enemies that way: they live in tables of
+**5 bytes per object** —the walkers at 0xACE4, four at most; the flyers at 0xACF9; the
+turret's two shots at 0xAD04— and carry no routine pointer: fixed loops move
+them, one per species. (This page used to say "the IX values go up in 46s:
+entities almost six times bigger", from mistaking what its `jp (hl)` at 0xC544
+dispatches for the enemies. The measurement was good, the reading wasn't: those
+IX —0xD068, 0xD096, 0xD0C4, three consecutive 46-byte slots exactly— belong to
+**another** structure, the variables area at 0xD068-0xD117 that arrives from
+the tape zeroed. Which subsystem that is remains open.)
 
 What they do share is the craft of drawing. Comparing 40 bytes of the sprite
 routine of one part against the other, **only six differ**, and three of those

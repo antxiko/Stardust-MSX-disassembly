@@ -108,15 +108,21 @@ se miró.
 
 ## Dos motores distintos en una cinta
 
-Las dos partes del juego no comparten motor, y se ve en el tamaño de sus
-objetos. En las dos, cada entidad lleva apuntada en su estructura la rutina que
-la gobierna, y el juego salta ahí con un `jp (hl)`. Capturando esos saltos con
-el juego en marcha:
+Las dos partes del juego no comparten motor, y se ve en cómo llevan a sus
+criaturas. En la parte de naves cada entidad apunta en su estructura de 8 bytes
+la rutina que la gobierna, y el juego salta ahí con un `jp (hl)`: capturando
+esos saltos con el juego en marcha, los IX van de 8 en 8 (0xCB3A, 0xCB42 ·
+0xC8D8, 0xC8E0…).
 
-    la parte de naves:  los IX van de 8 en 8    (0xCB3A, 0xCB42 · 0xC8D8, 0xC8E0…)
-    la parte de a pie:  los IX van de 46 en 46  (0xD068, 0xD096, 0xD0C4)
-
-Las entidades de la segunda parte llevan una estructura casi seis veces mayor.
+La parte de a pie no trata así a sus enemigos: viven en **tablas de 5 bytes por
+objeto** —los andantes en 0xACE4, cuatro como máximo; los voladores en 0xACF9;
+los dos tiros de la torreta en 0xAD04— y no llevan rutina apuntada, los mueven
+bucles fijos, uno por especie. (Aquí estuvo publicado "los IX van de 46 en 46:
+entidades casi seis veces mayores", por tomar por enemigos lo que despacha el
+`jp (hl)` de 0xC544. La medida era buena y la lectura no: esos IX —0xD068,
+0xD096, 0xD0C4, tres huecos consecutivos de 46 bytes justos— son de **otra**
+estructura, la zona de variables de 0xD068-0xD117 que llega de la cinta a cero.
+Qué subsistema es sigue abierto.)
 
 Lo que sí comparten es el oficio de dibujar. Comparando 40 bytes de la rutina de
 sprites de una parte con la de la otra, **solo difieren seis**, y tres de ellos

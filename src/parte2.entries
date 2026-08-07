@@ -39,10 +39,13 @@
 # cinta a por ella, asi que no hay que jugarse otra vez los 21 minutos de naves.
 #
 # Su `jp (hl)` de 0xC544 funciona igual que los de la parte de naves -cada objeto
-# lleva apuntada su rutina de comportamiento- pero con una diferencia que dice
-# mucho: aqui los IX van de 46 en 46 (0xD068, 0xD096, 0xD0C4), no de 8 en 8. Las
-# entidades de la parte de a pie llevan una estructura casi seis veces mas
-# grande. Son dos motores distintos, no el mismo juego con otros graficos.
+# lleva apuntada su rutina de comportamiento- pero OJO con lo que despacha: los
+# IX capturados van de 46 en 46 (0xD068, 0xD096, 0xD0C4: tres huecos justos en
+# la zona de variables a cero de 0xD068-0xD117) y NO son los enemigos. Los
+# enemigos de a pie viven en tablas de 5 B por objeto (andantes 0xACE4,
+# voladores 0xACF9, tiros 0xAD04) movidas por bucles fijos, sin rutina apuntada.
+# Que subsistema son los objetos de 46 B sigue abierto. (Aqui se leyo "entidades
+# casi seis veces mayores" y estaba mal: verificado 2026-08-07.)
 #
 # El otro salto indirecto, el de 0x984D, NO llego a dispararse en 300 segundos:
 # queda pendiente y hay que decirlo, no darlo por cubierto.
