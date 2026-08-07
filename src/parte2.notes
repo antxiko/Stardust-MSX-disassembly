@@ -15,9 +15,9 @@ D 0x625E 0x6644 graficos (998 B; racha 3.85, entropia 5.55, 199 valores: rachas 
 D 0x6788 0x6791 tabla (9 B; racha 4.00, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
 D 0x682E 0x7C78 graficos (5194 B; racha 3.08, entropia 6.49, 245 valores: rachas mas largas que el azar)
 D 0x7C9D 0x840B graficos (1902 B; parte del rango que estuvo declarado entero como graficos)
-D 0x840B 0x85DF el MAPA de colision de la fase (468 B: 78 filas de 6 celdas de 32x16 px, 280 con suelo; 0 = vacio. Lo lee consulta_mapa via base_mapa; la partida completa recorre las filas 71 a 0)
+D 0x840B 0x85DF el MAPA de la fase, que es dos mapas en uno (468 B: 78 filas de 6 celdas de 32x32 px, 280 con suelo). Cada byte es el INDICE DE TILE del pozo de 0x87F3 con el que se dibuja la celda (redibuja_fondo: origen = 0x87F3 + valor*128) y a la vez la COLISION (consulta_mapa acaba en and a: 0 = vacio, y sus seis llamadores solo miran el flag Z). La partida recorre las filas 71 a 0. OJO: estuvo publicado como celdas de 32x16 y torre de 1248 px; el alto se habia derivado en vez de medirse, y es 32 px (tile de 128 B = 4 B x 32 filas, consulta_mapa divide Y entre 32, y el fino 0xAD2C da 16 pasos de 2 px por fila). La torre es 192x2496
 D 0x85DF 0x87F3 ceros bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
-D 0x87F3 0x8A78 graficos: el arranque del pozo de tiles del blitter (645 B; el pozo entero es 0x87F3-0x9E72, medido en el puerto 0x98)
+D 0x87F3 0x8A78 graficos: el arranque del pozo de tiles del blitter (el pozo entero son 45 TILES de 32x32, 128 B cada uno, 0x87F3-0x9E72: 0x87F3 + 45*128 - 1 = 0x9E72, y el valor maximo del mapa es 44 — cierra al byte con lo medido en el puerto 0x98). El tile 0 (0x87F3-0x8872) es la TRAMA DEL FONDO de las celdas vacias, y esta viva: los rotadores 0xB140/0xB167 la desplazan una fila de pixel por cada 2 px de scroll, el parallax a mitad de velocidad. Los tiles 0x28/0x29 son el cartel-flecha de la base y el 0x2A la roseta que corona la fila 0
 D 0x8A78 0x984E graficos (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
 #   tramado aun que el rango de aqui abajo). Se contaban como CODIGO: el trazador
 #   entraba por el `jp nz,8A78` fantasma de 0x6209, leido a caballo entre dos
@@ -62,7 +62,7 @@ D 0x9FF3 0xA279 la partida grabada de la DEMO de la fase a pie (646 B)
 D 0xA5F0 0xA5F1 relleno o resto (1 B; 1 bytes)
 # 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 # 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
-D 0xACA2 0xAD31 variables del juego (143 B): 0xACE7/0xACEC/0xACF6 contadores de cuadro, 0xACE9 estado que solo cambia al andar, 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar
+D 0xACA2 0xAD31 variables del juego (143 B): 0xACE3 contador y 0xACE4-0xACF7 la tabla de enemigos ANDANTES (4 entradas de 5 B: X, Y, rumbo/flags, animacion, extra — los "contadores de cuadro" 0xACE7/0xACEC/0xACF6 son el campo +3 de los objetos 0/1/3, y 0xACE9, que "solo cambiaba al andar", es la X del objeto 1); 0xACF8 contador y 0xACF9 la tabla de los VOLADORES (5 B); 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar, 0xAD2A/0xAD2C la camara (fila del mapa + scroll fino; 0xAD2B no lo toca nadie), 0xAD2D-0xAD2F trabajo del redibujado
 D 0xB13E 0xB140 relleno o resto (2 B; 2 bytes)
 # 0xB2A6-0xB3AB ESTUVO AQUI como 262 B "sin clasificar" y son CUATRO RUTINAS.
 # Se retira y pasa a src/parte2.entries.
@@ -250,9 +250,10 @@ D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
 # cae es la lectura de que cada grupo de columnas sea un piso.
 #
 # LA CAUSA DE ESE FALLO, encontrada despues: se estaba muestreando SOLO
-# 0x4B40-0x4EFF, 960 bytes, porque es el tamano del buffer de la parte de naves.
-# El de la fase de a pie son 3840 en tres bandas (ver el apartado de arriba). Se
-# estaba mirando un cuarto de la pantalla.
+# 0x4B40-0x4EFF, 960 bytes, porque entonces se creia que ese era el buffer de
+# la parte de naves. (Creencia que luego resulto falsa dos veces: el de naves
+# tambien son 3840 bytes en tres bandas, ver juego.notes.) Se estaba mirando
+# un cuarto de la pantalla.
 #
 # CON LA GEOMETRIA BUENA TAMPOCO SE HAN PODIDO SEPARAR, y conviene decirlo para
 # que el siguiente no repita el camino. Sobre las 160 filas completas, el
@@ -610,10 +611,9 @@ C 0xBFA8 FOSIL DEL SPECTRUM: 0xFE es el puerto del borde (y altavoz) del Spectru
 # la posicion sacada de su entrada y del scroll (0xAD2C+12), y con sonido
 # (0xCD91). Son LOS DISPAROS DE LAS TORRETAS los que caen al vacio en el borde.
 #
-# SIN ENCONTRAR TODAVIA, dicho como tal: el camino de la MUERTE DEL JUGADOR al
-# tocar el piso (es otro codigo: el jugador no esta en esta tabla) y el clamp
-# de los enemigos andantes. Pista para la proxima: buscar la Y del jugador y
-# los cp contra 0x7C o contra el mapa en el codigo que lee los mandos (0xA6FC).
+# (Lo que aqui quedaba "SIN ENCONTRAR" ya esta: el clamp de los andantes es
+# consulta_mapa —seccion siguiente— y el camino de la muerte del jugador esta
+# en LA MUERTE DEL JUGADOR, CAZADA, al final del fichero.)
 
 L 0xB9B0 mueve_tiros_torreta Mueve los tiros de las torretas (tabla 0xAD04, max 2): al cruzar el borde del piso (Y+10 >= 0x7C) caen al vacio y en la fila 0x80 se borran
 L 0xAC78 lanza_tiro_torreta Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (max 2), con su sonido
@@ -635,14 +635,16 @@ C 0xB9CD El borde del piso inferior: Y+10 contra 0x7C (fila 124); cruzarlo es ca
 #      derecha. Nada vertical aqui.
 #   3. Se aplica el paso (L_ABA3, +-2) y se pregunta a consulta_mapa (L_B18E):
 #      pasa la posicion a coordenadas de mundo restando el scroll (fila en
-#      0xAD2A), y lee la celda mapa[fila*6 + X/32], celdas de 32x16 px.
+#      0xAD2A), y lee la celda mapa[fila*6 + X/32], celdas de 32x32 px.
 #      CELDA CERO = VACIO: el paso se DESHACE (a7f3-a7fb recupera la posicion
 #      vieja). Por eso no pisan nunca el piso inferior: debajo de la zona el
 #      mapa es todo ceros y el validador les niega el paso.
 #
 # Y LA CONSULTA REGALO EL MAPA QUE FALTABA. base_mapa (L_A9F5) dice, literal:
 # `ld ix,0840bh`. EL MAPA DE LA FASE DE A PIE ESTA EN 0x840B: 78 filas de 6
-# celdas (468 B, 280 celdas con suelo), zona de 6x78 celdas = 192x1248 px.
+# celdas (468 B, 280 celdas con suelo), zona de 6x78 celdas = 192x2496 px.
+# (Aqui decia 192x1248, con celdas de 32x16: el alto de celda estaba derivado,
+# no medido, y es 32 px. Ver EL MAPA ES DOS MAPAS, al final del fichero.)
 # Caia dentro de un rango declarado "graficos" a bulto; queda partido en
 # cuatro con sus limites verificados:
 #     0x7C9D-0x840B graficos
@@ -654,18 +656,120 @@ C 0xB9CD El borde del piso inferior: Y+10 contra 0x7C (fila 124); cruzarlo es ca
 #
 # CONTRASTADO CON LA PARTIDA (sondeo de 0xAD2A cada 0,5 s, dump/ad2a): la fila
 # de scroll recorre de 71 a 0, o sea la zona ENTERA de abajo arriba, sin pisar
-# jamas las filas de ceros. 0xAD2B siempre 0; 0xAD2C oscila 2-32 (el ajuste
-# fino, sin identificar del todo).
+# jamas las filas de ceros. 0xAD2B siempre 0; 0xAD2C oscila 2-32: es el
+# SCROLL FINO, identificado (ver EL SCROLL FINO Y LA CAMARA, mas abajo).
 #
-# SIN CERRAR, dicho como tal: el camino de la muerte del JUGADOR al tocar el
-# piso (el jugador no pasa por L_B18E en este bucle; hay una variante fina,
-# L_B1BE, que anade logica de sub-celda y es la candidata) y que significa
-# exactamente cada valor de celda (los no-cero pintan a indices de tile).
+# (Los dos "SIN CERRAR" que habia aqui estan cerrados: la muerte del jugador
+# NO pasa por L_B1BE —esa es de los voladores— sino por su propia llamada a
+# consulta_mapa en 0xA665, y cada valor de celda ES el indice de tile con el
+# que se dibuja. Las dos cosas, con sus medidas, en las secciones del final.)
 
 L 0xA753 mueve_enemigos El bucle de los enemigos andantes (tabla 0xACE4, contador 0xACE3): scroll sumado (0xC462), y rumbo por azar entre vagar y perseguir al jugador
 L 0xABCA rumbo_al_jugador La direccion dominante hacia DE (el jugador), como mascara de bits de rumbo
 L 0xABA3 aplica_rumbo Aplica la mascara de rumbo: bits 0/1 mueven la vertical, 2/3 la horizontal; sin recorte
 L 0xB0C0 borde_pantalla Poda el rumbo en los bordes laterales: X<3 quita el bit de izquierda, X>=174 el de derecha
-L 0xB18E consulta_mapa Pasa la posicion a mundo restando el scroll (fila 0xAD2A) y lee la celda mapa[fila*6+X/32] (celdas de 32x16): Z = celda 0 = vacio
+L 0xB18E consulta_mapa Pasa la posicion a mundo (Y+0x28-fino, X+8) y lee la celda mapa[fila*6 + Y/32*6 + X/32 - 6] (celdas de 32x32): Z = celda 0 = vacio. Devuelve el valor en A pero nadie lo usa: para la fisica el mapa es binario
 L 0xA9F5 base_mapa IX = 0x840B + fila*6: la base del mapa de colision de la fase
 C 0xA7ED El paso a prueba: aplicado el rumbo se consulta el mapa, y si la celda es vacio el paso se deshace
+
+# --- EL SCROLL FINO Y LA CAMARA (2026-08-07, medido en dump/ad2c) ------------
+#
+# La posicion vertical de la camara es el PAR (0xAD2A, 0xAD2C): fila del mapa
+# mas desplazamiento fino en pixeles dentro de la fila. Lo actualiza L_A8DB
+# (`ld iy,0ad2ah`): subiendo, el fino avanza de 2 en 2 hasta 0x20 y al agotarse
+# se resetea a 2 y la fila BAJA una (a8f5/a8f9); bajando, el ciclo simetrico
+# (a908/a915/a919). Topes: fila 0 arriba (a8f3) y 0x47=71 abajo (a911). Un
+# ciclo completo son 16 pasos de 2 px = 32 px = UNA fila de mapa, y eso es lo
+# que remacha que la celda mide 32 de alto.
+#
+# Medido sobre el replay de la partida (t=2520-2565, tools/omsx_ad2c.tcl):
+#   - escritores de 0xAD2C: SOLO los cuatro del listado (a8ea/a8f5/a908/a915);
+#     de 0xAD2A: a8f9/a919 (y el init). Ni un PC fuera del actualizador.
+#   - la sonda pillo el engranaje en vivo: ...(57,30) (57,32) (56,2) (56,4)...
+#     el wrap del fino coincide EXACTO con el decremento de fila.
+#   - lectores de 0xAD2C: el redibujado del fondo (a94c/a9d4), consulta_mapa
+#     (b196) y el checkpoint (a682). Andando en continuo avanza un paso por
+#     redibujado (~10/s).
+#
+# L_A8DB se llama con carry=subir desde el movimiento del jugador (L_A8BA: la
+# Y del jugador se clava en 0x68 y la diferencia se convierte en scroll) y
+# desde el ascenso automatico del final (bde7: scf / call). El checkpoint de
+# la camara es 0xC466/0xC467 (fila/fino; init 0x47/0x02 en a405-a40c): se
+# guarda en cada paso sobre suelo firme (a67c-a685) y el respawn lo restaura.
+
+L 0xA8DB actualiza_scroll La camara: fino 0xAD2C +-2 con ciclo 2..32; al agotarlo la fila 0xAD2A avanza (topes 0 y 71). Carry = subir. Remata rotando el tile 0 (L_B140/L_B167)
+C 0xA8F9 El engranaje de la camara: fino agotado (32) -> fila una menos, fino a 2
+
+# --- EL DOBLE PASE DEL FONDO Y EL TILE 0 VIVO (2026-08-07) -------------------
+#
+# El fondo se pinta DOS VECES por cuadro parcheando un opcode. El bucle de
+# juego escribe 0xC2 (jp nz) en 0xA98E y llama a redibuja_fondo: se saltan las
+# celdas solidas y SOLO se pintan las vacias, que llevan el tile 0. Luego
+# escribe 0xCA (jp z) y vuelve a llamar: ahora solo las solidas (a4a5-a4b5).
+#
+# Y el tile 0 no es un dibujo quieto: cada paso de scroll lo ROTA una fila de
+# pixel (L_B140 con ldir al subir, L_B167 con lddr al bajar: 124 B movidos y
+# la fila que sale entra por el otro lado). Una fila de tile por cada DOS
+# filas de pixel de scroll: la trama del fondo se mueve A MITAD DE VELOCIDAD
+# que las plataformas. Ese es el parallax que se ve jugando, y por eso no
+# aparecia midiendo el desplazamiento del buffer: no es un plano que se mueva,
+# es un dibujo que se redibuja distinto.
+#
+# Los rotadores dejan ademas el delta del cuadro en 0xC462 (+2/-2, y 0 al
+# pisar suelo firme): es lo que mueve_enemigos suma a la Y de cada objeto para
+# que viajen anclados al mundo (a75e).
+#
+# Medido sobre la partida entera (t=2464-3100, tools/omsx_muerte.tcl): 4712
+# pases con 0xC2 y 4712 con 0xCA, cero cuadros con el opcode en otro valor.
+
+L 0xA93E redibuja_fondo Pinta la pantalla desde el mapa: origen = 0x87F3 + celda*128 (+4*(32-fino) en la tira parcial de arriba), 6 columnas x 5-6 tiras. El jp de 0xA98E se parchea: 0xC2 pinta solo las celdas vacias (tile 0), 0xCA solo las solidas
+L 0xB140 rota_fondo_sube Rota el tile 0 una fila de pixel (ldir de 124 B) y deja el delta del cuadro en 0xC462 (+2): la trama del fondo, a mitad de velocidad que el scroll
+L 0xB167 rota_fondo_baja El simetrico de rota_fondo_sube (lddr; 0xC462 = -2)
+C 0xA98E El opcode parcheado del doble pase: 0xC2 = solo celdas vacias, 0xCA = solo solidas
+
+# --- LA MUERTE DEL JUGADOR, CAZADA — Y L_B1BE NO ERA (2026-08-07) ------------
+#
+# La candidata L_B1BE resulto NO ser del jugador. Es consulta_mapa mas un test
+# fino de sub-celda (posicion modulo 32; carry solo si cae en la banda central
+# [8,24) de la celda en X y en Y), y su UNICO llamador es 0xB20F, dentro del
+# bucle de los enemigos VOLADORES (tabla 0xACF9, contador 0xACF8): la usan
+# para decidir si el hueco del muro esta lo bastante centrado para ANIDAR en
+# el. Medido sobre la partida entera: 2934 pasadas por L_B1BE y el retorno en
+# la pila fue SIEMPRE 0xB212. Ni una desde el codigo del jugador.
+#
+# El jugador no esta en ninguna tabla: vive en 0xA6EB (X en el byte bajo, Y
+# clavada en 0x68) con su estado/escudo en 0xA6ED, y tiene SU PROPIA llamada a
+# consulta_mapa en 0xA665, con la celda bajo los pies. Las dos vias de muerte:
+#
+#   CAIDA    a665: call consulta_mapa / jr nz -> si la celda es VACIA,
+#            a66a-a66c escribe 0xA6ED=4 y la muerte queda sentenciada: en toda
+#            la agonia (estados 4..0x2D) no hay ninguna otra consulta del mapa.
+#            No hay "aterrizaje": se muere en el instante de pisar el vacio, y
+#            lo que se ve caer es la animacion del derrumbe.
+#   IMPACTO  el escudo (0xA6ED, 1..3, tres iconos en pantalla) se descuenta al
+#            ser alcanzado (L_B0E0); a cero, L_B11B pone estado=4 y parchea el
+#            update del jugador (operando 0xA57E) al cadaver de 0xB268, que
+#            sube y cae en parabola SIN consultar el mapa (por eso el cuerpo
+#            atraviesa el suelo y sale por abajo).
+#
+# Las dos desembocan en el mismo embudo: cuando 0xA6ED llega a 0x2D, 0xA528
+# resta una vida de 0xC45F (init 3 en a30b; se ganan por puntos en b3f3, tope
+# 9); con acarreo, game over (L_A2D2), y si no, respawn (L_A439) que devuelve
+# al jugador a la ULTIMA posicion pisada en firme (0xA6E9) con la camara del
+# checkpoint 0xC466/67, el escudo a 3 y las tablas de enemigos vaciadas.
+#
+# Contrastado sobre la partida entera (tools/omsx_muerte.tcl, dump/muerte): el
+# usuario murio 20 veces —19 por impacto (bp 0xB123) y UNA por caida (bp
+# 0xA66C, t=2488, fila 66)— y las 20 pasaron por el descuento de 0xA528 y el
+# respawn de 0xA44F. Se le ve ademas ganar vidas mas deprisa de lo que las
+# perdia (el contador antes de restar sube de 2 a 6 a lo largo de la partida).
+# OJO con un matiz: del estado 4 al 0x2D pasan ~5 segundos medidos, o sea que
+# el estado NO avanza cada cuadro; el ritmo exacto queda sin cuantificar.
+
+L 0xB1BE consulta_mapa_fina consulta_mapa mas el test de sub-celda: con celda vacia, carry solo si la posicion cae en la banda central [8,24) de la celda en X e Y. La usan SOLO los voladores (desde 0xB20F) para elegir hueco donde anidar
+L 0xB1DC mueve_voladores El vuelo de los enemigos voladores (tabla 0xACF9, contador 0xACF8, 5 B por objeto): vuelan hacia el jugador (0x6858) y con consulta_mapa_fina deciden donde anidar
+L 0xB11B mata_jugador_impacto Escudo agotado: 0xA6ED=4, sonido, y el update del jugador (operando 0xA57E) parcheado al cadaver de 0xB268
+L 0xB268 cadaver_parabola El cuerpo tras el impacto: sube y cae acelerando (h += estado-12), sin consultar el mapa; se retira pasado Y=0xC4
+L 0xA439 respawn Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) con la camara del checkpoint 0xC466/67, escudo a 3, tablas de enemigos vaciadas y el update restaurado
+C 0xA665 La consulta del suelo del JUGADOR: celda vacia bajo los pies = 0xA6ED=4, muerte sentenciada (la unica escritura de la via de caida)
+C 0xA528 El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acarreo game over, si no respawn

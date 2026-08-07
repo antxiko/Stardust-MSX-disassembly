@@ -5,10 +5,19 @@
 # ---------------------------------------------------------------- el buffer
 # Aqui vive la pantalla mientras el juego trabaja sobre ella. Sale de leer la
 # rutina de volcado y esta confirmado en el emulador al byte:
-#   - son 960 bytes, de 0x4B40 a 0x4EFF;
+#   - son 3840 bytes, de 0x4000 a 0x4EFF, en TRES bandas contiguas: 0x4000
+#     (56 filas), 0x4540 (64) y 0x4B40 (40). El volcado L_F3DC hace tres
+#     llamadas, una por banda, identicas parametro a parametro a las del
+#     volcado de la fase a pie (0xD383);
 #   - y el emulador lo confirma: vigilando el puerto 0x98, la rutina de 0xF40C
-#     hizo 3.252.480 escrituras con HL entre 0x4000 y 0x4EFF. Ese 0x4EFF es
-#     exactamente el ultimo byte del buffer.
+#     hizo 3.252.480 escrituras con HL entre 0x4000 y 0x4EFF, que son los dos
+#     extremos exactos del buffer.
+#
+# (Estuvo publicado como "960 bytes en 0x4B40", que es solo la banda C: la
+# unica banda entera que cae dentro del bloque de cinta. El bloque empieza en
+# 0x47A0, o sea que las bandas A y media B viven fuera de el y solo existen en
+# marcha; el tramo 0x47A0-0x4B3F hace doble papel: en la cinta trae datos y en
+# marcha es el final de la banda B.)
 #
 # CUIDADO CON LOS EJES, que aqui se leyeron al reves durante todo un ciclo de
 # publicacion. El `ld b,028h` se conto como "40 columnas" y no lo es:
@@ -21,14 +30,15 @@
 #
 # El interior recorre el buffer A SALTOS DE 24, o sea que recoge 40 bytes de una
 # misma columna; el exterior avanza el buffer DE UNO EN UNO, 24 veces. El eje
-# rapido es el 24. Son 24 DE ANCHO POR 40 DE ALTO.
+# rapido es el 24. La banda C es 24 DE ANCHO POR 40 DE ALTO, y el buffer entero
+# 24 de ancho por 160 de alto (56+64+40 filas).
 #
-# Y se comprueba dibujandolo: partiendo el buffer de 24 en 24 sale la tabla de
+# Y se comprueba dibujandolo: partiendo la banda de 24 en 24 sale la tabla de
 # records legible, con su tramado; de 40 en 40 sale ruido. Ademas cuadra con lo
 # que se ve jugando: 24 bytes son 192 pixeles, mas estrecho que los 256 de la
 # pantalla -de ahi el marco fijo a los lados-, y lo que sobra esta A LO ALTO,
 # que es justo por donde scrollea.
-0x4B40  buffer de pantalla: 24 de ancho x 40 de alto, 960 bytes, leido por columnas
+0x4B40  banda C del buffer de pantalla (el buffer entero es 0x4000-0x4EFF, tres bandas de 56/64/40 filas): 24 de ancho x 40 de alto, leido por columnas
 
 # ------------------------------------------------------- graficos y colores
 # La zona grande de datos no es una sola cosa. Perfilandola por trozos (racha,
@@ -476,8 +486,8 @@ D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,
 # llamadas, no una: 0x4000/56 filas -> VRAM 0x0108, 0x4540/64 -> 0x0900,
 # 0x4B40/40 -> 0x1100. Identico parametro a parametro al de a pie (0xD383).
 # El buffer de naves es 0x4000-0x4EFF, 3840 bytes, NO los 960 de 0x4B40 que
-# dicen los docs publicados (pendiente de corregir: docs/FINDINGS.md,
-# docs/THE-CODE.md, la cabecera de este fichero y juego.nocode).
+# se publicaron primero. Ya corregido en los docs, en la cabecera de este
+# fichero y en juego.nocode.
 
 # --- EL ORDEN DE DIBUJO DENTRO DEL CUADRO (medido, 2026-08-07) ---------------
 #

@@ -45,15 +45,23 @@
 0x5640 0x597F   colores de tiles: 832 bytes mas de lo mismo
 # Y un tramo largo de ceros: 951 bytes a 0x00 y 73 a 0xFF.
 0x5C31 0x5FFC   relleno: 972 bytes
-# El buffer de pantalla, 24 de ancho x 40 de alto (ver src/juego.notes: el
-# `ld b,028h` del volcado NO son columnas, es el bucle interior que recorre una
-# columna a saltos de 24). Aqui hay una diferencia de
+# La banda C del buffer de pantalla. El buffer entero son 3840 bytes en
+# 0x4000-0x4EFF, tres bandas contiguas de 56/64/40 filas que el volcado L_F3DC
+# manda a la VRAM una a una (ver src/juego.notes: el `ld b,028h` NO son
+# columnas, es el bucle interior que recorre una columna a saltos de 24). Solo
+# esta banda cae entera dentro del bloque de cinta, que empieza en 0x47A0; las
+# bandas A y media B solo existen en marcha. Aqui hay una diferencia de
 # fondo entre las dos maquinas: el Spectrum escribe DIRECTAMENTE en su memoria
 # de pantalla, que es RAM normal en 0x4000, mientras que en el MSX la VRAM esta
 # detras del VDP y no se puede direccionar. Por eso esta version necesita un
-# buffer intermedio en RAM y una rutina que lo vuelque por un puerto. En la
-# cinta viene grabado con su contenido inicial, que son numeros de casilla.
-0x4B40 0x4EFF   buffer de pantalla: 24 de ancho x 40 de alto, leido por columnas
+# buffer intermedio en RAM y una rutina que lo vuelque por un puerto.
+# (Aqui decia que la cinta traia "el contenido inicial, que son numeros de
+# casilla", y es FALSO: lo que la cinta trae en este tramo es parte de la
+# PANTALLA ESTATICA DEL MARCO -0x48A0-0x5A9F, patrones y colores que L_EF28
+# copia a la VRAM al arrancar- que pisa las direcciones del futuro buffer.
+# Hallazgo del 2026-08-07, en dump/agentes-20260807/res_buffer.json, pendiente
+# de integrar en los rangos de datos.)
+0x4B40 0x4EFF   banda C del buffer de pantalla (el entero: 0x4000-0x4EFF, tres bandas): 24 x 40, leido por columnas
 # --- LOS GRAFICOS ------------------------------------------------------------
 # Faltaban aqui, y esa ausencia es la que dejo pasar la contaminacion grande de
 # este proyecto: 41 puntos de entrada sacados del cotejo con el Spectrum caian

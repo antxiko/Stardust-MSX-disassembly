@@ -70,11 +70,11 @@ lb262h:	equ 0x0b262
 ;   0x7c78..0x7c9d  (37 bytes)
 ; DATOS graficos: (1902 B; parte del rango que estuvo declarado entero como graficos)
 ;   0x7c9d..0x840b  (1902 bytes)
-; DATOS el: MAPA de colision de la fase (468 B: 78 filas de 6 celdas de 32x16 px, 280 con suelo; 0 = vacio. Lo lee consulta_mapa via base_mapa; la partida completa recorre las filas 71 a 0)
+; DATOS el: MAPA de la fase, que es dos mapas en uno (468 B: 78 filas de 6 celdas de 32x32 px, 280 con suelo). Cada byte es el INDICE DE TILE del pozo de 0x87F3 con el que se dibuja la celda (redibuja_fondo: origen = 0x87F3 + valor*128) y a la vez la COLISION (consulta_mapa acaba en and a: 0 = vacio, y sus seis llamadores solo miran el flag Z). La partida recorre las filas 71 a 0. OJO: estuvo publicado como celdas de 32x16 y torre de 1248 px; el alto se habia derivado en vez de medirse, y es 32 px (tile de 128 B = 4 B x 32 filas, consulta_mapa divide Y entre 32, y el fino 0xAD2C da 16 pasos de 2 px por fila). La torre es 192x2496
 ;   0x840b..0x85df  (468 bytes)
 ; DATOS ceros: bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
 ;   0x85df..0x87f3  (532 bytes)
-; DATOS graficos:: el arranque del pozo de tiles del blitter (645 B; el pozo entero es 0x87F3-0x9E72, medido en el puerto 0x98)
+; DATOS graficos:: el arranque del pozo de tiles del blitter (el pozo entero son 45 TILES de 32x32, 128 B cada uno, 0x87F3-0x9E72: 0x87F3 + 45*128 - 1 = 0x9E72, y el valor maximo del mapa es 44 — cierra al byte con lo medido en el puerto 0x98). El tile 0 (0x87F3-0x8872) es la TRAMA DEL FONDO de las celdas vacias, y esta viva: los rotadores 0xB140/0xB167 la desplazan una fila de pixel por cada 2 px de scroll, el parallax a mitad de velocidad. Los tiles 0x28/0x29 son el cartel-flecha de la base y el 0x2A la roseta que corona la fila 0
 ;   0x87f3..0x8a78  (645 bytes)
 ; DATOS graficos: (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
 ;   0x8a78..0x984e  (3542 bytes)
@@ -1333,7 +1333,7 @@ L_A41F:
 	inc ix			;a433
 	inc ix			;a435
 	djnz L_A41F		;a437
-L_A439:
+respawn:		; Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) con la camara del checkpoint 0xC466/67, escudo a 3, tablas de enemigos vaciadas y el update restaurado
 	call L_B436		;a439
 	ld hl,L_A580		;a43c
 	ld (L_A57D+1),hl	;a43f
@@ -1378,11 +1378,11 @@ L_A4A1:
 	inc (hl)		;a4a4
 	ld a,0c2h		;a4a5
 	ld (0a98eh),a		;a4a7
-	call L_A93E		;a4aa
-	call L_B1DC		;a4ad
+	call redibuja_fondo		;a4aa
+	call mueve_voladores		;a4ad
 	ld a,0cah		;a4b0
 	ld (0a98eh),a		;a4b2
-	call L_A93E		;a4b5
+	call redibuja_fondo		;a4b5
 	call L_AD76		;a4b8
 	call L_BB32		;a4bb
 	call mueve_enemigos		;a4be
@@ -1426,12 +1426,12 @@ L_A501:
 	jp L_A4A1		;a522
 L_A525:
 	ld a,(0c45fh)		;a525
-	sub 001h		;a528
+	sub 001h		;a528   ; El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acarreo game over, si no respawn
 	ld (0c45fh),a		;a52a
 	ld hl,L_A580		;a52d
 	ld (L_A57D+1),hl	;a530
 	jp c,L_A2D2		;a533
-	jp L_A439		;a536
+	jp respawn		;a536
 L_A539:
 	ld ix,0b86ah		;a539
 	ld a,(ix+00bh)		;a53d
@@ -1604,7 +1604,7 @@ L_A64D:
 	call L_BC35		;a65f
 	jp L_A5D0		;a662
 L_A665:
-	call consulta_mapa		;a665
+	call consulta_mapa		;a665   ; La consulta del suelo del JUGADOR: celda vacia bajo los pies = 0xA6ED=4, muerte sentenciada (la unica escritura de la via de caida)
 	jr nz,L_A672		;a668
 	ld a,004h		;a66a
 	ld (0a6edh),a		;a66c
@@ -1880,7 +1880,7 @@ L_A865:
 	xor a			;a882
 	ld de,0cd6dh		;a883
 	call L_C4D0		;a886
-	call L_B11B		;a889
+	call mata_jugador_impacto		;a889
 L_A88C:
 	ld de,00005h		;a88c
 	add ix,de		;a88f
@@ -1935,7 +1935,7 @@ L_A8BA:
 	ld h,068h		;a8d7
 	cp h			;a8d9
 	ret z			;a8da
-L_A8DB:
+actualiza_scroll:		; La camara: fino 0xAD2C +-2 con ciclo 2..32; al agotarlo la fila 0xAD2A avanza (topes 0 y 71). Carry = subir. Remata rotando el tile 0 (L_B140/L_B167)
 	ld iy,0ad2ah		;a8db
 	jr nc,L_A8FF		;a8df
 	ld a,(iy+002h)		;a8e1
@@ -1943,28 +1943,28 @@ L_A8DB:
 	jr z,L_A8F0		;a8e6
 	add a,002h		;a8e8
 	ld (iy+002h),a		;a8ea
-	jp L_B140		;a8ed
+	jp rota_fondo_sube		;a8ed
 L_A8F0:
 	ld a,(iy+000h)		;a8f0
 	or a			;a8f3
 	ret z			;a8f4
 	ld (iy+002h),002h	;a8f5
-	dec (iy+000h)		;a8f9
-	jp L_B140		;a8fc
+	dec (iy+000h)		;a8f9   ; El engranaje de la camara: fino agotado (32) -> fila una menos, fino a 2
+	jp rota_fondo_sube		;a8fc
 L_A8FF:
 	ld a,(iy+002h)		;a8ff
 	cp 002h			;a902
 	jr z,L_A90E		;a904
 	sub 002h		;a906
 	ld (iy+002h),a		;a908
-	jp L_B167		;a90b
+	jp rota_fondo_baja		;a90b
 L_A90E:
 	ld a,(iy+000h)		;a90e
 	cp 047h			;a911
 	jr z,L_A91F		;a913
 	ld (iy+002h),020h	;a915
 	inc (iy+000h)		;a919
-	jp L_B167		;a91c
+	jp rota_fondo_baja		;a91c
 L_A91F:
 	ld a,(0bc33h)		;a91f
 	and a			;a922
@@ -1982,7 +1982,7 @@ L_A930:
 	ld (hl),000h		;a939
 	ldir			;a93b
 	ret			;a93d
-L_A93E:
+redibuja_fondo:		; Pinta la pantalla desde el mapa: origen = 0x87F3 + celda*128 (+4*(32-fino) en la tira parcial de arriba), 6 columnas x 5-6 tiras. El jp de 0xA98E se parchea: 0xC2 pinta solo las celdas vacias (tile 0), 0xCA solo las solidas
 	ld iy,0ad2ah		;a93e
 	ld (iy+003h),000h	;a942
 	call base_mapa		;a946
@@ -2020,7 +2020,7 @@ L_A980:
 	inc ix			;a988
 	and a			;a98a
 	ld b,(iy+004h)		;a98b
-	jp z,L_A9E4		;a98e
+	jp z,L_A9E4		;a98e   ; El opcode parcheado del doble pase: 0xC2 = solo celdas vacias, 0xCA = solo solidas
 	ld d,a			;a991
 	xor a			;a992
 	ld e,a			;a993
@@ -2615,7 +2615,7 @@ lanza_tiro_torreta:		; Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (
 	ret			;aca1
 
 ; ----------------------------------------------------------------------
-; DATOS variables: del juego (143 B): 0xACE7/0xACEC/0xACF6 contadores de cuadro, 0xACE9 estado que solo cambia al andar, 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar
+; DATOS variables: del juego (143 B): 0xACE3 contador y 0xACE4-0xACF7 la tabla de enemigos ANDANTES (4 entradas de 5 B: X, Y, rumbo/flags, animacion, extra — los "contadores de cuadro" 0xACE7/0xACEC/0xACF6 son el campo +3 de los objetos 0/1/3, y 0xACE9, que "solo cambiaba al andar", es la X del objeto 1); 0xACF8 contador y 0xACF9 la tabla de los VOLADORES (5 B); 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar, 0xAD2A/0xAD2C la camara (fila del mapa + scroll fino; 0xAD2B no lo toca nadie), 0xAD2D-0xAD2F trabajo del redibujado
 ;   0xaca2..0xad31  (143 bytes)
 ; ----------------------------------------------------------------------
 	defb 000h,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	; aca2  ................
@@ -2994,7 +2994,7 @@ L_AF69:
 	call L_B089		;af90
 	jr c,L_AF9C		;af93
 	ld (ix+004h),034h	;af95
-	call L_B11B		;af99
+	call mata_jugador_impacto		;af99
 L_AF9C:
 	ld de,00005h		;af9c
 	add ix,de		;af9f
@@ -3181,16 +3181,16 @@ L_B0D8:
 L_B0E0:
 	ld a,(0a6edh)		;b0e0
 	and a			;b0e3
-	jr z,L_B11B		;b0e4
+	jr z,mata_jugador_impacto		;b0e4
 	dec a			;b0e6
 	ld (0a6edh),a		;b0e7
 	jr L_B0F9		;b0ea
 L_B0EC:
 	ld a,(0a6edh)		;b0ec
 	and a			;b0ef
-	jr z,L_B11B		;b0f0
+	jr z,mata_jugador_impacto		;b0f0
 	dec a			;b0f2
-	jr z,L_B11B		;b0f3
+	jr z,mata_jugador_impacto		;b0f3
 	dec a			;b0f5
 	ld (0a6edh),a		;b0f6
 L_B0F9:
@@ -3212,7 +3212,7 @@ L_B0F9:
 	ld hl,02f40h		;b113
 	ld c,011h		;b116
 	jp L_B458		;b118
-L_B11B:
+mata_jugador_impacto:		; Escudo agotado: 0xA6ED=4, sonido, y el update del jugador (operando 0xA57E) parcheado al cadaver de 0xB268
 	ld hl,02778h		;b11b
 	call L_D136		;b11e
 	ld a,004h		;b121
@@ -3238,7 +3238,7 @@ L_B11B:
 ; ======================================================================
 
 
-L_B140:
+rota_fondo_sube:		; Rota el tile 0 una fila de pixel (ldir de 124 B) y deja el delta del cuadro en 0xC462 (+2): la trama del fondo, a mitad de velocidad que el scroll
 	push hl			;b140
 	ld hl,087f3h		;b141
 	ld e,(hl)		;b144
@@ -3268,7 +3268,7 @@ L_B140:
 	ld (hl),002h		;b163
 	pop hl			;b165
 	ret			;b166
-L_B167:
+rota_fondo_baja:		; El simetrico de rota_fondo_sube (lddr; 0xC462 = -2)
 	push hl			;b167
 	ld hl,08872h		;b168
 	ld e,(hl)		;b16b
@@ -3298,7 +3298,7 @@ L_B167:
 	ld (hl),0feh		;b18a
 	pop hl			;b18c
 	ret			;b18d
-consulta_mapa:		; Pasa la posicion a mundo restando el scroll (fila 0xAD2A) y lee la celda mapa[fila*6+X/32] (celdas de 32x16): Z = celda 0 = vacio
+consulta_mapa:		; Pasa la posicion a mundo (Y+0x28-fino, X+8) y lee la celda mapa[fila*6 + Y/32*6 + X/32 - 6] (celdas de 32x32): Z = celda 0 = vacio. Devuelve el valor en A pero nadie lo usa: para la fisica el mapa es binario
 	ld a,h			;b18e
 	ld iy,0ad2ah		;b18f
 	add a,028h		;b193
@@ -3332,7 +3332,7 @@ consulta_mapa:		; Pasa la posicion a mundo restando el scroll (fila 0xAD2A) y le
 	ld a,(ix-006h)		;b1b9
 	and a			;b1bc
 	ret			;b1bd
-L_B1BE:
+consulta_mapa_fina:		; consulta_mapa mas el test de sub-celda: con celda vacia, carry solo si la posicion cae en la banda central [8,24) de la celda en X e Y. La usan SOLO los voladores (desde 0xB20F) para elegir hueco donde anidar
 	call consulta_mapa		;b1be
 	ret nz			;b1c1
 	ld a,h			;b1c2
@@ -3354,7 +3354,7 @@ L_B1BE:
 	ret nc			;b1d8
 	sub 010h		;b1d9
 	ret			;b1db
-L_B1DC:
+mueve_voladores:		; El vuelo de los enemigos voladores (tabla 0xACF9, contador 0xACF8, 5 B por objeto): vuelan hacia el jugador (0x6858) y con consulta_mapa_fina deciden donde anidar
 	ld ix,0acf9h		;b1dc
 	ld a,(0acf8h)		;b1e0
 	and a			;b1e3
@@ -3380,7 +3380,7 @@ L_B1E6:
 	push hl			;b20b
 	push bc			;b20c
 	push ix			;b20d
-	call L_B1BE		;b20f
+	call consulta_mapa_fina		;b20f
 	pop ix			;b212
 	pop bc			;b214
 	pop hl			;b215
@@ -3426,7 +3426,7 @@ L_B262:
 	dec b			;b263
 	jp nz,L_B1E6		;b264
 	ret			;b267
-L_B268:
+cadaver_parabola:		; El cuerpo tras el impacto: sube y cae acelerando (h += estado-12), sin consultar el mapa; se retira pasado Y=0xC4
 	ld hl,(0a6ebh)		;b268
 	ld a,(0a6edh)		;b26b
 	inc a			;b26e
@@ -4685,7 +4685,7 @@ L_BDDA:
 L_BDE6:
 	push af			;bde6
 	scf			;bde7
-	call L_A8DB		;bde8
+	call actualiza_scroll		;bde8
 	pop af			;bdeb
 	dec a			;bdec
 	jr nz,L_BDE6		;bded
@@ -4702,7 +4702,7 @@ L_BDE6:
 	ld (0c468h),a		;be01
 	jr L_BDD8		;be04
 L_BE06:
-	call L_A93E		;be06
+	call redibuja_fondo		;be06
 	ld hl,(0a6ebh)		;be09
 	ld a,040h		;be0c
 	call L_BC60		;be0e

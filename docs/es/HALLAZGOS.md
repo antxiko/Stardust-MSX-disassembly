@@ -268,6 +268,108 @@ la nave subiendo hacia él, y al cruzarse los destinos el pilar quedó pintado
 encima. La nave no pasa *por debajo del piso*: pasa **por detrás de lo que se
 repinta después**.
 
+Y en la fase de a pie el parallax **existe de verdad**, solo que no es un
+plano: es un dibujo que se redibuja distinto. El fondo se pinta **dos veces
+por cuadro parcheando un opcode**: el bucle de juego escribe `0xC2` (`jp nz`)
+en 0xA98E y llama al redibujado —así solo se pintan las celdas vacías, que
+llevan el tile 0— y después escribe `0xCA` (`jp z`) y vuelve a llamar, para
+las sólidas. Y ese tile 0 está vivo: cada paso de scroll lo **rota una fila de
+píxel** (0xB140 al subir, 0xB167 al bajar; la fila que sale entra por el otro
+lado). Una fila de trama por cada dos de scroll: **el fondo de los huecos se
+mueve a mitad de velocidad que las plataformas**. Por eso las tiras del buffer
+se desplazan todas igual —lo del párrafo de arriba sigue siendo cierto— y aun
+así el ojo ve dos velocidades. Medido sobre la partida entera: 4712 pases con
+cada opcode, ni un cuadro con otro valor.
+
+## La torre entera, y un mapa que es dos mapas
+
+La zona de la fase de a pie es una torre, y su mapa está en 0x840B: **78 filas
+de 6 celdas**, 468 bytes, 280 celdas con suelo. Lo delata `base_mapa` (0xA9F5),
+que hace `ld ix,0840bh` y devuelve la base más fila por seis. Es la única
+referencia a ese rango en todo el listado, y por ella pasan los dos únicos
+lectores.
+
+Y esos dos lectores hacen del byte de celda **dos cosas a la vez**. Para el
+redibujado, un **índice de tile**: origen = 0x87F3 + valor×128, así que la
+celda dice con qué dibujo se pinta. Para la física, un **booleano**:
+`consulta_mapa` (0xB18E) termina en `and a` y sus seis llamadores miran solo el
+flag Z —celda cero es vacío—, ninguno usa el valor. No hay un mapa de colisión
+y otro de decorado: hay uno solo con dos lecturas.
+
+Las cuentas cierran al byte. El valor más alto del mapa es 44, y 0x87F3 +
+45×128 − 1 = **0x9E72, exactamente el último byte** que se había visto leer al
+blitter midiendo el puerto de vídeo: el pozo son 45 tiles justos.
+
+Los tiles son de **32×32 píxeles** (128 bytes: 4 por fila, 32 filas), y eso
+corrige un dato publicado: aquí decía que las celdas eran de 32×16 y la torre
+de 1248 píxeles de alto. El alto de celda estaba **derivado, no medido** —otra
+cifra heredada, como la de los ejes del buffer— y lo desmienten tres caminos
+independientes: el tile de 128 bytes, la división entre 32 de `consulta_mapa`,
+y el scroll fino, que da dieciséis pasos de 2 píxeles entre fila y fila. La
+torre es de **192×2496 píxeles**, el doble de alta de lo publicado.
+
+Con el mapa y el pozo, la torre se dibuja entera:
+
+![La torre de la fase de a pie, compuesta desde su mapa y sus tiles](../imagenes/torre_apie.png)
+
+Abajo del punto de salida está el **cartel de flechas** que señala hacia
+arriba (los tiles 0x28 y 0x29, que solo aparecen ahí), y la fila 0 es una
+cornisa de rosetas (el tile 0x2A). La estructura sola, sin la trama de fondo,
+está en [torre_estructura.png](../imagenes/torre_estructura.png), y el pozo de
+45 tiles en [tiles_apie.png](../imagenes/tiles_apie.png).
+
+La cámara que recorre la torre es el par (0xAD2A, 0xAD2C): fila del mapa más
+desplazamiento fino en píxeles. El actualizador (0xA8DB) mueve el fino de 2 en
+2 hasta 32 y entonces cambia de fila, con topes en la 0 y la 71; el engranaje
+se vio en directo en el emulador: la sonda registró `(fila 57, fino 32)` y al
+paso siguiente `(fila 56, fino 2)`. Cada paso sobre suelo firme guarda además
+un **checkpoint** (posición en 0xA6E9, cámara en 0xC466/67), que es adonde te
+devuelve la muerte.
+
+## La muerte del jugador estaba en otra parte
+
+El jugador muere al pisar el vacío, y la rutina que parecía explicarlo —una
+variante «fina» de la consulta del mapa, con lógica de sub-celda— resultó **no
+ser suya**. Esa variante (0xB1BE) responde si una posición cae *bien centrada*
+dentro de una celda vacía, y la usan solo los **enemigos voladores** para
+decidir en qué hueco del muro anidar. Se midió sobre la partida entera: 2934
+pasadas por ella, y el retorno apilado fue **siempre el mismo llamador**, el
+bucle de los voladores. Ni una vez el jugador.
+
+El jugador no está en ninguna tabla de objetos: vive en dos bytes (0xA6EB, con
+la Y clavada en 0x68: subir y bajar no le mueve a él, mueve el mundo) y tiene
+**su propia llamada** a `consulta_mapa`, en 0xA665, con la celda bajo los
+pies. Si la celda es vacía:
+
+```
+a665: call consulta_mapa
+a668: jr nz,<sigue andando>
+a66a: ld a,004h / ld (0a6edh),a     ; estado 4: sentenciado
+```
+
+Y ya no hay vuelta: en toda la agonía (estados 4 a 45) no vuelve a consultarse
+el mapa. **No existe el aterrizaje**: se muere en el instante de pisar el
+vacío, y la caída que se ve es la animación del derrumbe, con sus frames
+rotados según hacia dónde tropezó.
+
+La otra muerte es por contacto. El **escudo** (0xA6ED, de 3 a 1, los tres
+iconos del marcador) se descuenta al ser alcanzado, y a cero el juego parchea
+el puntero de actualización del jugador para sustituirlo por un **cadáver en
+parábola** (0xB268): sube, cae acelerando y —como tampoco consulta el mapa—
+**atraviesa el suelo** y sale por abajo de la pantalla.
+
+Las dos vías desembocan en el mismo embudo: cuando el estado llega a 45, se
+resta una vida (0xC45F: tres al empezar, se ganan por puntos hasta nueve), y
+con el contador agotado, game over; si quedan, el **respawn** te devuelve a la
+última posición pisada en firme con la cámara del checkpoint, el escudo a
+tres y las tablas de enemigos vaciadas.
+
+Sobre la partida grabada salió el retrato completo: **veinte muertes, 19 por
+contacto y una sola por caída**, las veinte pasando por el mismo descuento y el
+mismo respawn. Y un detalle que explica que la partida acabara bien: el
+contador de vidas antes de cada descuento fue subiendo de 2 a 6 a lo largo de
+la partida. El jugador ganaba vidas más deprisa de lo que las perdía.
+
 ## La cuenta atrás es una torre que crece
 
 Al final de la fase de a pie hay que destruir seis objetivos, y al caer el

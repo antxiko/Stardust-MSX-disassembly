@@ -299,6 +299,111 @@ climbing towards it, and when their destinations crossed, the pillar got
 painted on top. The ship doesn't fly *under the floor*: it flies **behind
 whatever gets repainted afterwards**.
 
+And in the on-foot stage the parallax **really exists** — it just isn't a
+plane: it is a picture that gets redrawn differently. The background is
+painted **twice per frame by patching an opcode**: the game loop writes `0xC2`
+(`jp nz`) into 0xA98E and calls the redraw —so only the empty cells get
+painted, and they carry tile 0— then writes `0xCA` (`jp z`) and calls it
+again, for the solid ones. And that tile 0 is alive: every scroll step
+**rotates it by one pixel row** (0xB140 going up, 0xB167 going down; the row
+that leaves comes back in on the other side). One row of pattern for every two
+of scroll: **the background inside the gaps moves at half the speed of the
+platforms**. That is why the buffer strips all move identically —the paragraph
+above still holds— and the eye still sees two speeds. Measured over the whole
+recorded game: 4712 passes with each opcode, not one frame with any other
+value.
+
+## The whole tower, and a map that is two maps
+
+The on-foot zone is a tower, and its map lives at 0x840B: **78 rows of 6
+cells**, 468 bytes, 280 cells with footing. `base_mapa` (0xA9F5) gives it
+away: `ld ix,0840bh`, returning the base plus row times six. It is the only
+reference to that range in the entire listing, and both of its only readers go
+through it.
+
+And those two readers make the cell byte **two things at once**. For the
+redraw, a **tile index**: origin = 0x87F3 + value×128, so the cell says which
+picture it is painted with. For the physics, a **boolean**: `consulta_mapa`
+(0xB18E) ends in `and a` and its six callers only ever test the Z flag —cell
+zero means empty— none of them uses the value. There is no separate collision
+map and scenery map: there is one map with two readings.
+
+The arithmetic closes to the byte. The highest value in the map is 44, and
+0x87F3 + 45×128 − 1 = **0x9E72, exactly the last byte** the blitter had been
+seen reading when the video port was measured: the pool is 45 tiles, no more,
+no less.
+
+The tiles are **32×32 pixels** (128 bytes: 4 per row, 32 rows), and that
+corrects a published figure: this page used to say the cells were 32×16 and
+the tower 1248 pixels tall. The cell height had been **derived, not measured**
+—another inherited figure, like the buffer axes— and three independent routes
+disprove it: the 128-byte tile, `consulta_mapa` dividing Y by 32, and the fine
+scroll, which takes sixteen 2-pixel steps between one row and the next. The
+tower is **192×2496 pixels**, twice as tall as published.
+
+With the map and the pool, the whole tower can be drawn:
+
+![The on-foot tower, composed from its map and its tiles](imagenes/torre_apie.png)
+
+Below the starting point sits the **arrow sign** pointing up (tiles 0x28 and
+0x29, which appear nowhere else), and row 0 is a cornice of rosettes (tile
+0x2A). The bare structure, without the background pattern, is in
+[torre_estructura.png](imagenes/torre_estructura.png), and the 45-tile pool in
+[tiles_apie.png](imagenes/tiles_apie.png).
+
+The camera that climbs the tower is the pair (0xAD2A, 0xAD2C): map row plus a
+fine offset in pixels. The updater (0xA8DB) moves the fine offset 2 by 2 up to
+32 and then switches row, clamped at rows 0 and 71; the gearing was caught
+live in the emulator: the probe logged `(row 57, fine 32)` and, one step
+later, `(row 56, fine 2)`. Every step on firm ground also saves a
+**checkpoint** (position in 0xA6E9, camera in 0xC466/67), which is where death
+sends you back to.
+
+## The player's death was somewhere else
+
+The player dies stepping into the void, and the routine that seemed to explain
+it —a "fine" variant of the map query, with sub-cell logic— turned out **not
+to be his**. That variant (0xB1BE) answers whether a position falls *well
+centred* inside an empty cell, and only the **flying enemies** use it, to
+decide which hole in the wall to nest in. Measured over the whole recorded
+game: 2934 passes through it, and the return address on the stack was **always
+the same caller**, the flyers' loop. Not once the player.
+
+The player is in no object table: he lives in two bytes (0xA6EB, with Y pinned
+at 0x68: moving up or down doesn't move him, it moves the world) and has **his
+own call** to `consulta_mapa`, at 0xA665, with the cell under his feet. If
+that cell is empty:
+
+```
+a665: call consulta_mapa
+a668: jr nz,<keep walking>
+a66a: ld a,004h / ld (0a6edh),a     ; state 4: sentenced
+```
+
+And there is no way back: through the whole agony (states 4 to 45) the map is
+never consulted again. **There is no landing check**: you die the instant you
+step into the void, and the fall you watch is the collapse animation, its
+frames rotated according to which way you stumbled.
+
+The other death is by contact. The **shield** (0xA6ED, 3 down to 1, the three
+icons on the scoreboard) is docked on every hit, and at zero the game patches
+the player's update pointer to replace him with a **corpse on a parabola**
+(0xB268): it rises, falls accelerating and —since it doesn't consult the map
+either— **passes straight through the floor** and out the bottom of the
+screen.
+
+Both roads end in the same funnel: when the state reaches 45, one life is
+subtracted (0xC45F: three to start, more earned on points up to nine); with
+the counter spent, game over; otherwise the **respawn** returns you to the
+last position stepped on firm ground, with the checkpoint camera, the shield
+back at three and the enemy tables emptied.
+
+The recorded game yields the full portrait: **twenty deaths, 19 by contact and
+a single one by falling**, all twenty through the same subtraction and the
+same respawn. And one detail that explains the happy ending: the life counter
+before each subtraction climbed from 2 to 6 over the course of the game. The
+player was earning lives faster than he lost them.
+
 ## The countdown is a tower that grows
 
 At the end of the on-foot stage there are six targets to destroy, and when the
