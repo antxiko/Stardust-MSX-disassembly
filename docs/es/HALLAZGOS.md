@@ -445,6 +445,35 @@ y `0xE5C0` es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de 0xE7A3
 tiene **35 entradas**, y que son 35 y no más no es una estimación: la tabla
 acaba en 0xE7E8 y el código del opcode 0x90 empieza pegado, en 0xE7E9.
 
+## El marco del juego viaja en el bloque, y la pantalla de carga le deja la mesa puesta
+
+El cuadro decorado que rodea el área de juego —con su HUD: la roseta con la
+nave, los medidores de colores, la barra de PUNTOS y ZONA— no se dibuja pieza
+a pieza: **viene dibujado de fábrica dentro del bloque del juego**. Sus
+primeros 1415 bytes son el logo STARDUST (un bitmap de 128×16 que el modo
+atracción anima en el área central) y, detrás, los patrones y los colores del
+marco, 0x900 bytes de cada, que una rutina del arranque copia a la memoria de
+vídeo.
+
+La copia tiene una forma rara —dos filas de carácter por tercio de pantalla y
+cuarenta y ocho tiras sueltas— que solo cobra sentido con la otra mitad del
+truco: el juego **no construye la tabla de nombres** del SCREEN 2. **La hereda
+de la pantalla de carga**, que la había rellenado «sumando ocho»: el carácter
+n de cada tercio se ve en la columna n÷8, fila n mod 8. La carga de la cinta
+machaca en RAM el programa de la pantalla de carga, pero la memoria de vídeo
+sobrevive, y el juego cuenta con ello. Con ese mapeo heredado, el reparto raro
+es, sencillamente, **la forma del marco**: los caracteres 0 a 31 y 224 a 255
+de cada tercio son las cuatro columnas de cada lado, y las tiras, la fila de
+arriba y la barra de abajo.
+
+Las dos mitades están contrastadas con el emulador: la tabla de nombres real
+del juego en marcha coincide **768 de 768** con el patrón heredado, y los
+patrones y colores de la cinta aparecen idénticos en el **97,4 %** —el resto
+es lo que el juego pinta encima: el campo de estrellas, los marcadores vivos—.
+Y la prueba que vale por todas es dibujarlo desde la cinta con ese mapeo:
+
+![El marco de la pantalla de juego, dibujado desde los datos de la cinta](../imagenes/marco.png)
+
 ## La pantalla de carga
 
 ![La pantalla que se ve mientras carga](../imagenes/carga.png)

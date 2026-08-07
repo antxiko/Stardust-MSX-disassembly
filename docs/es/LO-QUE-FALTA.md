@@ -63,8 +63,9 @@ copia con dieciséis `ldi` por fila desde `ld hl,047a0h`—, y detrás van los
 **patrones** (0x48A0) y los **colores** (0x51A0) del **marco**: el cuadro
 decorado, con su HUD, que rodea el área de juego. 0x900 bytes de cada, que la
 rutina de 0xEF28 copia a la memoria de vídeo en dos filas de carácter por
-tercio más cuarenta y ocho tiras; la tabla de nombres del SCREEN 2 es la que
-recoloca después esos 288 caracteres en el borde de la pantalla. La
+tercio más cuarenta y ocho tiras; la tabla de nombres del SCREEN 2 —que el
+juego hereda de la pantalla de carga— es la que recoloca después esos 288
+caracteres en el borde de la pantalla. La
 aritmética cierra sola: 0x48A0 + 0x900 = 0x51A0, y 0x51A0 + 0x900 = 0x5AA0. Y
 el contraste con el emulador también: el 97,4 % de esos bytes aparece
 idéntico en la memoria de vídeo real con el juego en marcha, y el resto es lo

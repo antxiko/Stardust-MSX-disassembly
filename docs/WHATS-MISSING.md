@@ -66,8 +66,9 @@ at that width the name reads out; the startup animator copies it sixteen
 (0x48A0) and **colours** (0x51A0) of the **frame**: the decorated border,
 HUD included, that surrounds the play area. 0x900 bytes of each, which the
 routine at 0xEF28 copies to video memory in two character rows per third
-plus forty-eight strips; the SCREEN 2 name table is what then rearranges
-those 288 characters around the edge of the screen. The arithmetic closes on
+plus forty-eight strips; the SCREEN 2 name table —which the game inherits
+from the loading screen— is what then rearranges those 288 characters around
+the edge of the screen. The arithmetic closes on
 its own: 0x48A0 + 0x900 = 0x51A0, and 0x51A0 + 0x900 = 0x5AA0. And so does
 the check against the emulator: 97.4% of those bytes appear identical in the
 real video memory with the game running, the rest being what the game paints

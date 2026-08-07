@@ -481,6 +481,34 @@ and `0xE5C0` is exactly "HL = table + A×2, HL = (HL)". The table at 0xE7A3 has
 **35 entries**, and that it is 35 and no more is not an estimate: the table ends
 at 0xE7E8 and the code for opcode 0x90 starts right up against it, at 0xE7E9.
 
+## The game frame travels in the block, and the loading screen sets the table
+
+The decorated border surrounding the play area —HUD included: the rosette
+with the ship, the coloured gauges, the PUNTOS and ZONA bar— is not drawn
+piece by piece: **it ships pre-drawn inside the game block**. Its first 1415
+bytes are the STARDUST logo (a 128×16 bitmap the attract mode animates in the
+central area) and, behind it, the frame's patterns and colours, 0x900 bytes
+of each, which a startup routine copies to video memory.
+
+The copy has an odd shape —two character rows per screen third and
+forty-eight loose strips— that only makes sense with the other half of the
+trick: the game **never builds the SCREEN 2 name table**. **It inherits it
+from the loading screen**, which had filled it "adding eight": character n of
+each third shows up at column n÷8, row n mod 8. Loading the tape tramples the
+loading screen's program in RAM, but video memory survives, and the game
+counts on that. Under that inherited mapping the odd layout is, simply, **the
+shape of the frame**: characters 0 to 31 and 224 to 255 of each third are the
+four columns on either side, and the strips are the top row and the bottom
+bar.
+
+Both halves are checked against the emulator: the running game's actual name
+table matches the inherited pattern **768 out of 768**, and the tape's
+patterns and colours appear identical at **97.4%** —the rest being what the
+game paints on top: the starfield, the live counters—. And the proof that
+outweighs them all is drawing it from the tape with that mapping:
+
+![The game screen's frame, drawn from the tape's own data](imagenes/marco.png)
+
 ## The loading screen
 
 ![The screen you watch while it loads](imagenes/carga.png)

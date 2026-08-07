@@ -77,12 +77,20 @@ def main(argv):
             tabla[hl:hl + n] = raw[p:p + n]
             p += n
 
-    # Y de ahi a pixeles, con las reglas de SCREEN 2.
+    # Y de ahi a pixeles, con las reglas de SCREEN 2 y LA TABLA DE NOMBRES QUE
+    # EL JUEGO HEREDA de la pantalla de carga: la rutina 0x9BDB del bloque [09]
+    # la rellena sumando ocho (nombre[i] = 8*(i%32) + i//32, por tercio), la
+    # carga del bloque [10] machaca esa rutina en RAM pero la VRAM sobrevive, y
+    # el juego no la reescribe (contrastado contra un volcado de VRAM real:
+    # 768/768 nombres identicos). Con ese mapeo, el caracter n de cada tercio
+    # se ve en la columna n/8, fila n%8: el reparto "raro" de L_EF28 es,
+    # sencillamente, la forma del marco.
     px = [[(0, 0, 0)] * 256 for _ in range(192)]
     for fila_c in range(24):
         tercio, fila_t = divmod(fila_c, 8)
         for col_c in range(32):
-            base = tercio * 0x800 + fila_t * 0x100 + col_c * 8
+            n = 8 * col_c + fila_t          # el nombre heredado del 9BDB
+            base = tercio * 0x800 + n * 8
             for l in range(8):
                 b = pat[base + l]
                 c = col[base + l]
@@ -92,7 +100,7 @@ def main(argv):
                     px[y][col_c * 8 + bit] = tinta if b & (0x80 >> bit) else fondo
     ruta = os.path.join(salida, "marco.png")
     png(ruta, 256, 192, px)
-    print(f"  256x192 desde 0x48A0 con el reparto de L_EF28 -> {ruta}")
+    print(f"  256x192 desde 0x48A0, reparto de L_EF28 + nombres del 9BDB -> {ruta}")
     return 0
 
 
