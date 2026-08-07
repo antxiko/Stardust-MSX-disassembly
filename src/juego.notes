@@ -46,10 +46,12 @@
 # naturaleza distinta, y dos se identifican con seguridad.
 #
 # Las tablas de COLOR se reconocen por su firma: en SCREEN 2 un byte de color es
-# tinta<<4|fondo, asi que en un decorado sobre fondo negro el nibble bajo es 1
-# casi siempre. Midiendo eso salen dos zonas donde pasa en mas del 90%:
-0x5300  colores de tiles: 480 bytes con el nibble bajo a 1 (tinta sobre negro)
-0x5640  colores de tiles: 832 bytes mas de lo mismo
+# tinta<<4|fondo, asi que sobre fondo negro el nibble bajo es 1 casi siempre.
+# Se midieron aqui dos zonas con esa firma y se etiquetaron "colores de tiles";
+# el dueno de verdad resulto ser el MARCO de la pantalla de juego (ver el rango
+# de 0x51A0 mas abajo).
+0x5300  colores del marco de la pantalla de juego (dentro del flujo de 0x51A0-0x5A9F)
+0x5640  colores del marco de la pantalla de juego (mas de lo mismo)
 
 # Y un tramo largo de ceros, que hay que contar como relleno y no como datos:
 0x5C31  relleno: 972 bytes seguidos a cero
@@ -115,7 +117,6 @@ D 0xC05C 0xC063 relleno o resto (7 B; 7 bytes)
 D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
 D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
 D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
-D 0xDA3D 0xDA55 tabla (24 B; racha 2.02, entropia 4.14, 19 valores: pocos valores para ser un dibujo)
 # 0xDA72-0xDAC4 ESTUVO AQUI como tres rangos de datos -16 B de "tabla", 1 B
 # suelto y 86 B "sin clasificar"- y son 83 bytes de CODIGO seguido. Se retiran y
 # 0xDA72 pasa a src/juego.entries. Ver el comentario de ahi.
@@ -193,7 +194,8 @@ D 0xA560 0xBA20 sprites: 83 de 16x16 con mascara, 64 bytes cada uno
 #
 # Esto no los identifica. Lo que hace es cerrar una via con un motivo, en vez de
 # dejarla como "sin probar".
-D 0xCA5F 0xCA96 datos sin clasificar (55 B; racha 5.00, entropia 2.95, 14 valores: pocos valores para ser un dibujo; parece tabla)
+D 0xCA5F 0xCA84 datos muertos: residuo de la grabacion (37 B). Tienen estructura -valores pequenos, 0 a 10, con pinta de variables- pero NADIE los toca: sin referencias directas ni punteros en el binario, y medido con watchpoints de lectura Y escritura sobre la partida COMPLETA de 38 minutos (las siete zonas y la multicarga) mas 350 s de otra partida: cero disparos (tools/omsx_f972.tcl con STARDUST_INI/FIN_R, dump/ca5f y dump/ca5f_araubi). Que fueron antes de morir no se sabe
+D 0xCA84 0xCA96 variables del juego (18 B), con nombre: 0xCA84-0xCA8B la fuente de 8 bytes del escritor de pantalla 0xC6E9 (patrones 00/FF/55/AA, cargada en 0xC6DC); 0xCA8C/8D variables del subsistema de 0xD6xx (los tiles especiales); 0xCA8E variable del arranque (0xBE2C); 0xCA8F/90 el PUNTERO-SEMILLA del generador de azar (ld hl,(0ca8fh) en 0xC840, dentro del RNG L_C83F, el gemelo del 0xAD28 de a pie); 0xCA91/92 variables de estado (0xCA92 la incrementa el alta de objetos en 0xC0F5); 0xCA93-0xCA95 el arranque de la fuente del rotulador 0xC5A8 (cargada en 0xC55B)
 D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
 #   Cada entrada son dos bytes: la MASCARA del bit dentro de la fila, y el valor
 #   que hay que escribir en el puerto 0xAA del PPI para seleccionar esa fila,
@@ -249,7 +251,6 @@ D 0xDAC5 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
 #   pantalla de entrada de record (B R A V O / HAS CONSEGUIDO UNA / DE LAS
 #   MEJORES / PUNTUACIONES DE HOY / ESCRIBE TU NOMBRE); y DEMO y BONUS 5000.
 #   Que no se ejecute nunca cuadra con que sea texto y no codigo.
-D 0xE001 0xE002 datos sin clasificar (1 B; 1 bytes)
 D 0xE6D2 0xE6E3 tabla del comando L_E4EF del interprete: entradas de 6 bytes (HL = 0xE6D2 + n*6) que se copian al bloque de 0xEDFF+4, el canal de efectos. Hasta la tabla de notas caben dos entradas enteras y cinco bytes de una tercera; cuantas usa el juego no esta medido
 #   Se probo que fueran guiones para el interprete de 0xE203 -tienen pinta:
 #   registros cortos separados por 0xFF y 0xFE- pero NO se sostiene. Los cuatro
@@ -293,17 +294,8 @@ D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
 # lados, a los que ni el trazador llega ni la partida paso.
 D 0xC190 0xC193 relleno o resto (3 B; 3 bytes)
 D 0xC5BB 0xC5C1 relleno o resto (6 B; 6 bytes)
-D 0xD314 0xD330 tabla (28 B; racha 2.77, entropia 4.16, 20 valores: pocos valores para ser un dibujo)
 D 0xD3AD 0xD3CF tabla (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valores para ser un dibujo)
-D 0xD6C5 0xD6D6 tabla (17 B; racha 2.39, entropia 3.73, 14 valores: pocos valores para ser un dibujo)
-D 0xDFD4 0xDFD7 relleno o resto (3 B; 3 bytes)
-D 0xDFE7 0xE001 tabla (26 B; racha 2.21, entropia 4.10, 20 valores: pocos valores para ser un dibujo)
-D 0xE002 0xE008 relleno o resto (6 B; 6 bytes)
-D 0xE02A 0xE030 relleno o resto (6 B; 6 bytes)
 D 0xE03D 0xE045 tabla (8 B; racha 1.94, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
-D 0xE05E 0xE061 relleno o resto (3 B; 3 bytes)
-D 0xE091 0xE094 relleno o resto (3 B; 3 bytes)
-D 0xE0CF 0xE0D2 relleno o resto (3 B; 3 bytes)
 
 # --- LA TIPOGRAFIA GRANDE DE LOS RECORDS -------------------------------------
 #

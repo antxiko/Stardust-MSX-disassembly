@@ -338,7 +338,13 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
                     if m:
                         total += int(m.group(2), 16) - int(m.group(1), 16)
                         rangos += 1
-        self.assertGreater(rangos, 0, "no se ha leido ni un rango sin clasificar")
+        # Desde el 2026-08-07 la cuenta buena es CERO: no queda ni un rango
+        # "datos sin clasificar". El guard original exigia rangos > 0 para
+        # detectar una regex rota; ahora eso solo se exige si la cifra
+        # publicada dice que queda algo.
+        if portada().SIN_IDENTIFICAR > 0:
+            self.assertGreater(rangos, 0,
+                               "no se ha leido ni un rango sin clasificar")
         self.assertEqual(total, portada().SIN_IDENTIFICAR)
         self.assertEqual(self.numero(self.cifra("es", "bytes sin identificar")),
                          total)

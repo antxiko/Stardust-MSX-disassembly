@@ -11,10 +11,10 @@ D 0x61D0 0x621C tabla de punteros a los graficos (76 B): palabras little-endian
 #   palabras consecutivas son exactamente 2. Es la misma tabla que sigue debajo,
 #   que estaba cortada demasiado tarde.
 D 0x621C 0x6247 tabla (43 B; racha 2.21, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
-D 0x625E 0x6644 graficos (998 B; racha 3.85, entropia 5.55, 199 valores: rachas mas largas que el azar)
-D 0x6788 0x6791 tabla (9 B; racha 4.00, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
-D 0x682E 0x7C78 graficos (5194 B; racha 3.08, entropia 6.49, 245 valores: rachas mas largas que el azar)
-D 0x7C9D 0x840B graficos (1902 B; parte del rango que estuvo declarado entero como graficos)
+D 0x625E 0x6644 graficos (998 B), y en 0x6555 ARRANCA EL POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
+D 0x6644 0x682E pool de sprites de la fase (tramo): las entradas 3 a 11 del pool de 64 B de 0x6555, dibujadas limpias con la geometria de 16x16 con mascara. Los recortes que habia aqui (dos rangos sin clasificar y una "tabla" de 9 B) eran cortes arbitrarios en mitad de los sprites
+D 0x682E 0x7C78 pool de sprites de la fase (continuacion): entradas de 64 B; los frames del derrumbe del protagonista (0x50 en adelante) caen aqui, en 0x6555 + 0x50*64 = 0x7955
+D 0x7C9D 0x840B graficos: el final del pool de sprites (hasta 0x7D54), el slot de trabajo 0x60 del derrumbe (0x7D55-0x7D94) y graficos hasta el mapa de 0x840B
 D 0x840B 0x85DF el MAPA de la fase, que es dos mapas en uno (468 B: 78 filas de 6 celdas de 32x32 px, 280 con suelo). Cada byte es el INDICE DE TILE del pozo de 0x87F3 con el que se dibuja la celda (redibuja_fondo: origen = 0x87F3 + valor*128) y a la vez la COLISION (consulta_mapa acaba en and a: 0 = vacio, y sus seis llamadores solo miran el flag Z). La partida recorre las filas 71 a 0. OJO: estuvo publicado como celdas de 32x16 y torre de 1248 px; el alto se habia derivado en vez de medirse, y es 32 px (tile de 128 B = 4 B x 32 filas, consulta_mapa divide Y entre 32, y el fino 0xAD2C da 16 pasos de 2 px por fila). La torre es 192x2496
 D 0x85DF 0x87F3 ceros bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
 D 0x87F3 0x8A78 graficos: el arranque del pozo de tiles del blitter (el pozo entero son 45 TILES de 32x32, 128 B cada uno, 0x87F3-0x9E72: 0x87F3 + 45*128 - 1 = 0x9E72, y el valor maximo del mapa es 44 — cierra al byte con lo medido en el puerto 0x98). El tile 0 (0x87F3-0x8872) es la TRAMA DEL FONDO de las celdas vacias, y esta viva: los rotadores 0xB140/0xB167 la desplazan una fila de pixel por cada 2 px de scroll, el parallax a mitad de velocidad. Los tiles 0x28/0x29 son el cartel-flecha de la base y el 0x2A la roseta que corona la fila 0
@@ -97,8 +97,7 @@ D 0xC459 0xC46A variables (17 B): eran 5 B de "relleno o resto" mas 12 que el
 #   justo lo que hacia que el trazador lo leyera como un `djnz` y saltara a
 #   0xC46A. De ahi salia el codigo de mas abajo, por un camino que no existe.
 #   El limite de arriba lo pone el `jp L_C42A` de 0xC456, que ocupa hasta 0xC458.
-D 0xC46A 0xC46E datos sin clasificar (4 B): entre las variables y el epilogo de
-#   0xC46E. No se referencian desde ningun sitio y no se sabe que son.
+D 0xC46A 0xC46E los CUATRO COLORES de la fase (E1/B1/A1/71, tinta sobre negro): el arranque del nivel elige uno AL AZAR (call azar / and 3 en 0xA48F, HL = 0xC46A + n en 0xA494) y L_D31C lo aplica. Por eso la fase de a pie no siempre se ve del mismo color. (Estuvo como "sin clasificar: no se referencian desde ningun sitio", y la referencia existia: el ld de,0c46ah de 0xA494)
 # 0xC804-0xC83D ESTUVO AQUI como 58 B "sin clasificar" y es CODIGO. Se retira y
 # pasa a src/parte2.entries.
 D 0xC8F7 0xCAA0 graficos (425 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
@@ -134,9 +133,7 @@ D 0xCC3D 0xCC3E relleno o resto (1 B; 1 bytes)
 # detras la medida de la que sale. Los cuatro primeros caen ademas ENTRE rangos
 # de graficos ya declarados, que es donde cabe esperarlos.
 D 0xC001 0xC3DC graficos (987 B; racha 10.91, entropia 1.35, 29 valores: rachas mas largas que el azar)
-D 0x6644 0x6788 datos sin clasificar (324 B; racha 2.83, entropia 6.28, 132 valores)
-D 0x6791 0x682E datos sin clasificar (157 B; racha 2.89, entropia 5.43, 68 valores)
-D 0x7C78 0x7C9D graficos (37 B; racha 4.35, entropia 4.11, 24 valores: rachas mas largas que el azar)
+D 0x7C78 0x7C9D pool de sprites de la fase (cola de la entrada 0x48)
 D 0x6247 0x625E tabla (23 B; racha 1.92, entropia 3.08, 14 valores: pocos valores para ser un dibujo)
 D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
 

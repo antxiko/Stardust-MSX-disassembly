@@ -17,26 +17,28 @@ Eso quiere decir una cosa muy concreta: **cada byte de la cinta tiene dueño**. 
 es código que el trazador alcanza siguiendo el flujo de verdad, o cae dentro de
 un rango declarado con un nombre y una explicación de cómo se sabe.
 
-Lo que **no** quiere decir es que se sepa para qué sirve cada byte. Hay rangos
-cuyo nombre es, literalmente, «datos sin clasificar», y esos cuentan como
-explicados en el sentido de que están medidos y acotados, no en el de que se
-entiendan. Confundir las dos cosas sería vender humo.
+Lo que **no** quiere decir es que se sepa para qué sirve cada byte. Durante
+casi todo el proyecto hubo rangos cuyo nombre era, literalmente, «datos sin
+clasificar»: contaban como explicados en el sentido de estar medidos y
+acotados, no en el de entenderse. Confundir las dos cosas sería vender humo.
+Esa categoría está hoy vacía, y abajo se cuenta cómo se vació.
 
 Aquí está el desglose de verdad.
 
-## Lo que falta por identificar
+## Lo que faltaba por identificar, que ya no falta
 
-**541 bytes, el 0,6 % de la cinta**, están declarados como «datos sin
-clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
-—racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
-qué son ni para qué se usan.
+**La categoría «datos sin clasificar» se ha quedado vacía.** Llegó a tener
+4089 bytes; hoy, cada byte de la cinta tiene nombre: o es código que el
+trazador alcanza, o cae en un rango que dice qué es y cómo se sabe.
 
-Eran 4089. Se identificaron primero 1221; después **1415 de una sola tacada**,
-cuando el tramo grande del principio del bloque resultó ser el marco de la
-pantalla de juego; después otros **1141**, cuando el tramo grande del final
-resultó ser el relleno de la grabación; y después **252 más**, los
-instrumentos del intérprete de sonido (las historias están más abajo). Quedan
-**56 en el bloque de naves, en dos rangos, y 485 en el de a pie, en tres**.
+El camino, por tandas: primero se identificaron 1221; después **1415 de una
+sola tacada**, cuando el tramo grande del principio del bloque resultó ser el
+marco de la pantalla de juego; después otros **1141**, el relleno de la
+grabación que remata el bloque; después **252**, los instrumentos del
+intérprete de sonido; y los **541 últimos** cayeron en una tarde: 481 eran el
+pool de sprites de la fase a pie, 4 los colores de esa fase, uno el `ret`
+huérfano de una rutina de tiles, y los 55 del bloque de 0xCA5F resultaron ser
+18 variables con nombre y 37 bytes muertos del master. Las historias, abajo.
 
 ### Lo que resultaron ser
 
@@ -73,6 +75,36 @@ idéntico en la memoria de vídeo real con el juego en marcha, y el resto es lo
 que el juego pinta encima. Dentro del tramo vivían además dos rangos
 etiquetados «colores de tiles» por su firma de nibble: la firma era verdad,
 pero son los colores del marco, no de los tiles del juego.
+
+**490 bytes: el pool de sprites de la fase a pie** (0x6555). Dos rangos «sin
+clasificar» y una «tabla» de 9 bytes eran cortes arbitrarios en mitad de las
+entradas del pool: sprites de **16×16 con máscara, 64 bytes cada uno**, el
+mismo formato que los de la fase de naves. La geometría la fija el código del
+derrumbe del protagonista —frame×64 + 0x6555, copiado al slot de trabajo en
+0x7D55, que es exactamente 0x6555 + 0x60×64— y dibujadas las entradas salen
+los enemigos andantes limpios, con sus poses.
+
+**120 bytes que no eran datos, sino código: los comportamientos de los tiles
+especiales.** Un despachador en 0xC116 asigna a ciertos índices de tile de
+las zonas (0x30 a 0x5D) una rutina de comportamiento, guardándola como
+puntero en el objeto; como a esas rutinas solo se entra por puntero, el
+trazador no las veía, y sus cabezas figuraban como «relleno o resto» o
+«tabla». Las diez se sembraron como puntos de entrada con su evidencia
+—cada una aparece cargada con un literal en el despachador o instalada por
+el estado anterior de la cadena— y la cobertura del bloque de naves subió
+del 25,7 % al 26,0 %.
+
+**4 bytes: los colores de la fase a pie** (0xC46A). Cuatro bytes de color
+—E1, B1, A1 y 71, cuatro tintas sobre negro— entre los que el arranque del
+nivel elige **al azar** (`and 3` sobre el generador). Por eso la fase de a
+pie no siempre se ve del mismo color.
+
+**37 bytes muertos en 0xCA5F.** Tienen estructura de variables —valores
+pequeños, del 0 al 10— pero nadie los toca: sin referencias ni punteros en el
+binario, y con watchpoints de lectura y escritura **a cero** sobre la partida
+completa de 38 minutos más 350 segundos de otra. Residuo de la máquina del
+master, como el relleno del final del bloque; qué fueron antes de morir no se
+sabe.
 
 **252 bytes: los instrumentos del intérprete de sonido** (0xE5E2). El rango
 estaba pegado por delante a la tabla de notas, y resultó ser su vecino
@@ -193,7 +225,7 @@ salió su clasificación.
 El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
-    juego de naves    25,7 %
+    juego de naves    26,0 %
     parte de a pie    35,0 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
@@ -250,23 +282,13 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-541 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+bytes sin clasificar estuvieron acotados uno a uno mientras existieron, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 541 bytes que siguen sin clasificar**, cinco rangos. Los dos de
-  naves: un bloque de variables de 55 bytes (0xCA5F, del que ya se sabe que
-  0xCA8F/90 es el puntero-semilla del generador de azar y que 0xCA84-0xCA8B
-  alimenta a uno de los escritores de pantalla) y un byte suelto (0xE001).
-  Los tres de a pie: dos rangos entre los gráficos (0x6644 y 0x6791) y cuatro
-  bytes entre variables (0xC46A). Para ellos está
-  `tools/coteja_equivalencias.py`, que mira qué había en el original en la
-  dirección **equivalente** aunque los bytes no coincidan; no adopta nada por
-  su cuenta: saca pistas para mirar a mano, que es como se identificaron los
-  de arriba.
 - **Comentar las rutinas** una a una. Están acotadas y con nombre; falta
   explicar qué hace cada una.
 
@@ -274,4 +296,6 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 541 bytes se identifiquen, esta página se hará más corta.
+Los bytes por identificar se acabaron, y esta página, como estaba prometido,
+se ha hecho más corta. Lo que queda es de otra clase: el código al que no se
+llega siguiendo el flujo, y las rutinas por comentar.

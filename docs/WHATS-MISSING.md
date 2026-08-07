@@ -18,26 +18,28 @@ Either it is code the tracer genuinely reaches by following the flow, or it
 falls inside a range declared with a name and an explanation of how that is
 known.
 
-What it does **not** mean is that the purpose of every byte is known. There are
-ranges whose name is, literally, "unclassified data", and those count as
-explained in the sense of being measured and bounded, not in the sense of being
-understood. Confusing the two would be selling smoke.
+What it does **not** mean is that the purpose of every byte is known. For most
+of the project there were ranges whose name was, literally, "unclassified
+data": they counted as explained in the sense of being measured and bounded,
+not in the sense of being understood. Confusing the two would be selling
+smoke. That category is empty today, and below is how it emptied.
 
 Here is the honest breakdown.
 
-## What is left to identify
+## What was left to identify, and no longer is
 
-**541 bytes, 0.6% of the tape**, are declared as "unclassified data". For each
-one we know where it starts, where it ends and what it measures —average run of
-equal bits, entropy, and how many distinct values it uses— but not what it is or
-what it is used for.
+**The "unclassified data" category is now empty.** It once held 4089 bytes;
+today every byte on the tape has a name: either code the tracer reaches, or a
+range that says what it is and how that is known.
 
-There used to be 4089. First 1221 were identified; then **1415 in one
-stroke**, when the big stretch at the start of the block turned out to be the
-game screen's frame; then **1141 more**, when the big stretch at the end
-turned out to be recording filler; and then another **252**, the sound
-interpreter's instruments (the stories are below). **56 remain in the ship
-block, across two ranges, and 485 in the on-foot block, across three**.
+The road, in stages: first 1221 were identified; then **1415 in one stroke**,
+when the big stretch at the start of the block turned out to be the game
+screen's frame; then **1141 more**, the recording filler that closes the
+block; then **252**, the sound interpreter's instruments; and the **final
+541** fell in a single afternoon: 481 were the on-foot sprite pool, 4 that
+stage's colours, one an orphaned `ret` of a tile routine, and the 55 bytes of
+the 0xCA5F block turned out to be 18 named variables plus 37 dead bytes from
+the master. The stories are below.
 
 ### What they turned out to be
 
@@ -75,6 +77,35 @@ real video memory with the game running, the rest being what the game paints
 on top. Inside the stretch also lived two ranges labelled "tile colours" by
 their nibble signature: the signature was true, but they are the frame's
 colours, not the game tiles'.
+
+**490 bytes: the on-foot sprite pool** (0x6555). Two "unclassified" ranges
+and a 9-byte "table" were arbitrary cuts through the middle of the pool's
+entries: **16×16 masked sprites, 64 bytes each**, the same format as the ship
+stage's. The geometry is pinned by the protagonist's collapse code —frame×64
++ 0x6555, copied to the working slot at 0x7D55, which is exactly 0x6555 +
+0x60×64— and drawing the entries yields the walking enemies, clean, in their
+poses.
+
+**120 bytes that were not data but code: the special tiles' behaviours.** A
+dispatcher at 0xC116 assigns certain tile indices of the zones (0x30 to
+0x5D) a behaviour routine, storing it as a pointer in the object; since
+those routines are only ever entered through the pointer, the tracer never
+saw them, and their heads figured as "filler or remainder" or "table". All
+ten were seeded as entry points with their evidence —each one appears loaded
+as a literal in the dispatcher, or installed by the previous state in the
+chain— and the ship block's coverage rose from 25.7% to 26.0%.
+
+**4 bytes: the on-foot stage's colours** (0xC46A). Four colour bytes —E1,
+B1, A1 and 71, four inks on black— from which the level start picks **at
+random** (`and 3` over the generator). That is why the on-foot stage doesn't
+always come up the same colour.
+
+**37 dead bytes at 0xCA5F.** They have the structure of variables —small
+values, 0 to 10— but nothing touches them: no references or pointers in the
+binary, and read **and** write watchpoints at **zero** over the complete
+38-minute playthrough plus 350 seconds of another. Residue of the mastering
+machine, like the filler at the block's end; what they were before they died
+is not known.
 
 **252 bytes: the sound interpreter's instruments** (0xE5E2). The range sat
 right in front of the note table, and turned out to be its natural
@@ -195,7 +226,7 @@ classification came from.
 The budget measures bytes; coverage measures something else. Of the code in the
 two big blocks, the tracer reaches this:
 
-    ship game        25.7 %
+    ship game        26.0 %
     on-foot part     35.0 %
 
 The rest is data, yes, but there is also **code that isn't arrived at by
@@ -260,16 +291,6 @@ coverage figures come out of the tracer rather than out of an impression.
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **The 541 bytes still unclassified**, five ranges. The two in the ship
-  block: a 55-byte block of variables (0xCA5F, of which 0xCA8F/90 is already
-  known to be the random generator's seed pointer, and 0xCA84-0xCA8B feeds
-  one of the screen writers) and one loose byte (0xE001). The three on foot:
-  two ranges among the graphics (0x6644 and 0x6791) and four bytes among
-  variables (0xC46A). For
-  them there is `tools/coteja_equivalencias.py`, which looks at what the
-  original had at the **equivalent** address even when the bytes do not
-  match; it adopts nothing on its own: it produces leads to be followed by
-  hand, which is how the bytes above were identified.
 - **Commenting the routines** one by one. They are bounded and named; what they
   do is still to be written down.
 
@@ -277,4 +298,6 @@ If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and
 the notes files where each finding gets recorded.
 
-When those 541 bytes are identified, this page will get shorter.
+The bytes left to identify have run out, and this page, as promised, has
+grown shorter. What remains is of a different kind: the code no flow reaches,
+and the routines still to be commented.

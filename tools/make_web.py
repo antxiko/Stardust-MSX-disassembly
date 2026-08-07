@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from estilo_web import ESTILO                      # noqa: E402
 
 TOTAL = 93861
-SIN_IDENTIFICAR = 541
+SIN_IDENTIFICAR = 0
 
 TXT = {
     "es": dict(
@@ -31,8 +31,8 @@ TXT = {
               "el presupuesto cierre al 100 % quiere decir que cada byte de la "
               "cinta tiene dueño —o es código que el trazador alcanza de verdad, "
               "o cae en un rango con nombre y medida—, <b>no</b> que se sepa para "
-              "qué sirve cada uno. Quedan 541 bytes sin identificar y buena "
-              "parte de las rutinas sin comentar. Está contado con cifras en "
+              "qué sirve cada uno. Cada byte tiene ya nombre, pero queda "
+              "código sin trazar y buena parte de las rutinas sin comentar. Está contado con cifras en "
               "<a href='LO-QUE-FALTA.html'>Lo que falta</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
                "Carga de cinta <b>multicarga</b>", "MSX1 · <b>64K</b>"],
@@ -45,9 +45,9 @@ TXT = {
         otro=("../", "In English"),
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
-        cifras=[("100%", "del binario con dueño"), ("143", "rutinas identificadas"),
-                ("7+1", "zonas de naves, y una a pie"), ("23.224", "bytes de código"),
-                ("70.637", "bytes de datos"), ("541", "bytes sin identificar")],
+        cifras=[("100%", "del binario con dueño"), ("153", "rutinas identificadas"),
+                ("7+1", "zonas de naves, y una a pie"), ("23.344", "bytes de código"),
+                ("70.517", "bytes de datos"), ("0", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -71,8 +71,8 @@ TXT = {
         aviso="<b>This is not finished, and work continues.</b> The budget closing "
               "at 100% means every byte on the tape has an owner —either code the "
               "tracer genuinely reaches, or a range with a name and a "
-              "measurement— <b>not</b> that its purpose is known. 541 bytes "
-              "remain unidentified and much of the code is still uncommented. It "
+              "measurement— <b>not</b> that its purpose is known. Every byte now has a name, but there is "
+              "still untraced code and much of it remains uncommented. It "
               "is set out with figures in "
               "<a href='WHATS-MISSING.html'>What's missing</a>.",
         ficha=["Topo Soft · <b>1987</b>", "A <b>ZX Spectrum</b> conversion",
@@ -87,9 +87,9 @@ TXT = {
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
-        cifras=[("100%", "of the binary owned"), ("143", "routines identified"),
-                ("7+1", "ship zones, plus one on foot"), ("23,224", "bytes of code"),
-                ("70,637", "bytes of data"), ("541", "bytes unidentified")],
+        cifras=[("100%", "of the binary owned"), ("153", "routines identified"),
+                ("7+1", "ship zones, plus one on foot"), ("23,344", "bytes of code"),
+                ("70,517", "bytes of data"), ("0", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "
@@ -181,7 +181,7 @@ HALLAZGOS = {
          "<b>1489 direcciones que el juego ejecutó, el trazador ya alcanzaba "
          "1444</b>: la limpieza era correcta. Y las que faltaban dejaron de ser "
          "una corazonada para pasar a ser código con su cuenta de muestras al "
-         "lado. La cobertura real del bloque es del <b>25,7 %</b>, y la de la "
+         "lado. La cobertura real del bloque es del <b>26,0 %</b>, y la de la "
          "segunda parte subió al <b>35,0 %</b> al aparecer ahí sus dos rutinas "
          "más trabajadoras, que estaban clasificadas como tablas de datos.</p>"),
     ],
@@ -256,7 +256,7 @@ HALLAZGOS = {
          "the game executed the tracer already reached 1444</b>: the cleanup "
          "was right. And the ones it missed stopped being a hunch and became "
          "code with a sample count beside it. The block's real coverage is "
-         "<b>25.7%</b>, and the second part's rose to <b>35.0%</b> when its two "
+         "<b>26.0%</b>, and the second part's rose to <b>35.0%</b> when its two "
          "hardest-working routines turned up there, both of which had been "
          "classified as data tables.</p>"),
     ],
@@ -274,12 +274,37 @@ def img64(ruta):
         return "data:image/png;base64," + base64.b64encode(f.read()).decode()
 
 
+def logo_png(binpath, ruta):
+    """El logo STARDUST de la cabecera, dibujado desde la cinta.
+
+    Es el bitmap de 0x47A0, los primeros 256 bytes del bloque del juego:
+    128x16 pixeles a 16 bytes por fila, el mismo rotulo que el modo atraccion
+    anima en el area de juego. Blanco sobre negro, que es como se ve, y a
+    escala 4 (512x64) para la cabecera.
+    """
+    from render_maps import png
+    d = open(binpath, "rb").read()
+    ESC = 4
+    px = [[(0, 0, 0)] * 128 * ESC for _ in range(16 * ESC)]
+    for y in range(16):
+        for bx in range(16):
+            b = d[y * 16 + bx]
+            for bit in range(8):
+                if b & (0x80 >> bit):
+                    for sy in range(ESC):
+                        for sx in range(ESC):
+                            px[y * ESC + sy][(bx * 8 + bit) * ESC + sx] = (255, 255, 255)
+    png(ruta, 128 * ESC, 16 * ESC, px)
+
+
 def main(argv):
     if len(argv) < 5:
         print(__doc__)
         return 2
     imgdir, salida, idioma = argv[2], argv[3], argv[4]
     t = TXT[idioma]
+    ruta_logo = os.path.join(imgdir, "logo.png")
+    logo_png(argv[1], ruta_logo)
 
     nav = "".join(f'<a href="{h}">{x}</a>' for h, x in t["nav"])
     nav += "".join(f'<a href="{h}">{x}</a>' for h, x in t["docnav"])
@@ -302,8 +327,8 @@ def main(argv):
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{t['titulo']}</title>
 <style>{ESTILO}</style>
-<header>
-  <h1>Stardust <span class="anyo">1987</span></h1>
+<header class="top">
+  <img src="{img64(ruta_logo)}" alt="Stardust (1987)">
   <p class="claim">{t['claim']}</p>
   <p class="ficha">{' · '.join(t['ficha'])}</p>
 </header>

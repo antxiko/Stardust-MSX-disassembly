@@ -14,6 +14,10 @@
 #           openmsx -machine Philips_VG_8020-20 -script este.tcl
 set REPLAY $::env(STARDUST_REPLAY)
 set OUT $::env(STARDUST_OUT)
+# El rango vigilado se puede cambiar sin tocar el guion (por defecto, el del
+# relleno del master que le da nombre):
+set INI [expr {[info exists ::env(STARDUST_INI)] ? $::env(STARDUST_INI) : 0xF972}]
+set FIN_R [expr {[info exists ::env(STARDUST_FIN_R)] ? $::env(STARDUST_FIN_R) : 0xFDE7}]
 file mkdir $OUT
 set LOG [open "$OUT/f972.log" w]
 proc say {m} { global LOG; puts $LOG "\[emu [format %8.2f [machine_info time]]\] $m"; flush $LOG }
@@ -46,8 +50,8 @@ proc anota {d pc} {
     if {![dict exists $::primera $pc]} { dict set ::primera $pc [format %.1f [machine_info time]] }
 }
 proc arma {} {
-    debug set_watchpoint read_mem  {0xF972 0xFDE7} {} { anota ::lect [reg PC] }
-    debug set_watchpoint write_mem {0xF972 0xFDE7} {} { anota ::escr [reg PC] }
+    debug set_watchpoint read_mem  [list $::INI $::FIN_R] {} { anota ::lect [reg PC] }
+    debug set_watchpoint write_mem [list $::INI $::FIN_R] {} { anota ::escr [reg PC] }
     say "watchpoints armados"
 }
 # Sobre un replay que arranca desde el encendido, armar los watchpoints durante

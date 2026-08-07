@@ -301,3 +301,25 @@
 # guarda esa direccion en 0xC064 y algo la llama despues por puntero. La cita
 # esta en el binario -`ld hl,0da9dh`- asi que el destino no es una suposicion.
 0xDA9D  gancho_DA9D          enganchada en 0xC064 por la rutina de 0xDA72
+
+# Los comportamientos de los TILES ESPECIALES de las zonas. El despachador esta
+# en 0xC116-0xC176: compara el indice de tile (0x30/31 -> 0xC189, 0x32 ->
+# 0xE091, 0x37 -> 0xDFD4, 0x3B -> 0xE002, 0x3C -> 0xE02A, 0x43 -> 0xD6C5,
+# 0x45 -> 0xCE73, 0x46 -> 0xD314, 0x5D -> 0xDA3D) y guarda la rutina en el
+# campo (ix+3/4) del objeto, con 0xC678 de serie. El trazador no puede seguir
+# un puntero guardado, asi que van aqui a mano. Ademas los estados se
+# ENCADENAN: 0xDFD7 instala 0xDFE7 (ld hl,0dfe7h en 0xDFDD), 0xDFE7 instala
+# 0xE002, 0xE054 instala 0xE05E y 0xE0C5 instala 0xE0CF. Las siete cabezas
+# sin trazar desensamblan limpias (call 0xD1F5/0xD9DB/0xD6EA + logica sobre
+# los campos del objeto, cp contra indices de tile validos), comprobado antes
+# de sembrar.
+0xDFD4  tile_37     comportamiento del tile 0x37 (destino del despachador 0xC13A)
+0xDFE7  tile_37b    estado siguiente del 0x37: avanza el tile en el mapa hasta 0x3B (instalado en 0xDFDD)
+0xE002  tile_3B     comportamiento del tile 0x3B (0xC144; tambien lo instala 0xDFE7)
+0xE02A  tile_3C     comportamiento del tile 0x3C (0xC14E)
+0xE05E  tile_est4   estado encadenado (instalado en 0xE054)
+0xE091  tile_32     comportamiento del tile 0x32 (0xC130; tambien lo instala 0xE0EE)
+0xE0CF  tile_est6   estado encadenado (instalado en 0xE0C5)
+0xD6C5  tile_43     comportamiento del tile 0x43 (0xC158)
+0xD314  tile_46     comportamiento del tile 0x46 (0xC16B)
+0xDA3D  tile_5D     comportamiento del tile 0x5D (0xC174)

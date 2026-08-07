@@ -56,19 +56,15 @@ lb262h:	equ 0x0b262
 ;   0x621c..0x6247  (43 bytes)
 ; DATOS tabla: (23 B; racha 1.92, entropia 3.08, 14 valores: pocos valores para ser un dibujo)
 ;   0x6247..0x625e  (23 bytes)
-; DATOS graficos: (998 B; racha 3.85, entropia 5.55, 199 valores: rachas mas largas que el azar)
+; DATOS graficos: (998 B), y en 0x6555 ARRANCA EL POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
 ;   0x625e..0x6644  (998 bytes)
-; DATOS datos: sin clasificar (324 B; racha 2.83, entropia 6.28, 132 valores)
-;   0x6644..0x6788  (324 bytes)
-; DATOS tabla: (9 B; racha 4.00, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
-;   0x6788..0x6791  (9 bytes)
-; DATOS datos: sin clasificar (157 B; racha 2.89, entropia 5.43, 68 valores)
-;   0x6791..0x682e  (157 bytes)
-; DATOS graficos: (5194 B; racha 3.08, entropia 6.49, 245 valores: rachas mas largas que el azar)
+; DATOS pool: de sprites de la fase (tramo): las entradas 3 a 11 del pool de 64 B de 0x6555, dibujadas limpias con la geometria de 16x16 con mascara. Los recortes que habia aqui (dos rangos sin clasificar y una "tabla" de 9 B) eran cortes arbitrarios en mitad de los sprites
+;   0x6644..0x682e  (490 bytes)
+; DATOS pool: de sprites de la fase (continuacion): entradas de 64 B; los frames del derrumbe del protagonista (0x50 en adelante) caen aqui, en 0x6555 + 0x50*64 = 0x7955
 ;   0x682e..0x7c78  (5194 bytes)
-; DATOS graficos: (37 B; racha 4.35, entropia 4.11, 24 valores: rachas mas largas que el azar)
+; DATOS pool: de sprites de la fase (cola de la entrada 0x48)
 ;   0x7c78..0x7c9d  (37 bytes)
-; DATOS graficos: (1902 B; parte del rango que estuvo declarado entero como graficos)
+; DATOS graficos:: el final del pool de sprites (hasta 0x7D54), el slot de trabajo 0x60 del derrumbe (0x7D55-0x7D94) y graficos hasta el mapa de 0x840B
 ;   0x7c9d..0x840b  (1902 bytes)
 ; DATOS el: MAPA de la fase, que es dos mapas en uno (468 B: 78 filas de 6 celdas de 32x32 px, 280 con suelo). Cada byte es el INDICE DE TILE del pozo de 0x87F3 con el que se dibuja la celda (redibuja_fondo: origen = 0x87F3 + valor*128) y a la vez la COLISION (consulta_mapa acaba en and a: 0 = vacio, y sus seis llamadores solo miran el flag Z). La partida recorre las filas 71 a 0. OJO: estuvo publicado como celdas de 32x16 y torre de 1248 px; el alto se habia derivado en vez de medirse, y es 32 px (tile de 128 B = 4 B x 32 filas, consulta_mapa divide Y entre 32, y el fino 0xAD2C da 16 pasos de 2 px por fila). La torre es 192x2496
 ;   0x840b..0x85df  (468 bytes)
@@ -5071,7 +5067,7 @@ L_C42A:
 ; ----------------------------------------------------------------------
 ; DATOS variables: (17 B): eran 5 B de "relleno o resto" mas 12 que el
 ;   0xc459..0xc46a  (17 bytes)
-; DATOS datos: sin clasificar (4 B): entre las variables y el epilogo de
+; DATOS los: CUATRO COLORES de la fase (E1/B1/A1/71, tinta sobre negro): el arranque del nivel elige uno AL AZAR (call azar / and 3 en 0xA48F, HL = 0xC46A + n en 0xA494) y L_D31C lo aplica. Por eso la fase de a pie no siempre se ve del mismo color. (Estuvo como "sin clasificar: no se referencian desde ningun sitio", y la referencia existia: el ld de,0c46ah de 0xA494)
 ;   0xc46a..0xc46e  (4 bytes)
 ; ----------------------------------------------------------------------
 	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,010h	; c459  ................
