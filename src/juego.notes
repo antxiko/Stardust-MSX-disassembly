@@ -120,7 +120,7 @@ D 0xDA3D 0xDA55 tabla (24 B; racha 2.02, entropia 4.14, 19 valores: pocos valore
 # suelto y 86 B "sin clasificar"- y son 83 bytes de CODIGO seguido. Se retiran y
 # 0xDA72 pasa a src/juego.entries. Ver el comentario de ahi.
 D 0xE14E 0xE15A relleno (12 B; 12 de 12 bytes son 0x00)
-D 0xE5E2 0xE5E7 relleno o resto (5 B; 5 bytes)
+D 0xE5E2 0xE6D2 tabla de instrumentos del interprete de sonido: 16 entradas de 15 bytes. El comando L_E4A6 lee el numero de instrumento del guion y copia la entrada (HL = 0xE5E2 + n*15) al estado del canal (ix+0x16 en adelante). Cierra al byte por los dos lados: el codigo de al lado acaba en el ret de 0xE5E1, y 0xE5E2 + 16*15 = 0xE6D2, donde empieza la tabla siguiente
 D 0xE7F4 0xE7F6 relleno o resto (2 B; 2 bytes)
 D 0xE80B 0xE80C relleno o resto (1 B; 1 bytes)
 D 0xE8C0 0xE8C8 tabla (8 B; racha 2.13, entropia 2.50, 6 valores: pocos valores para ser un dibujo)
@@ -250,7 +250,7 @@ D 0xDAC5 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
 #   MEJORES / PUNTUACIONES DE HOY / ESCRIBE TU NOMBRE); y DEMO y BONUS 5000.
 #   Que no se ejecute nunca cuadra con que sea texto y no codigo.
 D 0xE001 0xE002 datos sin clasificar (1 B; 1 bytes)
-D 0xE5E7 0xE6E3 datos sin clasificar (252 B; racha 4.85, entropia 4.08: la mitad de delante del rango de 414 B, que sigue sin identificar)
+D 0xE6D2 0xE6E3 tabla del comando L_E4EF del interprete: entradas de 6 bytes (HL = 0xE6D2 + n*6) que se copian al bloque de 0xEDFF+4, el canal de efectos. Hasta la tabla de notas caben dos entradas enteras y cinco bytes de una tercera; cuantas usa el juego no esta medido
 #   Se probo que fueran guiones para el interprete de 0xE203 -tienen pinta:
 #   registros cortos separados por 0xFF y 0xFE- pero NO se sostiene. Los cuatro
 #   `ld bc,0xE6xx` que parecian arrancarlos aqui caen dentro de los sprites, y

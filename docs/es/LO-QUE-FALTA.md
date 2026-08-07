@@ -26,16 +26,17 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**793 bytes, el 0,8 % de la cinta**, están declarados como «datos sin
+**541 bytes, el 0,6 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
 
 Eran 4089. Se identificaron primero 1221; después **1415 de una sola tacada**,
 cuando el tramo grande del principio del bloque resultó ser el marco de la
-pantalla de juego; y después otros **1141**, cuando el tramo grande del final resultó ser
-el relleno de la grabación (las dos historias están más abajo). Quedan **308
-en el bloque de naves, en tres rangos, y 485 en el de a pie, en otros tres**.
+pantalla de juego; después otros **1141**, cuando el tramo grande del final
+resultó ser el relleno de la grabación; y después **252 más**, los
+instrumentos del intérprete de sonido (las historias están más abajo). Quedan
+**56 en el bloque de naves, en dos rangos, y 485 en el de a pie, en tres**.
 
 ### Lo que resultaron ser
 
@@ -72,6 +73,15 @@ idéntico en la memoria de vídeo real con el juego en marcha, y el resto es lo
 que el juego pinta encima. Dentro del tramo vivían además dos rangos
 etiquetados «colores de tiles» por su firma de nibble: la firma era verdad,
 pero son los colores del marco, no de los tiles del juego.
+
+**252 bytes: los instrumentos del intérprete de sonido** (0xE5E2). El rango
+estaba pegado por delante a la tabla de notas, y resultó ser su vecino
+natural: una tabla de **16 instrumentos de 15 bytes** que un comando del
+intérprete copia al estado del canal cuando el guion lo pide (la dirección se
+calcula como 0xE5E2 + n×15), y detrás otra de entradas de 6 bytes para el
+canal de efectos. Cierra al byte por los dos lados: el código vecino acaba en
+un `ret` en 0xE5E1, y 0xE5E2 + 16×15 = 0xE6D2, donde empieza la segunda
+tabla, que muere donde empiezan las notas.
 
 **1141 bytes: el relleno de la grabación del master.** El tramo que remata el
 bloque del juego (0xF972-0xFDE6, y la «tabla» de 170 bytes que lo precedía,
@@ -169,7 +179,7 @@ que **aquí también había una imagen** —el marco de la pantalla de juego, co
 En el original, esas direcciones muestran una pantalla; en la conversión,
 guardan una.
 
-Los seis rangos que quedan se pueden listar con:
+Los cinco rangos que quedan se pueden listar con:
 
 ```sh
 grep "datos sin clasificar" src/juego.notes src/parte2.notes
@@ -240,23 +250,23 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-793 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+541 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 793 bytes que siguen sin clasificar**, seis rangos. Los tres de
+- **Los 541 bytes que siguen sin clasificar**, cinco rangos. Los dos de
   naves: un bloque de variables de 55 bytes (0xCA5F, del que ya se sabe que
   0xCA8F/90 es el puntero-semilla del generador de azar y que 0xCA84-0xCA8B
-  alimenta a uno de los escritores de pantalla), 252 bytes pegados a la tabla
-  de notas (0xE5E7) y un byte suelto (0xE001). Los tres de a pie: dos rangos
-  entre los gráficos (0x6644 y 0x6791) y cuatro bytes entre variables
-  (0xC46A). Para ellos está `tools/coteja_equivalencias.py`, que mira qué
-  había en el original en la dirección **equivalente** aunque los bytes no
-  coincidan; no adopta nada por su cuenta: saca pistas para mirar a mano, que
-  es como se identificaron los de arriba.
+  alimenta a uno de los escritores de pantalla) y un byte suelto (0xE001).
+  Los tres de a pie: dos rangos entre los gráficos (0x6644 y 0x6791) y cuatro
+  bytes entre variables (0xC46A). Para ellos está
+  `tools/coteja_equivalencias.py`, que mira qué había en el original en la
+  dirección **equivalente** aunque los bytes no coincidan; no adopta nada por
+  su cuenta: saca pistas para mirar a mano, que es como se identificaron los
+  de arriba.
 - **Comentar las rutinas** una a una. Están acotadas y con nombre; falta
   explicar qué hace cada una.
 
@@ -264,4 +274,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 793 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 541 bytes se identifiquen, esta página se hará más corta.

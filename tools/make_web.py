@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from estilo_web import ESTILO                      # noqa: E402
 
 TOTAL = 93861
-SIN_IDENTIFICAR = 793
+SIN_IDENTIFICAR = 541
 
 TXT = {
     "es": dict(
@@ -31,7 +31,7 @@ TXT = {
               "el presupuesto cierre al 100 % quiere decir que cada byte de la "
               "cinta tiene dueño —o es código que el trazador alcanza de verdad, "
               "o cae en un rango con nombre y medida—, <b>no</b> que se sepa para "
-              "qué sirve cada uno. Quedan 793 bytes sin identificar y buena "
+              "qué sirve cada uno. Quedan 541 bytes sin identificar y buena "
               "parte de las rutinas sin comentar. Está contado con cifras en "
               "<a href='LO-QUE-FALTA.html'>Lo que falta</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
@@ -47,7 +47,7 @@ TXT = {
         h_scr="Los gráficos", h_met="Cómo se hizo",
         cifras=[("100%", "del binario con dueño"), ("143", "rutinas identificadas"),
                 ("7+1", "zonas de naves, y una a pie"), ("23.224", "bytes de código"),
-                ("70.637", "bytes de datos"), ("793", "bytes sin identificar")],
+                ("70.637", "bytes de datos"), ("541", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -71,7 +71,7 @@ TXT = {
         aviso="<b>This is not finished, and work continues.</b> The budget closing "
               "at 100% means every byte on the tape has an owner —either code the "
               "tracer genuinely reaches, or a range with a name and a "
-              "measurement— <b>not</b> that its purpose is known. 793 bytes "
+              "measurement— <b>not</b> that its purpose is known. 541 bytes "
               "remain unidentified and much of the code is still uncommented. It "
               "is set out with figures in "
               "<a href='WHATS-MISSING.html'>What's missing</a>.",
@@ -89,7 +89,7 @@ TXT = {
         h_scr="The graphics", h_met="How it was done",
         cifras=[("100%", "of the binary owned"), ("143", "routines identified"),
                 ("7+1", "ship zones, plus one on foot"), ("23,224", "bytes of code"),
-                ("70,637", "bytes of data"), ("793", "bytes unidentified")],
+                ("70,637", "bytes of data"), ("541", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "

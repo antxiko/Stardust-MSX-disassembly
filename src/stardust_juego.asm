@@ -7069,10 +7069,10 @@ L_E5D4:
 	ret			;e5e1
 
 ; ----------------------------------------------------------------------
-; DATOS relleno: o resto (5 B; 5 bytes)
-;   0xe5e2..0xe5e7  (5 bytes)
-; DATOS datos: sin clasificar (252 B; racha 4.85, entropia 4.08: la mitad de delante del rango de 414 B, que sigue sin identificar)
-;   0xe5e7..0xe6e3  (252 bytes)
+; DATOS tabla: de instrumentos del interprete de sonido: 16 entradas de 15 bytes. El comando L_E4A6 lee el numero de instrumento del guion y copia la entrada (HL = 0xE5E2 + n*15) al estado del canal (ix+0x16 en adelante). Cierra al byte por los dos lados: el codigo de al lado acaba en el ret de 0xE5E1, y 0xE5E2 + 16*15 = 0xE6D2, donde empieza la tabla siguiente
+;   0xe5e2..0xe6d2  (240 bytes)
+; DATOS tabla: del comando L_E4EF del interprete: entradas de 6 bytes (HL = 0xE6D2 + n*6) que se copian al bloque de 0xEDFF+4, el canal de efectos. Hasta la tabla de notas caben dos entradas enteras y cinco bytes de una tercera; cuantas usa el juego no esta medido
+;   0xe6d2..0xe6e3  (17 bytes)
 ; DATOS tabla: de periodos del PSG: 81 notas cromaticas desde do1 (162 B)
 ;   0xe6e3..0xe785  (162 bytes)
 ; ----------------------------------------------------------------------

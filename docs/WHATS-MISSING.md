@@ -27,17 +27,17 @@ Here is the honest breakdown.
 
 ## What is left to identify
 
-**793 bytes, 0.8% of the tape**, are declared as "unclassified data". For each
+**541 bytes, 0.6% of the tape**, are declared as "unclassified data". For each
 one we know where it starts, where it ends and what it measures —average run of
 equal bits, entropy, and how many distinct values it uses— but not what it is or
 what it is used for.
 
 There used to be 4089. First 1221 were identified; then **1415 in one
-stroke**, when the big stretch at the start of the block turned out to be the game
-screen's frame; and then **1141 more**, when the big stretch at the end turned
-out to be recording filler (both stories are below). **308 remain in the ship
-block, across three ranges, and 485 in the on-foot block, across another
-three**.
+stroke**, when the big stretch at the start of the block turned out to be the
+game screen's frame; then **1141 more**, when the big stretch at the end
+turned out to be recording filler; and then another **252**, the sound
+interpreter's instruments (the stories are below). **56 remain in the ship
+block, across two ranges, and 485 in the on-foot block, across three**.
 
 ### What they turned out to be
 
@@ -75,6 +75,15 @@ real video memory with the game running, the rest being what the game paints
 on top. Inside the stretch also lived two ranges labelled "tile colours" by
 their nibble signature: the signature was true, but they are the frame's
 colours, not the game tiles'.
+
+**252 bytes: the sound interpreter's instruments** (0xE5E2). The range sat
+right in front of the note table, and turned out to be its natural
+neighbour: a table of **16 instruments of 15 bytes** that one of the
+interpreter's commands copies into the channel state when the script asks
+for it (the address is computed as 0xE5E2 + n×15), followed by another table
+of 6-byte entries for the effects channel. It closes to the byte on both
+sides: the neighbouring code ends in a `ret` at 0xE5E1, and 0xE5E2 + 16×15 =
+0xE6D2, where the second table starts, dying where the notes begin.
 
 **1141 bytes: the master recording's filler.** The stretch that closes the
 game block (0xF972-0xFDE6, plus the 170-byte "table" right before it, which
@@ -172,7 +181,7 @@ turned out that **there was a picture here too** —the game screen's frame, tol
 above—. In the original, those addresses show a screen; in the conversion,
 they store one.
 
-The six remaining ranges can be listed with:
+The five remaining ranges can be listed with:
 
 ```sh
 grep "datos sin clasificar" src/juego.notes src/parte2.notes
@@ -251,12 +260,12 @@ coverage figures come out of the tracer rather than out of an impression.
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **The 793 bytes still unclassified**, six ranges. The three in the ship
+- **The 541 bytes still unclassified**, five ranges. The two in the ship
   block: a 55-byte block of variables (0xCA5F, of which 0xCA8F/90 is already
   known to be the random generator's seed pointer, and 0xCA84-0xCA8B feeds
-  one of the screen writers), 252 bytes right next to the note table (0xE5E7)
-  and one loose byte (0xE001). The three on foot: two ranges among the
-  graphics (0x6644 and 0x6791) and four bytes among variables (0xC46A). For
+  one of the screen writers) and one loose byte (0xE001). The three on foot:
+  two ranges among the graphics (0x6644 and 0x6791) and four bytes among
+  variables (0xC46A). For
   them there is `tools/coteja_equivalencias.py`, which looks at what the
   original had at the **equivalent** address even when the bytes do not
   match; it adopts nothing on its own: it produces leads to be followed by
@@ -268,4 +277,4 @@ If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and
 the notes files where each finding gets recorded.
 
-When those 793 bytes are identified, this page will get shorter.
+When those 541 bytes are identified, this page will get shorter.
