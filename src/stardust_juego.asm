@@ -46,11 +46,11 @@ lcc32h:	equ 0x0cc32
 lef00h:	equ 0x0ef00
 
 ; ----------------------------------------------------------------------
-; DATOS el: logo STARDUST de la pantalla de titulo: bitmap de 128x16 px, 16 B por fila; lo copia el animador del titulo (ld hl,047a0h en 0xF037, 16 ldi por fila)
+; DATOS el: logo STARDUST del menu/atraccion: bitmap de 128x16 px, 16 B por fila; lo copia el animador del arranque (ld hl,047a0h en 0xF037, 16 ldi por fila)
 ;   0x47a0..0x48a0  (256 bytes)
-; DATOS patrones: de la pantalla estatica del titulo (0x900 B): L_EF28 los copia a la VRAM 0x0000 (fuente ld de,048a0h en 0xEF10) en dos filas de caracter por tercio mas 24 tiras de 8 B y 24 de 0x18 B. Doble papel: en marcha 0x47A0-0x4B3F es el final de la banda B del buffer y 0x4B40-0x4EFF la banda C entera
+; DATOS patrones: del MARCO de la pantalla de juego -el cuadro decorado con el HUD que rodea el area de juego- (0x900 B): L_EF28 los copia a la VRAM 0x0000 (fuente ld de,048a0h en 0xEF10) en dos filas de caracter por tercio mas 24 tiras de 8 B y 24 de 0x18 B; la tabla de NOMBRES del SCREEN 2 (montada aparte, rutina sin localizar) es la que recoloca esos 288 caracteres en el borde. Contrastado contra la VRAM real del titulo (dump/marco): el 97,4% de los 4608 bytes identicos, y el resto es lo que el juego pinta encima. Doble papel: en marcha 0x47A0-0x4B3F es el final de la banda B del buffer y 0x4B40-0x4EFF la banda C entera
 ;   0x48a0..0x51a0  (2304 bytes)
-; DATOS colores: de la pantalla estatica del titulo (los mismos 0x900 B, segunda llamada a L_EF28 con destino VRAM 0x2000). Aqui vivian los rangos "colores de tiles" medidos por su firma de nibble: la firma era verdad, pero son los colores de ESTA pantalla, no de los tiles del juego
+; DATOS colores: del MARCO de la pantalla de juego (los mismos 0x900 B, segunda llamada a L_EF28 con destino VRAM 0x2000). Aqui vivian los rangos "colores de tiles" medidos por su firma de nibble: la firma era verdad, pero son los colores del marco, no de los tiles del juego
 ;   0x51a0..0x5aa0  (2304 bytes)
 ; DATOS tabla: (401 B; racha 7.98, entropia 1.05, 4 valores: pocos valores para ser un dibujo)
 ;   0x5aa0..0x5c31  (401 bytes)
@@ -9905,10 +9905,8 @@ L_F8AE:
 	ret			;f8c7
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (170 B; racha 8.14, entropia 1.05, 3 valores: pocos valores para ser un dibujo)
-;   0xf8c8..0xf972  (170 bytes)
-; DATOS datos: sin clasificar (1141 B; racha 7.87, entropia 1.08, 11 valores: pocos valores para ser un dibujo; parece tabla)
-;   0xf972..0xfde7  (1141 bytes)
+; DATOS relleno: de la grabacion del master (1311 B): RAM sin inicializar volcada tal cual. Son 00/FF alternados de dos en dos, con una marca y un volteo de fase cada 128 bytes EXACTOS (0xF9A8, 0xFA28, 0xFAA8... el aspecto de una DRAM recien encendida) y una decena de bytes sueltos que la maquina del master ya habia tocado. Remata el bloque justo debajo del buzon de POKEs de 0xFDE8. Medido DOS veces (tools/omsx_f972.tcl): 350 s de partida de naves, y la partida COMPLETA de Araubi (2275 s, multicarga y fase a pie incluidas). En los 38 minutos, las unicas escrituras al tramo son las CUATRO del arranque que instalan los ganchos H.KEYI/H.TIMI (PCs 0xBD98/0xBD9D/0xBDA3, todas en t=449, el final de la carga), y las unicas lecturas los fetches de esos ganchos (0xFD9A/0xFD9F). Nadie usa el resto ni una vez
+;   0xf8c8..0xfde7  (1311 bytes)
 ; ----------------------------------------------------------------------
 	defb 0ffh,000h,000h,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; f8c8  ................
 	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; f8d8  ................

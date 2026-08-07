@@ -27,15 +27,17 @@ Here is the honest breakdown.
 
 ## What is left to identify
 
-**1934 bytes, 2.1% of the tape**, are declared as "unclassified data". For each
+**793 bytes, 0.8% of the tape**, are declared as "unclassified data". For each
 one we know where it starts, where it ends and what it measures —average run of
 equal bits, entropy, and how many distinct values it uses— but not what it is or
 what it is used for.
 
-There used to be 4089. First 1221 were identified, and then **1415 more in one
-stroke**, when the big stretch at the start of the block turned out to be the
-title screen (the story is below). **1449 remain in the ship block, across
-four ranges, and 485 in the on-foot block, across three**.
+There used to be 4089. First 1221 were identified; then **1415 in one
+stroke**, when the big stretch at the start of the block turned out to be the game
+screen's frame; and then **1141 more**, when the big stretch at the end turned
+out to be recording filler (both stories are below). **308 remain in the ship
+block, across three ranges, and 485 in the on-foot block, across another
+three**.
 
 ### What they turned out to be
 
@@ -55,6 +57,35 @@ theoretical **C1**. It is read by the script interpreter at 0xE203: it fetches a
 byte, and if it is below 0x80 it is a note and indexes this table; otherwise it
 is a command. The fit is exact to the byte: 0xE6E3 + 81×2 lands precisely where
 the range ended.
+
+**1415 bytes: the game screen's frame, travelling inside the block.** The
+start of the block (0x47A0-0x5A9F) was not just "graphics": the first 256
+bytes are the **STARDUST logo**, a 128×16 bitmap at 16 bytes per row —drawn
+at that width the name reads out; the startup animator copies it sixteen
+`ldi` per row from `ld hl,047a0h`—, and behind it come the **patterns**
+(0x48A0) and **colours** (0x51A0) of the **frame**: the decorated border,
+HUD included, that surrounds the play area. 0x900 bytes of each, which the
+routine at 0xEF28 copies to video memory in two character rows per third
+plus forty-eight strips; the SCREEN 2 name table is what then rearranges
+those 288 characters around the edge of the screen. The arithmetic closes on
+its own: 0x48A0 + 0x900 = 0x51A0, and 0x51A0 + 0x900 = 0x5AA0. And so does
+the check against the emulator: 97.4% of those bytes appear identical in the
+real video memory with the game running, the rest being what the game paints
+on top. Inside the stretch also lived two ranges labelled "tile colours" by
+their nibble signature: the signature was true, but they are the frame's
+colours, not the game tiles'.
+
+**1141 bytes: the master recording's filler.** The stretch that closes the
+game block (0xF972-0xFDE6, plus the 170-byte "table" right before it, which
+was the same thing) is **uninitialised RAM dumped as-is when the tape was
+mastered**: 00 and FF alternating in pairs, with a mark and a phase flip
+every exactly 128 bytes —what a freshly powered DRAM looks like— and a dozen
+bytes the studio machine had already touched. The block thus ends right below
+the patch mailbox at 0xFDE8. The proof came from the emulator, over the
+**complete 38-minute playthrough**: the only writes into the stretch in the
+whole game are the four at startup with which the game installs its interrupt
+hooks, and the only reads are the execution of those hooks. Nothing ever uses
+the rest.
 
 **403 bytes that were not data but code.** Four sprite pre-shifting routines in
 the second part (0xB2A6), another of 58 bytes (0xC804), and one of 83 in the
@@ -136,11 +167,11 @@ there is a picture. The cross-check route was closed in its day for that
 reason.
 
 And the ending has its charm: when the stretch was finally identified, it
-turned out that **there was a picture here too** —the title screen, told
+turned out that **there was a picture here too** —the game screen's frame, told
 above—. In the original, those addresses show a screen; in the conversion,
 they store one.
 
-The seven remaining ranges can be listed with:
+The six remaining ranges can be listed with:
 
 ```sh
 grep "datos sin clasificar" src/juego.notes src/parte2.notes
@@ -219,15 +250,16 @@ coverage figures come out of the tracer rather than out of an impression.
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **The 1934 bytes still unclassified**, seven ranges. The four in the ship
-  block: a large 1141-byte table at the block's end (0xF972), a 55-byte block
-  of variables (0xCA5F), 252 bytes right next to the note table (0xE5E7) and
-  one loose byte (0xE001). The three on foot: two ranges among the graphics
-  (0x6644 and 0x6791) and four bytes among variables (0xC46A). For them there
-  is `tools/coteja_equivalencias.py`, which looks at what the original had at
-  the **equivalent** address even when the bytes do not match; it adopts
-  nothing on its own: it produces leads to be followed by hand, which is how
-  the bytes above were identified.
+- **The 793 bytes still unclassified**, six ranges. The three in the ship
+  block: a 55-byte block of variables (0xCA5F, of which 0xCA8F/90 is already
+  known to be the random generator's seed pointer, and 0xCA84-0xCA8B feeds
+  one of the screen writers), 252 bytes right next to the note table (0xE5E7)
+  and one loose byte (0xE001). The three on foot: two ranges among the
+  graphics (0x6644 and 0x6791) and four bytes among variables (0xC46A). For
+  them there is `tools/coteja_equivalencias.py`, which looks at what the
+  original had at the **equivalent** address even when the bytes do not
+  match; it adopts nothing on its own: it produces leads to be followed by
+  hand, which is how the bytes above were identified.
 - **Commenting the routines** one by one. They are bounded and named; what they
   do is still to be written down.
 
@@ -235,4 +267,4 @@ If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and
 the notes files where each finding gets recorded.
 
-When those 1934 bytes are identified, this page will get shorter.
+When those 793 bytes are identified, this page will get shorter.
