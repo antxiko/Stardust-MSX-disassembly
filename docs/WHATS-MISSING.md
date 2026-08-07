@@ -27,14 +27,15 @@ Here is the honest breakdown.
 
 ## What is left to identify
 
-**3349 bytes, 3.6% of the tape**, are declared as "unclassified data". For each
+**1934 bytes, 2.1% of the tape**, are declared as "unclassified data". For each
 one we know where it starts, where it ends and what it measures —average run of
 equal bits, entropy, and how many distinct values it uses— but not what it is or
 what it is used for.
 
-There used to be 4089. **1221 have been identified**, and with them the on-foot
-part is left without a single unclassified range: every one that remains is in
-the ship game's block.
+There used to be 4089. First 1221 were identified, and then **1415 more in one
+stroke**, when the big stretch at the start of the block turned out to be the
+title screen (the story is below). **1449 remain in the ship block, across
+four ranges, and 485 in the on-foot block, across three**.
 
 ### What they turned out to be
 
@@ -126,21 +127,20 @@ reaches it. It is now declared as what it is.
 That is why the code bytes go down and the data bytes go up against what was
 published before: the earlier figure was inflated.
 
-### What is left, and one route that can now be closed
+### What is left, and a closed route with a punchline
 
-Of the 3349 still unidentified, **1415 are in 0x4952-0x563F, and there the
-original cannot help**. Not for want of trying: on the ZX Spectrum those
-addresses are the **screen memory**, 6144 bytes of pixels and 768 of attributes.
-There is no game to look at there, there is a picture.
+Much of what remained sat in 0x4952-0x563F, **and there the original could not
+help**: on the ZX Spectrum those addresses are the **screen memory**, 6144
+bytes of pixels and 768 of attributes. There is no game to look at there,
+there is a picture. The cross-check route was closed in its day for that
+reason.
 
-And that is precisely why there is something here: this version has those
-addresses free, because on the MSX the video memory sits behind the graphics
-chip and cannot be addressed. It is the same thing that forced the screen buffer
-at 0x4000-0x4EFF to be added. So those bytes are, by construction, the least likely of
-all to have come from the other side. That does not identify them; what it does
-is close a route **with a reason**, instead of leaving it as "not tried".
+And the ending has its charm: when the stretch was finally identified, it
+turned out that **there was a picture here too** —the title screen, told
+above—. In the original, those addresses show a screen; in the conversion,
+they store one.
 
-They are spread across small ranges. You can list them with:
+The seven remaining ranges can be listed with:
 
 ```sh
 grep "datos sin clasificar" src/juego.notes src/parte2.notes
@@ -219,21 +219,15 @@ coverage figures come out of the tracer rather than out of an impression.
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **More hand-played sessions.** The screens no harness reaches —game over,
-  the high-score entry, the demo, the menu and redefine keys— have now been
-  visited in a recorded session, and that yielded 22 routines and the key
-  table. What is left to visit the same way is the second part, on foot.
-- **The 3349 bytes still unclassified.** The cross-check route was closed while
-  the tool looked for each section with a 32-byte needle and kept the first
-  match, demanding neither that it be unique nor that the resulting offset
-  agree with the rest: that is where the contamination came from. It has been
-  rewritten —it now aligns both binaries first and only then looks at the
-  names— and out of it came the thesis the project now rests on. On top of
-  that there is a second tool, `tools/coteja_equivalencias.py`, which looks at
-  what the original had at the **equivalent** address even when the bytes do
-  not match. It deliberately adopts nothing on its own: what it produces are
-  leads to be followed by hand, which is how the bytes above were identified.
-- **The indirect jump at 0x984D**, still unfired and with no known destination.
+- **The 1934 bytes still unclassified**, seven ranges. The four in the ship
+  block: a large 1141-byte table at the block's end (0xF972), a 55-byte block
+  of variables (0xCA5F), 252 bytes right next to the note table (0xE5E7) and
+  one loose byte (0xE001). The three on foot: two ranges among the graphics
+  (0x6644 and 0x6791) and four bytes among variables (0xC46A). For them there
+  is `tools/coteja_equivalencias.py`, which looks at what the original had at
+  the **equivalent** address even when the bytes do not match; it adopts
+  nothing on its own: it produces leads to be followed by hand, which is how
+  the bytes above were identified.
 - **Commenting the routines** one by one. They are bounded and named; what they
   do is still to be written down.
 
@@ -241,4 +235,4 @@ If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and
 the notes files where each finding gets recorded.
 
-When those 3349 bytes are identified, this page will get shorter.
+When those 1934 bytes are identified, this page will get shorter.

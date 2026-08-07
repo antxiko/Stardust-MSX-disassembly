@@ -26,14 +26,15 @@ Aquí está el desglose de verdad.
 
 ## Lo que falta por identificar
 
-**3349 bytes, el 3,6 % de la cinta**, están declarados como «datos sin
+**1934 bytes, el 2,1 % de la cinta**, están declarados como «datos sin
 clasificar». De cada uno se sabe dónde empieza, dónde acaba y qué medidas da
 —racha media de bits iguales, entropía y cuántos valores distintos usa— pero no
 qué son ni para qué se usan.
 
-Eran 4089. **Se han identificado 1221**, y con ellos la parte de a pie se ha
-quedado sin ni un solo rango sin clasificar: todos los que quedan están en el
-bloque del juego de naves.
+Eran 4089. Se identificaron primero 1221, y después **1415 más de una sola
+tacada**, cuando el tramo grande del principio del bloque resultó ser la
+pantalla del título (la historia está más abajo). Quedan **1449 en el bloque
+de naves, repartidos en cuatro rangos, y 485 en el de a pie, en tres**.
 
 ### Lo que resultaron ser
 
@@ -52,6 +53,19 @@ semitonos. Con el reloj del PSG del MSX, la primera da 32,70 Hz, que es el **do1
 teórico**. La lee el intérprete de guiones de 0xE203: saca un byte, y si vale
 menos de 0x80 es una nota y va a esta tabla; si no, es un comando. El ajuste es
 al byte: 0xE6E3 + 81×2 cae justo donde acababa el rango.
+
+**1415 bytes: la pantalla del título, viajando dentro del bloque del juego.**
+El principio del bloque (0x47A0-0x5A9F) no eran «gráficos» a bulto: los
+primeros 256 bytes son el **logo STARDUST**, un bitmap de 128×16 a 16 bytes
+por fila —dibujado a ese ancho se lee el nombre; el animador del título lo
+copia con dieciséis `ldi` por fila desde `ld hl,047a0h`—, y detrás van los
+**patrones** (0x48A0) y los **colores** (0x51A0) de la pantalla estática del
+título: 0x900 bytes de cada, que la rutina de 0xEF28 copia a la memoria de
+vídeo en dos filas de carácter por tercio más cuarenta y ocho tiras. La
+aritmética cierra sola: 0x48A0 + 0x900 = 0x51A0, y 0x51A0 + 0x900 = 0x5AA0.
+Dentro de ese tramo vivían además dos rangos etiquetados «colores de tiles»
+por su firma de nibble: la firma era verdad, pero son los colores de **esta
+pantalla**, no de los tiles del juego.
 
 **403 bytes que no eran datos, sino código.** Cuatro rutinas de pre-desplazado
 de sprites en la segunda parte (0xB2A6), otra de 58 bytes (0xC804) y una de 83
@@ -125,21 +139,19 @@ no se alcanza siguiendo el flujo. Ahora está declarado como lo que es.
 Por eso los bytes de código bajan y los de datos suben respecto a lo publicado
 antes: la cifra de antes estaba inflada.
 
-### Los que quedan, y una vía que ya se puede cerrar
+### Los que quedan, y una vía que se cerró y luego tuvo gracia
 
-De los 3349 que siguen sin identificar, **1415 están en 0x4952-0x563F, y ahí el
-original no puede ayudar**. No por falta de haberlo intentado: en el ZX Spectrum
-esas direcciones son la **memoria de pantalla**, 6144 bytes de píxeles y 768 de
-atributos. Allí no hay juego que mirar, hay imagen.
+Buena parte de lo que quedaba estaba en 0x4952-0x563F, **y ahí el original no
+podía ayudar**: en el ZX Spectrum esas direcciones son la **memoria de
+pantalla**, 6144 bytes de píxeles y 768 de atributos. Allí no hay juego que
+mirar, hay imagen. La vía del cotejo se cerró en su día con ese motivo.
 
-Y es justo la razón por la que aquí hay algo: esta versión tiene esas
-direcciones libres, porque en el MSX la memoria de vídeo está detrás del chip
-gráfico y no se direcciona. Es lo mismo que obligó a añadir el buffer de
-pantalla de 0x4000-0x4EFF. O sea que esos bytes son, por construcción, de los que menos
-posibilidades tienen de venir del otro lado. Eso no los identifica; lo que hace
-es cerrar una vía **con un motivo**, en vez de dejarla como «sin probar».
+Y el desenlace tiene su gracia: cuando por fin se identificó el tramo, resultó
+que **aquí también había una imagen** —la pantalla del título, contada arriba—.
+En el original, esas direcciones muestran una pantalla; en la conversión,
+guardan una.
 
-Están repartidos en rangos pequeños. Se pueden listar con:
+Los siete rangos que quedan se pueden listar con:
 
 ```sh
 grep "datos sin clasificar" src/juego.notes src/parte2.notes
@@ -210,31 +222,22 @@ buscar en el sitio equivocado.
 
 El criterio de toda la serie es que cada afirmación se pueda contrastar con el
 binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
-3349 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
+1934 bytes están acotados uno a uno en vez de barridos bajo la alfombra, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Los 3349 bytes que siguen sin clasificar.** La vía del cotejo estuvo cerrada
-  mientras la herramienta buscaba cada sección con una aguja de 32 bytes y se
-  quedaba con la primera coincidencia, sin exigir que fuera única ni que el
-  desplazamiento encajara con el del resto: ahí se generó la contaminación. Ya
-  está reescrita —ahora alinea los dos binarios primero y sólo después mira los
-  nombres— y de ella salió la tesis que hoy sostiene el proyecto. Sobre esa base
-  hay una segunda herramienta, `tools/coteja_equivalencias.py`, que mira qué
-  había en el original en la dirección **equivalente** aunque los bytes no
-  coincidan. No adopta nada por su cuenta a propósito: lo que saca son pistas
-  para mirar a mano, que es como se identificaron los bytes de arriba.
-- **Seguir jugando a mano.** Las pantallas que un arnés no alcanza —fin de
-  partida, entrada de récord, demo, menú y redefinir teclas— ya se han visitado
-  en una sesión grabada, y de ahí salieron 22 rutinas y la tabla de teclas. Lo
-  que queda por visitar de la misma forma es la segunda parte, la de a pie.
-- **Jugar la segunda parte entera**, con el trainer puesto, y capturar sus
-  rutinas como se hizo con la primera. Ahí es donde más código sin trazar queda.
-- **El salto indirecto de 0x984D**, que sigue sin dispararse y sin destino
-  conocido.
+- **Los 1934 bytes que siguen sin clasificar**, siete rangos. Los cuatro de
+  naves: una tabla grande de 1141 bytes al final del bloque (0xF972), un
+  bloque de variables de 55 (0xCA5F), 252 bytes pegados a la tabla de notas
+  (0xE5E7) y un byte suelto (0xE001). Los tres de a pie: dos rangos entre los
+  gráficos (0x6644 y 0x6791) y cuatro bytes entre variables (0xC46A). Para
+  ellos está `tools/coteja_equivalencias.py`, que mira qué había en el
+  original en la dirección **equivalente** aunque los bytes no coincidan; no
+  adopta nada por su cuenta: saca pistas para mirar a mano, que es como se
+  identificaron los de arriba.
 - **Comentar las rutinas** una a una. Están acotadas y con nombre; falta
   explicar qué hace cada una.
 
@@ -242,4 +245,4 @@ Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las
 herramientas de medida y los ficheros de notas donde se anota cada hallazgo.
 
-Cuando esos 3349 bytes se identifiquen, esta página se hará más corta.
+Cuando esos 1934 bytes se identifiquen, esta página se hará más corta.
