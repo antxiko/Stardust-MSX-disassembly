@@ -541,8 +541,27 @@ el número de argumentos de un solo comando estuviera mal, el recorrido se
 desincronizaría y los bloques no acabarían donde acaban.
 
 Lo que sale del recorrido: **veintiún sonidos**. Diecisiete son cortos, de 9 a
-31 bytes —los efectos—, y dos son largos, de 378 y 149 bytes: **ésas son las
-músicas**. Otros dos no terminan, dan la vuelta y siguen sonando en bucle.
+31 bytes —los efectos—, y el tramo largo del final resulta ser **la música**,
+repartida en tres voces como se cuenta justo abajo. Otros dos no terminan: dan
+la vuelta y siguen sonando en bucle.
+
+### La música es una sola, a tres voces
+
+Aquí estuvo publicado que había "dos canciones largas, de 378 y 149 bytes", y
+estaba mal partido. La rutina que arranca la música instala **tres guiones de
+golpe, uno por canal**:
+
+    canal 0   0xEB52   248 bytes, y al acabar repite
+    canal 1   0xEC4A   129 bytes, y al acabar repite
+    canal 2   0xECCB   apunta a un «fin», o sea que entra callado
+
+No son canciones distintas: son **las tres voces de la misma música**, sonando
+a la vez. Las dos primeras empiezan además con la misma orden de transposición,
++2, lo que las afina juntas.
+
+Eso explica de paso algo que despistaba: al sintetizar el primer guion por su
+cuenta salían cuatro notas graves repitiéndose. No es que la música fuera
+pobre; es que se estaba escuchando **la línea de bajo sola**.
 
 ### Las canciones no tienen ni una nota
 

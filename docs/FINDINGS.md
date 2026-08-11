@@ -575,8 +575,27 @@ argument count of a single command were wrong, the walk would desynchronise and
 the blocks wouldn't end where they do.
 
 What the walk yields: **twenty-one sounds**. Seventeen are short, 9 to 31 bytes
-—the effects— and two are long, 378 and 149 bytes: **those are the music**.
-Another two never end; they loop back and keep playing.
+—the effects— and the long stretch at the end turns out to be **the music**,
+split across three voices as described just below. Another two never end: they
+loop back and keep playing.
+
+### The music is one piece, in three voices
+
+This page used to say there were "two long songs, of 378 and 149 bytes", and
+the split was wrong. The routine that starts the music installs **three scripts
+at once, one per channel**:
+
+    channel 0   0xEB52   248 bytes, and repeats when done
+    channel 1   0xEC4A   129 bytes, and repeats when done
+    channel 2   0xECCB   points at an "end", so it comes in silent
+
+They aren't separate songs: they are **the three voices of the same piece**,
+playing together. The first two also open with the same transpose command, +2,
+which tunes them together.
+
+That explains something that had been confusing: synthesising the first script
+on its own gave four low notes repeating. The music isn't poor; what was being
+heard was **the bass line alone**.
 
 ### The songs don't contain a single note
 

@@ -785,3 +785,51 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # de entidades. La cuenta tambien cierra alli: 0xD068 + 3*46 = 0xD0F2, y las
 # variables que el listado lee con `ld a,(nn)` en esa zona (0xD0FC, 0xD10C)
 # caen justo despues.
+#
+# --- LA MUSICA SON TRES VOCES, NO DOS CANCIONES -----------------------------
+#
+# Aqui se escribio "dos canciones largas, de 378 y 149 bytes", y estaba mal
+# partido. Lo dice arranca_musica (0xE16F), que instala TRES guiones de golpe,
+# uno por canal:
+#
+#     e16f: ld a,080h / ld de,0eb52h / call L_E1BC    <- canal 0
+#     e177: inc a     / ld de,0ec4ah / call L_E1BC    <- canal 1
+#     e17e: ld a,002h / ld de,0eccbh / call L_E1BC    <- canal 2
+#
+# O sea que la musica del juego es UNA, a tres voces simultaneas:
+#     canal 0   0xEB52-0xEC49   248 B, acaba en 0x82 (repite)
+#     canal 1   0xEC4A-0xECCA   129 B, acaba en 0x82 (repite)
+#     canal 2   0xECCB          apunta a un 0x8B, o sea que entra callado
+# Los dos primeros empiezan con `8e 02`: la misma transposicion, +2, para las
+# dos voces. (Lo del canal 2 queda como HIPOTESIS: el byte de 0xECCB es un
+# 0x8B y eso limpia el canal, pero no se ha medido si algo lo reescribe
+# despues. Y los 149 bytes de 0xECCC en adelante son otra cosa sin identificar.)
+#
+# Eso explica ademas por que el sintetizador, tocando 0xEB52 solo, saca cuatro
+# notas graves y repetitivas: no es que la musica sea pobre, es que se estaba
+# escuchando LA LINEA DE BAJO sola.
+#
+# L_E1BC, que es la que usa, limpia los 46 bytes del canal antes de instalar el
+# guion; L_E18F instala sin limpiar. Las dos comparten el mismo calculo
+# canal*0x2E + 0xED75.
+#
+# --- LO QUE ESCRIBE DE VERDAD EN EL CHIP (medido, tools/omsx_psg.tcl) --------
+#
+# Contrastando la lectura contra el hardware emulado -capturando los puertos
+# 0xA0 y 0xA1 del PSG sobre el replay- sale un resultado que a primera vista
+# parece malo y no lo es: en 60 segundos de DEMO, de 5468 escrituras de tono
+# solo el 19,3 % son periodos de la tabla de notas.
+#
+# La explicacion esta en los otros: 66, 68, 70, 72, 74, 78, 82, 84, 86, 88...
+# todos PARES y consecutivos. Eso no son notas, es un BARRIDO de frecuencia, y
+# la demo esta llena de disparos y explosiones. Lo confirma la tabla de efectos
+# de 0xE6D2, cuyas entradas de 6 bytes traen el paso del barrido: la del efecto
+# 1 es `01 08 10 fe 00 00`, y ese 0xFE es un -2. Barrido de dos en dos, que es
+# exactamente lo medido.
+#
+# O sea que el intervalo de tono del PSG lo escriben DOS cosas: las notas, que
+# salen de la tabla, y los efectos, que barren a mano. Una medida sobre un
+# tramo de juego mezcla las dos y no vale para validar la tabla; habria que
+# medir sobre un tramo de musica sola. INTENTADO Y FALLIDO: en el tramo del
+# final de la partida (t=3130-3190) el PSG no recibe NI UNA escritura, o sea
+# que ahi no suena nada. Queda pendiente encontrar un tramo con musica limpia.
