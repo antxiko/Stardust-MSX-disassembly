@@ -117,7 +117,6 @@ D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valore
 # trozos que quedaron a los lados: el trazador no llega a ellos, y la partida
 # tampoco paso por ahi. Se etiquetan conservador, como todo lo que no se sabe.
 # 0xC788 0xC794 tabla (12 B; racha 2.40, entropia 3.42, 11 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
-D 0xC864 0xC865 relleno o resto (1 B; 1 bytes)
 # 0xC880 0xC891 tabla (17 B; racha 2.12, entropia 3.97, 16 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 
 # --- LO QUE QUEDO SUELTO AL CORREGIR EL ARRANQUE -----------------------------
@@ -957,3 +956,46 @@ C 0xA528 El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acar
 # al 100,0 %.
 
 D 0xD48C 0xD675 489 bytes al final del bloque que NO son codigo, y estuvieron publicados como "la rutina mas caliente de la segunda parte, 139.323 muestras". Se desensambla a `nop / rst 38h / nop / rst 38h...`, no lo llama nadie, y muestreando el PC en 130 s de partida limpia -259.149 muestras en dos ventanas- NO CAE NI UNA AQUI. La medida vieja se hizo abriendo la ventana en t=1775 "cuando la carga termina", y la carga no habia terminado: a t=1775 el PC esta en 0xF87E/0xF88D/0xF887, dentro del cargador de cinta, con solo 45 direcciones distintas. QUE SON, dicho sin pasarse: datos de poca variedad -21 valores distintos, 199 de los 489 bytes son 0xFF, y el resto tienen pocos bits puestos-, que es la pinta de un dibujo con mascara, el idioma de esta conversion. No se afirma mas porque no se ha medido mas
+# --- LOS "OBJETOS" DE LA FASE ERAN LOS COMANDOS DEL SONIDO (2026-08-11) ------
+#
+# Diez entradas de este bloque figuraban como `obj_XXXX  comportamiento de
+# objeto, via jp (hl) de 0xC544`. No lo son. Son los MANEJADORES DE COMANDO del
+# interprete de sonido, y el `jp (hl)` de 0xC544 es su despachador de opcodes.
+#
+# Es la misma confusion que ya se corrigio con los "objetos de 46 bytes" -que
+# resultaron ser los tres estados de canal-, pero aplicada a las rutinas, donde
+# se quedo sin corregir.
+#
+# LA PRUEBA es la tabla de saltos de 0xCABE: sus quince punteros son EXACTAMENTE
+# las direcciones de esas entradas, y cada uno cae donde le toca respecto al
+# juego de naves (delta 0x1CEB o 0x1CEC, segun el manejador):
+#
+#     0x80 volumen      0xC703      0x88 ruido         0xC774
+#     0x81 tono/ruido   0xC721      0x89 efecto        0xC804
+#     0x82 BUCLE        0xC78C      0x8A banderas      0xC7A7
+#     0x83 duracion     0xC70C      0x8B FIN           0xC72C
+#     0x84 (sin arg)    0xC788      0x8C llama frase   0xC864
+#     0x85 tempo        0xC75A      0x8D VUELVE        0xC880
+#     0x86 tempo=1      0xC85B      0x8E canal         0xC891
+#     0x87 instrumento  0xC7BB
+#
+# Y DOS DE LAS QUINCE ESTABAN MAL POR UN BYTE. El manejador del 0x8C empieza en
+# 0xC864 y aqui figuraba 0xC865: por eso un breakpoint puesto en el no saltaba
+# NUNCA en las media hora del replay -los bp de ejecucion solo disparan en la
+# direccion donde EMPIEZA la instruccion-, y por eso el byte de 0xC864 estaba
+# declarado como "relleno o resto (1 B)". Un byte de relleno pegado justo antes
+# de una rutina es la firma de este error.
+#
+# QUE SE EJECUTA Y QUE NO, medido con un bp en cada uno sobre el replay entero
+# (1800 s; control de 0x0038 = 52.552 pasadas):
+#
+#     0xC788 (0x84)   554 veces        0xC85B (0x86)   701 veces
+#     0xC804 (0x89)     1 vez, t=3060,97
+#     0xC794          NI UNA VEZ
+#
+# 0xC794 no esta en la tabla de los quince y no lo referencia nadie. Cae dentro
+# de la zona del manejador del 0x84, asi que la lectura razonable -dicha como
+# suposicion, no como hecho- es que sea una rama de ese manejador que en esta
+# partida no se tomo nunca. No se retira: desensambla a Z80 perfectamente
+# sensato (`pop de / and a / jr z / ld c,(ix+000h)...`), al contrario que las
+# dos semillas que si se han retirado hoy.

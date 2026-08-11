@@ -46,8 +46,8 @@ TXT = {
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
         cifras=[("100%", "del binario con dueño"), ("105", "rutinas identificadas"),
-                ("7+1", "zonas de naves, y una a pie"), ("20.051", "bytes de código"),
-                ("73.810", "bytes de datos"), ("0", "bytes sin identificar")],
+                ("7+1", "zonas de naves, y una a pie"), ("20.052", "bytes de código"),
+                ("73.809", "bytes de datos"), ("0", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -88,8 +88,8 @@ TXT = {
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
         cifras=[("100%", "of the binary owned"), ("105", "routines identified"),
-                ("7+1", "ship zones, plus one on foot"), ("20,051", "bytes of code"),
-                ("73,810", "bytes of data"), ("0", "bytes unidentified")],
+                ("7+1", "ship zones, plus one on foot"), ("20,052", "bytes of code"),
+                ("73,809", "bytes of data"), ("0", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "

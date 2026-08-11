@@ -59,16 +59,16 @@
 #
 # El otro salto indirecto, el de 0x984D, NO llego a dispararse en 300 segundos:
 # queda pendiente y hay que decirlo, no darlo por cubierto.
-0xC703  obj_C703    comportamiento de objeto, via jp (hl) de 0xC544
-0xC70C  obj_C70C    comportamiento de objeto, via jp (hl) de 0xC544
-0xC721  obj_C721    comportamiento de objeto, via jp (hl) de 0xC544
-0xC72C  obj_C72C    comportamiento de objeto, via jp (hl) de 0xC544
-0xC75A  obj_C75A    comportamiento de objeto, via jp (hl) de 0xC544
-0xC774  obj_C774    comportamiento de objeto, via jp (hl) de 0xC544
-0xC7A7  obj_C7A7    comportamiento de objeto, via jp (hl) de 0xC544
-0xC7BB  obj_C7BB    comportamiento de objeto, via jp (hl) de 0xC544
-0xC85B  obj_C85B    comportamiento de objeto, via jp (hl) de 0xC544
-0xC891  obj_C891    comportamiento de objeto, via jp (hl) de 0xC544
+0xC703  snd_volumen      manejador del comando 0x80 volumen: el argumento va al estado del canal, via jp (hl) de 0xC544
+0xC70C  snd_duracion     manejador del comando 0x83 duracion: fija la duracion de la nota como n por el tempo, via jp (hl) de 0xC544
+0xC721  snd_tono_ruido   manejador del comando 0x81 tono/ruido: `and 009h`, que son los dos bits del registro 7 del PSG, via jp (hl) de 0xC544
+0xC72C  snd_fin          manejador del comando 0x8B FIN: calla el canal, via jp (hl) de 0xC544
+0xC75A  snd_tempo        manejador del comando 0x85 tempo, via jp (hl) de 0xC544
+0xC774  snd_ruido        manejador del comando 0x88 ruido: `and 01fh`, los cinco bits del periodo de ruido del PSG, via jp (hl) de 0xC544
+0xC7A7  snd_banderas     manejador del comando 0x8A banderas, via jp (hl) de 0xC544
+0xC7BB  snd_instrumento  manejador del comando 0x87 instrumento, via jp (hl) de 0xC544
+0xC85B  snd_tempo1       manejador del comando 0x86: pone el tempo a 1, via jp (hl) de 0xC544
+0xC891  snd_canal        manejador del comando 0x8E: escribe un byte en el estado del canal (la transposicion), via jp (hl) de 0xC544
 
 # Y siete tramos que la partida ejecuto y a los que el trazado no llega.
 0xAA51  ejec_AA51   ejecutado en partida, sin llamador directo localizado
@@ -102,7 +102,7 @@
 # Que una rutina asi estuviera clasificada como tabla es lo que pasa cuando se
 # etiqueta midiendo entropia en vez de mirando si se ejecuta.
 0xC794  ejec_C794    ejecutado en partida (86 muestras)
-0xC865  ejec_C865    ejecutado en partida (27928 muestras)
+0xC864  snd_llama_frase  manejador del comando 0x8C: llama a la frase n, guardando la vuelta en la pila del canal, via jp (hl) de 0xC544
 
 # --- RUTINAS QUE ESTABAN DECLARADAS COMO DATOS ------------------------------
 #
@@ -129,7 +129,7 @@
 # 0xC804 son 58 bytes que acaban en `jp 0c536h`. La raya de arriba la pone el
 # `jp L_C536` de 0xC801, que ocupa hasta 0xC803: la instruccion siguiente
 # empieza exactamente en 0xC804.
-0xC804  dato_a_codigo_C804   58 B declarados como datos que son codigo
+0xC804  snd_efecto       manejador del comando 0x89 efecto: los barridos de frecuencia, que se hacen a mano, via jp (hl) de 0xC544
 # Las otras tres del grupo de 0xB2A6. La primera la traza el flujo normal y se
 # para justo en 0xB30A, que es lo que confirma el alineado de la siguiente; las
 # demas se localizan por la misma firma (`ld h,0 / ld l,a / add hl,hl` x6 y
@@ -164,14 +164,14 @@
 # midiendo en vez de mirando si se ejecuta.
 0xA6EE  ejec_A6EE   ejecutado en la partida (67 muestras); figuraba como tabla
 0xAB41  ejec_AB41   ejecutado en la partida (6082 muestras); figuraba como tabla
-0xC788  ejec_C788   ejecutado en la partida (8 muestras); figuraba como tabla
-0xC880  ejec_C880   ejecutado en la partida (12 muestras); figuraba como tabla
+0xC788  snd_sin_arg      manejador del comando 0x84: no consume argumento, via jp (hl) de 0xC544
+0xC880  snd_vuelve       manejador del comando 0x8D VUELVE: desapila y sigue donde estaba, via jp (hl) de 0xC544
 
 # Y tres tramos mas que la partida ejecuto y a los que el trazador no llega ni
 # siquiera desde el arranque bueno. Se entra en ellos por tabla o por puntero.
 0xAA58  ejec_AA58   ejecutado en la partida (14 direcciones distintas)
 0xAB47  ejec_AB47   ejecutado en la partida (7 direcciones distintas)
-0xC78C  ejec_C78C   ejecutado en la partida (3 direcciones distintas)
+0xC78C  snd_bucle        manejador del comando 0x82 BUCLE: recarga el puntero con el principio del guion; NO es un terminador, via jp (hl) de 0xC544
 
 # --- EL INTERPRETE DE SONIDO DE LA PARTE DE A PIE ----------------------------
 # Es el MISMO que el de la parte de naves, con la misma rutina y el mismo
