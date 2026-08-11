@@ -288,7 +288,6 @@ D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
 # Lo mismo que arriba: al comprobar que varios rangos se ejecutaban se
 # retiraron y entraron como puntos de entrada; estos son los trozos de los
 # lados, a los que ni el trazador llega ni la partida paso.
-D 0xC190 0xC193 relleno o resto (3 B; 3 bytes)
 D 0xC5BB 0xC5C1 relleno o resto (6 B; 6 bytes)
 D 0xD3AD 0xD3CF tabla (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valores para ser un dibujo)
 D 0xE03D 0xE045 tabla (8 B; racha 1.94, entropia 3.00, 8 valores: pocos valores para ser un dibujo)

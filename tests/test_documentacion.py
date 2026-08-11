@@ -858,3 +858,52 @@ class TestQueNingunDatoSeLeaComoCodigo(unittest.TestCase):
         dentro = sum(min(b, 0xD068) - max(a, 0xCB04)
                      for a, b in cod if min(b, 0xD068) > max(a, 0xCB04))
         self.assertEqual(dentro, 0)
+
+
+class TestLaFirmaDelCorrimiento(unittest.TestCase):
+    """Un RELLENO corto pegado justo delante de un punto de entrada.
+
+    Es la firma de un punto de entrada declarado unos bytes mas alla del
+    principio real de la rutina. Cuando pasa, los bytes de delante se quedan
+    huerfanos y alguien los declara como "relleno o resto" para que cuadre el
+    presupuesto, y ahi queda el rastro. Ha cazado dos errores reales:
+
+      0xC865 -> 0xC864  (1 B)  el manejador del comando 0x8C del sonido; su
+                               breakpoint no saltaba NUNCA porque los bp solo
+                               disparan donde EMPIEZA la instruccion
+      0xC193 -> 0xC190  (3 B)  un estado encadenado de entidad, que 0xD201
+                               instala en (ix+003h/004h)
+
+    Solo mira zonas cortas y descritas como relleno: una zona corta con
+    explicacion de verdad -los cuatro colores de la fase, pegados al epilogo de
+    la interrupcion- es legitima y no debe saltar.
+    """
+
+    @sin_juego
+    def test_ningun_relleno_corto_pegado_a_un_punto_de_entrada(self):
+        sospechosos = []
+        for mod in MODULOS:
+            fe = os.path.join(SRC, mod + ".entries")
+            fn = os.path.join(SRC, mod + ".notes")
+            if not (os.path.exists(fe) and os.path.exists(fn)):
+                continue
+            entradas = set()
+            for linea in open(fe, encoding="utf-8"):
+                m = re.match(r"\s*0x([0-9A-Fa-f]{4})\s", linea)
+                if m:
+                    entradas.add(int(m.group(1), 16))
+            for linea in open(fn, encoding="utf-8"):
+                m = re.match(r"D 0x([0-9A-Fa-f]{4}) 0x([0-9A-Fa-f]{4})\s*(.*)",
+                             linea)
+                if not m:
+                    continue
+                ini, fin, desc = (int(m.group(1), 16), int(m.group(2), 16),
+                                  m.group(3).lower())
+                if fin - ini > 4:
+                    continue
+                if "relleno" not in desc and "resto" not in desc:
+                    continue
+                if fin in entradas:
+                    sospechosos.append("%s 0x%04X-0x%04X (%d B) pegado a 0x%04X"
+                                       % (mod, ini, fin - 1, fin - ini, fin))
+        self.assertEqual(sospechosos, [], "\n".join(sospechosos))

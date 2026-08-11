@@ -224,7 +224,13 @@
 #
 # El grupo grande de 0xDFD7 en adelante es el menu y la redefinicion de teclas;
 # el de 0xD394 y 0xD9E4, la entrada de record y su scroll.
-0xC193  ejec_C193    ejecutado a mano (3 muestras)
+0xC190  estado_C190  estado encadenado de entidad: lo instala 0xD201 en
+#                    (ix+003h/004h), que es donde cada entidad lleva la
+#                    rutina que la gobierna. Escribe el byte de (ix+002h)
+#                    en la direccion de (ix+005h/006h), lo incrementa y lo
+#                    guarda; al llegar a 0x2C se va por 0xC678.
+#                    ESTUVO en 0xC193, TRES bytes mas alla, y por eso los
+#                    tres de delante figuraban como "relleno o resto".
 0xC503  ejec_C503    ejecutado a mano (29 muestras)
 0xC5B5  ejec_C5B5    ejecutado a mano (48 muestras)
 0xCE73  ejec_CE73    ejecutado a mano (6 muestras)
