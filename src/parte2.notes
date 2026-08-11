@@ -100,12 +100,11 @@ D 0xC459 0xC46A variables (17 B): eran 5 B de "relleno o resto" mas 12 que el
 D 0xC46A 0xC46E los CUATRO COLORES de la fase (E1/B1/A1/71, tinta sobre negro): el arranque del nivel elige uno AL AZAR (call azar / and 3 en 0xA48F, HL = 0xC46A + n en 0xA494) y L_D31C lo aplica. Por eso la fase de a pie no siempre se ve del mismo color. (Estuvo como "sin clasificar: no se referencian desde ningun sitio", y la referencia existia: el ld de,0c46ah de 0xA494)
 # 0xC804-0xC83D ESTUVO AQUI como 58 B "sin clasificar" y es CODIGO. Se retira y
 # pasa a src/parte2.entries.
-D 0xC8F7 0xCAA0 graficos (425 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
-D 0xCB0F 0xCB14 relleno o resto (5 B; 5 bytes)
-D 0xCB26 0xCB27 relleno o resto (1 B; 1 bytes)
-D 0xCBDB 0xCBF0 tabla (21 B; racha 2.43, entropia 3.16, 11 valores: pocos valores para ser un dibujo)
-D 0xCC99 0xCCAB tabla (18 B; racha 3.43, entropia 3.28, 11 valores: pocos valores para ser un dibujo)
-D 0xCDC0 0xCDD0 tabla (16 B; racha 2.37, entropia 2.27, 7 valores: pocos valores para ser un dibujo)
+D 0xC8F7 0xC9FE graficos (263 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
+D 0xC9FE 0xCABE la TABLA DE NOTAS del interprete de sonido: 96 periodos de 16 bits, ocho octavas de do1 a si8. Es BYTE A BYTE la misma que la del juego de naves (0xE6E3), los 192 bytes. Estuvo dentro del rango declarado como graficos, que llegaba hasta 0xCAA0 y se pasaba
+D 0xCABE 0xCADC la tabla de saltos de los QUINCE opcodes del interprete: 15 punteros de 2 B. Son los del juego de naves (0xE7A3) reubicados unos 0x1CEB, con una holgura de un byte segun el opcode porque el codigo no es copia exacta
+D 0xCADC 0xCB04 la tabla de las VEINTE frases de musica: 20 punteros de 2 B. Los veinte son EXACTAMENTE los del juego de naves (0xE7C1) menos 0x1CE5, sin una sola excepcion
+D 0xCB04 0xD068 LA MUSICA DE LA FASE DE A PIE, 1380 B escritos en el lenguaje del interprete de sonido. El trazador se los tragaba como CODIGO -1318 de 1380, el 95,5 %- por una semilla mala en 0xCC3E, que cae dentro de un guion. Es el mismo error que se corrigio en el juego de naves y que aqui no se habia aplicado. PRUEBA de que es musica: recorriendo la zona con el lector del lenguaje salen 38 bloques, CERO bytes fuera del lenguaje, y el recorrido cierra clavado en 0xD068, que es donde empiezan los estados de canal. Si el numero de argumentos de un solo comando estuviera mal, no cerraria. Aqui habia cinco trozos declarados sueltos como "tabla" y "relleno" (0xCB0F, 0xCB26, 0xCBDB, 0xCC99, 0xCDC0) que eran cachos de esta misma musica
 D 0xD068 0xD117 variables a cero (175 B), y los primeros 138 tienen nombre: son los TRES ESTADOS DE CANAL del interprete de sonido, de 46 B cada uno (0xD068, 0xD096, 0xD0C4), que es lo que resolvio el enigma de los "objetos de 46 bytes". Los 37 restantes (0xD0F2-0xD117) son las variables globales del interprete y las que el listado lee con ld a,(nn). Confirmado ademas desde fuera: al volcar la memoria justo tras la multicarga, los bytes que ya no coinciden con la cinta se agolpan aqui. El trazador contaba todo esto como codigo
 #   porque 0x00 desensambla a nop. El listado las lee con ld a,(nn) desde once
 #   sitios (0xD0FC desde 0xC69F/0xC7B0/0xC805, 0xD10C desde tres mas...).
@@ -120,7 +119,6 @@ D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valore
 # 0xC788 0xC794 tabla (12 B; racha 2.40, entropia 3.42, 11 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 D 0xC864 0xC865 relleno o resto (1 B; 1 bytes)
 # 0xC880 0xC891 tabla (17 B; racha 2.12, entropia 3.97, 16 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
-D 0xCC3D 0xCC3E relleno o resto (1 B; 1 bytes)
 
 # --- LO QUE QUEDO SUELTO AL CORREGIR EL ARRANQUE -----------------------------
 #

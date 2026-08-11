@@ -24,6 +24,7 @@ L_F849:	equ 0x0f849
 ; ----------------------------------------------------------------------
 lcb9dh:	equ 0x0cb9d
 lcc32h:	equ 0x0cc32
+ld959h:	equ 0x0d959
 lef00h:	equ 0x0ef00
 
 ; ----------------------------------------------------------------------
@@ -2478,7 +2479,6 @@ L_C193:
 	jp nz,L_C678		;c1a1
 	ld e,a			;c1a4
 	call azar		;c1a5
-L_C1A8:
 	and 001h		;c1a8
 	add a,e			;c1aa
 	ld (ix+002h),a		;c1ab
@@ -2987,7 +2987,6 @@ L_C503:
 	adc a,a			;c508
 	adc hl,hl		;c509
 	adc a,a			;c50b
-L_C50C:
 	adc hl,hl		;c50c
 	adc a,a			;c50e
 	adc hl,hl		;c50f
@@ -4869,7 +4868,6 @@ L_D328:
 	ld e,a			;d32b
 	ld a,(ix+001h)		;d32c
 	sub e			;d32f
-L_D330:
 	ld l,a			;d330
 	ld h,(ix+000h)		;d331
 	sla h			;d334
@@ -5400,7 +5398,6 @@ L_D6D6:
 	ret nz			;d6de
 	ld l,(ix+005h)		;d6df
 	ld h,(ix+006h)		;d6e2
-L_D6E5:
 	ld a,007h		;d6e5
 	xor (hl)		;d6e7
 	ld (hl),a		;d6e8
@@ -5725,7 +5722,7 @@ L_D933:
 	ld (ix+004h),h		;d94c
 	ret			;d94f
 L_D950:
-	ld hl,L_D959		;d950
+	ld hl,ld959h		;d950
 	ld (ix+003h),l		;d953
 	ld (ix+004h),h		;d956
 L_D959:
@@ -5796,7 +5793,6 @@ L_D9DB:
 	cp 004h			;d9de
 	ret nc			;d9e0
 	ld h,(ix+000h)		;d9e1
-L_D9E4:
 	sla h			;d9e4
 	ld a,(0c185h)		;d9e6
 	ld l,a			;d9e9
@@ -5893,7 +5889,7 @@ L_DA72:
 	ret nz			;da85
 	ld hl,L_DA9D		;da86
 	ld (0c064h),hl		;da89
-	ld hl,L_D959		;da8c
+	ld hl,ld959h		;da8c
 	ld (0d0ddh),hl		;da8f
 	ld (0cb04h),a		;da92
 	ld a,01fh		;da95
@@ -6115,13 +6111,11 @@ L_DFB1:
 	jp L_DFAB		;dfd1
 L_DFD4:
 	call L_D1F5		;dfd4
-L_DFD7:
 	call azar		;dfd7
 	and 01fh		;dfda
 	ret nz			;dfdc
 	ld hl,L_DFE7		;dfdd
 	ld (ix+003h),l		;dfe0
-L_DFE3:
 	ld (ix+004h),h		;dfe3
 	ret			;dfe6
 L_DFE7:
@@ -6140,14 +6134,12 @@ L_DFE7:
 L_E002:
 	call L_D1F5		;e002
 	call azar		;e005
-L_E008:
 	and 01fh		;e008
 	ret nz			;e00a
 	ld l,(ix+001h)		;e00b
 	ld h,(ix+000h)		;e00e
 	sla h			;e011
 	ld bc,00c0ch		;e013
-L_E016:
 	add hl,bc		;e016
 	ld b,h			;e017
 	ld c,l			;e018
@@ -6162,7 +6154,6 @@ L_E016:
 L_E02A:
 	call L_D1F5		;e02a
 	ld a,(ix+000h)		;e02d
-L_E030:
 	cp 010h			;e030
 	ret c			;e032
 	ld hl,0e03dh		;e033
@@ -6196,7 +6187,6 @@ L_E045:
 	ret			;e05d
 L_E05E:
 	call L_D1F5		;e05e
-L_E061:
 	call azar		;e061
 	and 01fh		;e064
 	ret nz			;e066
@@ -6207,7 +6197,6 @@ L_E061:
 	add hl,bc		;e072
 	ld b,h			;e073
 	ld c,l			;e074
-L_E075:
 	xor a			;e075
 	ex af,af'		;e076
 	call L_C8AD		;e077
@@ -6223,7 +6212,6 @@ L_E075:
 	ret			;e090
 L_E091:
 	call L_D9DB		;e091
-L_E094:
 	ld a,(ix+000h)		;e094
 	cp 028h			;e097
 	ret nc			;e099
@@ -6256,13 +6244,11 @@ L_E0C4:
 	ret			;e0ce
 L_E0CF:
 	call L_D9DB		;e0cf
-L_E0D2:
 	inc (ix+002h)		;e0d2
 	ld a,001h		;e0d5
 	ld de,0ea98h		;e0d7
 	call L_E18F		;e0da
 	ld l,(ix+005h)		;e0dd
-L_E0E0:
 	ld h,(ix+006h)		;e0e0
 	inc (hl)		;e0e3
 	ld a,(hl)		;e0e4
@@ -7405,7 +7391,6 @@ L_EFF0:
 	inc a			;effc
 L_EFFD:
 	ld (ix+004h),a		;effd
-L_F000:
 	ld (0f016h),hl		;f000
 	ld (0f019h),de		;f003
 	ld d,c			;f007
@@ -7483,7 +7468,6 @@ L_F080:
 	push de			;f082
 	inc de			;f083
 	ld (hl),000h		;f084
-L_F086:
 	ldi			;f086
 	ldi			;f088
 	ldi			;f08a
@@ -7525,7 +7509,6 @@ L_F0C2:
 	push hl			;f0ca
 L_F0CB:
 	ld a,(de)		;f0cb
-L_F0CC:
 	out (098h),a		;f0cc
 	ld a,e			;f0ce
 	add a,010h		;f0cf
@@ -7549,7 +7532,6 @@ vram_rellena:		; Escribe BC veces el valor de A en VRAM desde HL
 	call vram_pon_dir		;f0e8
 L_F0EB:
 	ex af,af'		;f0eb
-L_F0EC:
 	out (098h),a		;f0ec
 	ex af,af'		;f0ee
 	dec bc			;f0ef
@@ -7563,7 +7545,6 @@ vram_escribe:		; Copia BC bytes de RAM (DE) a VRAM (HL) por el puerto 0x98
 	call vram_pon_dir		;f0f7
 L_F0FA:
 	ld a,(de)		;f0fa
-L_F0FB:
 	out (098h),a		;f0fb
 	inc de			;f0fd
 	dec bc			;f0fe
@@ -7722,7 +7703,6 @@ L_F33E:
 	ld c,008h		;f348
 L_F34A:
 	ld a,011h		;f34a
-L_F34C:
 	out (098h),a		;f34c
 	ei			;f34e
 	dec c			;f34f
@@ -7888,7 +7868,6 @@ hud_imprime:		; El rotulador del HUD: IX = cadena de indices de glifo terminada 
 	ld b,008h		;f430
 L_F432:
 	ld a,(de)		;f432
-L_F433:
 	out (098h),a		;f433
 	inc de			;f435
 	and a			;f436
@@ -8053,7 +8032,6 @@ L_F528:
 	push af			;f539
 L_F53A:
 	xor a			;f53a
-L_F53B:
 	out (098h),a		;f53b
 	and a			;f53d
 	and a			;f53e
@@ -8110,7 +8088,6 @@ L_F58C:
 	call vram_pon_dir		;f58e
 L_F591:
 	ld a,07fh		;f591
-L_F593:
 	out (098h),a		;f593
 	and a			;f595
 	and a			;f596
@@ -8138,7 +8115,6 @@ L_F5A9:
 	ld b,008h		;f5b9
 L_F5BB:
 	ld a,(de)		;f5bb
-L_F5BC:
 	out (098h),a		;f5bc
 	inc de			;f5be
 	and a			;f5bf
@@ -8152,7 +8128,6 @@ L_F5C8:
 	ld b,007h		;f5cb
 L_F5CD:
 	ld a,07fh		;f5cd
-L_F5CF:
 	out (098h),a		;f5cf
 	and a			;f5d1
 	and a			;f5d2
@@ -8211,7 +8186,6 @@ L_F60F:
 	ld b,010h		;f613
 L_F615:
 	ld a,(de)		;f615
-L_F616:
 	out (098h),a		;f616
 	inc de			;f618
 	inc de			;f619
@@ -8442,7 +8416,6 @@ L_F77E:
 	ld a,0ffh		;f789
 	scf			;f78b
 	call L_F7F6		;f78c
-L_F78F:
 	jr nc,L_F79D		;f78f
 	dec ix			;f791
 	ld b,(ix+000h)		;f793

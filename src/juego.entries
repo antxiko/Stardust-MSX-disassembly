@@ -66,7 +66,6 @@
 # O sea que a donde se llama no esta en el binario, esta en los registros de
 # quien llame a 0xF000. Desensamblado en frio parece un `call 0` que reiniciaria
 # la maquina.
-0xF000  despachador  se parchea sus propios CALL con las rutinas que le pasan
 
 # --- Rutinas de comportamiento de los objetos (openMSX, tools/omsx_juega.tcl) --
 #
@@ -87,7 +86,6 @@
 0xD8F4  obj_D8F4    comportamiento de objeto, via jp (hl) de 0xD6B8
 0xD8F8  obj_D8F8    comportamiento de objeto, via jp (hl) de 0xD6B8
 0xD933  obj_D933    comportamiento de objeto, via jp (hl) de 0xD6B8
-0xD959  obj_D959    comportamiento de objeto, via jp (hl) de 0xD6B8
 0xD95A  obj_D95A    comportamiento de objeto, via jp (hl) de 0xD6B8
 
 # Dos tramos mas que la partida demostro que se ejecutan y a los que el trazado
@@ -109,7 +107,6 @@
 # 0xF088, que caen a media tira.
 0xC4CC  tira_24bits  entrada por la mitad de una tira de adc hl,hl / adc a,a
 0xC596  tira_16bits  entrada por la mitad de una tira de adc hl,hl
-0xF086  tira_ldi     entrada por la mitad de una tira de ldi
 
 # --- La rutina de carga PROPIA del juego (la multicarga) ---------------------
 #
@@ -129,7 +126,6 @@
 0xF7F6  carga_cinta   rutina de carga propia: enciende el motor y lee el bit
 0xF849  carga_byte    donde deposita lo leido (visto escribiendo en 0x61D0)
 0xF89F  carga_vuelta  la direccion de retorno que empuja 0xF7F6
-0xF78F  carga_pide    quien pide la carga (estaba en la pila)
 
 # --- Las rutinas que escriben en VRAM (tools/omsx_vram.tcl) -------------------
 #
@@ -152,21 +148,7 @@
 # el scroll.
 0xF3F1  vuelca_pantalla  el volcado principal: 3,2 millones de escrituras a VRAM
 0xF3FF  vuelca_columnas  su nucleo, con el paso de 24 bytes
-0xD488  vram_D488     escribe en VRAM (704 veces)
 0xEFBB  vram_EFBB     escribe en VRAM (1280 veces)
-0xF0CC  vram_F0CC     escribe en VRAM (24208 veces)
-0xF0EC  vram_F0EC     escribe en VRAM (26880 veces)
-0xF0FB  vram_F0FB     escribe en VRAM (14848 veces)
-0xF313  vram_F313     escribe en VRAM (480 veces)
-0xF34C  vram_F34C     escribe en VRAM (480 veces)
-0xF3B4  vram_F3B4     escribe en VRAM (17888 veces)
-0xF433  vram_F433     escribe en VRAM (512 veces)
-0xF53B  vram_F53B     escribe en VRAM (320 veces)
-0xF593  vram_F593     escribe en VRAM (182 veces)
-0xF5BC  vram_F5BC     escribe en VRAM (1400 veces)
-0xF5CF  vram_F5CF     escribe en VRAM (1316 veces)
-0xF616  vram_F616     escribe en VRAM (448 veces)
-0xF650  vram_F650     escribe en VRAM (42240 veces)
 
 # --- POR QUE AQUI NO HAY NADA DEL COTEJO CON EL SPECTRUM ---------------------
 #
@@ -226,7 +208,6 @@
 # trazador ya alcanzaba 1444. Estas son las 45 que faltaban.
 0xC1AF  lee_mando_demo  saca un byte de la partida grabada de la demo y avanza el puntero
 0xC4FC  ejec_C4FC    ejecutado en partida (1140 muestras)
-0xC50C  ejec_C50C    ejecutado en partida (3977 muestras)
 0xC5C1  ejec_C5C1    ejecutado en partida (71 muestras)
 0xF07B  ejec_F07B    ejecutado en partida (4 muestras)
 
@@ -244,27 +225,11 @@
 # El grupo grande de 0xDFD7 en adelante es el menu y la redefinicion de teclas;
 # el de 0xD394 y 0xD9E4, la entrada de record y su scroll.
 0xC193  ejec_C193    ejecutado a mano (3 muestras)
-0xC1A8  ejec_C1A8    ejecutado a mano (2 muestras)
 0xC503  ejec_C503    ejecutado a mano (29 muestras)
 0xC5B5  ejec_C5B5    ejecutado a mano (48 muestras)
 0xCE73  ejec_CE73    ejecutado a mano (6 muestras)
-0xD330  ejec_D330    ejecutado a mano (2 muestras)
-0xD394  ejec_D394    ejecutado a mano (37 muestras)
-0xD6D6  ejec_D6D6    ejecutado a mano (4 muestras)
-0xD6E5  ejec_D6E5    ejecutado a mano (2 muestras)
 0xD9DB  ejec_D9DB    ejecutado a mano (2 muestras)
-0xD9E4  ejec_D9E4    ejecutado a mano (11 muestras)
-0xDFD7  ejec_DFD7    ejecutado a mano (3 muestras)
-0xDFE3  ejec_DFE3    ejecutado a mano (3 muestras)
-0xE008  ejec_E008    ejecutado a mano (2 muestras)
-0xE016  ejec_E016    ejecutado a mano (3 muestras)
-0xE030  ejec_E030    ejecutado a mano (1 muestra)
 0xE045  ejec_E045    ejecutado a mano (1 muestra)
-0xE061  ejec_E061    ejecutado a mano (5 muestras)
-0xE075  ejec_E075    ejecutado a mano (1 muestra)
-0xE094  ejec_E094    ejecutado a mano (8 muestras)
-0xE0D2  ejec_E0D2    ejecutado a mano (2 muestras)
-0xE0E0  ejec_E0E0    ejecutado a mano (3 muestras)
 
 # --- RUTINAS QUE ESTABAN DECLARADAS COMO DATOS ------------------------------
 #

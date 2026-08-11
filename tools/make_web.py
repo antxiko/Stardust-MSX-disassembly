@@ -45,9 +45,9 @@ TXT = {
         otro=("../", "In English"),
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
-        cifras=[("100%", "del binario con dueño"), ("106", "rutinas identificadas"),
-                ("7+1", "zonas de naves, y una a pie"), ("21.958", "bytes de código"),
-                ("71.903", "bytes de datos"), ("0", "bytes sin identificar")],
+        cifras=[("100%", "del binario con dueño"), ("107", "rutinas identificadas"),
+                ("7+1", "zonas de naves, y una a pie"), ("20.540", "bytes de código"),
+                ("73.321", "bytes de datos"), ("0", "bytes sin identificar")],
         nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
                  "datos del propio binario, con la geometría que usa el juego. "
                  "Por eso valen de comprobación: si el reparto del bloque "
@@ -87,9 +87,9 @@ TXT = {
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
-        cifras=[("100%", "of the binary owned"), ("106", "routines identified"),
-                ("7+1", "ship zones, plus one on foot"), ("21,958", "bytes of code"),
-                ("71,903", "bytes of data"), ("0", "bytes unidentified")],
+        cifras=[("100%", "of the binary owned"), ("107", "routines identified"),
+                ("7+1", "ship zones, plus one on foot"), ("20,540", "bytes of code"),
+                ("73,321", "bytes of data"), ("0", "bytes unidentified")],
         nota_scr="These aren't screen captures. They are drawn from the binary's "
                  "own data, using the geometry the game itself uses. That is what "
                  "makes them a check: if the block's layout were wrong, noise "
@@ -182,8 +182,11 @@ HALLAZGOS = {
          "1444</b>: la limpieza era correcta. Y las que faltaban dejaron de ser "
          "una corazonada para pasar a ser código con su cuenta de muestras al "
          "lado. La cobertura real del bloque es del <b>23,0 %</b>, y la de la "
-         "segunda parte subió al <b>35,0 %</b> al aparecer ahí sus dos rutinas "
-         "más trabajadoras, que estaban clasificadas como tablas de datos.</p>"),
+         "segunda parte es del <b>30,2 %</b>. Esa segunda cifra llegó a "
+         "publicarse como 35,0 %, y era mentira por tercera vez: una semilla "
+         "puesta en 0xCC3E caía dentro de un guion de música y hacía "
+         "desensamblar la banda sonora de la fase —1.318 de sus 1.380 "
+         "bytes— como si fuera código.</p>"),
     ],
     "en": [
         ("This isn't an MSX tape",
@@ -256,9 +259,11 @@ HALLAZGOS = {
          "the game executed the tracer already reached 1444</b>: the cleanup "
          "was right. And the ones it missed stopped being a hunch and became "
          "code with a sample count beside it. The block's real coverage is "
-         "<b>23.0%</b>, and the second part's rose to <b>35.0%</b> when its two "
-         "hardest-working routines turned up there, both of which had been "
-         "classified as data tables.</p>"),
+         "<b>23.0%</b>, and the second part's is <b>30.2%</b>. That second figure "
+         "was once published as 35.0%, and it was a lie for the third time: a "
+         "seed placed at 0xCC3E landed inside a music script, and had the "
+         "stage's soundtrack —1,318 of its 1,380 bytes— disassembled as if it "
+         "were code.</p>"),
     ],
 }
 

@@ -183,6 +183,15 @@ Consecuencia en las cifras: la cobertura de la fase a pie baja del 51,7 % al
 35,0 %, porque desaparecen 3618 bytes que se contaban como código sin serlo. La
 cifra empeora y el trabajo mejora.
 
+Y volvió a pasar. Ese 35,0 % **también era mentira**, y por lo mismo: una
+semilla puesta en 0xCC3E caía dentro de un guion de música, y con ella el
+trazador desensambló **1.318 de los 1.380 bytes de la banda sonora de la fase**
+como si fueran instrucciones. Quitándola, la cobertura real es del **30,2 %**.
+Es el mismo error una tercera vez, y lo que lo caza no es mirar el listado sino
+tener una segunda vía para leer esos bytes: recorridos con el lenguaje del
+intérprete de sonido salen 38 bloques, cero bytes fuera del lenguaje, y el
+recorrido cierra clavado donde empiezan los estados de canal.
+
 ### Y 367 bytes más que se contaban como código y no lo son
 
 Buscando código automodificable apareció el error contrario. **Tres bloques de
@@ -296,7 +305,7 @@ El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
     juego de naves    23,0 %
-    parte de a pie    35,0 %
+    parte de a pie    30,2 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
 el flujo**: rutinas a las que solo se entra por saltos calculados, por tablas o

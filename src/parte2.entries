@@ -75,8 +75,6 @@
 0xAA88  ejec_AA88   ejecutado en partida, sin llamador directo localizado
 0xAB1C  ejec_AB1C   ejecutado en partida, sin llamador directo localizado
 0xB268  ejec_B268   ejecutado en partida, sin llamador directo localizado
-0xC712  ejec_C712   ejecutado en partida, sin llamador directo localizado
-0xC7B7  ejec_C7B7   ejecutado en partida, sin llamador directo localizado
 0xC8BB  ejec_C8BB   ejecutado en partida, sin llamador directo localizado
 
 # Las tiras DESENROLLADAS del dibujado de sprites por software, en las que se
@@ -105,10 +103,8 @@
 # etiqueta midiendo entropia en vez de mirando si se ejecuta.
 0xC794  ejec_C794    ejecutado en partida (86 muestras)
 0xC865  ejec_C865    ejecutado en partida (27928 muestras)
-0xCC3E  ejec_CC3E    ejecutado en partida (10 muestras)
 0xD48C  ejec_D48C    ejecutado en partida (139323 muestras): la rutina mas caliente
 0xD525  ejec_D525    ejecutado en partida (133 muestras)
-0xD57F  ejec_D57F    ejecutado en partida (40 muestras)
 
 # --- RUTINAS QUE ESTABAN DECLARADAS COMO DATOS ------------------------------
 #

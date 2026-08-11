@@ -14,25 +14,6 @@
 ; (destinos fuera del binario o dentro de una instruccion).
 ; ----------------------------------------------------------------------
 L_C794:	equ 0x0c794
-L_CAB8:	equ 0x0cab8
-L_CAEE:	equ 0x0caee
-L_CB1E:	equ 0x0cb1e
-L_CB2A:	equ 0x0cb2a
-L_CB6F:	equ 0x0cb6f
-L_CB7A:	equ 0x0cb7a
-L_CB9F:	equ 0x0cb9f
-L_CBB5:	equ 0x0cbb5
-L_CBCD:	equ 0x0cbcd
-L_CCCE:	equ 0x0ccce
-L_CD06:	equ 0x0cd06
-L_CD41:	equ 0x0cd41
-L_CD46:	equ 0x0cd46
-L_CD4C:	equ 0x0cd4c
-L_CE0B:	equ 0x0ce0b
-L_CE0F:	equ 0x0ce0f
-L_CF1C:	equ 0x0cf1c
-L_CF26:	equ 0x0cf26
-L_CF2A:	equ 0x0cf2a
 L_D491:	equ 0x0d491
 L_D4A1:	equ 0x0d4a1
 L_D525:	equ 0x0d525
@@ -5460,7 +5441,6 @@ L_C70C:
 	inc bc			;c70c
 	ld a,(bc)		;c70d
 	ld de,(0d10bh)		;c70e
-L_C712:
 	ld d,000h		;c712
 	call L_C8A6		;c714
 	ld (ix+006h),l		;c717
@@ -5551,7 +5531,6 @@ L_C7A7:
 	ld a,(0d0fch)		;c7b0
 	or e			;c7b3
 	ld (0d0fch),a		;c7b4
-L_C7B7:
 	inc bc			;c7b7
 	jp L_C536		;c7b8
 L_C7BB:
@@ -5759,8 +5738,18 @@ L_C8E9:
 	ret			;c8f6
 
 ; ----------------------------------------------------------------------
-; DATOS graficos: (425 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
-;   0xc8f7..0xcaa0  (425 bytes)
+; DATOS graficos: (263 B; racha 5.10, entropia 3.96, 93 valores: rachas mas largas que el azar)
+;   0xc8f7..0xc9fe  (263 bytes)
+; DATOS la: TABLA DE NOTAS del interprete de sonido: 96 periodos de 16 bits, ocho octavas de do1 a si8. Es BYTE A BYTE la misma que la del juego de naves (0xE6E3), los 192 bytes. Estuvo dentro del rango declarado como graficos, que llegaba hasta 0xCAA0 y se pasaba
+;   0xc9fe..0xcabe  (192 bytes)
+; DATOS la: tabla de saltos de los QUINCE opcodes del interprete: 15 punteros de 2 B. Son los del juego de naves (0xE7A3) reubicados unos 0x1CEB, con una holgura de un byte segun el opcode porque el codigo no es copia exacta
+;   0xcabe..0xcadc  (30 bytes)
+; DATOS la: tabla de las VEINTE frases de musica: 20 punteros de 2 B. Los veinte son EXACTAMENTE los del juego de naves (0xE7C1) menos 0x1CE5, sin una sola excepcion
+;   0xcadc..0xcb04  (40 bytes)
+; DATOS LA: MUSICA DE LA FASE DE A PIE, 1380 B escritos en el lenguaje del interprete de sonido. El trazador se los tragaba como CODIGO -1318 de 1380, el 95,5 %- por una semilla mala en 0xCC3E, que cae dentro de un guion. Es el mismo error que se corrigio en el juego de naves y que aqui no se habia aplicado. PRUEBA de que es musica: recorriendo la zona con el lector del lenguaje salen 38 bloques, CERO bytes fuera del lenguaje, y el recorrido cierra clavado en 0xD068, que es donde empiezan los estados de canal. Si el numero de argumentos de un solo comando estuviera mal, no cerraria. Aqui habia cinco trozos declarados sueltos como "tabla" y "relleno" (0xCB0F, 0xCB26, 0xCBDB, 0xCC99, 0xCDC0) que eran cachos de esta misma musica
+;   0xcb04..0xd068  (1380 bytes)
+; DATOS variables: a cero (175 B), y los primeros 138 tienen nombre: son los TRES ESTADOS DE CANAL del interprete de sonido, de 46 B cada uno (0xD068, 0xD096, 0xD0C4), que es lo que resolvio el enigma de los "objetos de 46 bytes". Los 37 restantes (0xD0F2-0xD117) son las variables globales del interprete y las que el listado lee con ld a,(nn). Confirmado ademas desde fuera: al volcar la memoria justo tras la multicarga, los bytes que ya no coinciden con la cinta se agolpan aqui. El trazador contaba todo esto como codigo
+;   0xd068..0xd117  (175 bytes)
 ; ----------------------------------------------------------------------
 	defb 001h,00bh,032h,000h,000h,004h,0ffh,008h,000h,000h,000h,003h,000h,000h,000h,002h	; c8f7  ..2.............
 	defb 00bh,001h,001h,000h,002h,0ffh,004h,0feh,000h,002h,007h,000h,000h,000h,00ah,000h	; c907  ................
@@ -5788,1312 +5777,110 @@ L_C8E9:
 	defb 000h,0a0h,000h,097h,000h,08fh,000h,087h,000h,07fh,000h,078h,000h,071h,000h,06bh	; ca67  ...........x.q.k
 	defb 000h,065h,000h,05fh,000h,05ah,000h,055h,000h,050h,000h,04ch,000h,047h,000h,043h	; ca77  .e._.Z.U.P.L.G.C
 	defb 000h,040h,000h,03ch,000h,039h,000h,035h,000h,032h,000h,030h,000h,02dh,000h,02ah	; ca87  .@.<.9.5.2.0.-.*
-	defb 000h,028h,000h,026h,000h,024h,000h,022h,000h	; ca97  .(.&.$.".
-
-; ======================================================================
-; CODIGO 0xcaa0..0xcb0f  (111 bytes)
-; ======================================================================
-
-
-L_CAA0:
-	jr nz,L_CAA2		;caa0
-L_CAA2:
-	ld e,000h		;caa2
-	inc e			;caa4
-L_CAA5:
-	nop			;caa5
-	dec de			;caa6
-	nop			;caa7
-	add hl,de		;caa8
-	nop			;caa9
-L_CAAA:
-	jr L_CAAC		;caaa
-L_CAAC:
-	ld d,000h		;caac
-	dec d			;caae
-	nop			;caaf
-	inc d			;cab0
-L_CAB1:
-	nop			;cab1
-	inc de			;cab2
-	nop			;cab3
-	ld (de),a		;cab4
-	nop			;cab5
-	ld de,01000h		;cab6
-	nop			;cab9
-L_CABA:
-	rrca			;caba
-	nop			;cabb
-	ld c,000h		;cabc
-	inc bc			;cabe
-	rst 0			;cabf
-	ld hl,08cc7h		;cac0
-	rst 0			;cac3
-	inc c			;cac4
-	rst 0			;cac5
-	adc a,b			;cac6
-	rst 0			;cac7
-	ld e,d			;cac8
-	rst 0			;cac9
-	ld e,e			;caca
-	ret z			;cacb
-	cp e			;cacc
-	rst 0			;cacd
-	ld (hl),h		;cace
-	rst 0			;cacf
-	inc b			;cad0
-	ret z			;cad1
-	and a			;cad2
-	rst 0			;cad3
-	inc l			;cad4
-	rst 0			;cad5
-	ld h,h			;cad6
-	ret z			;cad7
-	add a,b			;cad8
-	ret z			;cad9
-	sub c			;cada
-	ret z			;cadb
-	ld h,c			;cadc
-	rlc h			;cadd
-	rl c			;cadf
-	sra e			;cae1
-	srl d			;cae3
-	bit 0,a			;cae5
-	bit 2,h			;cae7
-	res 5,d			;cae9
-	res 7,l			;caeb
-L_CAED:
-	set 2,b			;caed
-	set 4,e			;caef
-	set 6,(hl)		;caf1
-	bit 0,l			;caf3
-	call z,L_CC8C		;caf5
-	and d			;caf8
-	call z,L_CCB8		;caf9
-	rst 30h			;cafc
-	call z,L_CD15		;cafd
-	cpl			;cb00
-L_CB01:
-	call L_CD53		;cb01
-	add a,a			;cb04
-	ex af,af'		;cb05
-	add a,b			;cb06
-	rrca			;cb07
-	add a,e			;cb08
-	djnz $+26		;cb09
-	add a,b			;cb0b
-	inc c			;cb0c
-	jr $+26			;cb0d
-
-; ----------------------------------------------------------------------
-; DATOS relleno: o resto (5 B; 5 bytes)
-;   0xcb0f..0xcb14  (5 bytes)
-; ----------------------------------------------------------------------
-	defb 018h,08dh,081h,008h,087h	; cb0f  .....
-
-; ======================================================================
-; CODIGO 0xcb14..0xcb26  (18 bytes)
-; ======================================================================
-
-
-L_CB14:
-	ld a,(bc)		;cb14
-	adc a,c			;cb15
-	nop			;cb16
-	add a,b			;cb17
-	ex af,af'		;cb18
-	add a,e			;cb19
-	jr nz,$-122		;cb1a
-	adc a,b			;cb1c
-	jr $-123		;cb1d
-	djnz $-122		;cb1f
-	add a,e			;cb21
-	ex af,af'		;cb22
-L_CB23:
-	adc a,b			;cb23
-	jr $-122		;cb24
-
-; ----------------------------------------------------------------------
-; DATOS relleno: o resto (1 B; 1 bytes)
-;   0xcb26..0xcb27  (1 bytes)
-; ----------------------------------------------------------------------
-	defb 083h	; cb26  .
-
-; ======================================================================
-; CODIGO 0xcb27..0xcbdb  (180 bytes)
-; ======================================================================
-
-
-L_CB27:
-	jr nz,$-118		;cb27
-	jr $-113		;cb29
-	add a,a			;cb2b
-	add hl,bc		;cb2c
-	add a,b			;cb2d
-	rlca			;cb2e
-	add a,e			;cb2f
-	ex af,af'		;cb30
-	jr nc,$+62		;cb31
-	ld c,b			;cb33
-	ld d,h			;cb34
-	scf			;cb35
-	ld b,e			;cb36
-	ld c,d			;cb37
-	ld c,b			;cb38
-	adc a,l			;cb39
-	add a,a			;cb3a
-	ex af,af'		;cb3b
-	add a,b			;cb3c
-	rrca			;cb3d
-	add a,e			;cb3e
-	djnz L_CB62		;cb3f
-	add a,b			;cb41
-	inc c			;cb42
-	ld hl,02121h		;cb43
-	adc a,l			;cb46
-	add a,a			;cb47
-	ex af,af'		;cb48
-	add a,b			;cb49
-	rrca			;cb4a
-	add a,e			;cb4b
-	djnz L_CB6B		;cb4c
-	add a,b			;cb4e
-	inc c			;cb4f
-	dec e			;cb50
-	dec e			;cb51
-	dec e			;cb52
-	adc a,l			;cb53
-	add a,a			;cb54
-	ex af,af'		;cb55
-	add a,b			;cb56
-	rrca			;cb57
-	add a,e			;cb58
-	djnz $+33		;cb59
-	add a,b			;cb5b
-	inc c			;cb5c
-	rra			;cb5d
-	rra			;cb5e
-	rra			;cb5f
-	adc a,l			;cb60
-	add a,a			;cb61
-L_CB62:
-	dec bc			;cb62
-	add a,e			;cb63
-	djnz $-119		;cb64
-	ld a,(bc)		;cb66
-	jr nc,L_CB94		;cb67
-	jr nc,$-123		;cb69
-L_CB6B:
-	jr nz,$+52		;cb6b
-	add a,e			;cb6d
-	djnz L_CBA2		;cb6e
-	inc (hl)		;cb70
-	ld (02d30h),a		;cb71
-	dec hl			;cb74
-	add a,e			;cb75
-	ld d,b			;cb76
-	dec l			;cb77
-	add a,e			;cb78
-	djnz L_CBAB		;cb79
-	dec hl			;cb7b
-	jr nc,$-123		;cb7c
-	jr nz,L_CBB2		;cb7e
-	add a,e			;cb80
-	djnz $+52		;cb81
-	inc (hl)		;cb83
-	ld (02d30h),a		;cb84
-	dec hl			;cb87
-	add a,e			;cb88
-	ld d,b			;cb89
-	dec l			;cb8a
-	add a,e			;cb8b
-	djnz L_CBC3		;cb8c
-	inc (hl)		;cb8e
-	jr nc,$-123		;cb8f
-	jr nc,L_CBBC		;cb91
-	add a,e			;cb93
-L_CB94:
-	djnz L_CBCB		;cb94
-	add a,e			;cb96
-	jr nz,$+54		;cb97
-	jr nc,$-123		;cb99
-	ld b,b			;cb9b
-	scf			;cb9c
-	add a,e			;cb9d
-	djnz L_CBD7		;cb9e
-	dec (hl)		;cba0
-L_CBA1:
-	inc (hl)		;cba1
-L_CBA2:
-	jr nc,L_CBCF		;cba2
-L_CBA4:
-	add hl,hl		;cba4
-	jr z,$-123		;cba5
-L_CBA7:
-	and b			;cba7
-	inc h			;cba8
-	adc a,l			;cba9
-	add a,e			;cbaa
-L_CBAB:
-	ex af,af'		;cbab
-	ld hl,02d21h		;cbac
-	ld hl,02d2bh		;cbaf
-L_CBB2:
-	add a,h			;cbb2
-	rra			;cbb3
-	ld hl,02d21h		;cbb4
-	ld hl,02d2dh		;cbb7
-	ld h,028h		;cbba
-L_CBBC:
-	adc a,l			;cbbc
-	add a,e			;cbbd
-	ex af,af'		;cbbe
-	dec e			;cbbf
-L_CBC0:
-	dec e			;cbc0
-	add hl,hl		;cbc1
-	dec e			;cbc2
-L_CBC3:
-	daa			;cbc3
-	add hl,hl		;cbc4
-	add a,h			;cbc5
-	dec de			;cbc6
-	dec e			;cbc7
-	dec e			;cbc8
-L_CBC9:
-	add hl,hl		;cbc9
-	dec e			;cbca
-L_CBCB:
-	daa			;cbcb
-	jr $+36			;cbcc
-	inc h			;cbce
-L_CBCF:
-	adc a,l			;cbcf
-	add a,e			;cbd0
-	ex af,af'		;cbd1
-L_CBD2:
-	ld a,(de)		;cbd2
-	ld a,(de)		;cbd3
-	ld h,01ah		;cbd4
-	inc h			;cbd6
-L_CBD7:
-	ld h,084h		;cbd7
-	jr $+28			;cbd9
-
-; ----------------------------------------------------------------------
-; DATOS tabla: (21 B; racha 2.43, entropia 3.16, 11 valores: pocos valores para ser un dibujo)
-;   0xcbdb..0xcbf0  (21 bytes)
-; ----------------------------------------------------------------------
-	defb 01ah,026h,01ah,024h,026h,01fh,021h,08dh,083h,008h,01ch,01ch,028h,01ch,026h,028h	; cbdb  .&.$&.!.....(.&(
-	defb 084h,01ah,01ch,01ch,028h	; cbeb  ....(
-
-; ======================================================================
-; CODIGO 0xcbf0..0xcc3d  (77 bytes)
-; ======================================================================
-
-
-L_CBF0:
-	inc hl			;cbf0
-	ld h,028h		;cbf1
-	inc e			;cbf3
-	rra			;cbf4
-L_CBF5:
-	adc a,l			;cbf5
-	add a,a			;cbf6
-	ld a,(bc)		;cbf7
-	add a,e			;cbf8
-	ex af,af'		;cbf9
-	add hl,sp		;cbfa
-	dec l			;cbfb
-	add hl,sp		;cbfc
-	dec l			;cbfd
-	scf			;cbfe
-	inc (hl)		;cbff
-	scf			;cc00
-	add hl,sp		;cc01
-	add a,h			;cc02
-	add a,a			;cc03
-	inc c			;cc04
-	ld hl,01083h		;cc05
-	dec hl			;cc08
-	add a,e			;cc09
-	jr nz,L_CC2D		;cc0a
-	add a,a			;cc0c
-	ld a,(bc)		;cc0d
-	add a,e			;cc0e
-	ex af,af'		;cc0f
-	add hl,sp		;cc10
-	ld (03239h),a		;cc11
-	scf			;cc14
-	inc (hl)		;cc15
-	scf			;cc16
-	add a,e			;cc17
-	jr z,$+59		;cc18
-	add a,e			;cc1a
-	jr nz,$-119		;cc1b
-	inc c			;cc1d
-	rra			;cc1e
-	add a,a			;cc1f
-	ld a,(bc)		;cc20
-	add a,e			;cc21
-	ex af,af'		;cc22
-	ld a,032h		;cc23
-	ld b,b			;cc25
-	ld (03c3eh),a		;cc26
-	add hl,sp		;cc29
-	inc a			;cc2a
-	ld a,032h		;cc2b
-L_CC2D:
-	ld b,b			;cc2d
-	ld (03c3eh),a		;cc2e
-	add hl,sp		;cc31
-	inc a			;cc32
-	ld b,b			;cc33
-	inc (hl)		;cc34
-	ld b,b			;cc35
-	inc (hl)		;cc36
-	ld a,03bh		;cc37
-	ld a,083h		;cc39
-	jr $-123		;cc3b
-
-; ----------------------------------------------------------------------
-; DATOS relleno: o resto (1 B; 1 bytes)
-;   0xcc3d..0xcc3e  (1 bytes)
-; ----------------------------------------------------------------------
-	defb 028h	; cc3d  (
-
-; ======================================================================
-; CODIGO 0xcc3e..0xcc99  (91 bytes)
-; ======================================================================
-
-
-L_CC3E:
-	ld b,b			;cc3e
-	add a,e			;cc3f
-	jr nz,$-119		;cc40
-	inc c			;cc42
-	jr nc,$-113		;cc43
-	add a,a			;cc45
-	dec bc			;cc46
-	adc a,d			;cc47
-	ld bc,06083h		;cc48
-	add hl,sp		;cc4b
-	add a,a			;cc4c
-	ex af,af'		;cc4d
-	add a,b			;cc4e
-	dec c			;cc4f
-	add a,e			;cc50
-	ex af,af'		;cc51
-	inc a			;cc52
-L_CC53:
-	dec sp			;cc53
-	add hl,sp		;cc54
-	scf			;cc55
-L_CC56:
-	add a,a			;cc56
-	dec bc			;cc57
-	add a,b			;cc58
-	ld a,(bc)		;cc59
-	add a,e			;cc5a
-	ld h,b			;cc5b
-	add hl,sp		;cc5c
-	add a,a			;cc5d
-	ex af,af'		;cc5e
-	add a,b			;cc5f
-	dec c			;cc60
-	add a,e			;cc61
-	ex af,af'		;cc62
-	inc a			;cc63
-	dec sp			;cc64
-	add hl,sp		;cc65
-	scf			;cc66
-	add a,b			;cc67
-	ld a,(bc)		;cc68
-	add a,a			;cc69
-	dec bc			;cc6a
-	add a,e			;cc6b
-	ld h,b			;cc6c
-	dec (hl)		;cc6d
-	add a,b			;cc6e
-	dec c			;cc6f
-	add a,a			;cc70
-	ex af,af'		;cc71
-	add a,e			;cc72
-	ex af,af'		;cc73
-L_CC74:
-	dec (hl)		;cc74
-	add hl,sp		;cc75
-	inc a			;cc76
-	add hl,sp		;cc77
-	add a,b			;cc78
-	ld a,(bc)		;cc79
-	add a,a			;cc7a
-	dec bc			;cc7b
-	add a,e			;cc7c
-	ld h,b			;cc7d
-	dec sp			;cc7e
-	add a,a			;cc7f
-	ex af,af'		;cc80
-	add a,e			;cc81
-	ex af,af'		;cc82
-	add a,b			;cc83
-L_CC84:
-	dec c			;cc84
-	ld b,b			;cc85
-	inc (hl)		;cc86
-	ld a,040h		;cc87
-	add a,b			;cc89
-	ld a,(bc)		;cc8a
-	adc a,l			;cc8b
-L_CC8C:
-	add a,a			;cc8c
-	ex af,af'		;cc8d
-	add a,b			;cc8e
-	rrca			;cc8f
-	add a,e			;cc90
-	djnz $+26		;cc91
-	add a,b			;cc93
-	inc c			;cc94
-	add a,e			;cc95
-	ex af,af'		;cc96
-	jr $+26			;cc97
-
-; ----------------------------------------------------------------------
-; DATOS tabla: (18 B; racha 3.43, entropia 3.28, 11 valores: pocos valores para ser un dibujo)
-;   0xcc99..0xccab  (18 bytes)
-; ----------------------------------------------------------------------
-	defb 080h,00fh,083h,010h,018h,080h,00ch,013h,08dh,087h,008h,080h,00fh,083h,010h,01ah	; cc99  ................
-	defb 080h,00ch	; cca9  ..
-
-; ======================================================================
-; CODIGO 0xccab..0xcdc0  (277 bytes)
-; ======================================================================
-
-
-L_CCAB:
-	add a,e			;ccab
-L_CCAC:
-	ex af,af'		;ccac
-	ld a,(de)		;ccad
-	ld a,(de)		;ccae
-	add a,b			;ccaf
-	rrca			;ccb0
-L_CCB1:
-	add a,e			;ccb1
-	djnz $+28		;ccb2
-	add a,b			;ccb4
-	inc c			;ccb5
-	dec d			;ccb6
-	adc a,l			;ccb7
-L_CCB8:
-	add a,c			;ccb8
-	ld bc,00987h		;ccb9
-	add a,e			;ccbc
-	ex af,af'		;ccbd
-	add a,b			;ccbe
-L_CCBF:
-	add hl,bc		;ccbf
-	jr nc,L_CCF9		;ccc0
-	inc a			;ccc2
-	scf			;ccc3
-	ld a,03ch		;ccc4
-	ld (hl),03eh		;ccc6
-	jr nc,$+62		;ccc8
-	ld (hl),037h		;ccca
-L_CCCC:
-	add a,e			;cccc
-	jr nz,$-119		;cccd
-	ld a,(bc)		;cccf
-	add a,c			;ccd0
-	ex af,af'		;ccd1
-	adc a,b			;ccd2
-	inc c			;ccd3
-	add a,c			;ccd4
-	ld bc,00987h		;ccd5
-	add a,a			;ccd8
-	add hl,bc		;ccd9
-	add a,e			;ccda
-	ex af,af'		;ccdb
-	add a,b			;ccdc
-	add hl,bc		;ccdd
-	jr nc,L_CD17		;ccde
-	inc a			;cce0
-	scf			;cce1
-	ld a,03ch		;cce2
-	ld (hl),03eh		;cce4
-	jr nc,L_CD24		;cce6
-	ld (hl),037h		;cce8
-	add a,e			;ccea
-	jr nz,$-119		;cceb
-	ld a,(bc)		;cced
-	add a,c			;ccee
-	ex af,af'		;ccef
-	adc a,b			;ccf0
-	ld (de),a		;ccf1
-	add a,c			;ccf2
-	ld bc,00987h		;ccf3
-	adc a,l			;ccf6
-	add a,a			;ccf7
-	ld a,(bc)		;ccf8
-L_CCF9:
-	add a,e			;ccf9
-	jr nc,L_CD2C		;ccfa
-	add a,e			;ccfc
-	ex af,af'		;ccfd
-	dec hl			;ccfe
-	jr nc,$-123		;ccff
-	jr nc,L_CD35		;cd01
-	add a,e			;cd03
-	ex af,af'		;cd04
-	jr nc,L_CD39		;cd05
-	add a,e			;cd07
-	jr nc,$+57		;cd08
-	add a,e			;cd0a
-	ex af,af'		;cd0b
-	dec (hl)		;cd0c
-	inc (hl)		;cd0d
-	add a,e			;cd0e
-	djnz $+55		;cd0f
-	inc (hl)		;cd11
-	jr nc,L_CD3F		;cd12
-	adc a,l			;cd14
-L_CD15:
-	add a,b			;cd15
-	inc c			;cd16
-L_CD17:
-	add a,a			;cd17
-	ld a,(bc)		;cd18
-	add a,e			;cd19
-	jr nc,$+50		;cd1a
-	add a,e			;cd1c
-	ex af,af'		;cd1d
-	add a,a			;cd1e
-	ex af,af'		;cd1f
-	scf			;cd20
-	scf			;cd21
-	add a,b			;cd22
-	rrca			;cd23
-L_CD24:
-	ld (hl),083h		;cd24
-	jr z,L_CCAC		;cd26
-	add a,e			;cd28
-	ex af,af'		;cd29
-	add a,b			;cd2a
-	dec c			;cd2b
-L_CD2C:
-	dec hl			;cd2c
-	dec hl			;cd2d
-	adc a,l			;cd2e
-	add a,a			;cd2f
-	rrca			;cd30
-	adc a,d			;cd31
-	ld bc,02083h		;cd32
-L_CD35:
-	jr nc,L_CD6E		;cd35
-	ld (hl),032h		;cd37
-L_CD39:
-	inc (hl)		;cd39
-	jr nc,L_CCBF		;cd3a
-	djnz L_CD6E		;cd3c
-	dec sp			;cd3e
-L_CD3F:
-	ld a,(08339h)		;cd3f
-	jr nz,L_CD76		;cd42
-	scf			;cd44
-	ld (hl),039h		;cd45
-	jr c,L_CCCC		;cd47
-	ex af,af'		;cd49
-	ld (03637h),a		;cd4a
-	add hl,sp		;cd4d
-	add a,e			;cd4e
-	jr nz,L_CD89		;cd4f
-	add hl,sp		;cd51
-	adc a,l			;cd52
-L_CD53:
-	add a,l			;cd53
-	and b			;cd54
-	add a,e			;cd55
-	inc c			;cd56
-	add a,c			;cd57
-	ld bc,00780h		;cd58
-	add a,a			;cd5b
-	nop			;cd5c
-	ld d,b			;cd5d
-	adc a,e			;cd5e
-	add a,l			;cd5f
-	and b			;cd60
-	add a,e			;cd61
-	add hl,de		;cd62
-	add a,c			;cd63
-	ld bc,00780h		;cd64
-	add a,a			;cd67
-	ld bc,0028ah		;cd68
-	ld b,(hl)		;cd6b
-	adc a,e			;cd6c
-	add a,l			;cd6d
-L_CD6E:
-	and b			;cd6e
-	add a,e			;cd6f
-	ld bc,00881h		;cd70
-	add a,b			;cd73
-	rrca			;cd74
-	adc a,b			;cd75
-L_CD76:
-	add hl,de		;cd76
-	add a,e			;cd77
-	ld a,(bc)		;cd78
-	add a,b			;cd79
-	ld a,(bc)		;cd7a
-	add a,a			;cd7b
-	ld (bc),a		;cd7c
-	adc a,b			;cd7d
-	rra			;cd7e
-	adc a,e			;cd7f
-	add a,l			;cd80
-	ld (0c883h),a		;cd81
-	add a,b			;cd84
-	nop			;cd85
-	add a,c			;cd86
-	ex af,af'		;cd87
-	add a,a			;cd88
-L_CD89:
-	dec b			;cd89
-	adc a,c			;cd8a
-	inc bc			;cd8b
-	adc a,b			;cd8c
-	rra			;cd8d
-	adc a,e			;cd8e
-	adc a,e			;cd8f
-	adc a,e			;cd90
-	add a,l			;cd91
-	rst 38h			;cd92
-	add a,e			;cd93
-	ld (bc),a		;cd94
-	add a,c			;cd95
-	ex af,af'		;cd96
-	add a,b			;cd97
-	rrca			;cd98
-	adc a,b			;cd99
-	rrca			;cd9a
-	adc a,e			;cd9b
-	add a,(hl)		;cd9c
-	add a,e			;cd9d
-	ld (bc),a		;cd9e
-	add a,c			;cd9f
-	ld bc,00f80h		;cda0
-	ld e,d			;cda3
-	adc a,e			;cda4
-	add a,l			;cda5
-	and b			;cda6
-	add a,e			;cda7
-	ld e,081h		;cda8
-	ld bc,00080h		;cdaa
-	add a,a			;cdad
-	inc bc			;cdae
-	ld b,(hl)		;cdaf
-	adc a,e			;cdb0
-	add a,(hl)		;cdb1
-	add a,b			;cdb2
-	inc c			;cdb3
-	add a,a			;cdb4
-	ex af,af'		;cdb5
-	adc a,d			;cdb6
-	nop			;cdb7
-	add a,c			;cdb8
-	ld bc,00483h		;cdb9
-	adc a,(hl)		;cdbc
-	dec b			;cdbd
-	jr $+38			;cdbe
-
-; ----------------------------------------------------------------------
-; DATOS tabla: (16 B; racha 2.37, entropia 2.27, 7 valores: pocos valores para ser un dibujo)
-;   0xcdc0..0xcdd0  (16 bytes)
-; ----------------------------------------------------------------------
-	defb 018h,024h,018h,024h,018h,024h,01dh,029h,01fh,02bh,018h,024h,018h,018h,018h,08bh	; cdc0  .$.$.$.).+.$....
-
-; ======================================================================
-; CODIGO 0xcdd0..0xd068  (664 bytes)
-; ======================================================================
-
-
-L_CDD0:
-	add a,b			;cdd0
-	inc c			;cdd1
-	add a,a			;cdd2
-	ex af,af'		;cdd3
-	adc a,d			;cdd4
-	nop			;cdd5
-	add a,c			;cdd6
-	ld bc,00483h		;cdd7
-	adc a,(hl)		;cdda
-	dec b			;cddb
-	jr z,L_CE09		;cddc
-	jr nc,$+45		;cdde
-	jr z,L_CE0D		;cde0
-	jr nc,$+45		;cde2
-L_CDE4:
-	dec l			;cde4
-	jr nc,L_CE16		;cde5
-	ld (02b2bh),a		;cde7
-	dec hl			;cdea
-	adc a,e			;cdeb
-	add a,b			;cdec
-	rrca			;cded
-	add a,a			;cdee
-	rrca			;cdef
-	adc a,d			;cdf0
-	ld bc,00181h		;cdf1
-	add a,e			;cdf4
-	inc b			;cdf5
-	adc a,(hl)		;cdf6
-	dec b			;cdf7
-	ld b,e			;cdf8
-	ld b,b			;cdf9
-	ld b,e			;cdfa
-	ld b,b			;cdfb
-	add a,e			;cdfc
-	inc c			;cdfd
-	ld b,e			;cdfe
-	add a,e			;cdff
-	inc b			;ce00
-	ld b,b			;ce01
-	add a,e			;ce02
-	djnz L_CE43		;ce03
-	inc a			;ce05
-	adc a,e			;ce06
-	add a,(hl)		;ce07
-	add a,e			;ce08
-L_CE09:
-	ld bc,00181h		;ce09
-	add a,b			;ce0c
-L_CE0D:
-	rrca			;ce0d
-	ld (08246h),a		;ce0e
-	add a,l			;ce11
-	and b			;ce12
-	add a,e			;ce13
-	ld h,h			;ce14
-	add a,c			;ce15
-L_CE16:
-	ex af,af'		;ce16
-	add a,b			;ce17
-	nop			;ce18
-	add a,a			;ce19
-	rlca			;ce1a
-	adc a,b			;ce1b
-	rra			;ce1c
-	adc a,e			;ce1d
-	add a,l			;ce1e
-	and b			;ce1f
-	add a,e			;ce20
-	ld e,081h		;ce21
-	ex af,af'		;ce23
-	add a,b			;ce24
-	nop			;ce25
-	add a,a			;ce26
-	inc b			;ce27
-	adc a,b			;ce28
-	inc d			;ce29
-	adc a,e			;ce2a
-	add a,(hl)		;ce2b
-	add a,e			;ce2c
-	ld bc,00181h		;ce2d
-	add a,b			;ce30
-	ld a,(bc)		;ce31
-	ld c,h			;ce32
-	add a,h			;ce33
-	add a,d			;ce34
-	add a,l			;ce35
-	and b			;ce36
-	adc a,e			;ce37
-	inc d			;ce38
-	add a,c			;ce39
-	add hl,bc		;ce3a
-	add a,b			;ce3b
-	nop			;ce3c
-	add a,a			;ce3d
-	ld b,089h		;ce3e
-	nop			;ce40
-	adc a,b			;ce41
-	add a,b			;ce42
-L_CE43:
-	jr z,L_CDD0		;ce43
-	adc a,(hl)		;ce45
-	ld (bc),a		;ce46
-	add a,(hl)		;ce47
-	add a,c			;ce48
-	ld bc,0018ch		;ce49
-	adc a,h			;ce4c
-	ld bc,0048ch		;ce4d
-	adc a,h			;ce50
-	inc b			;ce51
-	adc a,h			;ce52
-	ld bc,0018ch		;ce53
-	adc a,h			;ce56
-	inc b			;ce57
-	adc a,h			;ce58
-	inc b			;ce59
-	adc a,h			;ce5a
-	dec b			;ce5b
-	adc a,h			;ce5c
-	dec b			;ce5d
-	adc a,h			;ce5e
-	ld b,08ch		;ce5f
-	ld b,08ch		;ce61
-	ld bc,0018ch		;ce63
-	adc a,h			;ce66
-	ld bc,0018ch		;ce67
-	add a,(hl)		;ce6a
-	add a,c			;ce6b
-	ld bc,0018ch		;ce6c
-	adc a,h			;ce6f
-	ld bc,0048ch		;ce70
-	adc a,h			;ce73
-	inc b			;ce74
-	adc a,h			;ce75
-	ld bc,0018ch		;ce76
-	adc a,h			;ce79
-	inc b			;ce7a
-	adc a,h			;ce7b
-	inc b			;ce7c
-	adc a,h			;ce7d
-	dec b			;ce7e
-	adc a,h			;ce7f
-	dec b			;ce80
-	adc a,h			;ce81
-	ld b,08ch		;ce82
-	ld b,08ch		;ce84
-	ld bc,0018ch		;ce86
-	adc a,h			;ce89
-	ld bc,0018ch		;ce8a
-	add a,(hl)		;ce8d
-	add a,c			;ce8e
-	ld bc,0018ch		;ce8f
-	adc a,h			;ce92
-	ld bc,0048ch		;ce93
-	adc a,h			;ce96
-	inc b			;ce97
-	adc a,h			;ce98
-	ld bc,0018ch		;ce99
-	adc a,h			;ce9c
-	inc b			;ce9d
-	adc a,h			;ce9e
-	inc b			;ce9f
-	adc a,h			;cea0
-	dec b			;cea1
-	adc a,h			;cea2
-	dec b			;cea3
-	adc a,h			;cea4
-	ld b,08ch		;cea5
-	ld b,08ch		;cea7
-	ld bc,0018ch		;cea9
-	adc a,h			;ceac
-	ld bc,0018ch		;cead
-	add a,b			;ceb0
-	dec c			;ceb1
-	adc a,h			;ceb2
-	rlca			;ceb3
-	adc a,h			;ceb4
-	ex af,af'		;ceb5
-	adc a,h			;ceb6
-	add hl,bc		;ceb7
-	adc a,h			;ceb8
-	ld a,(bc)		;ceb9
-	adc a,h			;ceba
-	rlca			;cebb
-	adc a,h			;cebc
-	ex af,af'		;cebd
-	adc a,h			;cebe
-	add hl,bc		;cebf
-	adc a,h			;cec0
-	ld a,(bc)		;cec1
-	adc a,h			;cec2
-	rlca			;cec3
-	adc a,h			;cec4
-	ex af,af'		;cec5
-	adc a,h			;cec6
-	add hl,bc		;cec7
-	adc a,h			;cec8
-	ld a,(bc)		;cec9
-	adc a,h			;ceca
-	rlca			;cecb
-	adc a,h			;cecc
-	ex af,af'		;cecd
-	adc a,h			;cece
-	add hl,bc		;cecf
-	adc a,h			;ced0
-	ld a,(bc)		;ced1
-	adc a,h			;ced2
-	rlca			;ced3
-	adc a,h			;ced4
-	ex af,af'		;ced5
-	adc a,h			;ced6
-	add hl,bc		;ced7
-	adc a,h			;ced8
-	ld a,(bc)		;ced9
-	adc a,(hl)		;ceda
-	add hl,bc		;cedb
-	adc a,h			;cedc
-	dec c			;cedd
-	adc a,h			;cede
-	dec c			;cedf
-	adc a,h			;cee0
-	dec c			;cee1
-	adc a,h			;cee2
-	dec c			;cee3
-	adc a,h			;cee4
-	ld c,08ch		;cee5
-	ld c,08ch		;cee7
-	ld c,08ch		;cee9
-	ld c,08ch		;ceeb
-	dec c			;ceed
-	adc a,h			;ceee
-	dec c			;ceef
-	adc a,h			;cef0
-	dec c			;cef1
-	adc a,h			;cef2
-	dec c			;cef3
-	adc a,h			;cef4
-	ld c,08ch		;cef5
-	ld c,08ch		;cef7
-	ld c,08ch		;cef9
-	ld c,08ch		;cefb
-	dec c			;cefd
-	adc a,h			;cefe
-	dec c			;ceff
-	adc a,h			;cf00
-	dec c			;cf01
-	adc a,h			;cf02
-	dec c			;cf03
-	adc a,h			;cf04
-	ld c,08ch		;cf05
-	ld c,08ch		;cf07
-	ld c,08ch		;cf09
-	ld c,08ch		;cf0b
-	dec c			;cf0d
-	adc a,h			;cf0e
-	dec c			;cf0f
-	adc a,h			;cf10
-	dec c			;cf11
-	adc a,h			;cf12
-	dec c			;cf13
-	adc a,h			;cf14
-	ld c,08ch		;cf15
-	ld c,08ch		;cf17
-	ld c,08ch		;cf19
-	ld c,08ch		;cf1b
-	dec c			;cf1d
-	adc a,h			;cf1e
-	dec c			;cf1f
-L_CF20:
-	adc a,h			;cf20
-	dec c			;cf21
-	adc a,h			;cf22
-	dec c			;cf23
-	adc a,h			;cf24
-	ld c,08ch		;cf25
-	ld c,08ch		;cf27
-	ld c,08ch		;cf29
-	ld c,08ch		;cf2b
-	dec c			;cf2d
-	adc a,h			;cf2e
-	dec c			;cf2f
-	adc a,h			;cf30
-	dec c			;cf31
-	adc a,h			;cf32
-	dec c			;cf33
-	adc a,h			;cf34
-	ld c,08ch		;cf35
-	ld c,08ch		;cf37
-	ld c,08ch		;cf39
-	ld c,082h		;cf3b
-	adc a,(hl)		;cf3d
-	ld (bc),a		;cf3e
-	add a,c			;cf3f
-	ld bc,0038ch		;cf40
-	adc a,h			;cf43
-	inc bc			;cf44
-	adc a,h			;cf45
-	inc bc			;cf46
-	adc a,h			;cf47
-	inc bc			;cf48
-	adc a,h			;cf49
-	inc bc			;cf4a
-	adc a,h			;cf4b
-	inc bc			;cf4c
-	adc a,h			;cf4d
-	inc bc			;cf4e
-	adc a,h			;cf4f
-	inc bc			;cf50
-	adc a,h			;cf51
-	inc bc			;cf52
-	adc a,h			;cf53
-	inc bc			;cf54
-	adc a,h			;cf55
-	inc bc			;cf56
-	adc a,h			;cf57
-	inc bc			;cf58
-	adc a,h			;cf59
-	inc bc			;cf5a
-	adc a,h			;cf5b
-	inc bc			;cf5c
-	adc a,h			;cf5d
-	inc bc			;cf5e
-	adc a,h			;cf5f
-	inc bc			;cf60
-	add a,b			;cf61
-	dec bc			;cf62
-	adc a,h			;cf63
-	nop			;cf64
-	add a,b			;cf65
-	ld a,(bc)		;cf66
-	adc a,(hl)		;cf67
-	ld c,08ch		;cf68
-	nop			;cf6a
-	adc a,(hl)		;cf6b
-	ld (bc),a		;cf6c
-	add a,b			;cf6d
-	ld a,(bc)		;cf6e
-	add a,e			;cf6f
-	add a,b			;cf70
-	add a,h			;cf71
-	add a,h			;cf72
-	add a,h			;cf73
-	add a,h			;cf74
-	adc a,h			;cf75
-	dec bc			;cf76
-	adc a,(hl)		;cf77
-	ld c,08ch		;cf78
-	dec bc			;cf7a
-	adc a,(hl)		;cf7b
-	ld (bc),a		;cf7c
-	adc a,h			;cf7d
-	inc c			;cf7e
-	adc a,(hl)		;cf7f
-	or 08ch			;cf80
-	inc c			;cf82
-	adc a,(hl)		;cf83
-	ld (bc),a		;cf84
-	adc a,(hl)		;cf85
-	add hl,bc		;cf86
-	add a,b			;cf87
-	inc c			;cf88
-	add a,a			;cf89
-	ld a,(bc)		;cf8a
-	adc a,h			;cf8b
-	djnz $-112		;cf8c
-	dec bc			;cf8e
-	adc a,h			;cf8f
-	djnz L_CF20		;cf90
-	defb 0fdh,080h,00dh ;illegal sequence	;cf92
-	adc a,h			;cf95
-	djnz $-112		;cf96
-	rst 38h			;cf98
-	adc a,h			;cf99
-	djnz $-112		;cf9a
-	add hl,bc		;cf9c
-	adc a,h			;cf9d
-	ld de,0118ch		;cf9e
-	adc a,(hl)		;cfa1
-	dec bc			;cfa2
-	adc a,h			;cfa3
-	ld de,0118ch		;cfa4
-	adc a,(hl)		;cfa7
-	defb 0fdh,08ch ;adc a,iyh	;cfa8
-	ld de,0118ch		;cfaa
-	adc a,(hl)		;cfad
-	rst 38h			;cfae
-	adc a,h			;cfaf
-	ld de,0118ch		;cfb0
-	add a,b			;cfb3
-	rrca			;cfb4
-	adc a,(hl)		;cfb5
-	add hl,bc		;cfb6
-	adc a,h			;cfb7
-	ld (de),a		;cfb8
-	adc a,(hl)		;cfb9
-	defb 0fdh,08ch ;adc a,iyh	;cfba
-	ld (de),a		;cfbc
-	add a,d			;cfbd
-	adc a,e			;cfbe
-	adc a,h			;cfbf
-	ld (bc),a		;cfc0
-	adc a,h			;cfc1
-	ld (bc),a		;cfc2
-	adc a,h			;cfc3
-	ld (bc),a		;cfc4
-	adc a,h			;cfc5
-	ld (bc),a		;cfc6
-	adc a,h			;cfc7
-	ld (bc),a		;cfc8
-	adc a,h			;cfc9
-	ld (bc),a		;cfca
-	adc a,h			;cfcb
-	ld (bc),a		;cfcc
-	adc a,h			;cfcd
-	ld (bc),a		;cfce
-	adc a,h			;cfcf
-	ld (bc),a		;cfd0
-	adc a,h			;cfd1
-	ld (bc),a		;cfd2
-	adc a,h			;cfd3
-	ld (bc),a		;cfd4
-	adc a,h			;cfd5
-	ld (bc),a		;cfd6
-	adc a,h			;cfd7
-	ld (bc),a		;cfd8
-	adc a,h			;cfd9
-	ld (bc),a		;cfda
-	adc a,h			;cfdb
-	ld (bc),a		;cfdc
-	adc a,h			;cfdd
-	ld (bc),a		;cfde
-	adc a,h			;cfdf
-	ld (bc),a		;cfe0
-	adc a,h			;cfe1
-	ld (bc),a		;cfe2
-	adc a,h			;cfe3
-	ld (bc),a		;cfe4
-	adc a,h			;cfe5
-	ld (bc),a		;cfe6
-	adc a,h			;cfe7
-	ld (bc),a		;cfe8
-	adc a,h			;cfe9
-	ld (bc),a		;cfea
-	adc a,h			;cfeb
-	ld (bc),a		;cfec
-	adc a,h			;cfed
-	ld (bc),a		;cfee
-	adc a,h			;cfef
-	ld (bc),a		;cff0
-	adc a,h			;cff1
-	ld (bc),a		;cff2
-	adc a,h			;cff3
-	ld (bc),a		;cff4
-	adc a,h			;cff5
-	ld (bc),a		;cff6
-	adc a,h			;cff7
-	ld (bc),a		;cff8
-	adc a,h			;cff9
-	ld (bc),a		;cffa
-	adc a,h			;cffb
-	ld (bc),a		;cffc
-	adc a,h			;cffd
-	ld (bc),a		;cffe
-	adc a,h			;cfff
-	ld (bc),a		;d000
-	adc a,h			;d001
-	ld (bc),a		;d002
-	adc a,h			;d003
-	ld (bc),a		;d004
-	adc a,h			;d005
-	ld (bc),a		;d006
-	adc a,h			;d007
-	ld (bc),a		;d008
-	adc a,h			;d009
-	ld (bc),a		;d00a
-	adc a,h			;d00b
-	ld (bc),a		;d00c
-	adc a,h			;d00d
-	ld (bc),a		;d00e
-	adc a,h			;d00f
-	ld (bc),a		;d010
-	adc a,h			;d011
-	ld (bc),a		;d012
-	adc a,h			;d013
-	ld (bc),a		;d014
-	adc a,h			;d015
-	ld (bc),a		;d016
-	adc a,(hl)		;d017
-	add hl,bc		;d018
-	adc a,h			;d019
-	rrca			;d01a
-	adc a,(hl)		;d01b
-	dec bc			;d01c
-	adc a,h			;d01d
-	rrca			;d01e
-	adc a,(hl)		;d01f
-	add hl,bc		;d020
-	adc a,h			;d021
-	rrca			;d022
-	adc a,(hl)		;d023
-	dec bc			;d024
-	adc a,h			;d025
-	rrca			;d026
-	adc a,(hl)		;d027
-	add hl,bc		;d028
-	adc a,h			;d029
-	rrca			;d02a
-	adc a,(hl)		;d02b
-	dec bc			;d02c
-	adc a,h			;d02d
-	rrca			;d02e
-	adc a,(hl)		;d02f
-	add hl,bc		;d030
-	adc a,h			;d031
-	rrca			;d032
-	adc a,(hl)		;d033
-	dec bc			;d034
-	adc a,h			;d035
-	rrca			;d036
-	adc a,(hl)		;d037
-	add hl,bc		;d038
-	adc a,h			;d039
-	rrca			;d03a
-	adc a,(hl)		;d03b
-	dec bc			;d03c
-	adc a,h			;d03d
-	rrca			;d03e
-	adc a,(hl)		;d03f
-	add hl,bc		;d040
-	adc a,h			;d041
-	rrca			;d042
-	adc a,(hl)		;d043
-	dec bc			;d044
-	adc a,h			;d045
-	rrca			;d046
-	add a,d			;d047
-	add a,l			;d048
-	and b			;d049
-	add a,e			;d04a
-	ld e,081h		;d04b
-	ld bc,00380h		;d04d
-	add a,a			;d050
-	rlca			;d051
-	inc d			;d052
-	adc a,e			;d053
-	add a,(hl)		;d054
-	add a,e			;d055
-	ld bc,00181h		;d056
-	add a,b			;d059
-	ld a,(bc)		;d05a
-	ld b,b			;d05b
-	add a,h			;d05c
-	add a,d			;d05d
-	add a,(hl)		;d05e
-	add a,e			;d05f
-	ld bc,00181h		;d060
-	add a,b			;d063
-	ld a,(bc)		;d064
-	inc (hl)		;d065
-	add a,h			;d066
-	add a,d			;d067
-
-; ----------------------------------------------------------------------
-; DATOS variables: a cero (175 B): el trazador las contaba como codigo
-;   0xd068..0xd117  (175 bytes)
-; ----------------------------------------------------------------------
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d068  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d078  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d088  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d098  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0a8  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0b8  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0c8  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0d8  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0e8  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0f8  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d108  ...............
+	defb 000h,028h,000h,026h,000h,024h,000h,022h,000h,020h,000h,01eh,000h,01ch,000h,01bh	; ca97  .(.&.$.". ......
+	defb 000h,019h,000h,018h,000h,016h,000h,015h,000h,014h,000h,013h,000h,012h,000h,011h	; caa7  ................
+	defb 000h,010h,000h,00fh,000h,00eh,000h,003h,0c7h,021h,0c7h,08ch,0c7h,00ch,0c7h,088h	; cab7  .........!......
+	defb 0c7h,05ah,0c7h,05bh,0c8h,0bbh,0c7h,074h,0c7h,004h,0c8h,0a7h,0c7h,02ch,0c7h,064h	; cac7  .Z.[...t.....,.d
+	defb 0c8h,080h,0c8h,091h,0c8h,061h,0cbh,004h,0cbh,011h,0cbh,02bh,0cbh,03ah,0cbh,047h	; cad7  .....a.....+.:.G
+	defb 0cbh,054h,0cbh,0aah,0cbh,0bdh,0cbh,0d0h,0cbh,0e3h,0cbh,0f6h,0cbh,045h,0cch,08ch	; cae7  .T...........E..
+	defb 0cch,0a2h,0cch,0b8h,0cch,0f7h,0cch,015h,0cdh,02fh,0cdh,053h,0cdh,087h,008h,080h	; caf7  ........./.S....
+	defb 00fh,083h,010h,018h,080h,00ch,018h,018h,018h,08dh,081h,008h,087h,00ah,089h,000h	; cb07  ................
+	defb 080h,008h,083h,020h,084h,088h,018h,083h,010h,084h,083h,008h,088h,018h,084h,083h	; cb17  ... ............
+	defb 020h,088h,018h,08dh,087h,009h,080h,007h,083h,008h,030h,03ch,048h,054h,037h,043h	; cb27   .........0<HT7C
+	defb 04ah,048h,08dh,087h,008h,080h,00fh,083h,010h,021h,080h,00ch,021h,021h,021h,08dh	; cb37  JH.......!..!!!.
+	defb 087h,008h,080h,00fh,083h,010h,01dh,080h,00ch,01dh,01dh,01dh,08dh,087h,008h,080h	; cb47  ................
+	defb 00fh,083h,010h,01fh,080h,00ch,01fh,01fh,01fh,08dh,087h,00bh,083h,010h,087h,00ah	; cb57  ................
+	defb 030h,02bh,030h,083h,020h,032h,083h,010h,032h,034h,032h,030h,02dh,02bh,083h,050h	; cb67  0+0. 2..2420-+.P
+	defb 02dh,083h,010h,030h,02bh,030h,083h,020h,032h,083h,010h,032h,034h,032h,030h,02dh	; cb77  -..0+0. 2..2420-
+	defb 02bh,083h,050h,02dh,083h,010h,035h,034h,030h,083h,030h,029h,083h,010h,035h,083h	; cb87  +.P-..540.0)..5.
+	defb 020h,034h,030h,083h,040h,037h,083h,010h,037h,035h,034h,030h,02bh,029h,028h,083h	; cb97   40.@7..7540+)(.
+	defb 0a0h,024h,08dh,083h,008h,021h,021h,02dh,021h,02bh,02dh,084h,01fh,021h,021h,02dh	; cba7  .$...!!-!+-..!!-
+	defb 021h,02dh,02dh,026h,028h,08dh,083h,008h,01dh,01dh,029h,01dh,027h,029h,084h,01bh	; cbb7  !--&(.....).')..
+	defb 01dh,01dh,029h,01dh,027h,018h,022h,024h,08dh,083h,008h,01ah,01ah,026h,01ah,024h	; cbc7  ..).'."$.....&.$
+	defb 026h,084h,018h,01ah,01ah,026h,01ah,024h,026h,01fh,021h,08dh,083h,008h,01ch,01ch	; cbd7  &....&.$&.!.....
+	defb 028h,01ch,026h,028h,084h,01ah,01ch,01ch,028h,023h,026h,028h,01ch,01fh,08dh,087h	; cbe7  (.&(....(#&(....
+	defb 00ah,083h,008h,039h,02dh,039h,02dh,037h,034h,037h,039h,084h,087h,00ch,021h,083h	; cbf7  ...9-9-7479...!.
+	defb 010h,02bh,083h,020h,021h,087h,00ah,083h,008h,039h,032h,039h,032h,037h,034h,037h	; cc07  .+. !....9292747
+	defb 083h,028h,039h,083h,020h,087h,00ch,01fh,087h,00ah,083h,008h,03eh,032h,040h,032h	; cc17  .(9. .......>2@2
+	defb 03eh,03ch,039h,03ch,03eh,032h,040h,032h,03eh,03ch,039h,03ch,040h,034h,040h,034h	; cc27  ><9<>2@2><9<@4@4
+	defb 03eh,03bh,03eh,083h,018h,083h,028h,040h,083h,020h,087h,00ch,030h,08dh,087h,00bh	; cc37  >;>...(@. ..0...
+	defb 08ah,001h,083h,060h,039h,087h,008h,080h,00dh,083h,008h,03ch,03bh,039h,037h,087h	; cc47  ...`9......<;97.
+	defb 00bh,080h,00ah,083h,060h,039h,087h,008h,080h,00dh,083h,008h,03ch,03bh,039h,037h	; cc57  ....`9......<;97
+	defb 080h,00ah,087h,00bh,083h,060h,035h,080h,00dh,087h,008h,083h,008h,035h,039h,03ch	; cc67  .....`5......59<
+	defb 039h,080h,00ah,087h,00bh,083h,060h,03bh,087h,008h,083h,008h,080h,00dh,040h,034h	; cc77  9.....`;......@4
+	defb 03eh,040h,080h,00ah,08dh,087h,008h,080h,00fh,083h,010h,018h,080h,00ch,083h,008h	; cc87  >@..............
+	defb 018h,018h,080h,00fh,083h,010h,018h,080h,00ch,013h,08dh,087h,008h,080h,00fh,083h	; cc97  ................
+	defb 010h,01ah,080h,00ch,083h,008h,01ah,01ah,080h,00fh,083h,010h,01ah,080h,00ch,015h	; cca7  ................
+	defb 08dh,081h,001h,087h,009h,083h,008h,080h,009h,030h,037h,03ch,037h,03eh,03ch,036h	; ccb7  .........07<7><6
+	defb 03eh,030h,03ch,036h,037h,083h,020h,087h,00ah,081h,008h,088h,00ch,081h,001h,087h	; ccc7  >0<67. .........
+	defb 009h,087h,009h,083h,008h,080h,009h,030h,037h,03ch,037h,03eh,03ch,036h,03eh,030h	; ccd7  .......07<7><6>0
+	defb 03ch,036h,037h,083h,020h,087h,00ah,081h,008h,088h,012h,081h,001h,087h,009h,08dh	; cce7  <67. ...........
+	defb 087h,00ah,083h,030h,030h,083h,008h,02bh,030h,083h,030h,032h,083h,008h,030h,032h	; ccf7  ...00..+0.02..02
+	defb 083h,030h,037h,083h,008h,035h,034h,083h,010h,035h,034h,030h,02bh,08dh,080h,00ch	; cd07  .07..54..540+...
+	defb 087h,00ah,083h,030h,030h,083h,008h,087h,008h,037h,037h,080h,00fh,036h,083h,028h	; cd17  ...00....77..6.(
+	defb 084h,083h,008h,080h,00dh,02bh,02bh,08dh,087h,00fh,08ah,001h,083h,020h,030h,037h	; cd27  .....++...... 07
+	defb 036h,032h,034h,030h,083h,010h,030h,03bh,03ah,039h,083h,020h,032h,037h,036h,039h	; cd37  6240..0;:9. 2769
+	defb 038h,083h,008h,032h,037h,036h,039h,083h,020h,038h,039h,08dh,085h,0a0h,083h,00ch	; cd47  8..2769. 89.....
+	defb 081h,001h,080h,007h,087h,000h,050h,08bh,085h,0a0h,083h,019h,081h,001h,080h,007h	; cd57  ......P.........
+	defb 087h,001h,08ah,002h,046h,08bh,085h,0a0h,083h,001h,081h,008h,080h,00fh,088h,019h	; cd67  ....F...........
+	defb 083h,00ah,080h,00ah,087h,002h,088h,01fh,08bh,085h,032h,083h,0c8h,080h,000h,081h	; cd77  ..........2.....
+	defb 008h,087h,005h,089h,003h,088h,01fh,08bh,08bh,08bh,085h,0ffh,083h,002h,081h,008h	; cd87  ................
+	defb 080h,00fh,088h,00fh,08bh,086h,083h,002h,081h,001h,080h,00fh,05ah,08bh,085h,0a0h	; cd97  ............Z...
+	defb 083h,01eh,081h,001h,080h,000h,087h,003h,046h,08bh,086h,080h,00ch,087h,008h,08ah	; cda7  ........F.......
+	defb 000h,081h,001h,083h,004h,08eh,005h,018h,024h,018h,024h,018h,024h,018h,024h,01dh	; cdb7  ........$.$.$.$.
+	defb 029h,01fh,02bh,018h,024h,018h,018h,018h,08bh,080h,00ch,087h,008h,08ah,000h,081h	; cdc7  ).+.$...........
+	defb 001h,083h,004h,08eh,005h,028h,02bh,030h,02bh,028h,02bh,030h,02bh,02dh,030h,02fh	; cdd7  .....(+0+(+0+-0/
+	defb 032h,02bh,02bh,02bh,08bh,080h,00fh,087h,00fh,08ah,001h,081h,001h,083h,004h,08eh	; cde7  2+++............
+	defb 005h,043h,040h,043h,040h,083h,00ch,043h,083h,004h,040h,083h,010h,03eh,03ch,08bh	; cdf7  .C@C@..C..@..><.
+	defb 086h,083h,001h,081h,001h,080h,00fh,032h,046h,082h,085h,0a0h,083h,064h,081h,008h	; ce07  .......2F....d..
+	defb 080h,000h,087h,007h,088h,01fh,08bh,085h,0a0h,083h,01eh,081h,008h,080h,000h,087h	; ce17  ................
+	defb 004h,088h,014h,08bh,086h,083h,001h,081h,001h,080h,00ah,04ch,084h,082h,085h,0a0h	; ce27  ...........L....
+	defb 08bh,014h,081h,009h,080h,000h,087h,006h,089h,000h,088h,080h,028h,08bh,08eh,002h	; ce37  ............(...
+	defb 086h,081h,001h,08ch,001h,08ch,001h,08ch,004h,08ch,004h,08ch,001h,08ch,001h,08ch	; ce47  ................
+	defb 004h,08ch,004h,08ch,005h,08ch,005h,08ch,006h,08ch,006h,08ch,001h,08ch,001h,08ch	; ce57  ................
+	defb 001h,08ch,001h,086h,081h,001h,08ch,001h,08ch,001h,08ch,004h,08ch,004h,08ch,001h	; ce67  ................
+	defb 08ch,001h,08ch,004h,08ch,004h,08ch,005h,08ch,005h,08ch,006h,08ch,006h,08ch,001h	; ce77  ................
+	defb 08ch,001h,08ch,001h,08ch,001h,086h,081h,001h,08ch,001h,08ch,001h,08ch,004h,08ch	; ce87  ................
+	defb 004h,08ch,001h,08ch,001h,08ch,004h,08ch,004h,08ch,005h,08ch,005h,08ch,006h,08ch	; ce97  ................
+	defb 006h,08ch,001h,08ch,001h,08ch,001h,08ch,001h,080h,00dh,08ch,007h,08ch,008h,08ch	; cea7  ................
+	defb 009h,08ch,00ah,08ch,007h,08ch,008h,08ch,009h,08ch,00ah,08ch,007h,08ch,008h,08ch	; ceb7  ................
+	defb 009h,08ch,00ah,08ch,007h,08ch,008h,08ch,009h,08ch,00ah,08ch,007h,08ch,008h,08ch	; cec7  ................
+	defb 009h,08ch,00ah,08eh,009h,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00eh,08ch	; ced7  ................
+	defb 00eh,08ch,00eh,08ch,00eh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00eh,08ch	; cee7  ................
+	defb 00eh,08ch,00eh,08ch,00eh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00eh,08ch	; cef7  ................
+	defb 00eh,08ch,00eh,08ch,00eh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00eh,08ch	; cf07  ................
+	defb 00eh,08ch,00eh,08ch,00eh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00eh,08ch	; cf17  ................
+	defb 00eh,08ch,00eh,08ch,00eh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00dh,08ch,00eh,08ch	; cf27  ................
+	defb 00eh,08ch,00eh,08ch,00eh,082h,08eh,002h,081h,001h,08ch,003h,08ch,003h,08ch,003h	; cf37  ................
+	defb 08ch,003h,08ch,003h,08ch,003h,08ch,003h,08ch,003h,08ch,003h,08ch,003h,08ch,003h	; cf47  ................
+	defb 08ch,003h,08ch,003h,08ch,003h,08ch,003h,08ch,003h,080h,00bh,08ch,000h,080h,00ah	; cf57  ................
+	defb 08eh,00eh,08ch,000h,08eh,002h,080h,00ah,083h,080h,084h,084h,084h,084h,08ch,00bh	; cf67  ................
+	defb 08eh,00eh,08ch,00bh,08eh,002h,08ch,00ch,08eh,0f6h,08ch,00ch,08eh,002h,08eh,009h	; cf77  ................
+	defb 080h,00ch,087h,00ah,08ch,010h,08eh,00bh,08ch,010h,08eh,0fdh,080h,00dh,08ch,010h	; cf87  ................
+	defb 08eh,0ffh,08ch,010h,08eh,009h,08ch,011h,08ch,011h,08eh,00bh,08ch,011h,08ch,011h	; cf97  ................
+	defb 08eh,0fdh,08ch,011h,08ch,011h,08eh,0ffh,08ch,011h,08ch,011h,080h,00fh,08eh,009h	; cfa7  ................
+	defb 08ch,012h,08eh,0fdh,08ch,012h,082h,08bh,08ch,002h,08ch,002h,08ch,002h,08ch,002h	; cfb7  ................
+	defb 08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h	; cfc7  ................
+	defb 08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h	; cfd7  ................
+	defb 08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h	; cfe7  ................
+	defb 08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h	; cff7  ................
+	defb 08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h,08ch,002h	; d007  ................
+	defb 08eh,009h,08ch,00fh,08eh,00bh,08ch,00fh,08eh,009h,08ch,00fh,08eh,00bh,08ch,00fh	; d017  ................
+	defb 08eh,009h,08ch,00fh,08eh,00bh,08ch,00fh,08eh,009h,08ch,00fh,08eh,00bh,08ch,00fh	; d027  ................
+	defb 08eh,009h,08ch,00fh,08eh,00bh,08ch,00fh,08eh,009h,08ch,00fh,08eh,00bh,08ch,00fh	; d037  ................
+	defb 082h,085h,0a0h,083h,01eh,081h,001h,080h,003h,087h,007h,014h,08bh,086h,083h,001h	; d047  ................
+	defb 081h,001h,080h,00ah,040h,084h,082h,086h,083h,001h,081h,001h,080h,00ah,034h,084h	; d057  ....@.........4.
+	defb 082h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d067  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d077  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d087  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d097  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0a7  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0b7  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0c7  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0d7  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0e7  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d0f7  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; d107  ................
 
 ; ======================================================================
 ; CODIGO 0xd117..0xd13a  (35 bytes)
@@ -7896,7 +6683,6 @@ L_D48C:
 	defb 0fdh,040h,0fbh ;illegal sequence	;d57a
 	ld b,b			;d57d
 	rst 38h			;d57e
-L_D57F:
 	ld d,c			;d57f
 	nop			;d580
 	rst 38h			;d581

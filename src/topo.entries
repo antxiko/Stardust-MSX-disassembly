@@ -1,3 +1,4 @@
 # Entrada de TOPO: el cargador BASIC hace BLOAD"cas:",R y la cabecera BIN
 # declara exec=0x9470 (verificado: breakpoint alcanzado en openMSX a los 65.6 s).
-0x9470
+0x9470  logo_topo   donde arranca el logo de la casa: el cargador BASIC lo
+#                     carga con BLOAD"cas:",R y el ,R lo ejecuta solo
