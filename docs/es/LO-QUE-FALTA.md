@@ -220,6 +220,37 @@ grep "datos sin clasificar" src/juego.notes src/parte2.notes
 Y se pueden volver a medir con `tools/clasifica_huecos.py`, que es de donde
 salió su clasificación.
 
+## La cifra de rutinas bajó de 164 a 109, y es la misma confusión de siempre
+
+Esta página ya contaba que la cifra de rutinas estuvo publicada como **1956**,
+que era el número de **etiquetas** del trazador: todo destino de salto, incluidos
+los saltos internos de una misma rutina. Se corrigió contando sólo lo que
+alguien había averiguado a mano.
+
+Pues la misma confusión volvió a colarse, en pequeño. Los ficheros de puntos de
+entrada recogen dos clases de cosas: las rutinas que se han leído y entendido,
+y los puntos **medidos en el emulador** —dónde estuvo el contador de programa,
+dónde saltó un aviso de escritura—. Los segundos son evidencia muy útil, pero
+casi nunca son el principio de una rutina: un aviso puesto sobre el puerto de
+vídeo informa de la dirección del `out`, y ese `out` está **dentro del bucle**
+de dibujado, no en la cabecera.
+
+De los 164 puntos declarados, **55 son etiquetas interiores**: sitios a los que
+se llega cayendo desde la instrucción de arriba. Rutinas de verdad hay **109**,
+y es la cifra que se publica ahora.
+
+Lo caza una herramienta nueva, `tools/check_interiores.py`, con una regla
+sencilla: si a un punto se puede caer desde la instrucción anterior, no es una
+cabecera. Y una lección de su propia construcción, porque la primera versión
+señaló 61 y cinco eran mentira: hay que comprobar que la instrucción de arriba
+esté **pegada**. Cuando en medio hay datos —los opcodes del intérprete de
+guiones tienen sus tablas delante, a 72 bytes— no se puede caer desde ninguna
+parte. Una herramienta de verificación que no se verifica a sí misma sirve de
+poco.
+
+Ahora la comprobación corre en el Makefile y el test que vigila la cifra la
+usa, así que la cifra publicada y la comprobación no pueden separarse.
+
 ## Lo que falta por trazar
 
 El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos

@@ -596,7 +596,7 @@ C 0xBDD4 Rellena la tabla de las 48 estrellas (0xCB09) con alturas al azar menor
 L 0xF41D hud_imprime El rotulador del HUD: IX = cadena de indices de glifo terminada en 0, DE = tabla de PATRONES; 8 bytes por glifo desde la fuente de 0x5F00 y +0x40 por glifo, que con la tabla de nombres intercalada de a 8 es la celda contigua
 L 0xC038 hud_vidas_zona Repinta los dos indicadores de un digito, vidas (0xE156 -> 0xE152, patrones 0x07A0) y zona (0xE157 -> 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
 L 0xBE7F hud_reset Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
-L 0xD3D3 suma_puntos Suma al marcador de 0xDD80 en ASCII con acarreo decimal a mano (inc a / cp 03ah / sub 00ah) de derecha a izquierda, y repinta con hud_imprime
+L 0xD3CF suma_puntos Suma al marcador de 0xDD80 en ASCII con acarreo decimal a mano (inc a / cp 03ah / sub 00ah) de derecha a izquierda, y repinta con hud_imprime
 
 # --- LOS CREDITOS, Y UN SCROLL QUE NO MUEVE EL DIBUJO ------------------------
 #

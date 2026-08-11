@@ -125,6 +125,12 @@ f7b5: jp 0a279h            &lt;- aquí empieza la segunda parte</code></pre>
 <p>Los cinco rangos que quedan se pueden listar con:</p>
 <pre><code>grep &quot;datos sin clasificar&quot; src/juego.notes src/parte2.notes</code></pre>
 <p>Y se pueden volver a medir con <code>tools/clasifica_huecos.py</code>, que es de donde salió su clasificación.</p>
+<h2 id="la-cifra-de-rutinas-bajo-de-164-a-109-y-es-la-misma-confusion-de-siempre">La cifra de rutinas bajó de 164 a 109, y es la misma confusión de siempre</h2>
+<p>Esta página ya contaba que la cifra de rutinas estuvo publicada como <b>1956</b>, que era el número de <b>etiquetas</b> del trazador: todo destino de salto, incluidos los saltos internos de una misma rutina. Se corrigió contando sólo lo que alguien había averiguado a mano.</p>
+<p>Pues la misma confusión volvió a colarse, en pequeño. Los ficheros de puntos de entrada recogen dos clases de cosas: las rutinas que se han leído y entendido, y los puntos <b>medidos en el emulador</b> —dónde estuvo el contador de programa, dónde saltó un aviso de escritura—. Los segundos son evidencia muy útil, pero casi nunca son el principio de una rutina: un aviso puesto sobre el puerto de vídeo informa de la dirección del <code>out</code>, y ese <code>out</code> está <b>dentro del bucle</b> de dibujado, no en la cabecera.</p>
+<p>De los 164 puntos declarados, <b>55 son etiquetas interiores</b>: sitios a los que se llega cayendo desde la instrucción de arriba. Rutinas de verdad hay <b>109</b>, y es la cifra que se publica ahora.</p>
+<p>Lo caza una herramienta nueva, <code>tools/check_interiores.py</code>, con una regla sencilla: si a un punto se puede caer desde la instrucción anterior, no es una cabecera. Y una lección de su propia construcción, porque la primera versión señaló 61 y cinco eran mentira: hay que comprobar que la instrucción de arriba esté <b>pegada</b>. Cuando en medio hay datos —los opcodes del intérprete de guiones tienen sus tablas delante, a 72 bytes— no se puede caer desde ninguna parte. Una herramienta de verificación que no se verifica a sí misma sirve de poco.</p>
+<p>Ahora la comprobación corre en el Makefile y el test que vigila la cifra la usa, así que la cifra publicada y la comprobación no pueden separarse.</p>
 <h2 id="lo-que-falta-por-trazar">Lo que falta por trazar</h2>
 <p>El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos bloques grandes, el trazador alcanza esto:</p>
 <p>juego de naves    26,0 % parte de a pie    35,0 %</p>

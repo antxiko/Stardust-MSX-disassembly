@@ -12,6 +12,7 @@ comprobarse con la cinta de MSX y nada mas.
 
 Se saltan solos si no esta la cinta extraida, porque tampoco se distribuye.
 """
+import io
 import json
 import os
 import re
@@ -279,6 +280,27 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
                 return valor
         self.fail(f"no hay ninguna cifra con la etiqueta '{etiqueta}' en {idioma}")
 
+    def interiores(self):
+        """Cuantos puntos de entrada NO son cabecera de rutina.
+
+        Lo calcula la misma herramienta que el Makefile, para que la cifra
+        publicada y la comprobacion no puedan desviarse la una de la otra.
+        """
+        sys.path.insert(0, TOOLS)
+        import check_interiores
+        salida = io.StringIO()
+        antes = sys.stdout
+        sys.stdout = salida
+        try:
+            check_interiores.main(os.path.join(SRC, "stardust_juego.asm"),
+                                  os.path.join(SRC, "juego.entries"),
+                                  os.path.join(SRC, "stardust_parte2.asm"),
+                                  os.path.join(SRC, "parte2.entries"))
+        finally:
+            sys.stdout = antes
+        return sum(1 for l in salida.getvalue().splitlines()
+                   if l.strip().startswith("INTERIOR"))
+
     @sin_trazado
     def test_los_bytes_de_codigo_son_los_que_alcanza_el_trazador(self):
         codigo = sum(trazado(m)["report"]["code_bytes"] for m in MODULOS)
@@ -302,13 +324,26 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
                          sum(MODULOS.values()) + DESCRIPTOR + BASIC)
 
     def test_las_rutinas_identificadas_son_las_declaradas_a_mano(self):
-        """Rutinas identificadas = las que alguien ha nombrado, no las etiquetas.
+        """Rutinas identificadas = las que EMPIEZAN una rutina.
 
         Esta cifra estuvo publicada como 1956, que era el numero de ETIQUETAS
         del trazador: todo destino de salto o llamada, incluidos los saltos
         internos de una misma rutina. En un tramo de 124 bytes hay cuatro. Una
         rutina identificada es otra cosa: la que aparece en un fichero .entries
         porque alguien ha averiguado que esta ahi y por que.
+
+        Y despues se colo la MISMA confusion en pequeno. Un .entries recoge
+        tambien puntos MEDIDOS en el emulador -donde estuvo el contador de
+        programa, donde salto un watchpoint-, y esos caen en mitad de una
+        rutina: un watchpoint sobre el puerto 0x98 reporta el PC del `out`,
+        que esta dentro del bucle de dibujado. Son evidencia util, pero no son
+        rutinas, y contarlas volvia a inflar la cifra (164 declarados contra
+        109 rutinas de verdad).
+
+        Asi que la cifra publicada cuenta solo los puntos de entrada que de
+        verdad EMPIEZAN algo, que es lo que dice contar. Los distingue
+        tools/check_interiores.py: si a un punto se puede caer desde la
+        instruccion de arriba, no es una cabecera.
         """
         declaradas = 0
         for m in MODULOS:
@@ -316,10 +351,11 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
                 for linea in f:
                     if re.match(r"0x[0-9A-Fa-f]{4}\s", linea.strip()):
                         declaradas += 1
+        rutinas = declaradas - self.interiores()
         self.assertEqual(self.numero(self.cifra("es", "rutinas identificadas")),
-                         declaradas)
+                         rutinas)
         self.assertEqual(self.numero(self.cifra("en", "routines identified")),
-                         declaradas)
+                         rutinas)
         # Y tiene que ser MUY menor que el numero de etiquetas, o alguien ha
         # vuelto a confundir las dos cosas.
         if all(hay(WORK, m + ".trace.json") for m in MODULOS):

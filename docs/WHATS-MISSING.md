@@ -221,6 +221,36 @@ grep "datos sin clasificar" src/juego.notes src/parte2.notes
 and measure them again with `tools/clasifica_huecos.py`, which is where their
 classification came from.
 
+## The routine count dropped from 164 to 109, and it's the same old confusion
+
+This page already told how the routine count was once published as **1956**,
+which was the number of the tracer's **labels**: every jump target, including
+jumps internal to a single routine. It was fixed by counting only what somebody
+had worked out by hand.
+
+Well, the same confusion crept back in, on a smaller scale. The entry-point
+files hold two different kinds of thing: routines that have been read and
+understood, and points **measured in the emulator** —where the program counter
+was, where a write watchpoint fired. The latter are very useful evidence, but
+they are almost never the start of a routine: a watchpoint on the video port
+reports the address of the `out`, and that `out` sits **inside the drawing
+loop**, not at the routine's head.
+
+Of the 164 declared points, **55 are interior labels**: places reached by
+falling through from the instruction above. Actual routines number **109**, and
+that is the figure published now.
+
+A new tool catches them, `tools/check_interiores.py`, with a simple rule: if a
+point can be fallen into from the previous instruction, it isn't a head. And
+there's a lesson from building it, because the first version flagged 61 and
+five of those were false: you have to check that the instruction above is
+**adjacent**. Where there is data in between —the script interpreter's opcodes
+have their tables in front of them, 72 bytes away— nothing can fall through. A
+verification tool that doesn't verify itself is worth little.
+
+The check now runs in the Makefile and the test that guards the figure uses it,
+so the published figure and the check cannot drift apart.
+
 ## What is left to trace
 
 The budget measures bytes; coverage measures something else. Of the code in the

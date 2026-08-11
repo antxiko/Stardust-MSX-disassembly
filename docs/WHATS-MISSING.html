@@ -125,6 +125,12 @@ f7b5: jp 0a279h            &lt;- the second part starts here</code></pre>
 <p>The five remaining ranges can be listed with:</p>
 <pre><code>grep &quot;datos sin clasificar&quot; src/juego.notes src/parte2.notes</code></pre>
 <p>and measure them again with <code>tools/clasifica_huecos.py</code>, which is where their classification came from.</p>
+<h2 id="the-routine-count-dropped-from-164-to-109-and-it-s-the-same-old-confusion">The routine count dropped from 164 to 109, and it&#x27;s the same old confusion</h2>
+<p>This page already told how the routine count was once published as <b>1956</b>, which was the number of the tracer&#x27;s <b>labels</b>: every jump target, including jumps internal to a single routine. It was fixed by counting only what somebody had worked out by hand.</p>
+<p>Well, the same confusion crept back in, on a smaller scale. The entry-point files hold two different kinds of thing: routines that have been read and understood, and points <b>measured in the emulator</b> —where the program counter was, where a write watchpoint fired. The latter are very useful evidence, but they are almost never the start of a routine: a watchpoint on the video port reports the address of the <code>out</code>, and that <code>out</code> sits <b>inside the drawing loop</b>, not at the routine&#x27;s head.</p>
+<p>Of the 164 declared points, <b>55 are interior labels</b>: places reached by falling through from the instruction above. Actual routines number <b>109</b>, and that is the figure published now.</p>
+<p>A new tool catches them, <code>tools/check_interiores.py</code>, with a simple rule: if a point can be fallen into from the previous instruction, it isn&#x27;t a head. And there&#x27;s a lesson from building it, because the first version flagged 61 and five of those were false: you have to check that the instruction above is <b>adjacent</b>. Where there is data in between —the script interpreter&#x27;s opcodes have their tables in front of them, 72 bytes away— nothing can fall through. A verification tool that doesn&#x27;t verify itself is worth little.</p>
+<p>The check now runs in the Makefile and the test that guards the figure uses it, so the published figure and the check cannot drift apart.</p>
 <h2 id="what-is-left-to-trace">What is left to trace</h2>
 <p>The budget measures bytes; coverage measures something else. Of the code in the two big blocks, the tracer reaches this:</p>
 <p>ship game        26.0 % on-foot part     35.0 %</p>

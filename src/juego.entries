@@ -331,7 +331,7 @@
 0xF41D  hud_imprime rotula el HUD: IX = cadena de indices de glifo terminada en 0, DE = direccion de la tabla de PATRONES; 8 bytes por glifo desde la fuente de 0x5F00, y +0x40 por glifo (la celda de al lado, con la tabla de nombres intercalada de a 8)
 0xC038  hud_vidas_zona repinta los dos indicadores de un digito: vidas (0xE156 -> buffer 0xE152, patrones 0x07A0) y zona (0xE157 -> buffer 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
 0xBE7F  hud_reset pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
-0xD3D3  suma_puntos suma al marcador de 0xDD80 en ASCII con acarreo decimal (inc a / cp 03ah / sub 00ah, de derecha a izquierda) y repinta con hud_imprime
+0xD3CF  suma_puntos suma al marcador de 0xDD80 en ASCII con acarreo decimal (inc a / cp 03ah / sub 00ah, de derecha a izquierda) y repinta con hud_imprime
 
 # --- LOS CREDITOS Y EL CUARTETO DE RUTINAS DE VRAM ---------------------------
 0xEE7C  creditos    la secuencia de creditos: cinco carteles en el tercio central (bucle de 0xEE92 con la tabla de 0xF1E7), cada uno con su pausa y su transicion

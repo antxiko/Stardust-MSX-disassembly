@@ -101,6 +101,12 @@ sanity: work/juego.trace.json work/topo.trace.json
 	@python3 tools/check_entradas.py src/loader.entries src/loader.notes
 	@echo ""
 	@echo "=================================================================="
+	@echo " Cuales de los puntos de entrada son rutinas y cuales no lo son"
+	@echo "=================================================================="
+	-@python3 tools/check_interiores.py src/stardust_juego.asm src/juego.entries \
+	    src/stardust_parte2.asm src/parte2.entries | tail -1
+	@echo ""
+	@echo "=================================================================="
 	@echo " Sanidad del trazado: las zonas de datos no pueden salir como codigo"
 	@echo "=================================================================="
 	python3 tools/check_trace.py work/juego.trace.json src/juego.nocode
