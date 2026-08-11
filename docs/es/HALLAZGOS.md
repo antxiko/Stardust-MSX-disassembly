@@ -492,6 +492,31 @@ y `0xE5C0` es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de 0xE7A3
 tiene **35 entradas**, y que son 35 y no más no es una estimación: la tabla
 acaba en 0xE7E8 y el código del opcode 0x90 empieza pegado, en 0xE7E9.
 
+## Los créditos pasan con un scroll que no mueve el dibujo
+
+Los créditos del juego —los cinco carteles con los nombres de quienes hicieron
+la versión de MSX— se muestran de uno en uno en la franja central de la
+pantalla, con una pausa para leerlos, y cada uno se despide **deslizándose
+hacia arriba**.
+
+Mover esa franja parece caro: son 2.048 bytes de dibujos. La rutina no los
+toca. Recuerda que en el MSX hay dos tablas, la de qué dibujo lleva cada celda
+y la de los dibujos, y **mueve la primera**: 256 bytes en vez de 2.048. Como
+cada celda apunta a su dibujo, correr los índices corre la imagen. Ocho veces
+sale ocho veces más barato.
+
+El paso de cada tirón son 32 posiciones, que es justo una fila de la pantalla,
+y da ocho tirones: las ocho filas de la franja. Al terminar borra los dibujos
+y **reconstruye la tabla de celdas**, y ahí aparece la confirmación bonita: la
+reconstruye con el mismo entrelazado de ocho en ocho que dejó la pantalla de
+carga —0, 8, 16… 248, luego 1, 9, 17…— en seis instrucciones. El juego sabe
+perfectamente cómo viene esa tabla y se encarga de devolverla a su sitio.
+
+Hasta ahora ese entrelazado sólo se había leído en el código de la pantalla de
+carga. Aquí aparece por segunda vez, escrito por otra mano y en otro bloque, y
+explica de paso por qué el marcador puede escribir dibujos y acertar siempre
+de celda.
+
 ## El marcador no escribe letras: redibuja las celdas
 
 Todo el marcador de la fase de naves —los puntos, las vidas, el número de

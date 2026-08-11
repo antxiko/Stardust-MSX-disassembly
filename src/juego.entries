@@ -332,3 +332,12 @@
 0xC038  hud_vidas_zona repinta los dos indicadores de un digito: vidas (0xE156 -> buffer 0xE152, patrones 0x07A0) y zona (0xE157 -> buffer 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
 0xBE7F  hud_reset pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
 0xD3D3  suma_puntos suma al marcador de 0xDD80 en ASCII con acarreo decimal (inc a / cp 03ah / sub 00ah, de derecha a izquierda) y repinta con hud_imprime
+
+# --- LOS CREDITOS Y EL CUARTETO DE RUTINAS DE VRAM ---------------------------
+0xEE7C  creditos    la secuencia de creditos: cinco carteles en el tercio central (bucle de 0xEE92 con la tabla de 0xF1E7), cada uno con su pausa y su transicion
+0xEF6D  creditos_transicion desliza el cartel hacia arriba moviendo la tabla de NOMBRES, no los dibujos: ocho pasos de 0x20 (una fila) sobre los 256 nombres del tercio central, y al final borra los patrones y reconstruye la tabla intercalada de a 8
+0xEFC6  retardo     espera activa: B vueltas de un bucle de 0x1F4 (`dec bc / ld a,b / or c / jr nz`)
+0xEE24  vram_pon_dir fija la direccion de ESCRITURA del VDP (out 0x99 con el bit 0x40 puesto); la usan todas las de abajo
+0xF0F7  vram_escribe copia BC bytes de RAM (DE) a VRAM (HL) por el puerto 0x98
+0xF105  vram_lee    copia BC bytes de VRAM (HL) a RAM (DE) leyendo del puerto 0x98
+0xF0E7  vram_rellena escribe BC veces el valor de A en VRAM desde HL

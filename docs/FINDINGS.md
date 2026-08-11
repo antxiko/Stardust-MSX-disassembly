@@ -528,6 +528,30 @@ and `0xE5C0` is exactly "HL = table + A×2, HL = (HL)". The table at 0xE7A3 has
 **35 entries**, and that it is 35 and no more is not an estimate: the table ends
 at 0xE7E8 and the code for opcode 0x90 starts right up against it, at 0xE7E9.
 
+## The credits scroll without moving the picture
+
+The game's credits —the five cards naming the people who made the MSX
+version— are shown one at a time in the middle band of the screen, with a
+pause to read them, and each one bows out by **sliding upwards**.
+
+Moving that band looks expensive: it is 2,048 bytes of drawings. The routine
+doesn't touch them. Remember the MSX keeps two tables, one saying which
+drawing each cell carries and one holding the drawings, and it **moves the
+first**: 256 bytes instead of 2,048. Since every cell points at its drawing,
+shifting the indices shifts the picture. It comes out eight times cheaper.
+
+Each tug moves 32 positions, exactly one row of the screen, and it gives eight
+tugs: the band's eight rows. When it finishes it clears the drawings and
+**rebuilds the cell table**, and there the nice confirmation shows up: it
+rebuilds it with the same interleave in eights the loading screen left behind
+—0, 8, 16… 248, then 1, 9, 17…— in six instructions. The game knows exactly
+how that table arrives and takes care to put it back.
+
+Until now that interleave had only been read in the loading screen's code.
+Here it turns up a second time, written by another hand and in another block,
+and it explains along the way why the scoreboard can write drawings and always
+land on the right cell.
+
 ## The scoreboard doesn't write letters: it redraws the cells
 
 The whole scoreboard of the ship stage —score, lives, zone number— comes out

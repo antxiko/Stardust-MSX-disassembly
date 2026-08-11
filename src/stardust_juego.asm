@@ -5081,7 +5081,7 @@ L_D45E:
 	ld hl,02f50h		;d47b
 	ld c,0f1h		;d47e
 L_D480:
-	call L_EE24		;d480
+	call vram_pon_dir		;d480
 	ld a,c			;d483
 	ld c,002h		;d484
 L_D486:
@@ -5094,7 +5094,7 @@ L_D488:
 	ei			;d48e
 	ld de,00040h		;d48f
 	add hl,de		;d492
-	call L_EE24		;d493
+	call vram_pon_dir		;d493
 	dec c			;d496
 	jr nz,L_D486		;d497
 	ei			;d499
@@ -8373,7 +8373,7 @@ L_EC2D:
 ; ======================================================================
 
 
-L_EE24:
+vram_pon_dir:		; Fija la direccion de ESCRITURA del VDP por el puerto 0x99, con el bit 0x40 puesto
 	di			;ee24
 	push af			;ee25
 	in a,(099h)		;ee26
@@ -8387,15 +8387,15 @@ L_EE24:
 	ret			;ee33
 L_EE34:
 	ld b,032h		;ee34
-	call L_EFC6		;ee36
+	call retardo		;ee36
 	ld hl,00000h		;ee39
 	ld bc,01800h		;ee3c
 	xor a			;ee3f
-	call L_F0E7		;ee40
+	call vram_rellena		;ee40
 	ld hl,02000h		;ee43
 	ld bc,01800h		;ee46
 	ld a,071h		;ee49
-	call L_F0E7		;ee4b
+	call vram_rellena		;ee4b
 	ld a,0e2h		;ee4e
 	out (099h),a		;ee50
 	and a			;ee52
@@ -8408,7 +8408,7 @@ L_EE34:
 L_EE62:
 	ld a,(hl)		;ee62
 	cp 0ffh			;ee63
-	jr z,L_EE7C		;ee65
+	jr z,creditos		;ee65
 	ld (ix+000h),a		;ee67
 	inc hl			;ee6a
 	ld a,(hl)		;ee6b
@@ -8416,17 +8416,17 @@ L_EE62:
 	inc hl			;ee6f
 	push hl			;ee70
 	ld b,001h		;ee71
-	call L_EFC6		;ee73
+	call retardo		;ee73
 	call L_EFD3		;ee76
 	pop hl			;ee79
 	jr L_EE62		;ee7a
-L_EE7C:
+creditos:		; La secuencia de creditos: cinco carteles en el tercio central (bucle de 0xEE92 sobre la tabla de 0xF1E7, dentro del bloque de textos 0xF124-0xF2D0), cada uno con su pausa y su transicion
 	ld hl,02800h		;ee7c
 	ld bc,00800h		;ee7f
 	ld a,0a1h		;ee82
-	call L_F0E7		;ee84
+	call vram_rellena		;ee84
 	ld b,032h		;ee87
-	call L_EFC6		;ee89
+	call retardo		;ee89
 	ld ix,0f1e7h		;ee8c
 	ld b,005h		;ee90
 L_EE92:
@@ -8434,10 +8434,10 @@ L_EE92:
 	ld hl,00900h		;ee93
 	call L_F4E4		;ee96
 	ld b,0c8h		;ee99
-	call L_EFC6		;ee9b
+	call retardo		;ee9b
 	ld b,0c8h		;ee9e
-	call L_EFC6		;eea0
-	call L_EF6D		;eea3
+	call retardo		;eea0
+	call creditos_transicion		;eea3
 	pop bc			;eea6
 	djnz L_EE92		;eea7
 	ld hl,00a98h		;eea9
@@ -8464,7 +8464,7 @@ L_EECE:
 	push bc			;eece
 	ld bc,00100h		;eecf
 	ld a,011h		;eed2
-	call L_F0E7		;eed4
+	call vram_rellena		;eed4
 	ld bc,00600h		;eed7
 	add hl,bc		;eeda
 	pop bc			;eedb
@@ -8478,7 +8478,7 @@ L_EECE:
 L_EEEA:
 	ld a,011h		;eeea
 	ld bc,00008h		;eeec
-	call L_F0E7		;eeef
+	call vram_rellena		;eeef
 	ld bc,00040h		;eef2
 	add hl,bc		;eef5
 	dec e			;eef6
@@ -8489,7 +8489,7 @@ L_EEFE:
 	ld a,011h		;eefe
 L_EF00:
 	ld bc,00018h		;ef00
-	call L_F0E7		;ef03
+	call vram_rellena		;ef03
 	ld bc,00040h		;ef06
 	add hl,bc		;ef09
 	dec e			;ef0a
@@ -8515,7 +8515,7 @@ L_EF2B:
 L_EF2D:
 	push bc			;ef2d
 	ld bc,00100h		;ef2e
-	call L_F0F7		;ef31
+	call vram_escribe		;ef31
 	ld bc,00800h		;ef34
 	add hl,bc		;ef37
 	pop bc			;ef38
@@ -8533,7 +8533,7 @@ L_EF2D:
 L_EF49:
 	push bc			;ef49
 	ld bc,00008h		;ef4a
-	call L_F0F7		;ef4d
+	call vram_escribe		;ef4d
 	ld bc,00040h		;ef50
 	add hl,bc		;ef53
 	pop bc			;ef54
@@ -8545,13 +8545,13 @@ L_EF49:
 L_EF5E:
 	push bc			;ef5e
 	ld bc,00018h		;ef5f
-	call L_F0F7		;ef62
+	call vram_escribe		;ef62
 	ld bc,00040h		;ef65
 	add hl,bc		;ef68
 	pop bc			;ef69
 	djnz L_EF5E		;ef6a
 	ret			;ef6c
-L_EF6D:
+creditos_transicion:		; Despide el cartel deslizandolo hacia arriba, y lo hace moviendo la tabla de NOMBRES (256 bytes) en vez de los patrones (2048): ocho pasos de 0x20 = una fila. Al final borra los dibujos del tercio y reconstruye la tabla con el intercalado de a 8 de la pantalla de carga
 	ld hl,04100h		;ef6d
 	ld de,04101h		;ef70
 	ld bc,0001fh		;ef73
@@ -8559,7 +8559,7 @@ L_EF6D:
 	ld de,04000h		;ef78
 	ld hl,01900h		;ef7b
 	ld bc,00100h		;ef7e
-	call L_F105		;ef81
+	call vram_lee		;ef81
 	ld a,008h		;ef84
 L_EF86:
 	ex af,af'		;ef86
@@ -8570,18 +8570,18 @@ L_EF86:
 	ld hl,01900h		;ef92
 	ld de,04000h		;ef95
 	ld bc,00100h		;ef98
-	call L_F0F7		;ef9b
+	call vram_escribe		;ef9b
 	ld b,00ah		;ef9e
-	call L_EFC6		;efa0
+	call retardo		;efa0
 	ex af,af'		;efa3
 	dec a			;efa4
 	jr nz,L_EF86		;efa5
 	ld hl,00800h		;efa7
 	ld bc,00800h		;efaa
 	xor a			;efad
-	call L_F0E7		;efae
+	call vram_rellena		;efae
 	ld hl,01900h		;efb1
-	call L_EE24		;efb4
+	call vram_pon_dir		;efb4
 	ld c,098h		;efb7
 	xor a			;efb9
 L_EFBA:
@@ -8592,7 +8592,7 @@ L_EFBA:
 	cp 008h			;efc1
 	jr nz,L_EFBA		;efc3
 	ret			;efc5
-L_EFC6:
+retardo:		; Espera activa: B vueltas de un bucle de 0x1F4
 	push bc			;efc6
 	ld bc,001f4h		;efc7
 L_EFCA:
@@ -8601,7 +8601,7 @@ L_EFCA:
 	or c			;efcc
 	jr nz,L_EFCA		;efcd
 	pop bc			;efcf
-	djnz L_EFC6		;efd0
+	djnz retardo		;efd0
 	ret			;efd2
 L_EFD3:
 	ld a,(ix+000h)		;efd3
@@ -8737,7 +8737,7 @@ L_F0BD:
 	ld c,010h		;f0bd
 	ld de,04000h		;f0bf
 L_F0C2:
-	call L_EE24		;f0c2
+	call vram_pon_dir		;f0c2
 	push de			;f0c5
 	ld a,(0f125h)		;f0c6
 	ld b,a			;f0c9
@@ -8763,9 +8763,9 @@ L_F0CC:
 	jr nz,L_F0C2		;f0e3
 	ei			;f0e5
 	ret			;f0e6
-L_F0E7:
+vram_rellena:		; Escribe BC veces el valor de A en VRAM desde HL
 	ex af,af'		;f0e7
-	call L_EE24		;f0e8
+	call vram_pon_dir		;f0e8
 L_F0EB:
 	ex af,af'		;f0eb
 L_F0EC:
@@ -8778,8 +8778,8 @@ L_F0EC:
 	ex af,af'		;f0f4
 	ei			;f0f5
 	ret			;f0f6
-L_F0F7:
-	call L_EE24		;f0f7
+vram_escribe:		; Copia BC bytes de RAM (DE) a VRAM (HL) por el puerto 0x98
+	call vram_pon_dir		;f0f7
 L_F0FA:
 	ld a,(de)		;f0fa
 L_F0FB:
@@ -8791,7 +8791,7 @@ L_F0FB:
 	jr nz,L_F0FA		;f101
 	ei			;f103
 	ret			;f104
-L_F105:
+vram_lee:		; Copia BC bytes de VRAM (HL) a RAM (DE) leyendo del puerto 0x98
 	call L_F114		;f105
 	and a			;f108
 L_F109:
@@ -8982,7 +8982,7 @@ L_F363:
 	rrca			;f384
 	rrca			;f385
 	ex af,af'		;f386
-	call L_EE24		;f387
+	call vram_pon_dir		;f387
 	ex af,af'		;f38a
 L_F38B:
 	out (098h),a		;f38b
@@ -9021,7 +9021,7 @@ L_F3AB:
 	push bc			;f3ab
 	push hl			;f3ac
 	ld c,002h		;f3ad
-	call L_EE24		;f3af
+	call vram_pon_dir		;f3af
 L_F3B2:
 	ld b,008h		;f3b2
 L_F3B4:
@@ -9041,7 +9041,7 @@ L_F3B4:
 	ld a,h			;f3c7
 	add a,008h		;f3c8
 	ld h,a			;f3ca
-	call L_EE24		;f3cb
+	call vram_pon_dir		;f3cb
 L_F3CE:
 	pop af			;f3ce
 	dec c			;f3cf
@@ -9072,7 +9072,7 @@ L_F3FF:
 	ld c,018h		;f3ff
 L_F401:
 	push bc			;f401
-	call L_EE24		;f402
+	call vram_pon_dir		;f402
 	push de			;f405
 	push hl			;f406
 	ex de,hl		;f407
@@ -9103,7 +9103,7 @@ hud_imprime:		; El rotulador del HUD: IX = cadena de indices de glifo terminada 
 	ld bc,05f00h		;f428
 	add hl,bc		;f42b
 	ex de,hl		;f42c
-	call L_EE24		;f42d
+	call vram_pon_dir		;f42d
 	ld b,008h		;f430
 L_F432:
 	ld a,(de)		;f432
@@ -9267,7 +9267,7 @@ L_F528:
 	pop af			;f52f
 	cp 020h			;f530
 	jr nc,L_F5A9		;f532
-	call L_EE24		;f534
+	call vram_pon_dir		;f534
 	ld b,008h		;f537
 	push af			;f539
 L_F53A:
@@ -9326,7 +9326,7 @@ L_F588:
 	add hl,bc		;f58b
 L_F58C:
 	ld b,007h		;f58c
-	call L_EE24		;f58e
+	call vram_pon_dir		;f58e
 L_F591:
 	ld a,07fh		;f591
 L_F593:
@@ -9353,7 +9353,7 @@ L_F5A9:
 	add hl,de		;f5b3
 	ex de,hl		;f5b4
 	pop hl			;f5b5
-	call L_EE24		;f5b6
+	call vram_pon_dir		;f5b6
 	ld b,008h		;f5b9
 L_F5BB:
 	ld a,(de)		;f5bb
@@ -9367,7 +9367,7 @@ L_F5BC:
 	ld bc,00040h		;f5c4
 	add hl,bc		;f5c7
 L_F5C8:
-	call L_EE24		;f5c8
+	call vram_pon_dir		;f5c8
 	ld b,007h		;f5cb
 L_F5CD:
 	ld a,07fh		;f5cd
@@ -9426,7 +9426,7 @@ L_F609:
 	ex de,hl		;f60e
 L_F60F:
 	push hl			;f60f
-	call L_EE24		;f610
+	call vram_pon_dir		;f610
 	ld b,010h		;f613
 L_F615:
 	ld a,(de)		;f615
@@ -9464,7 +9464,7 @@ L_F634:
 L_F649:
 	ld b,018h		;f649
 L_F64B:
-	call L_EE24		;f64b
+	call vram_pon_dir		;f64b
 	push bc			;f64e
 	push hl			;f64f
 L_F650:
@@ -9571,7 +9571,7 @@ L_F6E6:
 	push de			;f6ea
 	cp 006h			;f6eb
 	jp z,L_F699		;f6ed
-	call L_EE24		;f6f0
+	call vram_pon_dir		;f6f0
 	ld b,008h		;f6f3
 L_F6F5:
 	ld a,000h		;f6f5
@@ -9582,7 +9582,7 @@ L_F6F5:
 	ld de,00040h		;f6fd
 	and a			;f700
 	sbc hl,de		;f701
-	call L_EE24		;f703
+	call vram_pon_dir		;f703
 	ld b,007h		;f706
 L_F708:
 	ld a,07fh		;f708

@@ -597,3 +597,51 @@ L 0xF41D hud_imprime El rotulador del HUD: IX = cadena de indices de glifo termi
 L 0xC038 hud_vidas_zona Repinta los dos indicadores de un digito, vidas (0xE156 -> 0xE152, patrones 0x07A0) y zona (0xE157 -> 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
 L 0xBE7F hud_reset Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
 L 0xD3D3 suma_puntos Suma al marcador de 0xDD80 en ASCII con acarreo decimal a mano (inc a / cp 03ah / sub 00ah) de derecha a izquierda, y repinta con hud_imprime
+
+# --- LOS CREDITOS, Y UN SCROLL QUE NO MUEVE EL DIBUJO ------------------------
+#
+# Las tres referencias a 0x1900 que quedaban sueltas (0xEF7B, 0xEF92, 0xEFB1)
+# no eran del logo: son de la TRANSICION DE LOS CREDITOS.
+#
+# La secuencia entera es el bucle de 0xEE92, cinco vueltas con la tabla de
+# 0xF1E7 —que cae dentro del bloque de creditos ya conocido, 0xF124-0xF2D0—:
+#
+#   ld hl,00900h / call L_F4E4   pinta el cartel en el tercio CENTRAL
+#   ld b,0c8h / call retardo     (dos veces: la pausa para leerlo)
+#   call creditos_transicion     y lo despide
+#
+# LO INTERESANTE ES LA TRANSICION (0xEF6D). Deslizar el tercio central son
+# 2048 bytes de dibujos si se mueven los patrones. No los mueve: mueve los
+# NOMBRES, que son 256. Como cada celda apunta a su dibujo, correr los indices
+# corre la imagen, y sale ocho veces mas barato:
+#
+#   ld hl,01900h / ld bc,00100h / call vram_lee    los 256 nombres a 0x4000
+#   ocho veces:
+#     ld hl,04020h / ld de,04000h / ldir           el buffer sube 0x20 = UNA fila
+#     ld hl,01900h / call vram_escribe             y vuelve a la VRAM
+#     call retardo
+#
+# Ocho pasos de una fila son las ocho filas del tercio: el cartel sale por
+# arriba. Las 32 posiciones que entran por abajo salen del relleno que 0xEF6D
+# prepara antes en 0x4100-0x411F (`ld hl,04100h / ld de,04101h / ldir`), o sea
+# 32 copias de lo que hubiera en 0x4100. SIN DETERMINAR con que byte queda.
+#
+# Y al acabar deja la mesa lista para el cartel siguiente:
+#   ld hl,00800h / ld bc,00800h / xor a / call vram_rellena   borra los dibujos
+#   ld hl,01900h / call vram_pon_dir                          y rehace nombres:
+#   xor a / out (c),a / add a,008h / jr nc / inc a / cp 008h / jr nz
+#
+# ESA RECONSTRUCCION ES LA MISMA DE LA PANTALLA DE CARGA: genera 0,8,16...248,
+# luego 1,9,17...249, y asi ocho pasadas de 32 = 256 valores. O sea que el
+# juego SABE que la tabla de nombres viene intercalada de a 8 y la rehace
+# igual. Es una confirmacion independiente del intercalado, que hasta ahora
+# solo se habia leido en la rutina 0x9BDB del bloque de la pantalla de carga,
+# y explica por que el HUD puede escribir patrones y acertar de celda.
+
+L 0xEE7C creditos La secuencia de creditos: cinco carteles en el tercio central (bucle de 0xEE92 sobre la tabla de 0xF1E7, dentro del bloque de textos 0xF124-0xF2D0), cada uno con su pausa y su transicion
+L 0xEF6D creditos_transicion Despide el cartel deslizandolo hacia arriba, y lo hace moviendo la tabla de NOMBRES (256 bytes) en vez de los patrones (2048): ocho pasos de 0x20 = una fila. Al final borra los dibujos del tercio y reconstruye la tabla con el intercalado de a 8 de la pantalla de carga
+L 0xEFC6 retardo Espera activa: B vueltas de un bucle de 0x1F4
+L 0xEE24 vram_pon_dir Fija la direccion de ESCRITURA del VDP por el puerto 0x99, con el bit 0x40 puesto
+L 0xF0F7 vram_escribe Copia BC bytes de RAM (DE) a VRAM (HL) por el puerto 0x98
+L 0xF105 vram_lee Copia BC bytes de VRAM (HL) a RAM (DE) leyendo del puerto 0x98
+L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
