@@ -740,3 +740,53 @@ class TestElSonidoDeLaParteDeAPie(unittest.TestCase):
     def test_los_tres_estados_de_canal_caben_donde_decimos(self):
         """0xD068 + 3*46 = 0xD0F2, y ahi siguen las variables globales."""
         self.assertEqual(0xD068 + 3 * 0x2E, 0xD0F2)
+
+
+class TestElBloqueDeMusicaSinDueno(unittest.TestCase):
+    """Los 149 bytes de 0xECCC: nadie los nombra.
+
+    Se afirma con cuidado: lo que se comprueba es que no hay REFERENCIA
+    LITERAL. Una direccion montada a mano se escaparia de esta busqueda, asi
+    que el test no dice que el bloque sea inalcanzable.
+    """
+
+    @staticmethod
+    def _apariciones(d, valor):
+        aguja = bytes((valor & 0xFF, valor >> 8))
+        return sum(1 for i in range(len(d) - 1) if d[i:i + 2] == aguja)
+
+    @sin_juego
+    @sin_parte2
+    @sin_pre
+    def test_nadie_nombra_0xeccc(self):
+        for m in ("juego", "parte2", "pre"):
+            self.assertEqual(self._apariciones(leer(m + ".raw"), 0xECCC), 0,
+                             "0xECCC aparece en el bloque %s" % m)
+
+    @sin_juego
+    def test_el_control_de_esa_busqueda(self):
+        """Si la busqueda valiera para todo, sus vecinos tampoco apareceran; y
+        aparecen, asi que el cero de arriba significa algo."""
+        d = leer("juego.raw")
+        self.assertEqual(self._apariciones(d, 0xECCB), 1)   # arranca_musica
+        self.assertGreaterEqual(self._apariciones(d, 0xED61), 1)
+        self.assertGreaterEqual(self._apariciones(d, 0xED6B), 1)
+
+    @sin_juego
+    def test_ninguna_frase_apunta_tan_arriba(self):
+        """La mas alta de las veinte es 0xEA38 clavada, muy por debajo del
+        bloque; asi que no se llega ahi por una llamada a frase."""
+        d = juego(0xE7C1, 0xE7E9)
+        destinos = [d[i * 2] | (d[i * 2 + 1] << 8) for i in range(20)]
+        self.assertEqual(max(destinos), 0xEA38)
+        self.assertLess(max(destinos), 0xECCB)
+
+    @sin_juego
+    def test_los_754_bytes_de_0xab0e_no_son_una_partitura(self):
+        """La afirmacion retirada, cerrada por segunda via: ahi hay valores por
+        encima de 0x7F que no existen como comandos del lenguaje."""
+        validos = set(range(0x80, 0x8F))
+        def imposibles(a):
+            return sum(1 for b in juego(a, a + 754) if b >= 0x80 and b not in validos)
+        self.assertGreater(imposibles(0xAB0E), 250)
+        self.assertLess(imposibles(0xE7E9), 20)

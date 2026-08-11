@@ -243,10 +243,21 @@ estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites
 (0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se
 buscaba código, que es exactamente el fallo que contaminó el trazado entero.
 
-Que las dos partes del juego suenan parecido se puede seguir mirando —y hay una
-rutina de sonido identificada en el binario de MSX—, pero la afirmación fuerte,
-la de los 754 bytes, no se sostiene hasta rehacer el cotejo con una búsqueda que
-exija coincidencia única.
+**Y ahora se puede cerrar del todo, por una segunda vía.** Con el lenguaje del
+sonido ya descifrado, los bytes de 0xAB0E se pueden leer como si fueran música,
+y no lo son: 306 de esos 754 bytes son valores por encima de 0x7F que **no
+existen como comandos** en un lenguaje cuyas órdenes van de 0x80 a 0x8E. Haciendo
+la misma cuenta sobre 754 bytes de la zona de música de verdad salen siete. Sean
+lo que sean esos bytes —y el rango de sprites dice que dibujo—, no son una
+partitura.
+
+La pregunta que la retirada dejaba en el aire —si las dos partes comparten el
+sonido— sí tiene respuesta ahora, y ha salido del binario y no de un cotejo: la
+parte de a pie se lleva **el subsistema de sonido entero del juego de naves,
+reubicado**. La tabla de notas son los mismos 192 bytes clavados, la rutina que
+vuelca los registros al chip son los mismos dieciocho, y los veinte punteros de
+frase están todos a un desplazamiento constante. Así que sí lo comparten, pero ni
+en el sitio ni por el motivo que decía la afirmación retirada.
 
 ## La misma letra, nítida o transparente
 
@@ -606,7 +617,19 @@ no tiene ni una nota, o sea que es percusión por el canal de ruido. Aquí figur
 como "la otra canción", y hay que rebajarlo: **no es una de las tres voces** —la
 tercera empieza un byte antes, y es un terminador—, y quién lo hace sonar sigue
 sin localizarse. Queda como un bloque escrito en el lenguaje del intérprete y sin
-dueño conocido.
+dueño conocido —y lo de «sin dueño» ya es una medida y no un encogimiento de
+hombros—. El valor 0xECCC **no aparece ni una sola vez** en los tres bloques de
+la cinta. El control dice que la búsqueda vale: 0xECCB aparece exactamente una
+vez, en 0xE181, que es justo la instrucción que se lo entrega al canal 2, y sus
+vecinos 0xED61 y 0xED6B también aparecen, cargados desde 0xF4FE y 0xF506.
+Tampoco se llega por continuidad: el byte anterior es un terminador, y ninguna
+de las veinte frases apunta tan arriba.
+
+Dicho con precisión, porque importa: no hay referencia *literal*. Una dirección
+montada a mano —un `ld hl,0eccbh / inc hl`— se escaparía de esta búsqueda, así
+que no se afirma que el bloque sea inalcanzable, sino que nada lo nombra. La
+sospecha razonable, dicha como sospecha: que fuera la tercera voz de verdad y la
+conversión la apagara dejando el puntero un byte corto, encima del terminador.
 
 La tabla de notas, de paso, se comprueba sola: con el reloj del chip de sonido
 del MSX, el primer periodo da **32,70 Hz, que es el do1 teórico**, y de los 84

@@ -805,9 +805,29 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 #     canal 1   0xEC4A-0xECCA   129 B, acaba en 0x82 (repite)
 #     canal 2   0xECCB          apunta a un 0x8B, o sea que entra callado
 # Los dos primeros empiezan con `8e 02`: la misma transposicion, +2, para las
-# dos voces. (Lo del canal 2 queda como HIPOTESIS: el byte de 0xECCB es un
-# 0x8B y eso limpia el canal, pero no se ha medido si algo lo reescribe
-# despues. Y los 149 bytes de 0xECCC en adelante son otra cosa sin identificar.)
+# dos voces.
+#
+# LO DEL CANAL 2 YA NO ES HIPOTESIS: medido en el hardware, arranca_musica pasa
+# UNA sola vez en 250 s y le da 0xECCB al canal 2; el mezclador vale 0x3C, o sea
+# tono abierto en 0 y 1 y CERRADO en el 2; y en toda la musica el canal 2 no
+# recibe ni un periodo. Entra mudo y se queda mudo.
+#
+# Y LOS 149 BYTES DE 0xECCC SON UN BLOQUE SIN DUENO. Estan escritos en el
+# lenguaje del interprete -56 llamadas a la frase 2 y una nota suelta- pero
+# NADIE LOS NOMBRA: el valor 0xECCC no aparece ni una sola vez en los tres
+# bloques de la cinta (naves, a pie y pantalla de carga). El control dice que la
+# busqueda vale: 0xECCB aparece exactamente una vez, en 0xE181, que es el
+# `ld de,0eccbh` de arranca_musica, y sus vecinos 0xED61 y 0xED6B tambien
+# aparecen, cargados desde 0xF4FE y 0xF506.
+#     Tampoco se llega por continuidad: el byte de 0xECCB es un 0x8B, que corta,
+#     y ninguna de las 20 frases apunta ahi -la mas alta es 0xEA38 clavada-. Dicho con precision: no hay REFERENCIA LITERAL. Una direccion
+#     calculada a mano (un `ld hl,0eccbh / inc hl`, por ejemplo) no la cazaria
+#     esta busqueda, asi que no se afirma que sea inalcanzable, sino que nada lo
+#     nombra.
+#     La sospecha razonable, dicha como sospecha: que fuera la tercera voz de
+#     verdad y la conversion la apagara dejando el puntero un byte antes, sobre
+#     el terminador. No se puede comprobar sin el binario del Spectrum, que este
+#     repositorio no distribuye.
 #
 # Eso explica ademas por que el sintetizador, tocando 0xEB52 solo, saca cuatro
 # notas graves y repetitivas: no es que la musica sea pobre, es que se estaba

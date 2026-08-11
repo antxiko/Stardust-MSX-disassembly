@@ -268,10 +268,20 @@ unsound, and 0xAB0E falls inside the range this project declares as sprites
 (0xA560–0xBA20). So the "finding" amounted to locating artwork where code was
 being looked for, which is exactly the fault that contaminated the whole trace.
 
-That the two halves of the game sound alike can still be looked into —and there
-is a sound routine identified in the MSX binary— but the strong claim, the one
-about the 754 bytes, does not stand until the cross-check is redone with a
-search that demands a unique match.
+**And now it can be shut for good, from a second direction.** With the sound
+language decoded, the bytes at 0xAB0E can simply be read as if they were music,
+and they aren't: 306 of those 754 bytes are values above 0x7F that **do not exist
+as commands** in a language whose orders run from 0x80 to 0x8E. Run the same
+count over 754 bytes of the real music area and it returns seven. Whatever those
+bytes are —and the sprite range says artwork— they are not a score.
+
+The question the retraction left hanging —do the two halves share their sound?—
+does have an answer now, and it came from the binary rather than from a
+cross-check: the on-foot half carries **the entire sound subsystem of the ship
+game, relocated**. The note table is the same 192 bytes to the byte, the routine
+that blits the registers to the chip is the same eighteen bytes, and all twenty
+phrase pointers sit at a constant offset. So yes, they share it —just not in the
+place, or for the reason, that the withdrawn claim said.
 
 ## The same lettering, sharp or see-through
 
@@ -636,7 +646,20 @@ running has no notes at all —percussion, through the noise channel. This page
 called it "the other song", and that has to be walked back: **it is not one of
 the three voices** —the third starts one byte earlier, and is a terminator— and
 nothing has been found that plays it. It stays on the books as a block written in
-the interpreter's language with no known owner.
+the interpreter's language with no known owner —and "no known owner" is now a
+measurement rather than a shrug. The value 0xECCC **does not appear once** across
+the three tape blocks. The control says the search is sound: 0xECCB appears
+exactly once, at 0xE181, which is the very instruction that hands it to channel
+2, and its neighbours 0xED61 and 0xED6B appear too, loaded from 0xF4FE and
+0xF506. Nor is it reached by falling into: the byte before it is a terminator,
+and none of the twenty phrases points that high.
+
+Stated precisely, because it matters: there is no *literal* reference. An address
+built by hand —`ld hl,0eccbh / inc hl`— would slip past this search, so the claim
+is not that the block is unreachable, only that nothing names it. The reasonable
+suspicion, said as a suspicion: that this was the real third voice, and the
+conversion switched it off by leaving the pointer one byte short, sitting on the
+terminator.
 
 The note table, incidentally, checks itself: with the MSX sound chip's clock the
 first period yields **32.70 Hz, theoretical C1**, and of the 84 pairs twelve
