@@ -682,3 +682,46 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # opcodes, y los 30 bytes que sobraban resultaron ser 15 periodos mas, los mas
 # agudos, siguiendo la misma serie decreciente (0x20, 0x1e, 0x1c, 0x1b...).
 # Son OCHO OCTAVAS justas, y lo confirma la propia musica, que usa la nota 84.
+#
+# --- LOS QUINCE COMANDOS DEL INTERPRETE, UNO A UNO --------------------------
+#
+# Leidos de sus rutinas. IX es el estado del canal en curso (0xEE19 dice cual),
+# y cuantos bytes consume cada comando sale de sus `inc bc`:
+#
+#   0x80 n  VOLUMEN         -> (ix+009h)                          E3EF
+#   0x81 n  TONO/RUIDO      -> (ix+008h) con `and 009h`: bit 0 el tono y
+#                              bit 3 el ruido, que son los del registro 7
+#                              del PSG                            E40D
+#   0x82    BUCLE           recarga BC de (ix+000h/001h) y repite; en el canal
+#                           1, si 0xEE1A esta a cero, termina     E477
+#   0x83 n  DURACION        n * el tempo de 0xEE18 -> (ix+006h/007h)  E3F8
+#   0x84    (sin argumento) salta a L_E25C                        E473
+#   0x85 n  TEMPO           n*8, y de ahi una division por 6000   E445
+#   0x86    TEMPO A 1       pone 0xEE18 = 1                       E546
+#   0x87 n  INSTRUMENTO     0xE5E2 + n*15, al estado del canal    E4A6
+#   0x88 n  RUIDO           `and 01fh` -> 0xEE0A: cinco bits, que es
+#                           exactamente el periodo de ruido del PSG   E45F
+#   0x89 n  EFECTO          0xE6D2 + n*6                          E4EF
+#   0x8A n  BANDERAS        OR sobre (ix+02dh) y sobre 0xEE09      E492
+#   0x8B    FIN             limpia los 0x2E bytes del canal        E418
+#   0x8C n  LLAMA A FRASE   guarda la vuelta y salta a (0xE7C1 + n*2)  E54F
+#   0x8D    VUELVE          recupera BC de la pila del canal       E56B
+#   0x8E n  (un byte a una direccion del canal, via L_E586)        E57C
+#
+# Con esa tabla se recorre la zona de musica entera sin descuadrarse ni una
+# vez, y eso es la mejor prueba de que esta bien: si el numero de argumentos
+# de un solo comando estuviera mal, el recorrido se desincronizaria y los
+# bloques no acabarian en su sitio.
+#
+# --- CUANTOS SONIDOS HAY, Y COMO SE DISPARAN --------------------------------
+#
+# Recorriendo de 0xEA38 a 0xED74 salen VEINTIUN bloques: diecinueve acaban en
+# 0x8B (fin) y dos en 0x82 (bucle) — estos dos suenan en bucle hasta que algo
+# los pare. Diecisiete son cortos, de 9 a 31 bytes: son los EFECTOS. Y dos son
+# largos, de 378 y 149 bytes (0xEB52 y 0xECCC): esas son las MUSICAS.
+#
+# NO HAY TABLA DE SONIDOS. Cada sitio del juego que quiere sonar algo carga la
+# direccion del guion a pelo (`ld de,0eb42h`), y hay 44 de esas cargas en el
+# listado. El mas repetido es 0xEA52, con siete llamadas. Ojo con dos de ellas
+# -0xEB42 y 0xED55- que caen DENTRO de un bloque, no en su principio: se entra
+# a media melodia, que es una forma barata de tener variaciones.

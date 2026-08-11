@@ -492,6 +492,49 @@ y `0xE5C0` es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de 0xE7A3
 tiene **35 entradas**, y que son 35 y no más no es una estimación: la tabla
 acaba en 0xE7E8 y el código del opcode 0x90 empieza pegado, en 0xE7E9.
 
+## El sonido del juego es un lenguaje, y se puede leer
+
+Stardust no guarda su música como notas sueltas: trae un **intérprete** con su
+propio lenguaje de quince comandos, y las melodías están escritas en él. Los
+comandos se distinguen de las notas por el bit alto —de 0x80 para arriba es una
+orden, por debajo es una nota—, y cada uno se lee de su rutina:
+
+    0x80  volumen          0x87  instrumento
+    0x81  tono/ruido       0x88  ruido
+    0x82  bucle            0x89  efecto
+    0x83  duración         0x8A  banderas
+    0x85  tempo            0x8B  fin
+    0x86  tempo a 1        0x8C  llama a frase
+                           0x8D  vuelve
+
+Dos de ellos delatan el chip de sonido del MSX sin necesidad de mirar nada más:
+el de tono/ruido enmascara su argumento con `and 9`, que son justo los dos bits
+del registro 7 del PSG, y el de ruido lo enmascara con `and 0x1F`, que son los
+cinco bits del periodo de ruido. El código no lo dice, pero las máscaras sí.
+
+Y hay dos comandos que convierten esto en un lenguaje de verdad: **llamar** y
+**volver**. El intérprete guarda la dirección de retorno en una pila que tiene
+por canal, exactamente como haría un procesador. Así que las canciones no
+repiten sus compases: los **llaman**. Veinte frases guardadas aparte, y las
+canciones invocándolas por número. Es la misma idea del diccionario recursivo
+con el que se comprimen los mapas de nivel, aplicada al sonido por la misma
+gente.
+
+Con la tabla de comandos en la mano, la zona de música se recorre entera **sin
+descuadrarse ni una vez**, y eso es la mejor prueba de que está bien leída: si
+el número de argumentos de un solo comando estuviera mal, el recorrido se
+desincronizaría y los bloques no acabarían donde acaban.
+
+Lo que sale del recorrido: **veintiún sonidos**. Diecisiete son cortos, de 9 a
+31 bytes —los efectos—, y dos son largos, de 378 y 149 bytes: **ésas son las
+músicas**. Otros dos no terminan, dan la vuelta y siguen sonando en bucle.
+
+No hay ninguna tabla que los ordene. Cada sitio del juego que quiere sonar algo
+lleva la dirección escrita a pelo, y hay **44 de esas llamadas** repartidas por
+el código; la más repetida, siete veces, es el mismo efecto. Dos de ellas
+apuntan a **mitad** de una melodía en vez de a su principio: es una manera
+barata de tener variaciones sin gastar un byte más.
+
 ## Los créditos pasan con un scroll que no mueve el dibujo
 
 Los créditos del juego —los cinco carteles con los nombres de quienes hicieron

@@ -528,6 +528,48 @@ and `0xE5C0` is exactly "HL = table + A×2, HL = (HL)". The table at 0xE7A3 has
 **35 entries**, and that it is 35 and no more is not an estimate: the table ends
 at 0xE7E8 and the code for opcode 0x90 starts right up against it, at 0xE7E9.
 
+## The game's sound is a language, and it can be read
+
+Stardust doesn't store its music as loose notes: it carries an **interpreter**
+with a language of its own, fifteen commands wide, and the melodies are written
+in it. Commands are told apart from notes by the top bit —0x80 and up is an
+order, below is a note— and each one can be read off its routine:
+
+    0x80  volume           0x87  instrument
+    0x81  tone/noise       0x88  noise
+    0x82  loop             0x89  effect
+    0x83  duration         0x8A  flags
+    0x85  tempo            0x8B  end
+    0x86  tempo to 1       0x8C  call phrase
+                           0x8D  return
+
+Two of them give away the MSX sound chip without needing to look anywhere else:
+the tone/noise command masks its argument with `and 9`, exactly the two bits of
+the PSG's register 7, and the noise command masks with `and 0x1F`, the five bits
+of the noise period. The code doesn't say so, but the masks do.
+
+And two commands turn this into a real language: **call** and **return**. The
+interpreter keeps the return address on a stack it holds per channel, exactly as
+a processor would. So songs don't repeat their bars: they **call** them. Twenty
+phrases kept aside, and the songs invoking them by number. It is the same idea
+as the recursive dictionary that compresses the level maps, applied to sound by
+the same people.
+
+With the command table in hand, the music area walks end to end **without
+losing sync once**, and that is the best proof it is read correctly: if the
+argument count of a single command were wrong, the walk would desynchronise and
+the blocks wouldn't end where they do.
+
+What the walk yields: **twenty-one sounds**. Seventeen are short, 9 to 31 bytes
+—the effects— and two are long, 378 and 149 bytes: **those are the music**.
+Another two never end; they loop back and keep playing.
+
+There is no table ordering them. Every place in the game that wants a sound
+carries the address written out in full, and there are **44 such calls** spread
+through the code; the most repeated, seven times, is the same effect. Two of
+them point **halfway** into a melody rather than at its start: a cheap way to
+get variations without spending a single extra byte.
+
 ## The credits scroll without moving the picture
 
 The game's credits —the five cards naming the people who made the MSX
