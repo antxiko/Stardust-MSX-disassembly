@@ -528,6 +528,64 @@ and `0xE5C0` is exactly "HL = table + A×2, HL = (HL)". The table at 0xE7A3 has
 **35 entries**, and that it is 35 and no more is not an estimate: the table ends
 at 0xE7E8 and the code for opcode 0x90 starts right up against it, at 0xE7E9.
 
+## The scoreboard doesn't write letters: it redraws the cells
+
+The whole scoreboard of the ship stage —score, lives, zone number— comes out
+of a single routine at 0xF41D, and the first surprising thing about it is that
+it **doesn't write characters**. MSX video memory holds one table saying which
+drawing each screen cell carries, and another holding the drawings. The normal
+way to print a "7" would be to put the number of the seven's drawing into the
+right cell. This routine does the opposite: it leaves the cells alone and
+**changes the drawing underneath**.
+
+It can afford to because the table is already set. The cell table was left
+there by the loading screen and the game inherits it untouched, so every slot
+of the scoreboard already points at a drawing nobody else uses. Printing
+becomes dumping the letter's eight bytes on top.
+
+The detail that seals it is the step between glyphs: **0x40 bytes**, which is
+eight drawings. It looks like an odd stride until you remember the cell table
+arrives **interleaved in eights** from the loading screen. With that
+interleave, skipping eight drawings lands exactly on the next cell along. The
+two oddities cancel out.
+
+Four places in the code call it, and each one is an indicator:
+
+- The **score** is six digits kept as text at 0xDD80. One routine sets it to
+  "000000" at the start, and another adds to it by **doing decimal arithmetic
+  by hand on the ASCII**: bump the digit, and if it goes past "9" send it back
+  to "0" and carry one to the left. There is never a binary number to convert,
+  because the scoreboard *is* the number.
+- **Lives** and **zone** are one digit each (0xE156 and 0xE157), printed by
+  adding 0x30 to turn them into ASCII.
+
+And there's a coincidence that says a lot: the score is painted at the same
+video address, 0x12B0, in both stages of the game. The ship half and the
+on-foot half don't share a single line of code, yet they put the scoreboard in
+the same place on screen.
+
+### Both stages die the same way
+
+Once you read the ship stage's lives, three things turn out identical to the
+on-foot stage, and none of them is chance:
+
+- **They are initialised twice, and the second one wins**: the menu leaves a
+  three and the start of play overwrites it with a two. Exactly the same pair
+  as on foot, down to the order.
+- **The extra life on points caps at nine** in both.
+- And the subtraction only fires when a counter reaches **45**, the same
+  number that closes the on-foot dying sequence. The address changes —0xC188
+  here, 0xA6ED there— but the mechanism is the same: a byte that means little
+  while you live and starts counting the moment you're killed.
+
+Which is where a piece that had been lying loose since day one finally fits.
+The immortality POKE published by *Input MSX* magazine issue 19 patches a jump
+to skip the comparison of that counter against four. It is **the same
+invulnerability gate** the on-foot stage has in triplicate: with the counter
+already at four or more, the game ignores collisions because it thinks you are
+in the middle of dying. The POKE doesn't hand out lives: it parks the player
+in that state permanently.
+
 ## The game frame travels in the block, and the loading screen sets the table
 
 The decorated border surrounding the play area —HUD included: the rosette

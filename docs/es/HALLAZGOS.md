@@ -492,6 +492,64 @@ y `0xE5C0` es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de 0xE7A3
 tiene **35 entradas**, y que son 35 y no más no es una estimación: la tabla
 acaba en 0xE7E8 y el código del opcode 0x90 empieza pegado, en 0xE7E9.
 
+## El marcador no escribe letras: redibuja las celdas
+
+Todo el marcador de la fase de naves —los puntos, las vidas, el número de
+zona— sale de una sola rutina, en 0xF41D, y lo primero que sorprende de ella
+es que **no escribe caracteres**. En la memoria de vídeo del MSX hay una tabla
+que dice qué dibujo lleva cada celda de la pantalla y otra que guarda los
+dibujos. Lo normal para escribir un "7" sería poner el número del dibujo del
+siete en la celda que toca. Esta rutina hace lo contrario: deja las celdas
+como están y **cambia el dibujo que hay debajo**.
+
+Puede permitírselo porque la mesa ya está puesta. La tabla de celdas la dejó
+la pantalla de carga y el juego la hereda intacta, así que cada hueco del
+marcador ya apunta a un dibujo propio que no usa nadie más. Escribir se
+convierte en volcar los ocho bytes de la letra encima.
+
+El detalle que lo remata es el paso entre glifo y glifo: **0x40 bytes**, que
+son ocho dibujos. Parece un salto raro hasta que se recuerda que la tabla de
+celdas viene **entrelazada de ocho en ocho** de la pantalla de carga. Con ese
+entrelazado, saltar ocho dibujos es caer justo en la celda de al lado. Las dos
+rarezas se cancelan.
+
+Cuatro sitios del código la llaman, y cada uno es un indicador:
+
+- Los **puntos** son seis dígitos guardados como texto en 0xDD80. Una rutina
+  los pone a "000000" al empezar, y otra les suma **haciendo la aritmética
+  decimal a mano sobre el ASCII**: incrementa el dígito, y si se pasa del "9"
+  lo devuelve al "0" y se lleva una al de la izquierda. Nunca hay un número
+  binario que convertir, porque el marcador *es* el número.
+- Las **vidas** y la **zona** son un dígito cada una (0xE156 y 0xE157), y se
+  pintan sumándoles 0x30 para pasarlas a ASCII.
+
+Y hay una coincidencia que dice mucho: los puntos se pintan en la misma
+dirección de vídeo, 0x12B0, en las dos fases del juego. La de naves y la de a
+pie no comparten ni una línea de código, pero ponen el marcador en el mismo
+sitio de la pantalla.
+
+### Las dos fases se mueren igual
+
+Puestos a leer las vidas de la fase de naves, aparecen tres cosas idénticas a
+las de la fase de a pie, y ninguna es casualidad:
+
+- **Se inicializan dos veces, y manda la segunda**: el menú deja un tres y el
+  arranque de la partida lo pisa con un dos. Exactamente el mismo par que a
+  pie, hasta en el orden.
+- **La vida extra por puntos tiene tope nueve** en las dos.
+- Y el descuento solo se dispara cuando un contador llega a **45**, que es el
+  mismo número que cierra la agonía de la fase de a pie. La dirección cambia
+  —0xC188 aquí, 0xA6ED allí— pero el mecanismo es el mismo: un byte que vale
+  poco mientras vives y se pone a contar en cuanto te matan.
+
+Ahí encaja, por fin, una pieza que llevaba suelta desde el primer día. El POKE
+de inmortalidad que publicó la revista *Input MSX* nº 19 parchea un salto para
+saltarse la comparación de ese contador contra cuatro. Es **la misma puerta de
+invulnerabilidad** que la fase de a pie tiene por triplicado: con el contador
+ya en cuatro o más, el juego ignora los choques porque cree que estás
+muriéndote. El POKE no regala vidas: deja al jugador permanentemente en ese
+estado.
+
 ## El marco del juego viaja en el bloque, y la pantalla de carga le deja la mesa puesta
 
 El cuadro decorado que rodea el área de juego —con su HUD: la roseta con la

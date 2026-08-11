@@ -323,3 +323,12 @@
 0xD6C5  tile_43     comportamiento del tile 0x43 (0xC158)
 0xD314  tile_46     comportamiento del tile 0x46 (0xC16B)
 0xDA3D  tile_5D     comportamiento del tile 0x5D (0xC174)
+
+# --- EL MARCADOR (HUD) DE LA FASE DE NAVES -----------------------------------
+# Todo el HUD lo pinta una sola rutina, 0xF41D, que no escribe NOMBRES sino
+# PATRONES: redefine el dibujo de la celda donde va cada glifo. Puede hacerlo
+# porque la tabla de nombres ya viene puesta desde la pantalla de carga.
+0xF41D  hud_imprime rotula el HUD: IX = cadena de indices de glifo terminada en 0, DE = direccion de la tabla de PATRONES; 8 bytes por glifo desde la fuente de 0x5F00, y +0x40 por glifo (la celda de al lado, con la tabla de nombres intercalada de a 8)
+0xC038  hud_vidas_zona repinta los dos indicadores de un digito: vidas (0xE156 -> buffer 0xE152, patrones 0x07A0) y zona (0xE157 -> buffer 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
+0xBE7F  hud_reset pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
+0xD3D3  suma_puntos suma al marcador de 0xDD80 en ASCII con acarreo decimal (inc a / cp 03ah / sub 00ah, de derecha a izquierda) y repinta con hud_imprime

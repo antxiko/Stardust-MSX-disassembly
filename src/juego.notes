@@ -543,3 +543,57 @@ C 0xC4E3 Los sprites, con mascara: el and abre el hueco...
 C 0xC51B ...y el or pinta el sprite encima; el desplazamiento se precalcula con las cadenas de adc
 C 0xC665 FOSIL DEL SPECTRUM: 0xFE es el puerto del borde del Spectrum; alli cada particula hacia parpadear el borde, en MSX este out no hace nada
 C 0xBDD4 Rellena la tabla de las 48 estrellas (0xCB09) con alturas al azar menores de 0xA0
+
+# --- EL MARCADOR (HUD) DE LA FASE DE NAVES ----------------------------------
+#
+# Todo el HUD sale de UNA rutina, hud_imprime (0xF41D), y lo primero que hay
+# que entender es que NO escribe en la tabla de nombres: escribe PATRONES.
+# Recibe IX = cadena de indices de glifo terminada en 0x00 y DE = direccion de
+# la tabla de patrones, y por cada glifo vuelca 8 bytes de la fuente de 0x5F00
+# (direccion = indice*8 + 0x5F00) y avanza DE en 0x40. Ese 0x40 son 8 patrones,
+# que con la tabla de nombres INTERCALADA DE A 8 que hereda de la pantalla de
+# carga es exactamente la celda de al lado. O sea: redefine el dibujo de las
+# celdas que ya estan colocadas, en vez de colocar caracteres.
+#
+# Cuatro llamadores, cuatro indicadores:
+#
+#   PUNTOS   buffer 0xDD80, SEIS digitos en ASCII, patrones 0x12B0.
+#            hud_reset (0xBE7F) lo pone a "000000" (ld (hl),030h / ldir) y lo
+#            pinta; suma_puntos (0xD3D3) le suma con acarreo decimal a mano
+#            (inc a / cp 03ah / sub 00ah) de derecha a izquierda y repinta.
+#            OJO: 0x12B0 es la MISMA direccion que usa la fase de a pie para
+#            su marcador (0xA3F2). Las dos partes ponen los puntos en el mismo
+#            sitio de la pantalla, aunque no compartan una linea de codigo.
+#   VIDAS    0xE156, UN digito, buffer 0xE152, patrones 0x07A0.
+#   ZONA     0xE157, UN digito, buffer 0xE154, patrones 0x1630.
+#            Los dos los repinta hud_vidas_zona (0xC038), que los pasa a ASCII
+#            con `add a,030h`.
+#
+# LAS VIDAS DE NAVES SE COMPORTAN COMO LAS DE A PIE, Y ESO NO ES CASUALIDAD:
+#   - DOS inicializaciones, y manda la segunda: 0xBE15 pone 3 (el menu) y
+#     0xBE98 pone 2 (el arranque de partida). Identico al par 0xA30B/0xA3CB de
+#     la fase de a pie, hasta en el orden.
+#   - Descuento en 0xBFF8: `ld a,(0e156h) / sub 001h / ld (0e156h),a /
+#     jp c,L_BDE2` — con acarreo, game over.
+#   - Vida extra por puntos en 0xD40F, con TOPE 9 (`cp 009h / ret nc / inc
+#     (hl)`), igual que el tope de 0xC45F a pie.
+#   - Y el descuento solo se dispara con `ld a,(0c188h) / cp 02dh / jr nc`
+#     (0xBFEE): 0xC188 es el GEMELO de 0xA6ED, el contador de agonia, con el
+#     MISMO limite 0x2D. Las dos fases se murieron con el mismo diseno.
+#
+# Ahi encaja ademas una pieza que llevaba sola desde el primer dia: el POKE de
+# inmortalidad de Input MSX 19 parchea el `jr c` de 0xC06E para saltarse un
+# `ld a,(0c188h) / cp 4`. Es la misma puerta de invulnerabilidad que a pie
+# tiene por triplicado (a868, af83, ba18): con el estado ya en 4 o mas, la
+# colision se ignora. El POKE no da vidas infinitas, deja al jugador en el
+# estado en que el juego cree que ya estas muriendote.
+#
+# La zona (0xE157) arranca en 1 (0xBDF5) y la sube 0xD755 (`inc a`) llamando
+# acto seguido a hud_vidas_zona para repintarla. La lee carga_zona (0xBEED)
+# para elegir el nivel, y como es un solo digito, la fase de a pie -que se
+# numera a si misma ZONA 08- cabe sin tocar nada.
+
+L 0xF41D hud_imprime El rotulador del HUD: IX = cadena de indices de glifo terminada en 0, DE = tabla de PATRONES; 8 bytes por glifo desde la fuente de 0x5F00 y +0x40 por glifo, que con la tabla de nombres intercalada de a 8 es la celda contigua
+L 0xC038 hud_vidas_zona Repinta los dos indicadores de un digito, vidas (0xE156 -> 0xE152, patrones 0x07A0) y zona (0xE157 -> 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
+L 0xBE7F hud_reset Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
+L 0xD3D3 suma_puntos Suma al marcador de 0xDD80 en ASCII con acarreo decimal a mano (inc a / cp 03ah / sub 00ah) de derecha a izquierda, y repinta con hud_imprime

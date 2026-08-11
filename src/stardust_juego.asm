@@ -2044,7 +2044,7 @@ L_BDE5:
 	call L_D45E		;be10
 	ld a,003h		;be13
 	ld (0e156h),a		;be15
-	call L_C038		;be18
+	call hud_vidas_zona		;be18
 	ld hl,0c1bdh		;be1b
 	ld (0c090h),hl		;be1e
 	ld a,r			;be21
@@ -2088,10 +2088,10 @@ L_BE66:
 L_BE73:
 	cp 098h			;be73
 	jr z,L_BE2A		;be75
-	jr nc,L_BE7F		;be77
+	jr nc,hud_reset		;be77
 	call L_F445		;be79
 	jp L_BDE5		;be7c
-L_BE7F:
+hud_reset:		; Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
 	ld hl,0dd80h		;be7f
 	ld de,0dd81h		;be82
 	ld bc,00005h		;be85
@@ -2099,7 +2099,7 @@ L_BE7F:
 	ldir			;be8a
 	ld ix,0dd80h		;be8c
 	ld de,012b0h		;be90
-	call L_F41D		;be93
+	call hud_imprime		;be93
 	ld a,002h		;be96
 	ld (0e156h),a		;be98
 	dec a			;be9b
@@ -2183,7 +2183,7 @@ L_BEED:
 	ld bc,0000dh		;bf4a
 	ld (hl),000h		;bf4d
 	ldir			;bf4f
-	call L_C038		;bf51
+	call hud_vidas_zona		;bf51
 	ld a,073h		;bf54
 	call L_F5F4		;bf56
 	pop af			;bf59
@@ -2287,19 +2287,19 @@ L_C029:
 	cp 0f9h			;c032
 	jr nz,L_C029		;c034
 	jr L_C026		;c036
-L_C038:
+hud_vidas_zona:		; Repinta los dos indicadores de un digito, vidas (0xE156 -> 0xE152, patrones 0x07A0) y zona (0xE157 -> 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
 	ld a,(0e156h)		;c038
 	add a,030h		;c03b
 	ld (0e152h),a		;c03d
 	ld ix,0e152h		;c040
 	ld de,007a0h		;c044
-	call L_F41D		;c047
+	call hud_imprime		;c047
 	ld a,(0e157h)		;c04a
 	add a,030h		;c04d
 	ld (0e154h),a		;c04f
 	ld ix,0e154h		;c052
 	ld de,01630h		;c056
-	jp L_F41D		;c059
+	jp hud_imprime		;c059
 
 ; ----------------------------------------------------------------------
 ; DATOS relleno: o resto (7 B; 7 bytes)
@@ -4982,7 +4982,7 @@ L_D394:
 L_D3CF:
 	ld a,(0dd81h)		;d3cf
 	push af			;d3d2
-L_D3D3:
+suma_puntos:		; Suma al marcador de 0xDD80 en ASCII con acarreo decimal a mano (inc a / cp 03ah / sub 00ah) de derecha a izquierda, y repinta con hud_imprime
 	push hl			;d3d3
 L_D3D4:
 	ld a,(hl)		;d3d4
@@ -4996,8 +4996,8 @@ L_D3D4:
 L_D3E1:
 	ld (hl),a		;d3e1
 	pop hl			;d3e2
-	djnz L_D3D3		;d3e3
-	call L_F41D		;d3e5
+	djnz suma_puntos		;d3e3
+	call hud_imprime		;d3e5
 	pop de			;d3e8
 	ld a,(0dd81h)		;d3e9
 	cp d			;d3ec
@@ -5020,7 +5020,7 @@ L_D3E1:
 	cp 009h			;d413
 	ret nc			;d415
 	inc (hl)		;d416
-	jp L_C038		;d417
+	jp hud_vidas_zona		;d417
 L_D41A:
 	call azar		;d41a
 	and 01fh		;d41d
@@ -5251,7 +5251,7 @@ L_D591:
 	ld (0ca8fh),hl		;d59e
 	ld hl,0c1afh		;d5a1
 	ld (0c090h),hl		;d5a4
-	jp L_BE7F		;d5a7
+	jp hud_reset		;d5a7
 L_D5AA:
 	ld a,(0e157h)		;d5aa
 	dec a			;d5ad
@@ -5490,7 +5490,7 @@ L_D740:
 	ld a,(0e157h)		;d751
 	inc a			;d754
 	ld (0e157h),a		;d755
-	call L_C038		;d758
+	call hud_vidas_zona		;d758
 L_D75B:
 	ld a,(0ca8eh)		;d75b
 	inc a			;d75e
@@ -9091,7 +9091,7 @@ L_F40B:
 	dec c			;f419
 	jr nz,L_F401		;f41a
 	ret			;f41c
-L_F41D:
+hud_imprime:		; El rotulador del HUD: IX = cadena de indices de glifo terminada en 0, DE = tabla de PATRONES; 8 bytes por glifo desde la fuente de 0x5F00 y +0x40 por glifo, que con la tabla de nombres intercalada de a 8 es la celda contigua
 	ld a,(ix+000h)		;f41d
 	and a			;f420
 	ret z			;f421
@@ -9118,7 +9118,7 @@ L_F433:
 	add hl,de		;f43e
 	ex de,hl		;f43f
 	inc ix			;f440
-	jp L_F41D		;f442
+	jp hud_imprime		;f442
 L_F445:
 	call L_C858		;f445
 	call L_F3DC		;f448
