@@ -59,7 +59,8 @@
 # ------------------------------------------------------ rutinas de dibujado
 # Las diecisiete que escriben en VRAM, cazadas vigilando el puerto 0x98 durante
 # una partida. El numero es cuantas escrituras hizo cada una en 120 segundos.
-0xF3F1  volcado principal de la pantalla: 3.252.480 escrituras a VRAM
+0xF3DC  volcado principal de la pantalla: 3.252.480 escrituras a VRAM
+#         (figuro como 0xF3F1, que es el ultimo byte de un `call`)
 0xF3FF  su nucleo: recorre el buffer por columnas, con paso de 24 bytes
 0xF650  vuelca en VRAM (42.240 escrituras)
 0xF0EC  vuelca en VRAM (26.880 escrituras)

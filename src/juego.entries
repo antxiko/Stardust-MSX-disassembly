@@ -146,9 +146,18 @@
 # O sea que el buffer esta organizado POR COLUMNAS, 40 de ancho por 24 de alto.
 # Cuarenta es mas que las 32 que caben en pantalla: ese margen es lo que permite
 # el scroll.
-0xF3F1  vuelca_pantalla  el volcado principal: 3,2 millones de escrituras a VRAM
+0xF3DC  vuelca_pantalla  el volcado principal de la pantalla: hace TRES llamadas a
+#                        vuelca_columnas, una por banda (56, 64 y 40 filas), y
+#                        lo llaman desde CINCO sitios (0xBE3C, 0xBFD1, 0xD570,
+#                        0xD79F, 0xF449). ESTUVO en 0xF3F1, que es el ULTIMO
+#                        BYTE del `call L_F3FF` de 0xF3EF: un bp ahi no salta
+#                        nunca, y de hecho no salto en los 38 minutos de la
+#                        partida completa.
 0xF3FF  vuelca_columnas  su nucleo, con el paso de 24 bytes
-0xEFBB  vram_EFBB     escribe en VRAM (1280 veces)
+# 0xEFBB SE RETIRA: cae DENTRO del `out (c),a` de 0xEFBA, que es un opcode de
+# dos bytes (ED 79). El watchpoint del puerto 0x98 reporta ese PC de en medio,
+# y de ahi salio la entrada. Ni la referencia nadie ni salta un bp puesto en
+# ella. Ademas es interior: la rutina que la contiene ya esta trazada.
 
 # --- POR QUE AQUI NO HAY NADA DEL COTEJO CON EL SPECTRUM ---------------------
 #

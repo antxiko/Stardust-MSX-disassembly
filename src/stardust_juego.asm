@@ -13,8 +13,6 @@
 ; Etiquetas que no caen en ninguna posicion emitida del listado
 ; (destinos fuera del binario o dentro de una instruccion).
 ; ----------------------------------------------------------------------
-L_EFBB:	equ 0x0efbb
-L_F3F1:	equ 0x0f3f1
 L_F849:	equ 0x0f849
 
 ; ----------------------------------------------------------------------
