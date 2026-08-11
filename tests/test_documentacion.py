@@ -534,3 +534,108 @@ class TestLaCoherenciaDelTrazado(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+sin_parte2 = unittest.skipUnless(hay(WORK, "parte2.raw"),
+                                 "hace falta 'make extract' para esto")
+
+
+def parte2(a, b=None):
+    d = leer("parte2.raw")
+    return d[a - 0x61D0:(b - 0x61D0) if b else None]
+
+
+class TestElSubsistemaDeSonido(unittest.TestCase):
+    """Lo que se midio en el chip, comprobado aqui contra el binario.
+
+    La medida en el emulador no se puede repetir en estos tests -haria falta
+    openMSX y un replay que no se distribuye-, pero casi todo lo que dijo la
+    medida deja huella en los bytes, y eso si se comprueba: la rutina que habla
+    con el PSG, cuantos registros vuelca, que guion va a que canal y que la
+    parte de a pie lleva el mismo subsistema reubicado.
+    """
+
+    # Lo que se midio: un unico PC escribiendo en el puerto 0xA1 durante todo
+    # el sonido. En el binario hay DOS `out (0a1h),a`, y no se contradicen: el
+    # otro no es de sonido, es de la rutina que lee el JOYSTICK, que escribe el
+    # registro 7 para poder seleccionar el registro 14 y leerlo por 0xA2.
+    @sin_juego
+    def test_los_dos_sitios_que_escriben_en_el_psg(self):
+        d = leer("juego.raw")
+        sitios = []
+        i = d.find(b"\xd3\xa1")
+        while i >= 0:
+            sitios.append(0x47A0 + i)
+            i = d.find(b"\xd3\xa1", i + 1)
+        self.assertEqual(sitios, [0xC1D1, 0xE5D9])
+
+    @sin_juego
+    def test_el_otro_out_es_el_lector_de_joystick(self):
+        """0xC1D1 escribe el registro 7 para luego LEER el 14 por 0xA2."""
+        self.assertEqual(juego(0xC1CB, 0xC1D9),
+                         b"\x3e\x07\xd3\xa0\x3e\xff\xd3\xa1"
+                         b"\x3e\x0e\xd3\xa0\xdb\xa2")
+
+    @sin_juego
+    def test_el_volcado_manda_once_registros(self):
+        """El `ld d,00bh` es lo que explica los once contadores iguales."""
+        self.assertEqual(juego(0xE5D0, 0xE5D4), b"\x3e\x00\x16\x0b")
+
+    @sin_juego
+    @sin_parte2
+    def test_la_parte_de_a_pie_lleva_la_misma_rutina_reubicada(self):
+        self.assertEqual(juego(0xE5D0, 0xE5E2), parte2(0xC8E5, 0xC8F7))
+        self.assertEqual(0xE5D9 - 0xC8EE, 0x1CEB,
+                         "el desplazamiento del codigo de sonido no es 0x1CEB")
+
+    # Medido: arranca_musica instala las tres voces de golpe, una sola vez.
+    @sin_juego
+    def test_arranca_musica_instala_las_tres_voces(self):
+        d = juego(0xE16F, 0xE187)
+        for canal, guion in enumerate((0xEB52, 0xEC4A, 0xECCB)):
+            aguja = bytes((0x11, guion & 0xFF, guion >> 8))
+            self.assertIn(aguja, d,
+                          "arranca_musica no carga 0x%04X para el canal %d"
+                          % (guion, canal))
+
+    @sin_juego
+    def test_la_tercera_voz_entra_callada(self):
+        """0xECCB es un 0x8B suelto: el canal 2 se calla al primer cuadro."""
+        self.assertEqual(juego(0xECCB, 0xECCC), b"\x8b")
+
+    # Medido: el 100 % de los tonos de la musica limpia estan en la tabla.
+    @sin_juego
+    def test_la_tabla_de_notas_son_ocho_octavas_justas(self):
+        d = juego(0xE6E3, 0xE7A3)
+        p = [d[i * 2] | (d[i * 2 + 1] << 8) for i in range(96)]
+        self.assertEqual(len(p), 96)
+        # OJO CON EL CRITERIO: la cifra publicada, 76 de 84, sale con un margen
+        # del 1 % —el mismo que usa tools/lee_musica.py—, no con la razon
+        # exacta. Exactamente el doble solo lo son 43: el periodo es un entero
+        # y arriba, donde vale dos cifras, el redondeo ya no da para mas.
+        buenas = sum(1 for i in range(84)
+                     if abs(p[i] / float(p[i + 12]) - 2.0) < 0.02)
+        self.assertEqual(buenas, 76)
+        exactas = sum(1 for i in range(84) if p[i] == 2 * p[i + 12])
+        self.assertEqual(exactas, 43)
+        # Y los que fallan son los agudos, no unos cualesquiera.
+        fallan = [i for i in range(84)
+                  if abs(p[i] / float(p[i + 12]) - 2.0) >= 0.02]
+        self.assertEqual(len(fallan), 8)
+        self.assertGreater(min(fallan), 55)
+
+    @sin_juego
+    @sin_parte2
+    def test_las_dos_partes_comparten_la_tabla_de_notas(self):
+        self.assertEqual(juego(0xE6E3, 0xE7A3), parte2(0xC9FE, 0xCABE))
+
+    @sin_juego
+    @sin_parte2
+    def test_la_tabla_de_frases_se_reubico_entera(self):
+        """Los 20 punteros son los del juego de naves menos 0x1CE5, todos."""
+        n = juego(0xE7C1, 0xE7E9)
+        a = parte2(0xE7C1 - 0x1CE5, 0xE7E9 - 0x1CE5)
+        for i in range(20):
+            self.assertEqual((n[i * 2] | (n[i * 2 + 1] << 8))
+                             - (a[i * 2] | (a[i * 2 + 1] << 8)), 0x1CE5,
+                             "la frase %d no se reubico 0x1CE5" % i)

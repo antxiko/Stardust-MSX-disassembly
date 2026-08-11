@@ -734,9 +734,13 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # LA TABLA DE NOTAS CUADRA CON EL PSG. Con el reloj del AY-3-8910 del MSX
 # (3579545/2, y divisor de 16), el primer periodo -3421- da 32,70 Hz, que es el
 # do1 teorico, y el ultimo -14- da 7990 Hz. De los 84 pares separados doce
-# posiciones, 76 tienen razon 2,0000 (la definicion de octava); los ocho que
-# fallan son los mas agudos, donde el periodo es un entero de dos cifras y el
-# redondeo ya se nota. Ocho octavas justas, do1 a si8.
+# posiciones, 76 dan razon 2,00 con un margen del uno por ciento (la definicion
+# de octava); los ocho que fallan son los mas agudos -del indice 61 para
+# arriba-, donde el periodo es un entero de dos cifras y el redondeo ya no da
+# para mas. Ocho octavas justas, do1 a si8.
+#     Aqui decia "76 tienen razon 2,0000" y era pasarse: con la razon EXACTA la
+#     cuenta baja a 43 de 84, porque el periodo es entero. El 76 sale con el
+#     margen del 1 % que usa tools/lee_musica.py, y asi lo comprueba el test.
 #
 # LAS CANCIONES NO TIENEN NOTAS. Es lo mas bonito del subsistema: la de 378
 # bytes (0xEB52) son **152 llamadas a frase y CERO notas propias**, y la de 149
@@ -813,23 +817,108 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # guion; L_E18F instala sin limpiar. Las dos comparten el mismo calculo
 # canal*0x2E + 0xED75.
 #
-# --- LO QUE ESCRIBE DE VERDAD EN EL CHIP (medido, tools/omsx_psg.tcl) --------
+# --- COMO LLEGA EL SONIDO AL CHIP (medido, tools/omsx_psg_pista.tcl) --------
 #
-# Contrastando la lectura contra el hardware emulado -capturando los puertos
-# 0xA0 y 0xA1 del PSG sobre el replay- sale un resultado que a primera vista
-# parece malo y no lo es: en 60 segundos de DEMO, de 5468 escrituras de tono
-# solo el 19,3 % son periodos de la tabla de notas.
+# El juego NO habla con el PSG desde el interprete. Lleva un BLOQUE SOMBRA de
+# once bytes en RAM -los registros 0 a 10- y lo escupe ENTERO en cada
+# interrupcion, con este bucle de 0xE5D9:
 #
-# La explicacion esta en los otros: 66, 68, 70, 72, 74, 78, 82, 84, 86, 88...
-# todos PARES y consecutivos. Eso no son notas, es un BARRIDO de frecuencia, y
-# la demo esta llena de disparos y explosiones. Lo confirma la tabla de efectos
-# de 0xE6D2, cuyas entradas de 6 bytes traen el paso del barrido: la del efecto
-# 1 es `01 08 10 fe 00 00`, y ese 0xFE es un -2. Barrido de dos en dos, que es
-# exactamente lo medido.
+#     e5d0: ld a,000h        <- empieza por el registro 0
+#     e5d2: ld d,00bh        <- y son ONCE: del 0 al 10
+#     e5d4: push af / ld c,(hl)
+#     e5d6: out (0a0h),a     <- A = numero de registro
+#     e5d8: ld a,c
+#     e5d9: out (0a1h),a     <- el dato; UNICO sitio que escribe en el PSG
+#     e5db: pop af / inc a / inc hl / dec d / jr nz,0e5d4h
+#     e5e1: ret
 #
-# O sea que el intervalo de tono del PSG lo escriben DOS cosas: las notas, que
-# salen de la tabla, y los efectos, que barren a mano. Una medida sobre un
-# tramo de juego mezcla las dos y no vale para validar la tabla; habria que
-# medir sobre un tramo de musica sola. INTENTADO Y FALLIDO: en el tramo del
-# final de la partida (t=3130-3190) el PSG no recibe NI UNA escritura, o sea
-# que ahi no suena nada. Queda pendiente encontrar un tramo con musica limpia.
+# Medido: en toda una captura hay UN solo PC escribiendo en 0xA1 -0xE5D9- y los
+# once registros reciben exactamente el mismo numero de escrituras, que es lo
+# que predice ese `ld d,00bh`. La parte de a pie hace lo mismo desde 0xC8EE:
+# sus dieciocho bytes (0xC8E5-0xC8F6) son BYTE A BYTE los de 0xE5D0, la misma
+# rutina reubicada 0x1CEB mas abajo.
+#
+# EL BLOQUE TRAE OTRO `out (0a1h),a`, en 0xC1D1, y no contradice la medida
+# porque no es de sonido: es la rutina de leer el JOYSTICK. En el MSX el mando
+# se lee POR EL PSG, y para eso hay que escribir el registro 7 -que ademas de
+# mezclador lleva la direccion de los puertos- antes de seleccionar el 14 y
+# leerlo por 0xA2:
+#
+#     c1cb: ld a,007h / out (0a0h),a
+#     c1cf: ld a,0ffh / out (0a1h),a    <- el unico dato que escribe
+#     c1d3: ld a,00eh / out (0a0h),a    <- registro 14: el puerto A
+#     c1d7: in a,(0a2h)                 <- y lee
+#     c1d9: rra / jr c,+2 / set 1,c ... <- monta la mascara de direcciones en C
+#
+# Ese 0xFF deja de paso el chip mudo, pero dura un suspiro: el volcado de
+# 0xE5D9 reescribe los once registros en la interrupcion siguiente. Conviene
+# no confundirlo con la multicarga, que tambien toca el registro 14 (0xF7F6).
+#
+# ESTO OBLIGA A MEDIR CON CUIDADO, y de hecho invalida como se hizo la primera
+# vez. Como los registros salen en orden 0,1,2,...,10, el byte BAJO del periodo
+# llega antes que el ALTO. Quien recomponga el periodo en cada escritura lo
+# arma, en la mitad de los casos, con el byte bajo nuevo y el alto de la nota
+# ANTERIOR, e inventa periodos que el juego nunca pidio. Asi salio el "19,3 %
+# de notas de la tabla" que estuvo publicado aqui: la mitad de los eventos eran
+# ese fantasma. Contando solo tras el byte alto, sobre la musica de los records
+# salen 23 periodos y 6020 eventos con CERO fuera de la tabla: 100,0 %.
+#
+# --- LA PARTITURA, CONFRONTADA CON EL CHIP CUADRO A CUADRO -------------------
+#
+# La prueba de fuego del subsistema. tools/coteja_partitura.py ejecuta la
+# lectura -los quince comandos, sus argumentos, las frases con su pila, la
+# tabla de 96 notas y la transposicion- cuadro a cuadro, y la confronta con la
+# pista medida en el emulador. Cuadro a cuadro y no nota a nota a proposito:
+# es lo unico que caza un error de DURACION.
+#
+# Sobre el arranque de la musica del juego de naves (t=1047,56 del replay
+# stardust_pantallas, 747 cuadros hasta que la paran):
+#
+#     canal 0   746 aciertos, 1 fallo
+#     canal 1   653 aciertos, 1 fallo
+#     canal 2     0 aciertos, 1 fallo   (callado, como decia la lectura)
+#     -> 1399 de 1402 cuadros con sonido, 99,8 %
+#
+# Y los tres fallos son EL CUADRO 0 de cada canal: mi7, mi6 y mi5, que es la
+# cola del sonido anterior todavia en los registros cuando entra la musica.
+# Despues del primer cuadro no hay ni una discrepancia.
+#
+# DOS COSAS QUE COSTARON EL RESULTADO, y por eso se dejan escritas:
+#
+#  1. EL CUADRO NO DURA 1/50 s. Un breakpoint en 0x0038 -el vector de
+#     interrupcion de la ROM- da 1003 pasadas en 20 s exactos: 50,15 Hz. Con la
+#     rejilla a 50,00 la comparacion se desliza casi dos cuadros en 600 y cae
+#     del 99,8 % al 98,2 % por algo que no tiene que ver con la musica.
+#  2. UN CANAL CALLADO NO ES UNA NOTA TENIDA. El juego solo escribe el tono
+#     cuando cambia, asi que tras parar la musica el ultimo periodo se queda
+#     puesto. Sin mirar el volumen y el mezclador, un canal mudo veinte
+#     segundos aparece como una nota de mil cuadros.
+#
+# Lo que NO cuadra, y es correcto que no cuadre: 93 cuadros en que la lectura
+# toca y el chip calla. Son uno por nota: la envolvente del instrumento baja el
+# volumen a cero en el ultimo cuadro de cada una, y el instrumento (0xE5E2) no
+# esta interpretado.
+#
+# --- LOS EFECTOS, Y POR QUE ENSUCIAN CUALQUIER MEDIDA EN JUEGO ---------------
+#
+# El intervalo de tono lo escriben DOS cosas: las notas, que salen de la tabla,
+# y los efectos, que BARREN la frecuencia a mano. Los periodos de un barrido
+# salen pares y consecutivos -66, 68, 70, 72...- y lo confirma la tabla de
+# efectos de 0xE6D2, cuyas entradas de 6 bytes traen el paso: la del efecto 1
+# es `01 08 10 fe 00 00`, y ese 0xFE es un -2, barrido de dos en dos. Por eso
+# una medida sobre un tramo jugado no vale para validar la tabla de notas: hay
+# que medir sobre musica sola.
+#
+# A QUE CANAL VA CADA COSA (medido sobre 250 s del replay de pantallas): de 271
+# arranques de efecto, 150 van al canal 2, 63 al 1 y 58 al 0. O sea que el
+# canal 2 se lleva el 55 %, y eso explica por que la musica lo deja vacio: su
+# guion, 0xECCB, es un 0x8B suelto. Pero NO es un canal reservado: los efectos
+# tambien caen en los otros dos, y ahi pisan la musica -0xEA98 va al canal 1
+# veinte veces y al 0 dos-.
+#
+# Y la musica de este juego se arranca UNA sola vez en esos 250 s, con
+# arranca_musica instalando las tres voces de golpe:
+#
+#     t=1047,56   canal 0 <- 0xEB52 · canal 1 <- 0xEC4A · canal 2 <- 0xECCB
+#
+# que es, medido en el hardware, exactamente lo que dice el listado de 0xE16F.
