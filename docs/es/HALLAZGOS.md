@@ -365,16 +365,57 @@ parábola** (0xB268): sube, cae acelerando y —como tampoco consulta el mapa—
 **atraviesa el suelo** y sale por abajo de la pantalla.
 
 Las dos vías desembocan en el mismo embudo: cuando el estado llega a 45, se
-resta una vida (0xC45F: tres al empezar, se ganan por puntos hasta nueve), y
+resta una vida (0xC45F: **dos** al empezar, se ganan por puntos hasta nueve), y
 con el contador agotado, game over; si quedan, el **respawn** te devuelve a la
 última posición pisada en firme con la cámara del checkpoint, el escudo a
 tres y las tablas de enemigos vaciadas.
 
-Sobre la partida grabada salió el retrato completo: **veinte muertes, 19 por
-contacto y una sola por caída**, las veinte pasando por el mismo descuento y el
-mismo respawn. Y un detalle que explica que la partida acabara bien: el
-contador de vidas antes de cada descuento fue subiendo de 2 a 6 a lo largo de
-la partida. El jugador ganaba vidas más deprisa de lo que las perdía.
+Lo de las dos vidas tiene truco, y aquí estuvo publicado "tres": hay **dos
+inicializaciones**, y la que manda es la segunda. El menú deja un tres en el
+contador (0xA30B), pero el arranque de la partida lo pisa con un dos (0xA3CB,
+`ld a,002h`). Por eso la primera muerte de cualquier partida encuentra el
+contador a dos.
+
+### El estado de agonía: no hay temporizador, hay un bucle lento
+
+Entre que el juego te da por muerto y que de verdad te quita la vida pasan
+unos cinco segundos, y no los cuenta ningún reloj. El contador sube **uno por
+vuelta del bucle principal**, sin prescaler y sin sincronía ninguna con el
+vídeo: en todo el módulo no hay un solo `halt`, el volcado a la memoria de
+vídeo son bucles de copia, y ninguna rutina de la agonía mira el contador
+global.
+
+Lo lento es la vuelta. Una vuelta del motor —doble pase del fondo, enemigos,
+disparos y volcado de las tres bandas— cuesta unos **123 milisegundos**, que
+son 6,15 cuadros de los 50 por segundo de la máquina. Cuarenta y una vueltas
+a ese ritmo son 5,04 segundos, y el emulador mide 23 agonías de entre 4,76 y
+5,29 segundos, con media de 5,04. La cuenta sale clavada.
+
+Mientras dura, eres intocable: tres comprobaciones independientes del listado
+se saltan la colisión si el estado ya llegó a cuatro.
+
+### Veintitrés muertes, y otras cuarenta y cuatro que no son tuyas
+
+Sobre la partida grabada sale el retrato completo: **veintitrés muertes, 22
+por contacto y una sola por caída**, las veintitrés pasando por el mismo
+descuento y el mismo respawn. La partida va del segundo 2.464 al 3.124 —once
+minutos— y **acaba pasándose el juego**: el emulador ve pasar el programa por
+la rutina del final feliz, no por la de quedarse sin vidas. Y el contador de
+vidas antes de cada descuento fue subiendo de dos a seis: el jugador ganaba
+vidas más deprisa de lo que las perdía.
+
+(Aquí estuvo publicado "veinte muertes, 19 por contacto", por medir una
+ventana de tiempo que se cortaba antes del final de la partida.)
+
+Pero la cinta grabada contiene **otras 44 muertes que no son del jugador**: son
+de la **demo de atracción**, que ejecuta exactamente el mismo código de juego
+y por tanto las mismas rutinas de muerte. Separarlas no es cuestión de mirar
+el reloj, porque el juego lo dice él mismo: la dirección 0xA689 guarda el
+operando de una llamada que vale una cosa en partida normal y otra en demo, y
+el propio arranque la consulta (`cp 0eeh`) para no repintar el marcador
+mientras la demo juega. Preguntándole a ese byte en cada muerte, las dos
+pasadas de demo de la grabación —la de antes de empezar y la de después de la
+tabla de récords— se separan solas de los once minutos de partida de verdad.
 
 ## La cuenta atrás es una torre que crece
 

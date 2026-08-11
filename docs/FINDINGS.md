@@ -399,16 +399,57 @@ either— **passes straight through the floor** and out the bottom of the
 screen.
 
 Both roads end in the same funnel: when the state reaches 45, one life is
-subtracted (0xC45F: three to start, more earned on points up to nine); with
+subtracted (0xC45F: **two** to start, more earned on points up to nine); with
 the counter spent, game over; otherwise the **respawn** returns you to the
 last position stepped on firm ground, with the checkpoint camera, the shield
 back at three and the enemy tables emptied.
 
-The recorded game yields the full portrait: **twenty deaths, 19 by contact and
-a single one by falling**, all twenty through the same subtraction and the
-same respawn. And one detail that explains the happy ending: the life counter
-before each subtraction climbed from 2 to 6 over the course of the game. The
-player was earning lives faster than he lost them.
+That "two" has a catch, and this page used to say "three": there are **two
+initialisations**, and the second one wins. The menu leaves a three in the
+counter (0xA30B), but the start of play overwrites it with a two (0xA3CB,
+`ld a,002h`). That is why the first death of any game finds the counter at two.
+
+### The dying state: no timer, just a slow loop
+
+Between the game writing you off and actually taking the life away there are
+about five seconds, and no clock counts them. The counter goes up **one per
+turn of the main loop**, with no prescaler and no synchronisation with the
+video whatsoever: there isn't a single `halt` in the module, the dump to video
+memory is a copy loop, and no routine in the dying path looks at the global
+counter.
+
+The slow part is the turn. One turn of the engine —double pass over the
+background, enemies, shots and the dump of the three bands— costs about **123
+milliseconds**, which is 6.15 of the machine's 50 frames per second. Forty-one
+turns at that rate come to 5.04 seconds, and the emulator measures 23 dying
+sequences between 4.76 and 5.29 seconds, averaging 5.04. The sum lands exactly.
+
+While it lasts you are untouchable: three independent checks in the listing
+skip collision if the state has already reached four.
+
+### Twenty-three deaths, and another forty-four that aren't yours
+
+The recorded game yields the full portrait: **twenty-three deaths, 22 by
+contact and a single one by falling**, all twenty-three through the same
+subtraction and the same respawn. The game runs from second 2,464 to 3,124
+—eleven minutes— and **ends by finishing the game**: the emulator watches the
+program pass through the happy-ending routine, not through running out of
+lives. And the life counter before each subtraction climbed from two to six:
+the player was earning lives faster than he lost them.
+
+(This page used to say "twenty deaths, 19 by contact", from measuring a time
+window that stopped before the end of the game.)
+
+But the recording holds **another 44 deaths that aren't the player's**: they
+belong to the **attract-mode demo**, which runs exactly the same game code and
+therefore the same death routines. Telling them apart isn't a matter of
+reading the clock, because the game says so itself: address 0xA689 holds the
+operand of a call that is one value in a real game and another in the demo,
+and the start-up routine consults it (`cp 0eeh`) so as not to repaint the
+scoreboard while the demo plays. Asking that byte at every death, the
+recording's two demo runs —the one before play starts and the one after the
+high-score table— separate themselves cleanly from the eleven minutes of real
+game.
 
 ## The countdown is a tower that grows
 

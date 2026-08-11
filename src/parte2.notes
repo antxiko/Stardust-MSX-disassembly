@@ -750,18 +750,86 @@ C 0xA98E El opcode parcheado del doble pase: 0xC2 = solo celdas vacias, 0xCA = s
 #            atraviesa el suelo y sale por abajo).
 #
 # Las dos desembocan en el mismo embudo: cuando 0xA6ED llega a 0x2D, 0xA528
-# resta una vida de 0xC45F (init 3 en a30b; se ganan por puntos en b3f3, tope
-# 9); con acarreo, game over (L_A2D2), y si no, respawn (L_A439) que devuelve
-# al jugador a la ULTIMA posicion pisada en firme (0xA6E9) con la camara del
-# checkpoint 0xC466/67, el escudo a 3 y las tablas de enemigos vaciadas.
+# resta una vida de 0xC45F (se ganan por puntos en b3f3, tope 9); con acarreo,
+# game over (L_A2D2), y si no, respawn (L_A439) que devuelve al jugador a la
+# ULTIMA posicion pisada en firme (0xA6E9) con la camara del checkpoint
+# 0xC466/67, el escudo a 3 y las tablas de enemigos vaciadas.
 #
-# Contrastado sobre la partida entera (tools/omsx_muerte.tcl, dump/muerte): el
-# usuario murio 20 veces —19 por impacto (bp 0xB123) y UNA por caida (bp
-# 0xA66C, t=2488, fila 66)— y las 20 pasaron por el descuento de 0xA528 y el
-# respawn de 0xA44F. Se le ve ademas ganar vidas mas deprisa de lo que las
-# perdia (el contador antes de restar sube de 2 a 6 a lo largo de la partida).
-# OJO con un matiz: del estado 4 al 0x2D pasan ~5 segundos medidos, o sea que
-# el estado NO avanza cada cuadro; el ritmo exacto queda sin cuantificar.
+# OJO CON LAS VIDAS INICIALES: hay DOS inicializaciones y la que vale es la
+# segunda. 0xA30B pone 3, pero eso es el menu; el arranque de partida de
+# 0xA3CB las pisa con DOS (`ld a,002h / ld (0c45fh),a`). Por eso la primera
+# muerte de una partida encuentra el contador a 2 y no a 3.
+#
+# --- EL RITMO DE LA AGONIA: no hay temporizador, hay bucle lento -------------
+#
+# 0xA6ED hace DOS papeles con el mismo byte: escudo mientras vives (1..3, tres
+# iconos) y contador de la agonia cuando ya estas muerto (4..0x2D). El cambio
+# de oficio lo marca el 4 que escriben las dos vias de muerte, y el limite lo
+# pone el `cp 02dh` del embudo (a51e). Mientras dura, el jugador es INTOCABLE:
+# tres puertas independientes (a868, af83, ba18) hacen `cp 004h / jr nc` y se
+# saltan la colision si el estado ya llego a 4.
+#
+# El contador sube +1 POR VUELTA del bucle principal, sin prescaler y sin
+# ninguna sincronia con el video: no hay un solo `halt` en el modulo, el
+# volcado a VRAM son bucles de copia con djnz, y ninguna rutina de la agonia
+# consulta el contador global 0xAD27 (que ademas cuenta VUELTAS, no
+# interrupciones: lo incrementa el propio bucle en a4a1/a4a4).
+#
+# Quien incrementa depende de la via, y se elige parcheando el operando del
+# trampolin L_A57D (`jp L_A580`, a57d):
+#   CAIDA    L_A583: a590/91 `inc a / ld (0a6edh),a`, incondicional con
+#            estado>4; el primer tick lo da L_A5F1 por el `jr z,$+99` de a58e.
+#            a66c escribe 4 y reentra la MISMA vuelta (`jp L_A583`, a66f), asi
+#            que el estado 4 no dura ninguna vuelta: quedan 40.
+#   IMPACTO  cadaver_parabola 0xB268: b26e/6f, tambien incondicional, incluso
+#            con el cuerpo ya fuera de pantalla (el `cp 0c4h` de b27d corta el
+#            DIBUJO, no el contador). Son 41 vueltas.
+# El parche lo pone b132/b135 y lo deshacen dos sitios que cuadran: el embudo
+# (a52d/a530) y el respawn (a43c/a43f).
+#
+# Y la cuenta sale: una vuelta del motor cuesta ~123 ms —doble pase del fondo,
+# enemigos, tiros y volcado de las tres bandas— o sea ~6,15 cuadros de 50 Hz.
+# 41 vueltas x 123 ms = 5,04 s. Medido sobre la partida grabada
+# (tools/omsx_muerte.tcl, dump/muerte): 7,5-8,2 vueltas/s sostenidas y 23
+# agonias de 4,76 a 5,29 s, media 5,04. Asi que "no avanza cada cuadro" solo
+# es cierto para cuadros de VIDEO: por vuelta del motor avanza 1 a 1, y lo
+# lento es la vuelta.
+#
+# --- CUANTAS MUERTES HAY DE VERDAD, Y CUALES NO SON DEL JUGADOR -------------
+#
+# La cifra publicada un dia -20 muertes, 19 impacto / 1 caida- estaba mal por
+# DOS motivos, y el segundo es el que importa:
+#   1. La ventana medida (t=2464-3100) se cortaba antes del final de la
+#      partida. La partida entera va de t=2463.98 a t=3124.53.
+#   2. El replay contiene ADEMAS dos pasadas de la DEMO DE ATRACCION, que
+#      ejecuta el mismo codigo de juego y por tanto las mismas rutinas de
+#      muerte. Contar sobre el replay sin separarlas suma cosas distintas.
+#
+# La demo se distingue en vivo preguntandole al juego: 0xA689 es el operando
+# del `call` del lector de mandos (0xA6FC partida normal desde a313, 0xA6EE
+# demo desde b6ca), y el propio arranque lo consulta en a3e5 (`ld a,(0a689h) /
+# cp 0eeh`) para NO repintar el marcador durante la demo. Leyendo ese byte en
+# cada muerte, la cuenta sale limpia (tools/omsx_partidas.tcl, dump/partidas):
+#
+#   partida del usuario   t=2463.98 -> 3124.53   23 muertes (22 impacto, 1 caida)
+#   demo, pasada 1        t=2069.55 -> 2463.98   \  44 muertes entre las dos
+#   demo, pasada 2        t=3266.60 -> fin       /
+#
+# Y el final de la partida esta medido, no supuesto: a t=3124.53 el programa
+# pasa por 0xBF6C (`jp L_A2D2` desde el final feliz de 0xBF47), no por quedarse
+# sin vidas. El usuario SE PASO el juego. Ademas el ultimo descuento fue con el
+# contador a 6, o sea que no estuvo cerca de agotarlo.
+#
+# OJO CON 0xA2D2: no es "game over" a secas, es el retorno al estado inicial, y
+# ahi desembocan varias vias (el embudo sin vidas por a533, el final feliz por
+# bf6c, bd78 y a515). Un bp ahi no distingue victoria de derrota.
+# Y OJO CON LOS BP EN SALTOS CONDICIONALES: uno puesto en a533 (`jp c,L_A2D2`)
+# salta cada vez que se EJECUTA la instruccion, se tome el salto o no, asi que
+# cuenta DESCUENTOS de vida y no game overs. Se pago aqui con una etiqueta que
+# decia GAMEOVER 52 veces.
+#
+# SIN MEDIR: si en alguna de las partidas del replay el salto llego a tomarse
+# (game over de verdad). Para eso hay que mirar el acarreo, y no se ha hecho.
 
 L 0xB1BE consulta_mapa_fina consulta_mapa mas el test de sub-celda: con celda vacia, carry solo si la posicion cae en la banda central [8,24) de la celda en X e Y. La usan SOLO los voladores (desde 0xB20F) para elegir hueco donde anidar
 L 0xB1DC mueve_voladores El vuelo de los enemigos voladores (tabla 0xACF9, contador 0xACF8, 5 B por objeto): vuelan hacia el jugador (0x6858) y con consulta_mapa_fina deciden donde anidar
