@@ -145,12 +145,26 @@ capturing those jumps with the game running, the IX values go up in 8s (0xCB3A,
 The foot part doesn't treat its enemies that way: they live in tables of
 **5 bytes per object** —the walkers at 0xACE4, four at most; the flyers at 0xACF9; the
 turret's two shots at 0xAD04— and carry no routine pointer: fixed loops move
-them, one per species. (This page used to say "the IX values go up in 46s:
-entities almost six times bigger", from mistaking what its `jp (hl)` at 0xC544
-dispatches for the enemies. The measurement was good, the reading wasn't: those
-IX —0xD068, 0xD096, 0xD0C4, three consecutive 46-byte slots exactly— belong to
-**another** structure, the variables area at 0xD068-0xD117 that arrives from
-the tape zeroed. Which subsystem that is remains open.)
+them, one per species.
+
+This page used to say "the IX values go up in 46s: entities almost six times
+bigger", from mistaking what its `jp (hl)` at 0xC544 dispatches for the enemies.
+The measurement was good, the reading wasn't. And now we also know what they
+really are: **the sound interpreter's three channels**.
+
+The code says so, in the simplest way: the routine that starts a sound takes a
+channel number, **multiplies it by 46** and adds a base to reach that channel's
+state. Both halves of the game carry that routine, identical but for the base:
+
+    ships    and 07fh / ld de,0002eh / call ... / ld de,0ed75h
+    on foot  and 07fh / ld de,0002eh / call ... / ld de,0d068h
+
+And 0xD068 is exactly where the mystery IX values landed. The arithmetic closes
+on both sides: three 46-byte channels from 0xED75 end at 0xEDFF, precisely the
+address the code loads for the interpreter's variables.
+
+So that `jp (hl)` wasn't dispatching entities: it was dispatching **music
+commands**. It is the same interpreter in both halves, with its three channels.
 
 What they do share is the craft of drawing. Comparing 40 bytes of the sprite
 routine of one part against the other, **only six differ**, and three of those

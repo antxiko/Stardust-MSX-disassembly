@@ -44,8 +44,18 @@
 # la zona de variables a cero de 0xD068-0xD117) y NO son los enemigos. Los
 # enemigos de a pie viven en tablas de 5 B por objeto (andantes 0xACE4,
 # voladores 0xACF9, tiros 0xAD04) movidas por bucles fijos, sin rutina apuntada.
-# Que subsistema son los objetos de 46 B sigue abierto. (Aqui se leyo "entidades
-# casi seis veces mayores" y estaba mal: verificado 2026-08-07.)
+# (Aqui se leyo "entidades casi seis veces mayores" y estaba mal: 2026-08-07.)
+#
+# RESUELTO 2026-08-11: los objetos de 46 B son los TRES CANALES DEL INTERPRETE
+# DE SONIDO. 46 = 0x2E, que es el tamano de un estado de canal, y la rutina que
+# los indexa es la MISMA que la de la parte de naves cambiando solo la base:
+#     naves  e192: and 07fh / ld de,0002eh / call L_E591 / ld de,0ed75h
+#     a pie  c4a6: and 07fh / ld de,0002eh / call L_C8A6 / ld de,0d068h
+# O sea que el jp (hl) de 0xC544 es el despachador de comandos del interprete,
+# no un sistema de entidades. La cuenta cierra: 0xD068 + 3*46 = 0xD0F2, y las
+# variables que el listado lee con ld a,(nn) ahi (0xD0FC, 0xD10C) caen justo
+# detras. En naves, 0xED75 + 3*46 = 0xEDFF, que es la direccion que cargan
+# 0xBDAC y 0xBF44.
 #
 # El otro salto indirecto, el de 0x984D, NO llego a dispararse en 300 segundos:
 # queda pendiente y hay que decirlo, no darlo por cubierto.
@@ -168,3 +178,12 @@
 0xAA58  ejec_AA58   ejecutado en la partida (14 direcciones distintas)
 0xAB47  ejec_AB47   ejecutado en la partida (7 direcciones distintas)
 0xC78C  ejec_C78C   ejecutado en la partida (3 direcciones distintas)
+
+# --- EL INTERPRETE DE SONIDO DE LA PARTE DE A PIE ----------------------------
+# Es el MISMO que el de la parte de naves, con la misma rutina y el mismo
+# tamano de canal (0x2E = 46 bytes), cambiando solo la base de los estados:
+#     naves    ld de,0002eh / ld de,0ed75h
+#     a pie    ld de,0002eh / ld de,0d068h
+# Por eso los IX que despacha el jp (hl) de 0xC544 iban de 46 en 46: son los
+# TRES CANALES (0xD068, 0xD096, 0xD0C4), no entidades del juego.
+0xC4A3  arranca_sonido A = canal, DE = guion; busca el estado del canal en 0xD068 + canal*0x2E

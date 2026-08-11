@@ -253,10 +253,10 @@ repeated command is precisely the one that calls phrases, 208 times.
 
 The consequence for the figures is direct, and goes the uncomfortable way:
 **1,386 bytes stop counting as code**, the ship block's coverage drops from
-26.0% to 23.0%, and identified routines fall to 105. The budget still closes at
+26.0% to 23.0%, and identified routines fall to 106. The budget still closes at
 100%, because those bytes don't vanish: they change column.
 
-## The routine count dropped from 164 to 105, and it is the same old confusion
+## The routine count dropped from 164 to 106, and it is the same old confusion
 
 This page already told how the routine count was once published as **1956**,
 which was the number of the tracer's **labels**: every jump target, including
@@ -272,7 +272,7 @@ reports the address of the `out`, and that `out` sits **inside the drawing
 loop**, not at the routine's head.
 
 Of the declared points, **39 are interior labels**: places reached by
-falling through from the instruction above. Actual routines number **105**, and
+falling through from the instruction above. Actual routines number **106**, and
 that is the figure published now.
 
 A new tool catches them, `tools/check_interiores.py`, with a simple rule: if a

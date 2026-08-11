@@ -754,3 +754,34 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # acorde. Usa 17 de las 20 frases. La otra cancion es un caso aparte: 56
 # llamadas a solo DOS frases, y la que repite 24 veces seguidas -la 2- no tiene
 # ni una nota, o sea que es percusion (suena por el canal de ruido).
+#
+# --- LOS TRES CANALES, Y EL 46 QUE LLEVABA DIAS SIN EXPLICARSE ---------------
+#
+# arranca_sonido (0xE18F) recibe A = numero de canal y DE = direccion del
+# guion, y lo primero que hace es buscar el estado de ese canal:
+#
+#     e192: and 07fh
+#     e194: ld de,0002eh / call L_E591    <- canal * 0x2E
+#     e19a: ld de,0ed75h / add hl,de      <- + la base
+#
+# O sea que **los estados de canal son estructuras de 0x2E = 46 bytes** y
+# empiezan en 0xED75, justo donde acaba la musica. Tres canales: 0xED75 + 3*46
+# = 0xEDFF, que es exactamente la direccion que el codigo carga en 0xBDAC y
+# 0xBF44 (`ld hl,0edffh`) para las variables globales del interprete. Cierra al
+# byte por los dos lados.
+#
+# Y ESTO RESUELVE EL 46 DE LA PARTE DE A PIE, que llevaba abierto desde que se
+# vio que su `jp (hl)` de 0xC544 despachaba con IX de 46 en 46 (0xD068, 0xD096,
+# 0xD0C4). Se publico como "entidades casi seis veces mayores", se corrigio a
+# "no son los enemigos, y que son sigue abierto", y son ESTO: la parte de a pie
+# lleva el MISMO interprete, con la misma rutina y el mismo tamano de canal,
+# cambiando solo la base:
+#
+#     naves    e192: and 07fh / ld de,0002eh / call L_E591 / ld de,0ed75h
+#     a pie    c4a6: and 07fh / ld de,0002eh / call L_C8A6 / ld de,0d068h
+#
+# Los tres "objetos de 46 bytes" son los TRES CANALES DE SONIDO, y el `jp (hl)`
+# que los recorria es el despachador de comandos del interprete, no un sistema
+# de entidades. La cuenta tambien cierra alli: 0xD068 + 3*46 = 0xD0F2, y las
+# variables que el listado lee con `ld a,(nn)` en esa zona (0xD0FC, 0xD10C)
+# caen justo despues.

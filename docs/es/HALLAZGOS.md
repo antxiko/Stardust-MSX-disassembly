@@ -117,12 +117,27 @@ esos saltos con el juego en marcha, los IX van de 8 en 8 (0xCB3A, 0xCB42 ·
 La parte de a pie no trata así a sus enemigos: viven en **tablas de 5 bytes por
 objeto** —los andantes en 0xACE4, cuatro como máximo; los voladores en 0xACF9;
 los dos tiros de la torreta en 0xAD04— y no llevan rutina apuntada, los mueven
-bucles fijos, uno por especie. (Aquí estuvo publicado "los IX van de 46 en 46:
-entidades casi seis veces mayores", por tomar por enemigos lo que despacha el
-`jp (hl)` de 0xC544. La medida era buena y la lectura no: esos IX —0xD068,
-0xD096, 0xD0C4, tres huecos consecutivos de 46 bytes justos— son de **otra**
-estructura, la zona de variables de 0xD068-0xD117 que llega de la cinta a cero.
-Qué subsistema es sigue abierto.)
+bucles fijos, uno por especie.
+
+Aquí estuvo publicado "los IX van de 46 en 46: entidades casi seis veces
+mayores", por tomar por enemigos lo que despacha el `jp (hl)` de 0xC544. La
+medida era buena y la lectura no. Y ahora, además, se sabe qué son de verdad:
+**los tres canales del intérprete de sonido**.
+
+Lo dice el propio código, y de la forma más simple: la rutina que arranca un
+sonido recibe el número de canal, lo **multiplica por 46** y le suma una base
+para llegar al estado de ese canal. Las dos partes del juego llevan esa rutina,
+idéntica salvo la base:
+
+    naves    and 07fh / ld de,0002eh / call ... / ld de,0ed75h
+    a pie    and 07fh / ld de,0002eh / call ... / ld de,0d068h
+
+Y 0xD068 es exactamente donde caían los IX del misterio. La cuenta cierra por
+los dos lados: tres canales de 46 bytes desde 0xED75 terminan en 0xEDFF, que es
+justo la dirección que el código carga para las variables del intérprete.
+
+Así que ese `jp (hl)` no despachaba entidades: despachaba **comandos de
+música**. Es el mismo intérprete de las dos partes, con sus tres canales.
 
 Lo que sí comparten es el oficio de dibujar. Comparando 40 bytes de la rutina de
 sprites de una parte con la de la otra, **solo difieren seis**, y tres de ellos

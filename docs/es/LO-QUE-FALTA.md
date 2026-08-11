@@ -255,11 +255,11 @@ más repetido es precisamente el que llama a las frases, 208 veces.
 
 La consecuencia en las cifras es directa y va en la dirección incómoda:
 **1.386 bytes dejan de contar como código**, la cobertura del bloque de naves
-baja del 26,0 % al 23,0 %, y las rutinas identificadas quedan en 105. El
+baja del 26,0 % al 23,0 %, y las rutinas identificadas quedan en 106. El
 presupuesto sigue cerrando al 100 %, porque esos bytes no desaparecen: cambian
 de columna.
 
-## La cifra de rutinas bajó de 164 a 105, y es la misma confusión de siempre
+## La cifra de rutinas bajó de 164 a 106, y es la misma confusión de siempre
 
 Esta página ya contaba que la cifra de rutinas estuvo publicada como **1956**,
 que era el número de **etiquetas** del trazador: todo destino de salto, incluidos
@@ -275,7 +275,7 @@ vídeo informa de la dirección del `out`, y ese `out` está **dentro del bucle*
 de dibujado, no en la cabecera.
 
 De los puntos declarados, **39 son etiquetas interiores**: sitios a los que
-se llega cayendo desde la instrucción de arriba. Rutinas de verdad hay **105**,
+se llega cayendo desde la instrucción de arriba. Rutinas de verdad hay **106**,
 y es la cifra que se publica ahora.
 
 Lo caza una herramienta nueva, `tools/check_interiores.py`, con una regla
