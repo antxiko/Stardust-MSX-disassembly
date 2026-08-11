@@ -529,6 +529,34 @@ Lo que sale del recorrido: **veintiún sonidos**. Diecisiete son cortos, de 9 a
 31 bytes —los efectos—, y dos son largos, de 378 y 149 bytes: **ésas son las
 músicas**. Otros dos no terminan, dan la vuelta y siguen sonando en bucle.
 
+### Las canciones no tienen ni una nota
+
+Y aquí está lo mejor del asunto. Descodificada, la canción de 378 bytes resulta
+ser **152 llamadas a frase y cero notas propias**. La de 149, cincuenta y seis
+llamadas y una sola nota suelta. **La melodía no está en las canciones**: está
+en las frases, y la canción es únicamente la estructura que las encadena. Por
+eso 1.420 bytes dan para toda la banda sonora del juego.
+
+Con la tabla de notas al lado, la armonía se lee a simple vista. Las frases 1,
+4, 5 y 6 son cuatro notas repetidas —do3, la3, fa3 y sol3, las fundamentales—
+y la canción larga empieza llamándolas en este orden:
+
+    1 1 4 4 1 1 4 4 5 5 6 6 1 1 1 1 1 1 4 4 ...
+
+Do, la, fa, sol, dos compases por acorde: es **la progresión I–vi–IV–V**, la de
+los doo-wop de los cincuenta, sonando en un matamarcianos de 1987. Usa
+diecisiete de las veinte frases.
+
+La otra canción es un caso distinto: cincuenta y seis llamadas a sólo **dos**
+frases, y la que repite veinticuatro veces seguidas no tiene ni una nota. Es
+percusión, sonando por el canal de ruido.
+
+La tabla de notas, de paso, se comprueba sola: con el reloj del chip de sonido
+del MSX, el primer periodo da **32,70 Hz, que es el do1 teórico**, y de los 84
+pares separados doce posiciones, 76 tienen razón exactamente 2 —la definición
+de octava—. Los ocho que fallan son los más agudos, donde el periodo ya es un
+entero de dos cifras y el redondeo se nota. Ocho octavas justas, de do1 a si8.
+
 No hay ninguna tabla que los ordene. Cada sitio del juego que quiere sonar algo
 lleva la dirección escrita a pelo, y hay **44 de esas llamadas** repartidas por
 el código; la más repetida, siete veces, es el mismo efecto. Dos de ellas

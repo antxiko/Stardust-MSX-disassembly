@@ -564,6 +564,34 @@ What the walk yields: **twenty-one sounds**. Seventeen are short, 9 to 31 bytes
 —the effects— and two are long, 378 and 149 bytes: **those are the music**.
 Another two never end; they loop back and keep playing.
 
+### The songs don't contain a single note
+
+And here is the best part. Decoded, the 378-byte song turns out to be **152
+phrase calls and zero notes of its own**. The 149-byte one, fifty-six calls and
+a single loose note. **The melody isn't in the songs**: it is in the phrases,
+and the song is only the structure that strings them together. That is how
+1,420 bytes cover the game's entire soundtrack.
+
+With the note table alongside, the harmony reads at a glance. Phrases 1, 4, 5
+and 6 are four repeated notes —C3, A3, F3 and G3, the roots— and the long song
+opens by calling them in this order:
+
+    1 1 4 4 1 1 4 4 5 5 6 6 1 1 1 1 1 1 4 4 ...
+
+C, A minor, F, G, two bars apiece: it is **the I–vi–IV–V progression**, the
+doo-wop one from the fifties, playing in a 1987 shoot-'em-up. It uses seventeen
+of the twenty phrases.
+
+The other song is a different animal: fifty-six calls to just **two** phrases,
+and the one it repeats twenty-four times running has no notes at all. It is
+percussion, playing through the noise channel.
+
+The note table, incidentally, checks itself: with the MSX sound chip's clock the
+first period yields **32.70 Hz, theoretical C1**, and of the 84 pairs twelve
+positions apart, 76 have a ratio of exactly 2 —the definition of an octave. The
+eight that miss are the highest, where the period is already a two-digit integer
+and rounding shows. Eight full octaves, C1 to B8.
+
 There is no table ordering them. Every place in the game that wants a sound
 carries the address written out in full, and there are **44 such calls** spread
 through the code; the most repeated, seven times, is the same effect. Two of

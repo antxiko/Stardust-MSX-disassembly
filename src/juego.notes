@@ -725,3 +725,32 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # listado. El mas repetido es 0xEA52, con siete llamadas. Ojo con dos de ellas
 # -0xEB42 y 0xED55- que caen DENTRO de un bloque, no en su principio: se entra
 # a media melodia, que es una forma barata de tener variaciones.
+#
+# --- LA MUSICA, LEIDA (tools/lee_musica.py) ---------------------------------
+#
+# Con la tabla de comandos y la de 96 notas se puede sacar la partitura. Lo que
+# sale:
+#
+# LA TABLA DE NOTAS CUADRA CON EL PSG. Con el reloj del AY-3-8910 del MSX
+# (3579545/2, y divisor de 16), el primer periodo -3421- da 32,70 Hz, que es el
+# do1 teorico, y el ultimo -14- da 7990 Hz. De los 84 pares separados doce
+# posiciones, 76 tienen razon 2,0000 (la definicion de octava); los ocho que
+# fallan son los mas agudos, donde el periodo es un entero de dos cifras y el
+# redondeo ya se nota. Ocho octavas justas, do1 a si8.
+#
+# LAS CANCIONES NO TIENEN NOTAS. Es lo mas bonito del subsistema: la de 378
+# bytes (0xEB52) son **152 llamadas a frase y CERO notas propias**, y la de 149
+# (0xECCC), 56 llamadas y una sola nota suelta. La melodia esta en las frases;
+# la cancion es solo la estructura que las encadena. Por eso 1420 bytes dan
+# para toda la banda sonora.
+#
+# Y LA PROGRESION SE LEE A SIMPLE VISTA. Las frases 1, 4, 5 y 6 son cuatro
+# notas repetidas -do3, la3, fa3 y sol3-, o sea las fundamentales, y la cancion
+# larga empieza llamandolas asi:
+#
+#     1 1 4 4 1 1 4 4 5 5 6 6 1 1 1 1 1 1 4 4 ...
+#
+# do-do-la-la-fa-fa-sol-sol: es el I-vi-IV-V de toda la vida, dos compases por
+# acorde. Usa 17 de las 20 frases. La otra cancion es un caso aparte: 56
+# llamadas a solo DOS frases, y la que repite 24 veces seguidas -la 2- no tiene
+# ni una nota, o sea que es percusion (suena por el canal de ruido).
