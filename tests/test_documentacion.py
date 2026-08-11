@@ -639,3 +639,51 @@ class TestElSubsistemaDeSonido(unittest.TestCase):
             self.assertEqual((n[i * 2] | (n[i * 2 + 1] << 8))
                              - (a[i * 2] | (a[i * 2 + 1] << 8)), 0x1CE5,
                              "la frase %d no se reubico 0x1CE5" % i)
+
+
+class TestLaRutinaDeLaMulticarga(unittest.TestCase):
+    """La carga de la segunda parte, que estuvo publicada como contradiccion.
+
+    Lo que se midio -84441 muestras del PC, todas dentro de 0xF7F6-0xF89E, con
+    IX recorriendo 0x61D0-0xD674- no se puede repetir aqui sin emulador. Pero la
+    rutina esta en los bytes, y su parentesco con la LD-BYTES del Spectrum
+    tambien, asi que eso si se comprueba.
+    """
+
+    @sin_juego
+    def test_empuja_a_mano_su_direccion_de_vuelta(self):
+        """El 0xF89F que aparecia en la pila lo pone este `push hl`."""
+        self.assertEqual(juego(0xF7F6, 0xF7FA), b"\x21\x9f\xf8\xe5")
+
+    @sin_juego
+    def test_enciende_el_motor_y_elige_el_registro_del_bit_de_cinta(self):
+        self.assertEqual(juego(0xF7FA, 0xF804),
+                         b"\xf5\x3e\x08\xd3\xab\x3e\x0e\xd3\xa0\xf1")
+
+    @sin_juego
+    def test_es_la_ld_bytes_del_spectrum(self):
+        """`inc d / ex af,af' / dec d / di` abre la LD-BYTES de la ROM del
+        Spectrum, y 0x0415 es su constante de temporizacion."""
+        self.assertEqual(juego(0xF804, 0xF808), b"\x14\x08\x15\xf3")
+        self.assertEqual(juego(0xF811, 0xF814), b"\x21\x15\x04")
+
+    @sin_juego
+    def test_guarda_cada_byte_por_ix(self):
+        """El watchpoint reportaba PC=0xF849 porque la instruccion empieza en
+        0xF848: los puntos de observacion caen dentro de la instruccion."""
+        self.assertEqual(juego(0xF848, 0xF84B), b"\xdd\x75\x00")
+
+    @sin_juego
+    def test_lee_el_bit_de_cinta_por_el_psg(self):
+        self.assertEqual(juego(0xF887, 0xF88D), b"\xdb\xa2\x2f\xa9\xe6\x80")
+
+    @sin_juego
+    def test_parpadea_el_borde_por_el_vdp(self):
+        """Donde el Spectrum escribia en su puerto 0xFE, este usa el VDP."""
+        self.assertEqual(juego(0xF893, 0xF89D),
+                         b"\xed\x5f\xe6\x0f\xd3\x99\x3e\x87\xd3\x99")
+
+    @sin_juego
+    def test_el_destino_llena_el_bloque_exacto(self):
+        """IX fue de 0x61D0 a 0xD674, que es el ultimo byte de los 29861."""
+        self.assertEqual(0x61D0 + 29861 - 1, 0xD674)

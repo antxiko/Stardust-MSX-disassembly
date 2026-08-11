@@ -112,27 +112,42 @@ and the game goes back to the cassette for the second part, the one on foot.
 
 The interesting bit is **how**. The loader's load routine survives in page 1 for
 the whole game —the game loads from 0x47A0 up and doesn't tread on it— so the
-obvious thing would be for it to call that. It doesn't: a watchpoint on it never
-fired **once in 4000 seconds of play**. The game brings its own:
+obvious thing would be for it to call that. It doesn't. The game brings its own,
+and that routine is **a second port of the Spectrum's LD-BYTES**, the same one
+the tape loader already reimplemented:
 
     f7f6: ld hl,0f89fh / push hl    ; the return address, pushed by hand
     f7fb: ld a,008h / out (0abh),a  ; switches on the tape MOTOR
     f7ff: ld a,00eh / out (0a0h),a  ; PSG register 14, the tape-bit one
+    f804: inc d / ex af,af' / dec d / di      ; LD-BYTES, opcode for opcode
+    f808: ld a,005h  ...  ld hl,00415h        ; and its very constant, 0x0415
+    f848: ld (ix+000h),l            ; each byte read, stored through IX
+    f887: in a,(0a2h) / cpl / xor c ; reads the tape bit back off the PSG
+    f893: ld a,r / and 00fh / out (099h),a    ; and flickers the border, via the
+                                              ; VDP where the Spectrum used a port
 
-Nor is it a copy of the other one: its signature was searched for byte by byte
+Nor is it a copy of the loader's: its signature was searched for byte by byte
 across the three blocks and appears in none of them.
 
-It is caught by putting a watchpoint not on a routine but on the **destination**:
-any write to 0x61D0, where the descriptor says the second part goes. It fires
-with the program counter at 0xF849. And what is left there afterwards matches
-the tape's block except for 180 bytes out of 29,861 —99.4%— which are the
-variables the second part had already touched by the time it was looked at.
+**How it was settled.** Starting from a savestate taken on the FELICIDADES
+screen and sampling the program counter every two milliseconds throughout the
+load: **84,441 samples, every single one inside 0xF7F6–0xF89E. Not one in ROM,
+not one in page 1.** Meanwhile IX —the pointer that `ld (ix+000h),l` stores
+through— walks from 0x61D0 to 0xD674, which is exactly the last byte of a
+29,861-byte block. The BIOS takes no part in this, and neither does the loader.
 
-**One open question, and it is left open.** Replaying a complete recorded
-playthrough, a breakpoint on 0xF7F6 never fired, and during the second load the
-program counter falls in ROM (0x1B09–0x1B2B). That doesn't square with the
-finding above, which was measured with the magazine's POKEs applied. Until it is
-measured properly, neither version is being written down as settled.
+What is left in memory afterwards matches the tape's block to **99.78%**: 66
+bytes out of 29,861, in thirty short runs, and they are the variables the second
+part had already written by the time the dump was taken —among them the three
+46-byte sound-channel states at 0xD068, 0xD096 and 0xD0C4.
+
+This used to be written down here as an open contradiction, because a
+breakpoint on 0xF7F6 never fired while replaying a recorded playthrough. The
+explanation turned out to be mundane: that recording *begins* at the instant the
+loader is already running —its first frame has the program counter at 0xF849,
+inside the routine— so a breakpoint on the entry point has nothing left to
+catch. The 0xF89F sitting on the stack could only have been put there by the
+`push hl` at 0xF7F9.
 
 ## Two different engines on one tape
 

@@ -88,23 +88,42 @@ y el juego vuelve a la cinta a por la segunda parte, la de a pie.
 
 Lo interesante es **cómo** lo hace. La rutina de carga del cargador sobrevive
 toda la partida en la página 1 —el juego se carga a partir de 0x47A0 y no la
-pisa— así que lo lógico sería que la llamara. Pues no: un punto de observación
-sobre ella no saltó **ni una vez en 4000 segundos de juego**. El juego trae la
-suya:
+pisa— así que lo lógico sería que la llamara. Pues no. El juego trae la suya, y
+esa rutina es **un segundo port de la LD-BYTES del Spectrum**, la misma que el
+cargador de cinta ya había reimplementado por su cuenta:
 
     f7f6: ld hl,0f89fh / push hl    ; empuja a mano la direccion de vuelta
     f7fb: ld a,008h / out (0abh),a  ; enciende el MOTOR de la cinta
     f7ff: ld a,00eh / out (0a0h),a  ; registro 14 del PSG, el del bit de cinta
+    f804: inc d / ex af,af' / dec d / di      ; LD-BYTES, instruccion a instruccion
+    f808: ld a,005h  ...  ld hl,00415h        ; y hasta su constante, 0x0415
+    f848: ld (ix+000h),l            ; cada byte leido, guardado a traves de IX
+    f887: in a,(0a2h) / cpl / xor c ; lee el bit de cinta por el PSG
+    f893: ld a,r / and 00fh / out (099h),a    ; y parpadea el borde, por el VDP
+                                              ; donde el Spectrum usaba un puerto
 
-Tampoco es una copia de la otra: se buscó su firma byte a byte en los tres
-bloques y no aparece en ninguno.
+Tampoco es una copia de la del cargador: se buscó su firma byte a byte en los
+tres bloques y no aparece en ninguno.
 
-Se caza poniendo un punto de observación no sobre una rutina, sino sobre el
-**destino**: cualquier escritura en 0x61D0, que es donde el descriptor dice que
-va la segunda parte. Salta con el contador de programa en 0xF849. Y lo que
-queda ahí después coincide con el bloque de la cinta salvo 180 bytes de 29861
-—el 99,4 %—, que son las variables que la segunda parte ya había tocado cuando
-se miró.
+**Cómo se zanjó.** Partiendo de un savestate cogido en la pantalla de
+FELICIDADES y muestreando el contador de programa cada dos milisegundos durante
+toda la carga: **84.441 muestras, todas y cada una dentro de 0xF7F6-0xF89E. Ni
+una en la ROM, ni una en la página 1.** Mientras tanto IX —el puntero por el que
+guarda ese `ld (ix+000h),l`— recorre de 0x61D0 a 0xD674, que es exactamente el
+último byte de un bloque de 29.861. Ni la BIOS ni el cargador pintan nada aquí.
+
+Lo que queda en memoria después coincide con el bloque de la cinta al **99,78 %**:
+66 bytes de 29.861, en treinta rachas cortas, y son las variables que la segunda
+parte ya había escrito cuando se hizo el volcado —entre ellas los tres estados
+de canal de sonido, de 46 bytes, en 0xD068, 0xD096 y 0xD0C4.
+
+Esto figuró aquí una temporada como contradicción abierta, porque al reproducir
+una partida grabada un punto de interrupción en 0xF7F6 no saltaba nunca. La
+explicación resultó ser de lo más prosaica: esa grabación *empieza* con el
+cargador ya en marcha —su primer fotograma tiene el contador de programa en
+0xF849, dentro de la rutina—, así que un punto de interrupción en la entrada ya
+no tiene nada que cazar. El 0xF89F que había en la pila solo puede haberlo
+puesto el `push hl` de 0xF7F9.
 
 ## Dos motores distintos en una cinta
 
