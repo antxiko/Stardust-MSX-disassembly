@@ -600,21 +600,93 @@ Do, la, fa, sol, dos compases por acorde: es **la progresión I–vi–IV–V**,
 los doo-wop de los cincuenta, sonando en un matamarcianos de 1987. Usa
 diecisiete de las veinte frases.
 
-La otra canción es un caso distinto: cincuenta y seis llamadas a sólo **dos**
-frases, y la que repite veinticuatro veces seguidas no tiene ni una nota. Es
-percusión, sonando por el canal de ruido.
+Hay además un bloque de 149 bytes, justo detrás de la tercera voz: cincuenta y
+seis llamadas a sólo **dos** frases, y la que repite veinticuatro veces seguidas
+no tiene ni una nota, o sea que es percusión por el canal de ruido. Aquí figuró
+como "la otra canción", y hay que rebajarlo: **no es una de las tres voces** —la
+tercera empieza un byte antes, y es un terminador—, y quién lo hace sonar sigue
+sin localizarse. Queda como un bloque escrito en el lenguaje del intérprete y sin
+dueño conocido.
 
 La tabla de notas, de paso, se comprueba sola: con el reloj del chip de sonido
 del MSX, el primer periodo da **32,70 Hz, que es el do1 teórico**, y de los 84
-pares separados doce posiciones, 76 tienen razón exactamente 2 —la definición
-de octava—. Los ocho que fallan son los más agudos, donde el periodo ya es un
-entero de dos cifras y el redondeo se nota. Ocho octavas justas, de do1 a si8.
+pares separados doce posiciones, 76 dan razón 2,00 con un margen del uno por
+ciento —la definición de octava—. Los ocho que fallan son los más agudos, donde
+el periodo ya es un entero de dos cifras y el redondeo se nota. Ocho octavas
+justas, de do1 a si8. (Aquí decía "razón exactamente 2" y era pasarse: con la
+razón exacta la cuenta baja a 43 de 84, porque el periodo es un número entero.)
 
 No hay ninguna tabla que los ordene. Cada sitio del juego que quiere sonar algo
 lleva la dirección escrita a pelo, y hay **44 de esas llamadas** repartidas por
 el código; la más repetida, siete veces, es el mismo efecto. Dos de ellas
 apuntan a **mitad** de una melodía en vez de a su principio: es una manera
 barata de tener variaciones sin gastar un byte más.
+
+### Y luego lo contrastamos con el chip
+
+Todo lo anterior es deducción. Quince comandos, cuántos argumentos consume cada
+uno, frases llamadas con pila, una tabla de noventa y seis periodos: todo leído
+de unos bytes, y cualquiera de esas cosas podría ser una equivocación dicha con
+aplomo. Así que se llevó al hardware.
+
+Lo primero, cómo llega el sonido al chip, que resulta no ser por el intérprete.
+El juego lleva **una copia de los once registros de sonido en RAM y la escupe
+entera en cada interrupción**, cincuenta veces por segundo:
+
+    e5d0: ld a,000h / ld d,00bh    ; desde el registro 0, y son once
+    e5d4: push af / ld c,(hl)
+    e5d6: out (0a0h),a             ; qué registro
+    e5d9: out (0a1h),a             ; y su valor
+    e5db: pop af / inc a / inc hl / dec d / jr nz
+
+Medido, es exactamente lo que pasa: en toda una captura hay **un solo sitio
+escribiendo en el puerto de sonido**, y los once registros reciben el mismo
+número de escrituras al byte.
+
+Ese detalle importa más de lo que parece, porque invalidó nuestro primer
+intento. Como los registros salen en orden, el byte **bajo** del periodo de una
+nota llega antes que el **alto**. Si se recompone el periodo en cada escritura,
+la mitad de las veces se junta un byte bajo nuevo con el alto de la nota
+*anterior*, y salen periodos que el juego nunca pidió. De ahí venía una cifra
+—"sólo el 19,3 % de los tonos son notas de la tabla"— que esta página nunca
+llegó a publicar. Contando sólo cuando el par está completo, sobre música
+limpia: **23 periodos distintos, 6.020 escrituras y ninguna fuera de la tabla.
+El 100,0 %.**
+
+Y después la prueba de verdad. La lectura se ejecutó **cuadro a cuadro** y se
+confrontó con lo que el emulador vio entrar en el chip; cuadro a cuadro y no
+nota a nota, porque es la única forma de cazar un error de *duración*, que una
+lista de notas se tragaría. Sobre la música del juego de naves:
+
+    canal 0    746 aciertos, 1 fallo
+    canal 1    653 aciertos, 1 fallo
+    canal 2      0 aciertos, 1 fallo    (mudo, como decía la lectura)
+    → 1.399 de 1.402 cuadros con sonido, 99,8 %
+
+Y los tres fallos son **el cuadro cero de cada canal**: la cola del sonido
+anterior todavía en los registros cuando entra la música. Después del primer
+cuadro no hay ni una discrepancia.
+
+La parte de a pie se comprobó igual y aguanta un minuto entero: **5.852 de 5.886
+cuadros, el 99,4 %**, con los treinta y cuatro fallos pegados a un cambio de
+nota. Apuntando la misma herramienta a la *otra* música de esa fase, saca un
+0,0 %, que es la comprobación de que el acierto no es casualidad.
+
+Dos trampas costaron ese resultado, y las dos merecen quedar escritas. **Un
+cuadro no dura 1/50 de segundo**: un punto de interrupción en el vector de
+interrupción de la ROM da 1.003 pasadas en veinte segundos, o sea 50,15 Hz, y a
+50,00 la comparación se desliza casi dos cuadros en seiscientos y cae al 98,2 %
+por algo que no tiene nada que ver con la música. Y **un canal callado no es una
+nota tenida**: el juego sólo escribe el tono cuando cambia, así que al parar la
+música el último periodo se queda ahí puesto; sin mirar también el volumen y el
+mezclador, un canal que lleva veinte segundos mudo parece una nota de mil
+cuadros.
+
+La medida zanjó una cosa más. La tercera voz entra muda, y la sospecha era que
+el canal 2 estuviera *reservado* para los efectos. A medias: de 271 efectos
+lanzados en cuatro minutos de partida, **150 van al canal 2** —el 55 %—, que es
+justo por lo que la música lo deja vacío. Pero 63 van al canal 1 y 58 al 0,
+pisando la música. No está reservado; es que es el más concurrido.
 
 ## Los créditos pasan con un scroll que no mueve el dibujo
 

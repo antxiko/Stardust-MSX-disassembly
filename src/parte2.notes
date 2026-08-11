@@ -106,7 +106,7 @@ D 0xCB26 0xCB27 relleno o resto (1 B; 1 bytes)
 D 0xCBDB 0xCBF0 tabla (21 B; racha 2.43, entropia 3.16, 11 valores: pocos valores para ser un dibujo)
 D 0xCC99 0xCCAB tabla (18 B; racha 3.43, entropia 3.28, 11 valores: pocos valores para ser un dibujo)
 D 0xCDC0 0xCDD0 tabla (16 B; racha 2.37, entropia 2.27, 7 valores: pocos valores para ser un dibujo)
-D 0xD068 0xD117 variables a cero (175 B): el trazador las contaba como codigo
+D 0xD068 0xD117 variables a cero (175 B), y los primeros 138 tienen nombre: son los TRES ESTADOS DE CANAL del interprete de sonido, de 46 B cada uno (0xD068, 0xD096, 0xD0C4), que es lo que resolvio el enigma de los "objetos de 46 bytes". Los 37 restantes (0xD0F2-0xD117) son las variables globales del interprete y las que el listado lee con ld a,(nn). Confirmado ademas desde fuera: al volcar la memoria justo tras la multicarga, los bytes que ya no coinciden con la cinta se agolpan aqui. El trazador contaba todo esto como codigo
 #   porque 0x00 desensambla a nop. El listado las lee con ld a,(nn) desde once
 #   sitios (0xD0FC desde 0xC69F/0xC7B0/0xC805, 0xD10C desde tres mas...).
 D 0xD13A 0xD13C relleno o resto (2 B; 2 bytes)
@@ -838,3 +838,63 @@ L 0xB268 cadaver_parabola El cuerpo tras el impacto: sube y cae acelerando (h +=
 L 0xA439 respawn Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) con la camara del checkpoint 0xC466/67, escudo a 3, tablas de enemigos vaciadas y el update restaurado
 C 0xA665 La consulta del suelo del JUGADOR: celda vacia bajo los pies = 0xA6ED=4, muerte sentenciada (la unica escritura de la via de caida)
 C 0xA528 El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acarreo game over, si no respawn
+
+# --- EL SUBSISTEMA DE SONIDO: EL MISMO, REUBICADO (2026-08-11) --------------
+#
+# La parte de a pie no reimplementa el sonido: se trae el del juego de naves
+# entero y lo pone mas abajo. Pero NO con un solo desplazamiento, y eso importa
+# porque induce a error:
+#
+#     tabla de notas    naves 0xE6E3  <->  a pie 0xC9FE   -0x1CE5  (identica)
+#     tabla de opcodes  naves 0xE7A3  <->  a pie 0xCABE   -0x1CE5
+#     tabla de frases   naves 0xE7C1  <->  a pie 0xCADC   -0x1CE5
+#     guiones de musica naves 0xEB52  <->  a pie 0xCE45   -0x1D0D
+#     estados de canal  naves 0xED75  <->  a pie 0xD068   -0x1D0D
+#     volcado al PSG    naves 0xE5D0  <->  a pie 0xC8E5   -0x1CEB  (identico)
+#
+# Los dos desplazamientos se llevan 0x28 = CUARENTA BYTES, que es exactamente
+# lo que la zona de datos de sonido encoge: 1420 B en naves (0xE7E9-0xED74) y
+# 1380 aqui (0xCB04-0xD067). O sea que se recortaron cuarenta bytes de en medio,
+# y por eso lo que esta ANTES del corte cae a -0x1CE5 y lo que esta DESPUES a
+# -0x1D0D. Las tablas de punteros lo confirman: las 20 frases estan las veinte
+# a -0x1CE5 exacto.
+#
+# La tabla de notas es BYTE A BYTE la misma, los 192 bytes. El volcado al PSG,
+# tambien: los dieciocho bytes de 0xC8E5 son los de 0xE5D0 sin tocar una coma.
+#
+# --- HAY DOS MUSICAS, NO UNA -----------------------------------------------
+#
+# Buscando el molde de arranca_musica (`3e 80 / 11 nn nn / call / 3c / ...`)
+# salen DOS sitios, cada uno instalando tres voces de golpe:
+#
+#     0xB3CB   canal 0 <- 0xCDB1 · canal 1 <- 0xCDD0 · canal 2 <- 0xCDEC
+#     0xC483   canal 0 <- 0xCE45 · canal 1 <- 0xCF3D · canal 2 <- 0xCFBE
+#
+# La de 0xC483 es la homologa exacta de la de naves (0xE16F), y sus tres voces
+# son las de alli a -0x1D0D. La de 0xB3CB es propia de esta fase y sus tres
+# guiones traen contenido de verdad (abren con `86 80 0c 87 08 8a 00 81 01`:
+# tempo a 1, volumen 12, instrumento 8...), asi que son tres voces reales, no
+# una muda. SIN COTEJAR todavia: no se ha medido un tramo donde suene.
+#
+# Y LA TERCERA VOZ MUDA SE PORTO TAL CUAL. El 0xCFBE de aqui es un 0x8B suelto
+# seguido de `8c 02 8c 02 8c 02...`, que es exactamente el molde del 0xECCB de
+# naves. No es una casualidad de la conversion: es el mismo dato movido.
+#
+# --- LA PARTITURA, COTEJADA CONTRA EL CHIP: 99,4 % --------------------------
+#
+# Sobre la musica que suena con la lista de records (medida en el replay de a
+# pie, t=1896,01 en adelante), ejecutando la lectura cuadro a cuadro con
+# tools/coteja_partitura.py y las direcciones de esta parte:
+#
+#     canal 0   3003 aciertos, 4 fallos      99,9 %
+#     canal 1   2849 aciertos, 30 fallos     99,0 %
+#     canal 2      0 aciertos, 0 fallos      (mudo en los dos lados)
+#     -> 5852 de 5886 cuadros con sonido, 99,4 %, sobre SESENTA segundos
+#
+# Los 34 fallos son los 34 pegados a un cambio de nota: son el cuadro de
+# holgura del final de cada nota, no notas equivocadas. Y probando la otra
+# musica, la de 0xB3CB, el cotejo da 0,0 %, que es la comprobacion de que la
+# identificacion no se sostiene sola por casualidad.
+#
+# Con esto las DOS partes del juego tienen su musica verificada contra el
+# hardware: 99,8 % la de naves y 99,4 % esta.

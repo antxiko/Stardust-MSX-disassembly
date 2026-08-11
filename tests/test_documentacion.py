@@ -687,3 +687,56 @@ class TestLaRutinaDeLaMulticarga(unittest.TestCase):
     def test_el_destino_llena_el_bloque_exacto(self):
         """IX fue de 0x61D0 a 0xD674, que es el ultimo byte de los 29861."""
         self.assertEqual(0x61D0 + 29861 - 1, 0xD674)
+
+
+class TestElSonidoDeLaParteDeAPie(unittest.TestCase):
+    """El subsistema portado, y los DOS desplazamientos que lo mueven.
+
+    Lo importante que amarra esto: que las tablas viajan a -0x1CE5 y los
+    guiones a -0x1D0D, con cuarenta bytes de diferencia. Confundir los dos
+    manda a leer musica donde no la hay.
+    """
+
+    TABLAS = 0x1CE5
+    GUIONES = 0x1D0D
+
+    @sin_juego
+    @sin_parte2
+    def test_los_dos_desplazamientos_se_llevan_cuarenta_bytes(self):
+        self.assertEqual(self.GUIONES - self.TABLAS, 0x28)
+
+    @sin_juego
+    @sin_parte2
+    def test_el_volcado_al_psg_viaja_a_su_propio_desplazamiento(self):
+        self.assertEqual(juego(0xE5D0, 0xE5E2), parte2(0xC8E5, 0xC8F7))
+
+    @sin_juego
+    @sin_parte2
+    def test_arranca_musica_instala_las_tres_voces_reubicadas(self):
+        """0xC483 es la homologa de 0xE16F, con sus voces a -0x1D0D."""
+        d = parte2(0xC483, 0xC49B)
+        for guion in (0xEB52, 0xEC4A, 0xECCB):
+            v = guion - self.GUIONES
+            self.assertIn(bytes((0x11, v & 0xFF, v >> 8)), d,
+                          "0xC483 no carga 0x%04X" % v)
+
+    @sin_juego
+    @sin_parte2
+    def test_la_tercera_voz_muda_se_porto_tal_cual(self):
+        self.assertEqual(parte2(0xCFBE, 0xCFBF), b"\x8b")
+        self.assertEqual(juego(0xECCB, 0xECCC), parte2(0xCFBE, 0xCFBF))
+
+    @sin_parte2
+    def test_hay_una_segunda_musica_con_tres_voces_de_verdad(self):
+        """0xB3CB instala otras tres, y esas si traen contenido."""
+        d = parte2(0xB3CB, 0xB3E3)
+        for guion in (0xCDB1, 0xCDD0, 0xCDEC):
+            self.assertIn(bytes((0x11, guion & 0xFF, guion >> 8)), d)
+        for guion in (0xCDB1, 0xCDD0, 0xCDEC):
+            self.assertNotEqual(parte2(guion, guion + 1), b"\x8b",
+                                "0x%04X no deberia ser un terminador" % guion)
+
+    @sin_parte2
+    def test_los_tres_estados_de_canal_caben_donde_decimos(self):
+        """0xD068 + 3*46 = 0xD0F2, y ahi siguen las variables globales."""
+        self.assertEqual(0xD068 + 3 * 0x2E, 0xD0F2)

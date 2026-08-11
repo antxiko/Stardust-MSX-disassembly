@@ -260,4 +260,16 @@ if __name__ == "__main__":
             kw["voces"] = a.split("=", 1)[1]
         elif a.startswith("--hz="):
             globals()["CUADRO"] = 1.0 / float(a.split("=", 1)[1])
+        # La parte de a pie lleva el MISMO interprete reubicado, asi que sirve
+        # el mismo cotejo cambiandole las cuatro direcciones. Ojo: sus datos de
+        # sonido NO estan todos al mismo desplazamiento -las tablas a -0x1CE5 y
+        # los guiones a -0x1D0D-, asi que hay que darlas, no calcularlas.
+        elif a.startswith("--org="):
+            globals()["ORG"] = int(a.split("=", 1)[1], 0)
+        elif a.startswith("--notas="):
+            globals()["NOTAS"] = int(a.split("=", 1)[1], 0)
+        elif a.startswith("--frases="):
+            globals()["FRASES"] = int(a.split("=", 1)[1], 0)
+        elif a.startswith("--fin="):
+            globals()["FIN"] = int(a.split("=", 1)[1], 0)
     sys.exit(main(*args, **kw))
