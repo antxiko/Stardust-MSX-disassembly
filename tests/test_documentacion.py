@@ -790,3 +790,38 @@ class TestElBloqueDeMusicaSinDueno(unittest.TestCase):
             return sum(1 for b in juego(a, a + 754) if b >= 0x80 and b not in validos)
         self.assertGreater(imposibles(0xAB0E), 250)
         self.assertLess(imposibles(0xE7E9), 20)
+
+
+class TestElRitmoDeLaMusicaDeAPie(unittest.TestCase):
+    """El interprete de la fase de a pie, y el jingle de partida."""
+
+    @sin_juego
+    @sin_parte2
+    def test_el_interprete_es_el_de_naves_reubicado(self):
+        """0xC517 y 0xE203 solo se diferencian en el operando reubicado."""
+        n, a = juego(0xE203, 0xE21B), parte2(0xC517, 0xC52F)
+        iguales = sum(1 for x, y in zip(n, a) if x == y)
+        self.assertGreaterEqual(iguales, 18)
+        self.assertEqual(juego(0xE207, 0xE20A), b"\x32\x19\xee")
+        self.assertEqual(parte2(0xC51B, 0xC51E), b"\x32\x0c\xd1")
+
+    @sin_parte2
+    def test_las_tres_voces_del_jingle_terminan(self):
+        """Acaban en 0x8B: por eso es un jingle y no una banda sonora. Se
+        recorren con el mismo lector que el resto de la musica."""
+        if TOOLS not in sys.path:
+            sys.path.insert(0, TOOLS)
+        import lee_musica
+        viejo = (lee_musica.ORG, lee_musica.NOTAS, lee_musica.FRASES,
+                 lee_musica.FIN)
+        lee_musica.ORG, lee_musica.NOTAS = 0x61D0, 0xC9FE
+        lee_musica.FRASES, lee_musica.FIN = 0xCADC, 0xD068
+        try:
+            d = leer("parte2.raw")
+            for guion in (0xCDB1, 0xCDD0, 0xCDEC):
+                _, _, term = lee_musica.bloque(d, guion)
+                self.assertEqual(term, 0x8B,
+                                 "0x%04X no acaba en 0x8B" % guion)
+        finally:
+            (lee_musica.ORG, lee_musica.NOTAS, lee_musica.FRASES,
+             lee_musica.FIN) = viejo

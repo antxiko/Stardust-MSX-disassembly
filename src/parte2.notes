@@ -898,3 +898,62 @@ C 0xA528 El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acar
 #
 # Con esto las DOS partes del juego tienen su musica verificada contra el
 # hardware: 99,8 % la de naves y 99,4 % esta.
+
+# --- LA MUSICA DE DENTRO DEL JUEGO, Y POR QUE VA MAS LENTA (2026-08-11) ------
+#
+# El intérprete de esta parte está en 0xC517: sus 24 primeros bytes son los del
+# 0xE203 del juego de naves salvo el operando reubicado (`32 0c d1` aquí contra
+# `32 19 ee` allí), 18 de 24 iguales.
+#
+# CUANTAS VECES SE LE LLAMA, medido con un breakpoint en su entrada:
+#
+#     pantalla de records   2256 llamadas en 15 s   = 3 x 752
+#     dentro de la partida  1275 llamadas en 15 s   = 3 x 425
+#
+# Las dos son EXACTAMENTE el triple de las pasadas por 0x0038, o sea que se le
+# llama una vez POR CANAL en cada interrupcion. Lo que cambia no es el
+# interprete: es la interrupcion.
+#
+#     pantalla de records    752 interrupciones en 15 s  ->  50,13 Hz
+#     dentro de la partida   425 interrupciones en 15 s  ->  28,33 Hz
+#
+# **EL JUEGO SE PIERDE INTERRUPCIONES CUANDO ESTA JUGANDO.** Y como el tiempo de
+# la musica lo lleva la interrupcion, la misma partitura suena 50,13/28,33 =
+# 1,77 veces mas lenta en partida. Se ve directamente en las notas: un `83 04`
+# -duracion cuatro- que en los records dura cuatro cuadros de video, aqui dura
+# 6, 7 o 10, variable, porque ni siquiera el ritmo perdido es estable.
+#
+# CONSECUENCIA PARA MEDIR, y costo tres intentos: no vale una rejilla de ritmo
+# fijo. Se probaron 50,15 Hz (1,0 % de acierto), un barrido de ritmos entre
+# 50,15 y 16,7 (el mejor, 5,1 %) y el promedio medido de 28,33 (4,9 %). Lo que
+# funciona es construir la rejilla con los INSTANTES REALES de interrupcion,
+# que es lo que hace ahora tools/omsx_psg_pista.tcl volcando interrupciones.txt.
+#
+# --- LA MUSICA A ES UN JINGLE, NO UN BUCLE ----------------------------------
+#
+# Los tres guiones de 0xB3CB acaban en 0x8B y duran poco:
+#
+#     canal 0   0xCDB1   68 llamadas = 2,40 s
+#     canal 1   0xCDD0   60 llamadas = 2,14 s
+#     canal 2   0xCDEC   64 llamadas = 2,28 s
+#
+# O sea que no es la banda sonora de la fase: es una pieza corta que suena y se
+# calla. En el replay arranca OCHO veces (t=2255,98 · 2342,59 · 2503,63 ·
+# 2586,47 · 2664,05 · 2722,57 · 2914,38 · 3453,04), todas dentro de la partida,
+# mientras que la otra musica -la de 0xC483- arranca dos, y las dos con la lista
+# de records (t=1896,00 y t=3220,54).
+#
+# COTEJO CONTRA EL CHIP, con la rejilla medida y puntuando mientras el guion
+# sigue vivo:
+#
+#     canal 0   68 de 68     canal 1   60 de 60     canal 2   64 de 64
+#     -> 192 de 192 cuadros, 100,0 %, CERO fallos
+#
+# Contarlo sobre la ventana entera da 5,2 %, y no porque este mal leido: es que
+# a los dos segundos la pieza ha terminado y lo que queda en los canales son
+# EFECTOS, que se reconocen porque sus periodos no estan en la tabla de notas
+# (barridos: mi7, do#7 y luego valores sueltos).
+#
+# Con esto las TRES musicas del juego estan cotejadas contra el hardware:
+# la de naves al 99,8 %, la de los records de a pie al 99,4 % y este jingle
+# al 100,0 %.

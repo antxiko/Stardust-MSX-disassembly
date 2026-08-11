@@ -734,6 +734,39 @@ tone when it changes, so after the music stops the last period just sits there;
 without reading the volume and the mixer too, a channel that has been quiet for
 twenty seconds looks like a thousand-frame note.
 
+### The music drags while you play, and the game is to blame
+
+The on-foot half has two pieces, and checking the second one turned up something
+better than a percentage. Its notes came out **right in every case and wrong in
+every duration**: where the score says a note lasts four ticks, the chip held it
+for six, seven, sometimes ten video frames, and never the same number twice.
+
+The interpreter isn't at fault. A breakpoint on its entry says it is called
+**exactly three times per interrupt** —once per channel— on both screens:
+
+    high-score screen   2,256 calls in 15s  = 3 × 752
+    in the game         1,275 calls in 15s  = 3 × 425
+
+It is the interrupt that changes. Those same fifteen seconds carry **752
+interrupts on the static screen and 425 during play**: 50.13 Hz against 28.33.
+**The game loses interrupts while it is drawing**, and since the music's clock
+*is* the interrupt, the same score plays 1.77 times slower in the middle of the
+action than it does on the score table. The tune drags when the screen gets busy,
+and it isn't a bug so much as a thing the player was never meant to notice.
+
+Which forces a way of measuring: no fixed frame rate can follow that. A grid at
+50.15 Hz scores the piece at 1.0%, a sweep of every rate between 50 and 17 Hz
+peaks at 5.1%, and the measured *average* of 28.33 Hz gets 4.9% — all of them
+wrong for the same reason. Build the grid out of **the actual instants the
+interrupts happened**, and the same comparison returns **192 of 192 frames.
+100.0%, not one miss** across the three voices.
+
+That piece, incidentally, turns out not to be a soundtrack at all: its three
+scripts end after 68, 60 and 64 ticks —about two and a half seconds— and it fires
+eight times in the recorded session, always mid-game. Score it over a full minute
+and it drops to 5.2%, not because it is misread but because after two seconds the
+tune is over and what is left in those channels is gunfire.
+
 One more thing the measurement settled. The third voice comes in silent, and the
 guess was that channel 2 is *reserved* for effects. Half right: of 271 effects
 started in four minutes of play, **150 go to channel 2** —55%— which is why the

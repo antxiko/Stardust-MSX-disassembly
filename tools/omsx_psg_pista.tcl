@@ -52,7 +52,17 @@ say "reverse goto $T rc=$r: $msg"
 # nunca" de este proyecto significa nada.
 set ::llamadas {}
 set ::nE203 0 ; set ::nE16F 0 ; set ::nE18F 0 ; set ::nE1BC 0 ; set ::n0038 0
-debug set_bp 0x00038 {} { incr ::n0038 }
+# Y se apuntan los INSTANTES, no solo la cuenta: el juego se pierde
+# interrupciones cuando la pantalla se carga, asi que el "cuadro" no dura
+# siempre lo mismo y una rejilla de ritmo fijo no puede seguir a la musica.
+# Con estos instantes se construye la rejilla de verdad.
+set ::interrupciones {}
+debug set_bp 0x00038 {} {
+    incr ::n0038
+    if {[llength $::interrupciones] < 200000} {
+        lappend ::interrupciones [machine_info time]
+    }
+}
 debug set_bp 0x0E203 {} { incr ::nE203 }
 debug set_bp 0x0E16F {} { incr ::nE16F
     lappend ::llamadas [list [machine_info time] "E16F arranca_musica" 0 0] }
@@ -197,6 +207,10 @@ proc vigila {} {
         set P [open "$OUT/pista.txt" w]
         foreach e $::pista { puts $P [format "%.4f %d %d %d %d %d" {*}$e] }
         close $P
+        set I [open "$OUT/interrupciones.txt" w]
+        foreach x $::interrupciones { puts $I [format "%.6f" $x] }
+        close $I
+        say "interrupciones: [llength $::interrupciones] -> $OUT/interrupciones.txt"
         say "pista: [llength $::pista] cambios -> $OUT/pista.txt"
         say "FIN"
         exit 0

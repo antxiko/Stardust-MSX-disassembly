@@ -34,6 +34,7 @@ FIN = 0xED75
 # baja del 99,8 % al 98,2 % por un motivo que no tiene nada que ver con la
 # lectura de la musica.
 CUADRO = 1 / 50.15
+INTERRUPCIONES = None
 
 ARG = {0x80: 1, 0x81: 1, 0x82: 0, 0x83: 1, 0x84: 0, 0x85: 1, 0x86: 0, 0x87: 1,
        0x88: 1, 0x89: 1, 0x8A: 1, 0x8B: 0, 0x8C: 1, 0x8D: 0, 0x8E: 1}
@@ -116,7 +117,20 @@ def tabla_notas(d):
             for i in range(96)]
 
 
-def medido(pista, t0, ncuadros):
+def rejilla_medida(ruta, t0, ncuadros):
+    """Los instantes REALES de interrupcion, como frontera de cada cuadro.
+
+    Hace falta porque el juego se pierde interrupciones cuando la pantalla se
+    carga: en la pantalla de records la interrupcion va a 50,1 Hz y en partida
+    a 28,3, y ni siquiera es estable dentro de un mismo tramo. Con una rejilla
+    de ritmo fijo la comparacion se desliza y no mide nada.
+    """
+    t = [float(l) for l in open(ruta) if l.strip()]
+    t = [x for x in t if x >= t0]
+    return t[:ncuadros + 1]
+
+
+def medido(pista, t0, ncuadros, bordes=None):
     """La medida, pasada a una rejilla de cuadros: canal -> [periodo por cuadro].
 
     OJO CON EL SILENCIO, que costo un resultado falso: el juego solo escribe los
@@ -142,8 +156,23 @@ def medido(pista, t0, ncuadros):
         for t, p, v, mez in ev[canal]:
             estado = (p if p > 0 else estado[0], v, mez)
             instantes.append((t, estado))
+        def cuadro_de(t):
+            if bordes is None:
+                return int(round((t - t0) / CUADRO))
+            # busqueda binaria sobre los instantes de interrupcion
+            lo, hi = 0, len(bordes) - 1
+            if t < bordes[0]:
+                return -1
+            while lo < hi:
+                med = (lo + hi + 1) // 2
+                if bordes[med] <= t:
+                    lo = med
+                else:
+                    hi = med - 1
+            return lo
+
         for t, (p, v, mez) in instantes:
-            i = int(round((t - t0) / CUADRO))
+            i = cuadro_de(t)
             if 0 <= i < ncuadros:
                 suena = p > 0 and (v & 0x0F) > 0 and not ((mez >> canal) & 1)
                 fila[i] = p if suena else 0
@@ -151,7 +180,7 @@ def medido(pista, t0, ncuadros):
         ultimo = 0
         visto = [False] * ncuadros
         for t, _ in instantes:
-            i = int(round((t - t0) / CUADRO))
+            i = cuadro_de(t)
             if 0 <= i < ncuadros:
                 visto[i] = True
         for i in range(ncuadros):
@@ -184,7 +213,11 @@ def main(raw, pista, t0, cuadros=None, voces="0xEB52,0xEC4A,0xECCB"):
     # el silencio de despues no mide nada.
     if cuadros:
         ncuadros = min(ncuadros, int(cuadros))
-    real = medido(pista, t0, ncuadros)
+    bordes = rejilla_medida(INTERRUPCIONES, t0, ncuadros) if INTERRUPCIONES else None
+    if bordes:
+        ncuadros = min(ncuadros, len(bordes) - 1)
+        print("rejilla tomada de %d interrupciones medidas" % len(bordes))
+    real = medido(pista, t0, ncuadros, bordes)
 
     # COMO SE PUNTUA, y por que no es "cuadros iguales entre todos".
     #
@@ -241,6 +274,34 @@ def main(raw, pista, t0, cuadros=None, voces="0xEB52,0xEC4A,0xECCB"):
         t = 100.0 * b / (b + m) if b + m else 0.0
         print("  canal %d: %6d bien, %6d mal -> %5.1f %%   (%d de mas)" % (
             c, b, m, t, so))
+    # Y la cifra que de verdad significa algo cuando la pieza TERMINA: puntuar
+    # solo mientras su guion sigue vivo. Un jingle de dos segundos seguido de
+    # cincuenta de efectos sale del 5 % si se cuenta entero, y no porque este
+    # mal leido: es que despues ya no suena el.
+    print("Mientras el guion de cada voz sigue vivo:")
+    vb = vm = 0
+    for c in (0, 1, 2):
+        vivo = max((i for i in range(min(ncuadros, len(deducido[c])))
+                    if deducido[c][i]), default=-1) + 1
+        if not vivo:
+            print("  canal %d: su guion no llega a sonar" % c)
+            continue
+        b = f = 0
+        for i in range(vivo):
+            j = i - desfase
+            if j < 0 or j >= len(deducido[c]) or not real[c][i]:
+                continue
+            if real[c][i] == deducido[c][j]:
+                b += 1
+            else:
+                f += 1
+        vb += b
+        vm += f
+        print("  canal %d: %4d cuadros de guion -> %4d bien, %4d mal  %5.1f %%" % (
+            c, vivo, b, f, 100.0 * b / (b + f) if b + f else 0.0))
+    if vb + vm:
+        print("  TOTAL mientras suena: %d bien, %d mal -> %.1f %%" % (
+            vb, vm, 100.0 * vb / (vb + vm)))
     print()
     print("Los primeros 24 cuadros de cada canal (medido / deducido):")
     for c in (0, 1, 2):
@@ -272,4 +333,6 @@ if __name__ == "__main__":
             globals()["FRASES"] = int(a.split("=", 1)[1], 0)
         elif a.startswith("--fin="):
             globals()["FIN"] = int(a.split("=", 1)[1], 0)
+        elif a.startswith("--interrupciones="):
+            globals()["INTERRUPCIONES"] = a.split("=", 1)[1]
     sys.exit(main(*args, **kw))

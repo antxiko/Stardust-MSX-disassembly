@@ -705,6 +705,41 @@ música el último periodo se queda ahí puesto; sin mirar también el volumen y
 mezclador, un canal que lleva veinte segundos mudo parece una nota de mil
 cuadros.
 
+### La música se arrastra mientras juegas, y la culpa es del juego
+
+La parte de a pie tiene dos piezas, y al comprobar la segunda salió algo mejor
+que un porcentaje. Sus notas salían **todas bien y todas mal de duración**: donde
+la partitura dice que una nota dura cuatro tiempos, el chip la sostenía seis,
+siete, a veces diez cuadros de vídeo, y nunca el mismo número dos veces.
+
+El intérprete no tiene la culpa. Un punto de interrupción en su entrada dice que
+se le llama **exactamente tres veces por interrupción** —una por canal— en las
+dos pantallas:
+
+    pantalla de récords   2.256 llamadas en 15 s  = 3 × 752
+    dentro de la partida  1.275 llamadas en 15 s  = 3 × 425
+
+Lo que cambia es la interrupción. Esos mismos quince segundos traen **752
+interrupciones en la pantalla quieta y 425 en partida**: 50,13 Hz contra 28,33.
+**El juego se pierde interrupciones mientras dibuja**, y como el reloj de la
+música *es* la interrupción, la misma partitura suena 1,77 veces más lenta en
+plena acción que en la tabla de récords. La melodía se arrastra cuando la
+pantalla se carga, y más que un fallo es algo que el jugador no tenía por qué
+notar.
+
+Lo cual obliga a medir de otra manera: ningún ritmo fijo puede seguir eso. Una
+rejilla a 50,15 Hz puntúa la pieza al 1,0 %, un barrido de todos los ritmos entre
+50 y 17 Hz se queda en 5,1 %, y el *promedio* medido de 28,33 Hz saca 4,9 % —los
+tres mal por lo mismo—. Construyendo la rejilla con **los instantes reales en que
+ocurrieron las interrupciones**, la misma comparación devuelve **192 de 192
+cuadros. El 100,0 %, sin un solo fallo** en las tres voces.
+
+Esa pieza, por cierto, resulta no ser una banda sonora: sus tres guiones acaban a
+los 68, 60 y 64 tiempos —unos dos segundos y medio— y suena ocho veces en la
+sesión grabada, siempre en mitad del juego. Puntuada sobre un minuto entero baja
+al 5,2 %, y no por estar mal leída: es que a los dos segundos la pieza ha acabado
+y lo que queda en esos canales son disparos.
+
 La medida zanjó una cosa más. La tercera voz entra muda, y la sospecha era que
 el canal 2 estuviera *reservado* para los efectos. A medias: de 271 efectos
 lanzados en cuatro minutos de partida, **150 van al canal 2** —el 55 %—, que es
