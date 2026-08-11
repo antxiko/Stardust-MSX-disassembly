@@ -825,3 +825,36 @@ class TestElRitmoDeLaMusicaDeAPie(unittest.TestCase):
         finally:
             (lee_musica.ORG, lee_musica.NOTAS, lee_musica.FRASES,
              lee_musica.FIN) = viejo
+
+
+class TestQueNingunDatoSeLeaComoCodigo(unittest.TestCase):
+    """El cruce completo, colgado del test para que no se pueda olvidar.
+
+    check_trace.py mira las zonas del .nocode, que son un punado. Esto mira las
+    NOVENTA Y CUATRO zonas declaradas con directivas D. La diferencia no es
+    academica: una semilla en 0xCC3E hacia leer 1318 de los 1380 bytes de la
+    musica de la fase de a pie como codigo, y check_trace daba verde.
+    """
+
+    @sin_trazado
+    def test_ninguna_zona_declarada_como_datos_sale_como_codigo(self):
+        if TOOLS not in sys.path:
+            sys.path.insert(0, TOOLS)
+        import check_datos_como_codigo as chk
+        salida = io.StringIO()
+        antes = sys.stdout
+        sys.stdout = salida
+        try:
+            rc = chk.main(WORK, SRC)
+        finally:
+            sys.stdout = antes
+        self.assertEqual(rc, 0, salida.getvalue())
+        self.assertIn("OK:", salida.getvalue())
+
+    @sin_trazado
+    def test_la_musica_de_a_pie_no_es_codigo(self):
+        """La zona concreta que estuvo mal, vigilada por su nombre."""
+        cod = [(a, b) for t, a, b in trazado("parte2")["blocks"] if t == "c"]
+        dentro = sum(min(b, 0xD068) - max(a, 0xCB04)
+                     for a, b in cod if min(b, 0xD068) > max(a, 0xCB04))
+        self.assertEqual(dentro, 0)

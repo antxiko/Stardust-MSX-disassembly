@@ -186,6 +186,13 @@ way to read those bytes: walked with the sound interpreter's language they yield
 38 blocks, zero bytes outside the language, and the walk closes exactly where the
 channel states begin.
 
+So there isn't a fourth time, the cross-check no longer depends on somebody
+thinking to look: `tools/check_datos_como_codigo.py` confronts **all 94 declared
+data zones** with what the tracer believes, and it hangs off `make sanity` and
+the test suite. The guard that existed, `check_trace.py`, only watched the
+handful of zones in the `.nocode` file — which is why it stayed green while the
+soundtrack was being read as code.
+
 Effect on the figures: the on-foot part's coverage drops from 51.7% to 35.0%,
 because 3618 bytes that were counted as code turn out not to be. The figure gets
 worse and the work gets better.

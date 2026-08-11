@@ -192,6 +192,13 @@ tener una segunda vía para leer esos bytes: recorridos con el lenguaje del
 intérprete de sonido salen 38 bloques, cero bytes fuera del lenguaje, y el
 recorrido cierra clavado donde empiezan los estados de canal.
 
+Para que no haya una cuarta vez, el cruce ya no depende de que a alguien se le
+ocurra mirar: `tools/check_datos_como_codigo.py` confronta **las 94 zonas de
+datos declaradas** contra lo que el trazador cree, y va colgado del `make sanity`
+y de los tests. El guardián que había, `check_trace.py`, sólo vigilaba el puñado
+de zonas del fichero `.nocode`, y por eso daba verde mientras la banda sonora se
+leía como código.
+
 ### Y 367 bytes más que se contaban como código y no lo son
 
 Buscando código automodificable apareció el error contrario. **Tres bloques de

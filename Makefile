@@ -91,7 +91,7 @@ src/stardust_loader.asm: work/loader.trace.json src/loader.notes tools/mkasm.py
 work/topo.trace.json: tools/z80trace.py src/topo.entries extracted/.stamp
 	python3 tools/z80trace.py work/topo.raw 0x9470 src/topo.entries work/topo
 
-sanity: work/juego.trace.json work/topo.trace.json
+sanity: work/juego.trace.json work/topo.trace.json work/parte2.trace.json
 	@echo "=================================================================="
 	@echo " Coherencia: ningun punto de entrada dentro de una zona de datos"
 	@echo "=================================================================="
@@ -110,6 +110,15 @@ sanity: work/juego.trace.json work/topo.trace.json
 	@echo " Sanidad del trazado: las zonas de datos no pueden salir como codigo"
 	@echo "=================================================================="
 	python3 tools/check_trace.py work/juego.trace.json src/juego.nocode
+	@echo ""
+	@echo "=================================================================="
+	@echo " Y el cruce COMPLETO: las 94 zonas D contra lo que el trazador cree"
+	@echo "=================================================================="
+	@echo " (check_trace mira solo el .nocode; esto mira TODAS las zonas de"
+	@echo "  datos declaradas. Una semilla metida dentro de una de ellas hace"
+	@echo "  desensamblar datos como codigo e infla la cobertura: paso tres"
+	@echo "  veces en este proyecto, la ultima con la musica de la fase a pie)"
+	python3 tools/check_datos_como_codigo.py work src
 	@echo ""
 	@echo "=================================================================="
 	@echo " Presupuesto de la cinta: no deben quedar bytes sin explicar"
