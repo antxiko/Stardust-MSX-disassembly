@@ -49,14 +49,20 @@ mensaje de récord y la tabla de récords de fábrica, que empieza por *JAVIER
 los nombres de teclas están GRAPH, CODE y SELECT, que **son teclas del MSX y en
 un ZX Spectrum no existen**: ese bloque no vino portado, se escribió aquí.
 
-**162 bytes: la tabla de notas del chip de sonido** (0xE6E3). Son 81 palabras de
+**192 bytes: la tabla de notas del chip de sonido** (0xE6E3). Son palabras de
 16 bits estrictamente decrecientes, y lo que las delata es que **cada una vale
 exactamente el doble que la que está doce posiciones más allá** —la razón sale
 2,0000 en las 69 comprobables—, que es la definición de una octava de doce
 semitonos. Con el reloj del PSG del MSX, la primera da 32,70 Hz, que es el **do1
 teórico**. La lee el intérprete de guiones de 0xE203: saca un byte, y si vale
-menos de 0x80 es una nota y va a esta tabla; si no, es un comando. El ajuste es
-al byte: 0xE6E3 + 81×2 cae justo donde acababa el rango.
+menos de 0x80 es una nota y va a esta tabla; si no, es un comando.
+
+Aquí estuvo publicada como **81 notas y 162 bytes**, y se quedaba corta. Son
+**96, ocho octavas justas**: 0xE6E3 + 96×2 = 0xE7A3 cierra al byte contra la
+tabla que empieza ahí, y los 30 bytes que sobraban resultaron ser 15 periodos
+más, los más agudos, siguiendo la misma serie decreciente. Lo confirma la
+propia música del juego, que usa la nota número 84 — imposible si sólo hubiera
+81.
 
 **1415 bytes: el marco de la pantalla de juego, viajando dentro del bloque.**
 El principio del bloque (0x47A0-0x5A9F) no eran «gráficos» a bulto: los
@@ -220,7 +226,40 @@ grep "datos sin clasificar" src/juego.notes src/parte2.notes
 Y se pueden volver a medir con `tools/clasifica_huecos.py`, que es de donde
 salió su clasificación.
 
-## La cifra de rutinas bajó de 164 a 109, y es la misma confusión de siempre
+## Veinte «rutinas» que eran música, y 1.386 bytes que dejan de ser código
+
+De los 35 comandos que se publicaron para el intérprete de sonido, **veinte no
+existen**. Eran las **melodías del juego**, escritas en el lenguaje del propio
+intérprete y desensambladas como si fueran instrucciones.
+
+Lo destapa el comando 0x8C, que es el *call* del intérprete: coge un número de
+frase, guarda la dirección de vuelta en una pila que hay por canal, y salta a
+la frase leyéndola de **una tabla que está en 0xE7C1**. Y 0xE7C1 es
+exactamente 0xE7A3 + 15×2. Es decir: la tabla de comandos tiene **quince**
+entradas y muere ahí; lo que sigue es **otra tabla**, la de las melodías. Al
+leerlas como una sola de 35, los veinte punteros de música entraron en el
+disassembler como si apuntaran a código.
+
+El otro extremo lo cierra el comando 0x8D, que es el *return*: recupera la
+dirección de vuelta de esa misma pila. Por eso **todas las frases terminan en
+`8D`**. Las canciones no: terminan en `8B`, que es el comando que limpia el
+canal. Son dos niveles, canciones que llaman a frases — la misma idea que el
+diccionario recursivo con el que se comprimen los mapas de nivel.
+
+Que esos 1.420 bytes son música y no código se comprueba leyéndolos con la
+gramática del intérprete, y encajan: de todos los bytes altos del tramo,
+**todos son comandos válidos salvo quince**, y esos quince son argumentos que
+se identifican uno a uno. En 1.420 bytes de código Z80 de verdad aparecerían
+`ret`, `call` o los prefijos de IX a cada paso; aquí no hay ni uno. El comando
+más repetido es precisamente el que llama a las frases, 208 veces.
+
+La consecuencia en las cifras es directa y va en la dirección incómoda:
+**1.386 bytes dejan de contar como código**, la cobertura del bloque de naves
+baja del 26,0 % al 23,0 %, y las rutinas identificadas quedan en 105. El
+presupuesto sigue cerrando al 100 %, porque esos bytes no desaparecen: cambian
+de columna.
+
+## La cifra de rutinas bajó de 164 a 105, y es la misma confusión de siempre
 
 Esta página ya contaba que la cifra de rutinas estuvo publicada como **1956**,
 que era el número de **etiquetas** del trazador: todo destino de salto, incluidos
@@ -235,8 +274,8 @@ casi nunca son el principio de una rutina: un aviso puesto sobre el puerto de
 vídeo informa de la dirección del `out`, y ese `out` está **dentro del bucle**
 de dibujado, no en la cabecera.
 
-De los 164 puntos declarados, **55 son etiquetas interiores**: sitios a los que
-se llega cayendo desde la instrucción de arriba. Rutinas de verdad hay **109**,
+De los puntos declarados, **39 son etiquetas interiores**: sitios a los que
+se llega cayendo desde la instrucción de arriba. Rutinas de verdad hay **105**,
 y es la cifra que se publica ahora.
 
 Lo caza una herramienta nueva, `tools/check_interiores.py`, con una regla
@@ -256,7 +295,7 @@ usa, así que la cifra publicada y la comprobación no pueden separarse.
 El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
-    juego de naves    26,0 %
+    juego de naves    23,0 %
     parte de a pie    35,0 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo

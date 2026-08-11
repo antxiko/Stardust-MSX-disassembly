@@ -92,7 +92,9 @@
 D 0xED75 0xEE24 variables a cero del interprete de guiones (175 B): las lee y
 #   escribe con ld a,(nn) desde catorce sitios; el trazador las contaba como
 #   codigo porque 0x00 desensambla a nop
-D 0xE7A3 0xE7E9 tabla de saltos de los 35 opcodes del interprete
+D 0xE7A3 0xE7C1 tabla de saltos de los QUINCE opcodes del interprete (0x80-0x8E): 15 punteros de 2 B, indexada por el despachador de 0xE230 con `sub 080h`. Aqui puso 35 y estaba mal; el limite lo fija el CALL del propio interprete (ver el bloque de la musica mas abajo)
+D 0xE7C1 0xE7E9 tabla de las VEINTE frases de musica: 20 punteros de 2 B que lee el comando 0x8C (0xE560: `ld hl,0e7c1h`), no el despachador de opcodes
+D 0xE7E9 0xED75 las CANCIONES y las FRASES, escritas en el lenguaje del propio interprete (1420 B): ver el bloque de abajo. NO es codigo
 D 0x47A0 0x48A0 el logo STARDUST del menu/atraccion: bitmap de 128x16 px, 16 B por fila; lo copia el animador del arranque (ld hl,047a0h en 0xF037, 16 ldi por fila)
 D 0x48A0 0x51A0 patrones del MARCO de la pantalla de juego -el cuadro decorado con el HUD que rodea el area de juego- (0x900 B): L_EF28 los copia a la VRAM 0x0000 (fuente ld de,048a0h en 0xEF10) en dos filas de caracter por tercio mas 24 tiras de 8 B y 24 de 0x18 B. Quien recoloca esos 288 caracteres en el borde es la tabla de NOMBRES del SCREEN 2, y el juego NO la monta: LA HEREDA de la pantalla de carga (la rutina 0x9BDB del bloque [09] la rellena sumando ocho; la carga del bloque [10] machaca esa rutina en RAM pero la VRAM sobrevive). Contrastado contra la VRAM real en marcha: 768/768 nombres identicos al patron del 9BDB, 97,4% de los 4608 bytes de patrones/colores identicos (el resto es lo que el juego pinta encima), y dibujado desde la cinta con ese mapeo sale el marco entero (tools/render_marco.py -> docs/imagenes/marco.png). Doble papel: en marcha 0x47A0-0x4B3F es el final de la banda B del buffer y 0x4B40-0x4EFF la banda C entera
 D 0x51A0 0x5AA0 colores del MARCO de la pantalla de juego (los mismos 0x900 B, segunda llamada a L_EF28 con destino VRAM 0x2000). Aqui vivian los rangos "colores de tiles" medidos por su firma de nibble: la firma era verdad, pero son los colores del marco, no de los tiles del juego
@@ -122,12 +124,6 @@ D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valo
 # 0xDA72 pasa a src/juego.entries. Ver el comentario de ahi.
 D 0xE14E 0xE15A relleno (12 B; 12 de 12 bytes son 0x00)
 D 0xE5E2 0xE6D2 tabla de instrumentos del interprete de sonido: 16 entradas de 15 bytes. El comando L_E4A6 lee el numero de instrumento del guion y copia la entrada (HL = 0xE5E2 + n*15) al estado del canal (ix+0x16 en adelante). Cierra al byte por los dos lados: el codigo de al lado acaba en el ret de 0xE5E1, y 0xE5E2 + 16*15 = 0xE6D2, donde empieza la tabla siguiente
-D 0xE7F4 0xE7F6 relleno o resto (2 B; 2 bytes)
-D 0xE80B 0xE80C relleno o resto (1 B; 1 bytes)
-D 0xE8C0 0xE8C8 tabla (8 B; racha 2.13, entropia 2.50, 6 valores: pocos valores para ser un dibujo)
-D 0xE922 0xE92A tabla (8 B; racha 2.46, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
-D 0xE97E 0xE987 tabla (9 B; racha 3.43, entropia 2.95, 8 valores: pocos valores para ser un dibujo)
-D 0xEAB9 0xEADD tabla (36 B; racha 2.36, entropia 3.97, 21 valores: pocos valores para ser un dibujo)
 D 0xF120 0xF124 relleno o resto (4 B; 4 bytes)
 D 0xF393 0xF394 relleno o resto (1 B; 1 bytes)
 D 0xF77D 0xF77E relleno o resto (1 B; 1 bytes)
@@ -258,7 +254,7 @@ D 0xE6D2 0xE6E3 tabla del comando L_E4EF del interprete: entradas de 6 bytes (HL
 #   el quinto, el de 0xC7B7, es desalineamiento: el listado trazado lee ahi
 #   `ld c,001h` en 0xC7B6. No hay ni una referencia buena. Queda sin identificar.
 
-D 0xE6E3 0xE785 tabla de periodos del PSG: 81 notas cromaticas desde do1 (162 B)
+D 0xE6E3 0xE7A3 tabla de periodos del PSG: 96 notas cromaticas = OCHO OCTAVAS justas (192 B). Aqui se publico 81 y se quedaba corta: 0xE6E3 + 96*2 = 0xE7A3 cierra al byte contra la tabla de opcodes, y los 30 bytes que sobraban son los 15 periodos mas agudos, decrecientes (0x20, 0x1e, 0x1c...). Lo confirma la musica, que usa la nota 84
 #   Son 81 palabras de 16 bits, estrictamente decrecientes, de 3421 a 34. La
 #   prueba de que es una escala cromatica es que cada entrada vale EXACTAMENTE
 #   el doble que la que esta doce posiciones mas alla -razon 2,0000 en las 69
@@ -645,3 +641,44 @@ L 0xEE24 vram_pon_dir Fija la direccion de ESCRITURA del VDP por el puerto 0x99,
 L 0xF0F7 vram_escribe Copia BC bytes de RAM (DE) a VRAM (HL) por el puerto 0x98
 L 0xF105 vram_lee Copia BC bytes de VRAM (HL) a RAM (DE) leyendo del puerto 0x98
 L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
+
+# --- LA MUSICA: DOS TABLAS, NO UNA, Y 1420 BYTES QUE NO ERAN CODIGO ---------
+#
+# Aqui estuvieron declarados "35 opcodes del interprete de guiones", y veinte
+# de ellos NO EXISTEN COMO RUTINAS: son las FRASES DE MUSICA, escritas en el
+# lenguaje del propio interprete y desensambladas como instrucciones.
+#
+# Lo destapa el comando 0x8C, que es el CALL del interprete (0xE54F):
+#
+#   e557: ld a,(bc) / inc bc            <- el argumento: numero de frase
+#   e55d: ld (hl),c / inc hl / ld (hl),b <- guarda la vuelta (pila por canal,
+#                                           0xEE1B, indexada por el canal 0xEE19)
+#   e560: ld hl,0e7c1h / call L_E5C0    <- LA TABLA DE FRASES, otra distinta
+#   e566: ld b,h / ld c,l / jp L_E222   <- y sigue interpretando desde ahi
+#
+# 0xE7C1 = 0xE7A3 + 15*2. O sea que la tabla de OPCODES tiene QUINCE entradas
+# (0x80-0x8E) y acaba ahi; lo que sigue es la tabla de las VEINTE FRASES. Al
+# contarlo todo como una sola tabla de 35, los veinte punteros de musica se
+# sembraron como puntos de entrada de codigo.
+#
+# Y el otro extremo lo cierra el comando 0x8D (0xE56B), que es el RETURN:
+# recupera BC de esa misma pila y vuelve al bucle. Por eso TODAS las frases
+# acaban en 8d. Las canciones, en cambio, acaban en 8b, que es el comando que
+# limpia el canal (0xE418, `ld b,02eh / ld (hl),a` sobre la estructura del
+# canal): es el fin de cancion. Dos niveles, canciones que llaman a frases,
+# la misma idea que el diccionario recursivo de los mapas de nivel.
+#
+# COMO SE SABE QUE LOS 1420 BYTES SON MUSICA Y NO CODIGO: se leen enteros con
+# la gramatica del interprete (>=0x80 comando, el resto notas y argumentos) y
+# encajan. De todos los bytes altos de 0xE7E9-0xED74, TODOS son opcodes
+# validos 0x80-0x8E salvo quince, y esos quince son argumentos identificables
+# (`83 60` una duracion larga, `85 ff`, `8e f6`/`8e fd`/`8e ff` con
+# desplazamientos negativos). En 1420 bytes de codigo Z80 de verdad apareceria
+# 0xC9, 0xCD, 0xC3 o 0xDD a cada paso: no hay ni uno. El comando mas frecuente
+# es 0x8C con 208 apariciones, que es justamente el que llama a las frases.
+#
+# LA TABLA DE NOTAS SON 96, NO 81. Estaba publicada como "81 notas cromaticas"
+# y se quedaba corta: 0xE6E3 + 96*2 = 0xE7A3 cierra al byte contra la tabla de
+# opcodes, y los 30 bytes que sobraban resultaron ser 15 periodos mas, los mas
+# agudos, siguiendo la misma serie decreciente (0x20, 0x1e, 0x1c, 0x1b...).
+# Son OCHO OCTAVAS justas, y lo confirma la propia musica, que usa la nota 84.

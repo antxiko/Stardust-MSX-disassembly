@@ -50,15 +50,19 @@ message and the factory high-score table, which opens with *JAVIER 100000* and
 And among the key names are GRAPH, CODE and SELECT, which **are MSX keys and do
 not exist on a ZX Spectrum**: that block was not ported, it was written here.
 
-**162 bytes: the sound chip's note table** (0xE6E3). It is 81 strictly
-decreasing 16-bit words, and what gives it away is that **each entry is exactly
-twice the one twelve positions further on** —the ratio comes out at 2.0000 in
-all 69 checkable cases— which is the definition of an octave of twelve
-semitones. With the MSX PSG's clock, the first one yields 32.70 Hz, which is
-theoretical **C1**. It is read by the script interpreter at 0xE203: it fetches a
-byte, and if it is below 0x80 it is a note and indexes this table; otherwise it
-is a command. The fit is exact to the byte: 0xE6E3 + 81×2 lands precisely where
-the range ended.
+**192 bytes: the sound chip's note table** (0xE6E3). It is strictly decreasing
+16-bit words, and what gives it away is that **each entry is exactly twice the
+one twelve positions further on** —the ratio comes out at 2.0000 in all 69
+checkable cases— which is the definition of an octave of twelve semitones. With
+the MSX PSG's clock, the first one yields 32.70 Hz, which is theoretical **C1**.
+It is read by the script interpreter at 0xE203: it fetches a byte, and if it is
+below 0x80 it is a note and indexes this table; otherwise it is a command.
+
+This was published as **81 notes and 162 bytes**, and fell short. There are
+**96, eight full octaves**: 0xE6E3 + 96×2 = 0xE7A3 closes to the byte against
+the table that starts there, and the 30 leftover bytes turned out to be 15 more
+periods, the highest ones, continuing the same decreasing series. The game's own
+music confirms it by using note number 84 — impossible with only 81.
 
 **1415 bytes: the game screen's frame, travelling inside the block.** The
 start of the block (0x47A0-0x5A9F) was not just "graphics": the first 256
@@ -221,7 +225,38 @@ grep "datos sin clasificar" src/juego.notes src/parte2.notes
 and measure them again with `tools/clasifica_huecos.py`, which is where their
 classification came from.
 
-## The routine count dropped from 164 to 109, and it's the same old confusion
+## Twenty "routines" that were music, and 1,386 bytes that stop being code
+
+Of the 35 commands published for the sound interpreter, **twenty don't
+exist**. They were the game's **melodies**, written in the interpreter's own
+language and disassembled as if they were instructions.
+
+The command 0x8C gives it away: it is the interpreter's *call*. It takes a
+phrase number, saves the return address on a per-channel stack, and jumps to
+the phrase by reading **a table at 0xE7C1**. And 0xE7C1 is exactly 0xE7A3 +
+15×2. That is: the command table has **fifteen** entries and dies there; what
+follows is **another table**, the melodies'. Read as a single table of 35, the
+twenty music pointers went into the disassembler as if they pointed at code.
+
+The other end is closed by command 0x8D, the *return*: it recovers the address
+from that same stack. Which is why **every phrase ends in `8D`**. Songs don't:
+they end in `8B`, the command that clears the channel. Two levels, songs
+calling phrases — the same idea as the recursive dictionary that compresses the
+level maps.
+
+That those 1,420 bytes are music and not code is checked by reading them with
+the interpreter's grammar, and they fit: of every high byte in the stretch,
+**all are valid commands except fifteen**, and those fifteen are arguments that
+can be identified one by one. In 1,420 bytes of real Z80 you would hit `ret`,
+`call` or the IX prefixes at every turn; here there isn't one. The most
+repeated command is precisely the one that calls phrases, 208 times.
+
+The consequence for the figures is direct, and goes the uncomfortable way:
+**1,386 bytes stop counting as code**, the ship block's coverage drops from
+26.0% to 23.0%, and identified routines fall to 105. The budget still closes at
+100%, because those bytes don't vanish: they change column.
+
+## The routine count dropped from 164 to 105, and it is the same old confusion
 
 This page already told how the routine count was once published as **1956**,
 which was the number of the tracer's **labels**: every jump target, including
@@ -236,8 +271,8 @@ they are almost never the start of a routine: a watchpoint on the video port
 reports the address of the `out`, and that `out` sits **inside the drawing
 loop**, not at the routine's head.
 
-Of the 164 declared points, **55 are interior labels**: places reached by
-falling through from the instruction above. Actual routines number **109**, and
+Of the declared points, **39 are interior labels**: places reached by
+falling through from the instruction above. Actual routines number **105**, and
 that is the figure published now.
 
 A new tool catches them, `tools/check_interiores.py`, with a simple rule: if a
@@ -256,7 +291,7 @@ so the published figure and the check cannot drift apart.
 The budget measures bytes; coverage measures something else. Of the code in the
 two big blocks, the tracer reaches this:
 
-    ship game        26.0 %
+    ship game        23.0 %
     on-foot part     35.0 %
 
 The rest is data, yes, but there is also **code that isn't arrived at by

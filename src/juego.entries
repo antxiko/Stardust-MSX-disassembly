@@ -15,13 +15,21 @@
 #     bda0: ld hl,0e15ah / ld (0fda0h),hl  -> ...a esta direccion
 0xE15A  interrupcion  enganchada en H.TIMI (0xFD9F) por el arranque
 
-# Los 35 opcodes del interprete de guiones. El despachador esta en 0xE230:
+# Los QUINCE opcodes del interprete de guiones. El despachador esta en 0xE230:
 #     ld a,(bc) / cp 080h / jp c,0e231h   -> por debajo de 0x80 no es opcode
 #     sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)
 # y 0xE5C0 es 'HL = tabla + A*2, HL = (HL)'. O sea que la tabla de 0xE7A3
-# son 35 punteros y el trazador no puede seguirlos solo: van aqui a mano.
-# La tabla acaba en 0xE7E8 y el codigo del opcode 0x90 empieza en 0xE7E9,
-# pegado a ella, que es lo que confirma que son 35 y no mas.
+# son punteros y el trazador no puede seguirlos solo: van aqui a mano.
+#
+# OJO, AQUI HUBO 35 Y ESTABA MAL: son 15 (opcodes 0x80-0x8E). Lo dice el
+# comando 0x8C, que es el CALL del interprete (0xE54F):
+#     ld a,(bc) / inc bc          <- el argumento: numero de FRASE
+#     ld (hl),c / inc hl / ld (hl),b   <- guarda la vuelta en la pila del canal
+#     ld hl,0e7c1h / call L_E5C0 / ld b,h / ld c,l / jp L_E222
+# Usa la tabla de 0xE7C1, y 0xE7C1 = 0xE7A3 + 15*2. O sea que la tabla de
+# opcodes ACABA ahi y lo que sigue es OTRA tabla, la de las frases de musica.
+# Las 20 "rutinas" que colgaban de ella (op_8F..op_A2) no eran codigo: eran
+# las FRASES, escritas en el lenguaje del propio interprete. Ver juego.notes.
 0xE3EF  op_80       opcode 0x80 del interprete de guiones
 0xE40D  op_81       opcode 0x81 del interprete de guiones
 0xE477  op_82       opcode 0x82 del interprete de guiones
@@ -37,26 +45,6 @@
 0xE54F  op_8C       opcode 0x8C del interprete de guiones
 0xE56B  op_8D       opcode 0x8D del interprete de guiones
 0xE57C  op_8E       opcode 0x8E del interprete de guiones
-0xE846  op_8F       opcode 0x8F del interprete de guiones
-0xE7E9  op_90       opcode 0x90 del interprete de guiones
-0xE7F6  op_91       opcode 0x91 del interprete de guiones
-0xE810  op_92       opcode 0x92 del interprete de guiones
-0xE81F  op_93       opcode 0x93 del interprete de guiones
-0xE82C  op_94       opcode 0x94 del interprete de guiones
-0xE839  op_95       opcode 0x95 del interprete de guiones
-0xE88F  op_96       opcode 0x96 del interprete de guiones
-0xE8A2  op_97       opcode 0x97 del interprete de guiones
-0xE8B5  op_98       opcode 0x98 del interprete de guiones
-0xE8C8  op_99       opcode 0x99 del interprete de guiones
-0xE8DB  op_9A       opcode 0x9A del interprete de guiones
-0xE92A  op_9B       opcode 0x9B del interprete de guiones
-0xE971  op_9C       opcode 0x9C del interprete de guiones
-0xE987  op_9D       opcode 0x9D del interprete de guiones
-0xE99D  op_9E       opcode 0x9E del interprete de guiones
-0xE9DC  op_9F       opcode 0x9F del interprete de guiones
-0xE9FA  op_A0       opcode 0xA0 del interprete de guiones
-0xEA14  op_A1       opcode 0xA1 del interprete de guiones
-0xEA38  op_A2       opcode 0xA2 del interprete de guiones
 
 # --- Lo que solo se sabe ejecutando el juego (openMSX, tools/omsx_traza.tcl) ---
 #
