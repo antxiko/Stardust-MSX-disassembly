@@ -103,8 +103,6 @@
 # etiqueta midiendo entropia en vez de mirando si se ejecuta.
 0xC794  ejec_C794    ejecutado en partida (86 muestras)
 0xC865  ejec_C865    ejecutado en partida (27928 muestras)
-0xD48C  ejec_D48C    ejecutado en partida (139323 muestras): la rutina mas caliente
-0xD525  ejec_D525    ejecutado en partida (133 muestras)
 
 # --- RUTINAS QUE ESTABAN DECLARADAS COMO DATOS ------------------------------
 #

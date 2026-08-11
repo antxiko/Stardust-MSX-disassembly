@@ -125,20 +125,37 @@ Replaying a complete 38-minute run and sampling the program counter, of the
 45 it missed became entry points, each with its sample count beside it.
 
 In the second part, which is far less explored because you have to clear seven
-zones to get there, 159 addresses turned up untraced — and the two
-hardest-working routines in the whole thing were among them, both of which had
-been labelled as data:
+zones to get there, 159 addresses turned up untraced, and this page used to
+report two of them as the hardest-working routines in the whole thing:
 
 ```
 0xD48C   139,323 samples   was down as a 489-byte "table"
 0xC865    27,928 samples   was down as "unclassified data"
 ```
 
-A routine ending up classified as a table is what happens when you label by
-measuring entropy instead of by checking whether it runs.
+**The first one is withdrawn, and the way it fell is worth more than the claim
+was.** 0xD48C is not code. It disassembles to `nop / rst 38h / nop / rst 38h`,
+the disassembler gives up on part of it with an *illegal sequence*, nothing in
+the listing calls it, and sampling the program counter over 130 seconds of
+verified play —259,149 samples across two windows— **not one lands in it**.
 
-One warning about doing this yourself, because it is the trap this tape sets
-over and over: five programs occupy the **same addresses** at different moments.
-The samples have to be split into windows —the loader's jump to the game at
+What went wrong was the window. That measurement opened at t=1775 "once the load
+finishes", and the load had not finished: sampled at t=1775 the program counter
+sits at 0xF87E, 0xF88D, 0xF887 — inside the tape loader, across only 45 distinct
+addresses. The tape was still turning, and half the memory from 0x61D0 up was
+still the ship game underneath.
+
+Which is exactly the trap this page warns about two paragraphs down, walked into
+head first. Five programs occupy the **same addresses** at different moments, so
+the samples have to be split into windows —the loader's jump to the game at
 0xBD85, and the second load— or the TOPO logo, the loading screen and the BASIC
-ROM all show up looking like code inside the tileset.
+ROM all show up looking like code inside the tileset. Getting the window's *end*
+right is not enough; its beginning has to be measured too.
+
+The 489 bytes go back to being data, and what they look like is stated no more
+firmly than it has been measured: 21 distinct values, 199 of them 0xFF, and the
+rest bytes with few bits set, arranged in pairs — `40 ff / 01 ff / 41 ff /
+00 ff / 40 f9` — which is what artwork with a mask looks like in a conversion
+that has to shift its sprites by hand.
+
+0xC865 survives: it does show samples in a clean window.

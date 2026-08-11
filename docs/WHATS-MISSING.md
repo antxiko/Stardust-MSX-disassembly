@@ -180,7 +180,7 @@ ran to 0xA2D2 and **swallowed the program's entry point**.
 And it happened again. That 35.0% **was also a lie**, for the same reason: a
 seed placed at 0xCC3E landed inside a music script, and with it the tracer
 disassembled **1,318 of the 1,380 bytes of the stage's soundtrack** as
-instructions. Take it out and the real coverage is **30.2%**. Same mistake a
+instructions. Take it out and the real coverage is **28.6%**. Same mistake a
 third time, and what catches it isn't staring at the listing but having a second
 way to read those bytes: walked with the sound interpreter's language they yield
 38 blocks, zero bytes outside the language, and the walk closes exactly where the
@@ -308,7 +308,7 @@ The budget measures bytes; coverage measures something else. Of the code in the
 two big blocks, the tracer reaches this:
 
     ship game        23.0 %
-    on-foot part     30.2 %
+    on-foot part     28.6 %
 
 The rest is data, yes, but there is also **code that isn't arrived at by
 following the flow**: routines entered only through computed jumps, through

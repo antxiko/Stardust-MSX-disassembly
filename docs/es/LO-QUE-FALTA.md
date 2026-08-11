@@ -186,7 +186,7 @@ cifra empeora y el trabajo mejora.
 Y volvió a pasar. Ese 35,0 % **también era mentira**, y por lo mismo: una
 semilla puesta en 0xCC3E caía dentro de un guion de música, y con ella el
 trazador desensambló **1.318 de los 1.380 bytes de la banda sonora de la fase**
-como si fueran instrucciones. Quitándola, la cobertura real es del **30,2 %**.
+como si fueran instrucciones. Quitándola, la cobertura real es del **28,6 %**.
 Es el mismo error una tercera vez, y lo que lo caza no es mirar el listado sino
 tener una segunda vía para leer esos bytes: recorridos con el lenguaje del
 intérprete de sonido salen 38 bloques, cero bytes fuera del lenguaje, y el
@@ -312,7 +312,7 @@ El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos
 bloques grandes, el trazador alcanza esto:
 
     juego de naves    23,0 %
-    parte de a pie    30,2 %
+    parte de a pie    28,6 %
 
 El resto son datos, sí, pero también hay **código al que no se llega siguiendo
 el flujo**: rutinas a las que solo se entra por saltos calculados, por tablas o

@@ -955,3 +955,5 @@ C 0xA528 El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acar
 # Con esto las TRES musicas del juego estan cotejadas contra el hardware:
 # la de naves al 99,8 %, la de los records de a pie al 99,4 % y este jingle
 # al 100,0 %.
+
+D 0xD48C 0xD675 489 bytes al final del bloque que NO son codigo, y estuvieron publicados como "la rutina mas caliente de la segunda parte, 139.323 muestras". Se desensambla a `nop / rst 38h / nop / rst 38h...`, no lo llama nadie, y muestreando el PC en 130 s de partida limpia -259.149 muestras en dos ventanas- NO CAE NI UNA AQUI. La medida vieja se hizo abriendo la ventana en t=1775 "cuando la carga termina", y la carga no habia terminado: a t=1775 el PC esta en 0xF87E/0xF88D/0xF887, dentro del cargador de cinta, con solo 45 direcciones distintas. QUE SON, dicho sin pasarse: datos de poca variedad -21 valores distintos, 199 de los 489 bytes son 0xFF, y el resto tienen pocos bits puestos-, que es la pinta de un dibujo con mascara, el idioma de esta conversion. No se afirma mas porque no se ha medido mas
