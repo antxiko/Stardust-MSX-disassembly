@@ -907,3 +907,63 @@ class TestLaFirmaDelCorrimiento(unittest.TestCase):
                     sospechosos.append("%s 0x%04X-0x%04X (%d B) pegado a 0x%04X"
                                        % (mod, ini, fin - 1, fin - ini, fin))
         self.assertEqual(sospechosos, [], "\n".join(sospechosos))
+
+
+class TestElDetectorDeInteriores(unittest.TestCase):
+    """El guardian que cuenta las rutinas, comprobado el mismo.
+
+    check_interiores.py decide si un punto de entrada es una cabecera o cae
+    dentro de otra rutina, y de esa decision sale la cifra de "rutinas
+    identificadas" que se publica. O sea que si el detector se equivoca, la
+    web miente sin que nadie se entere.
+
+    Y se equivocaba. Miraba el PREFIJO del destino del salto -un digito
+    hexadecimal, una L, un guion bajo, un parentesis-, asi que en cuanto una
+    rutina recibia nombre y el listado pasaba a decir `jp pinta_marca_hud`, el
+    salto dejaba de contar como corte de flujo y lo de debajo salia como
+    etiqueta interior. Lo castigado era justo el trabajo de comentar: cada
+    rutina nombrada podia restar una al recuento.
+
+    Estos son los casos que lo cazan.
+    """
+
+    @staticmethod
+    def corta(instruccion):
+        sys.path.insert(0, TOOLS)
+        import check_interiores
+        return check_interiores.corta_el_flujo(instruccion)
+
+    def test_un_salto_a_una_rutina_con_nombre_corta_el_flujo(self):
+        """El fallo que hizo falta arreglar para poder seguir comentando."""
+        for destino in ("pinta_marca_hud", "premia", "azar", "carga_cinta",
+                        "suma_puntos", "0bd85h", "L_C47B", "lcb9dh", "(hl)"):
+            self.assertTrue(self.corta("jp " + destino),
+                            "jp %s deberia cortar el flujo" % destino)
+
+    def test_un_salto_condicional_no_corta_el_flujo(self):
+        """Y esto es lo que no puede romperse al arreglar lo anterior."""
+        for cond in ("nz", "z", "nc", "c", "po", "pe", "p", "m"):
+            self.assertFalse(self.corta("jp %s,0bd85h" % cond))
+            self.assertFalse(self.corta("jr %s,L_C47B" % cond))
+
+    def test_las_condiciones_no_se_confunden_con_los_nombres(self):
+        """`jp p,` es condicional; `jp premia` no, y empieza igual."""
+        self.assertFalse(self.corta("jp p,0c000h"))
+        self.assertTrue(self.corta("jp premia"))
+        self.assertFalse(self.corta("jp c,0c000h"))
+        self.assertTrue(self.corta("jp creditos"))
+        self.assertFalse(self.corta("jp m,0c000h"))
+        self.assertTrue(self.corta("jp mueve_estrellas"))
+
+    def test_un_ret_condicional_no_corta_el_flujo(self):
+        """El otro agujero: `^ret` casaba tambien con `ret nz`."""
+        self.assertTrue(self.corta("ret"))
+        self.assertTrue(self.corta("reti"))
+        self.assertTrue(self.corta("retn"))
+        for cond in ("nz", "z", "nc", "c", "po", "pe", "p", "m"):
+            self.assertFalse(self.corta("ret " + cond))
+
+    def test_lo_que_no_corta_nunca(self):
+        for instr in ("call 0bd85h", "djnz L_C47B", "ld a,001h", "nop",
+                      "add hl,de", "push af"):
+            self.assertFalse(self.corta(instr))

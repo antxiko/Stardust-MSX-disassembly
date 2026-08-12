@@ -23,7 +23,35 @@ Codigo de salida 1 si hay alguno, para poder colgarlo del Makefile.
 import re
 import sys
 
-CORTAN = re.compile(r"^(ret|reti|retn|jp\s+[0-9a-fA-FLl_(]|jr\s+[0-9a-fA-FLl_])")
+# Que instrucciones cortan el flujo, o sea, tras las cuales NO se puede caer
+# en lo que venga detras.
+#
+# Esto estuvo escrito como una lista de prefijos -`jp` seguido de un digito
+# hexadecimal, de una L, de un guion bajo o de un parentesis- y tenia dos
+# agujeros, los dos en la direccion de contar de menos:
+#
+#   1. En cuanto una rutina recibe NOMBRE en el .notes, el listado pasa a decir
+#      `jp pinta_marca_hud`, que no empieza por ninguno de esos caracteres. El
+#      salto dejaba de contar como corte y lo de debajo aparecia como etiqueta
+#      interior. O sea que la herramienta castigaba justo el trabajo de
+#      comentar: cuantas mas rutinas se nombraban, mas falsos interiores salian
+#      y mas bajaba sola la cifra publicada.
+#   2. `^ret` tambien casa con `ret nz`, y un ret CONDICIONAL no corta nada.
+#
+# Se mira por la condicion, que es lo que de verdad decide: un `jp`/`jr` corta
+# si su operando no empieza por una de las ocho condiciones del Z80 seguida de
+# coma. Asi el destino puede llamarse como quiera -incluido `premia`, que
+# empieza por p, o `carga_cinta`, que empieza por c- sin confundirse con `jp
+# p,` ni con `jp c,`, porque sin la coma no es una condicion.
+CONDICION = re.compile(r"^(?:nz|z|nc|c|po|pe|p|m)\s*,")
+
+
+def corta_el_flujo(instruccion):
+    texto = instruccion.strip().lower()
+    if texto in ("ret", "reti", "retn"):
+        return True
+    m = re.match(r"^(?:jp|jr)\s+(.*)$", texto)
+    return bool(m) and not CONDICION.match(m.group(1).strip())
 
 
 def instrucciones(ruta):
@@ -73,7 +101,7 @@ def main(*args):
                 if dire - previa[dire] > 4:
                     continue
                 anterior = texto[previa[dire]]
-                if not CORTAN.match(anterior):
+                if not corta_el_flujo(anterior):
                     print("  INTERIOR 0x%04X %-22s se cae desde 0x%04X: %s"
                           % (dire, nombre, previa[dire], anterior))
                     malos += 1
