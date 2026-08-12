@@ -365,8 +365,9 @@ error más grande que ha tenido este bloque, contado en la sección siguiente.
 - El cotejo con la versión de Spectrum no puede decir nada sobre esa segunda
   parte: el snapshot con el que se compara se capturó en el menú de la primera,
   así que la fase de a pie del original no está ahí.
-- **Algo más de la mitad de las rutinas siguen sin comentario.** Esto se
-  cuenta abajo, con cifras.
+- **Que las 335 rutinas tengan comentario no quiere decir que estén todas
+  comprobadas en marcha.** Unas cuantas se sostienen sólo sobre la lectura del
+  listado, y allí donde es así queda dicho. Se cuenta abajo, con cifras.
 
 ## Por qué se publica así
 

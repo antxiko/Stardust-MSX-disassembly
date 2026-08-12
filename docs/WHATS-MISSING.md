@@ -362,8 +362,9 @@ error this block has had, set out in the next section.
 - The cross-check against the ZX Spectrum version can say nothing about that
   second part: the snapshot it compares against was captured in the *first*
   part's menu, so the original's on-foot stage simply isn't in it.
-- **A little over half the routines still have no comment.** That is counted
-  below, with figures.
+- **All 335 routines having a comment does not mean all of them have been
+  checked running.** A few rest on reading the listing alone, and where that is
+  so it is said. That is counted below, with figures.
 
 ## Why it is published like this
 

@@ -1,6 +1,6 @@
 # The code
 
-The tape's five blocks come to **93,861 bytes**, and **28,172** of them are code
+The tape's five blocks come to **93,861 bytes**, and **20,076** of them are code
 the tracer reaches by following the flow. The rest are graphics, tables, buffers
 and padding, all of it named.
 
@@ -88,15 +88,24 @@ instructions.
 
 ## Every object carries its own routine
 
-Both halves of the game settle entity behaviour the same way: each one keeps a
-pointer to its governing routine in its own structure, and the game jumps there
+The ship part settles entity behaviour like this: each one keeps a pointer to
+its governing routine in its own **8-byte** structure, and the game jumps there
 with `jp (hl)`. Those structures arrive **all 0xFF on the tape** and are filled
 in while playing, so the destinations can't be read from the binary — they have
-to be captured with the game running.
+to be captured with the game running. Doing that turns up eight routines, and
+the captured IX values step 8 at a time.
 
-Doing that turns up eight routines in the ship part and ten in the one on foot.
-And the size of the structures gives away that these are different engines:
-**8 bytes** per entity in the first part, **46** in the second.
+The same measurement in the part on foot stepped **46** at a time, and this page
+used to report that as entities nearly six times bigger, proof of two different
+engines. The measurement was sound; the reading was not. That `jp (hl)` —the one
+at 0xC544— dispatches not entities but the **sound interpreter's commands**, and
+the 46-byte objects are its three channels: the routine that starts a sound takes
+the channel number and multiplies it by 46 (`ld de,0002eh`) to reach its state.
+The whole story is in <a href='FINDINGS.html'>Findings</a>.
+
+The on-foot enemies carry no routine pointer. They live in **5-byte tables**
+—walkers at 0xACE4, flyers at 0xACF9, the turret's two shots at 0xAD04— and
+fixed loops move them, one per species.
 
 ## Code that writes itself
 
@@ -145,8 +154,8 @@ sits at 0xF87E, 0xF88D, 0xF887 — inside the tape loader, across only 45 distin
 addresses. The tape was still turning, and half the memory from 0x61D0 up was
 still the ship game underneath.
 
-Which is exactly the trap this page warns about two paragraphs down, walked into
-head first. Five programs occupy the **same addresses** at different moments, so
+Which is exactly the trap the next paragraph warns about, walked into head
+first. Five programs occupy the **same addresses** at different moments, so
 the samples have to be split into windows —the loader's jump to the game at
 0xBD85, and the second load— or the TOPO logo, the loading screen and the BASIC
 ROM all show up looking like code inside the tileset. Getting the window's *end*
@@ -158,4 +167,9 @@ rest bytes with few bits set, arranged in pairs — `40 ff / 01 ff / 41 ff /
 00 ff / 40 f9` — which is what artwork with a mask looks like in a conversion
 that has to shift its sprites by hand.
 
-0xC865 survives: it does show samples in a clean window.
+The second one does hold up, but it wasn't where it was said to be: the routine
+starts at **0xC864**, and 0xC865 is the second byte of that same instruction —
+which is why a breakpoint set there never fired. And now we know what it is: the
+handler for the sound interpreter's 0x8C command, the one that calls a phrase of
+the music. With 208 appearances in the score it is by far the commonest command,
+so the 27,928 samples add up.

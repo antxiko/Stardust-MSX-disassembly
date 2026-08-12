@@ -1,6 +1,6 @@
 # El código
 
-Los cinco bloques de la cinta suman **93 861 bytes**, y de ellos **27 635** son
+Los cinco bloques de la cinta suman **93 861 bytes**, y de ellos **20 076** son
 código que el trazador alcanza siguiendo el flujo. El resto son gráficos,
 tablas, buffers y relleno, todo con su nombre.
 
@@ -88,15 +88,24 @@ fueran instrucciones.
 
 ## Cada objeto lleva su rutina
 
-Las dos partes del juego resuelven igual el comportamiento de las entidades:
-cada una guarda en su estructura un puntero a la rutina que la gobierna, y el
-juego salta ahí con `jp (hl)`. Esas estructuras vienen **a 0xFF en la cinta** y
-se rellenan jugando, así que los destinos no se pueden leer del binario: hay que
-capturarlos con el juego en marcha.
+La parte de naves resuelve así el comportamiento de las entidades: cada una
+guarda en su estructura de **8 bytes** un puntero a la rutina que la gobierna, y
+el juego salta ahí con `jp (hl)`. Esas estructuras vienen **a 0xFF en la cinta**
+y se rellenan jugando, así que los destinos no se pueden leer del binario: hay
+que capturarlos con el juego en marcha. Haciéndolo salen ocho rutinas, y los IX
+capturados van de 8 en 8.
 
-Haciéndolo salen ocho rutinas en la parte de naves y diez en la de a pie. Y el
-tamaño de las estructuras delata que son motores distintos: **8 bytes** por
-entidad en la primera parte, **46** en la segunda.
+La misma medida en la parte de a pie daba pasos de **46**, y aquí estuvo
+publicado que eran entidades casi seis veces mayores, prueba de dos motores
+distintos. La medida era buena; la lectura, no. Ese `jp (hl)` —el de 0xC544— no
+despacha entidades sino los **comandos del intérprete de sonido**, y los objetos
+de 46 bytes son sus tres canales: la rutina que arranca un sonido recibe el
+número de canal y lo multiplica por 46 (`ld de,0002eh`) para llegar a su estado.
+Está contado entero en <a href='HALLAZGOS.html'>Hallazgos</a>.
+
+Los enemigos de a pie no llevan rutina apuntada. Viven en **tablas de 5 bytes
+por objeto** —los andantes en 0xACE4, los voladores en 0xACF9, los dos tiros de
+la torreta en 0xAD04— y los mueven bucles fijos, uno por especie.
 
 ## Código que se escribe a sí mismo
 
@@ -112,3 +121,57 @@ f018: call 0000h        ; y este DE
 
 En frío eso se lee como `call 0`, que reiniciaría la máquina. A dónde llama de
 verdad no está en el binario, está en los registros de quien lo invoque.
+
+## Lo que sólo se ve jugando
+
+Las dos cosas de arriba —las tiras desenrolladas y el despachador que se parchea
+solo— son casos del mismo problema: un trazador estático no puede seguirlas. La
+salida es mirar la máquina en marcha, y para eso una partida grabada vale más
+que cualquier arnés programado, porque llega a pantallas a las que un guion no
+llega nunca.
+
+Reproduciendo una partida entera de 38 minutos y muestreando el contador de
+programa, de las **1489 direcciones que ejecutó el juego de naves el trazador ya
+alcanzaba 1444**. Las 45 que se le escapaban pasaron a ser puntos de entrada,
+cada una con su cuenta de muestras al lado.
+
+En la segunda parte, mucho menos explorada porque hay que superar siete zonas
+para llegar a ella, salieron 159 direcciones sin trazar, y esta página llegó a
+publicar dos de ellas como las rutinas que más trabajan de todo el juego:
+
+```
+0xD48C   139.323 muestras   figuraba como "tabla" de 489 bytes
+0xC865    27.928 muestras   figuraba como "datos sin clasificar"
+```
+
+**La primera está retirada, y cómo se cayó vale más que lo que afirmaba.**
+0xD48C no es código. Se desensambla a `nop / rst 38h / nop / rst 38h`, el
+desensamblador se rinde en un tramo con un *illegal sequence*, no lo llama nadie
+en el listado, y muestreando el contador de programa en 130 segundos de partida
+comprobada —259.149 muestras en dos ventanas— **no cae ni una ahí**.
+
+Lo que falló fue la ventana. Aquella medida se abrió en t=1775, «cuando termina
+la carga», y la carga no había terminado: muestreado en t=1775 el contador de
+programa está en 0xF87E, 0xF88D, 0xF887 —dentro del cargador de cinta, y sólo en
+45 direcciones distintas—. La cinta seguía girando, y media memoria desde 0x61D0
+hacia arriba era todavía el juego de naves de debajo.
+
+Que es justo la trampa contra la que avisa el párrafo siguiente, pisada de
+cabeza. Cinco programas ocupan las **mismas direcciones** en momentos distintos,
+así que las muestras hay que partirlas en ventanas —el salto del cargador al
+juego en 0xBD85, y la segunda carga— o el logo de TOPO, la pantalla de carga y
+la ROM del BASIC acaban pareciendo código dentro de la tilería. Y no basta con
+acertar el *final* de la ventana: el principio también hay que medirlo.
+
+Los 489 bytes vuelven a ser datos, y de lo que parecen no se dice más de lo que
+se ha medido: 21 valores distintos, 199 de ellos 0xFF, y el resto bytes con
+pocos bits puestos, colocados por parejas —`40 ff / 01 ff / 41 ff / 00 ff /
+40 f9`—, que es la pinta que tiene un dibujo con máscara en una conversión que
+desplaza sus sprites a mano.
+
+La segunda sí aguanta, pero no estaba donde se dijo: la rutina empieza en
+**0xC864** y 0xC865 es el segundo byte de esa misma instrucción, que es por lo
+que un breakpoint puesto allí no saltaba nunca. Y hoy se sabe qué es: el
+manejador del comando 0x8C del intérprete de sonido, el que llama a una frase de
+la música. Con 208 apariciones en la partitura, es con diferencia el comando más
+frecuente, así que las 27.928 muestras cuadran.

@@ -308,6 +308,30 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
         self.assertEqual(self.numero(self.cifra("en", "bytes of code")), codigo)
 
     @sin_trazado
+    def test_la_pagina_del_codigo_abre_con_la_cifra_de_la_portada(self):
+        """La cifra con que abre «El código», medida y no escrita a mano.
+
+        Estuvo publicada como 27.635 en espanol y 28.172 en ingles cuando el
+        trazador ya daba 20.076: las dos paginas de la misma web se
+        contradecian entre ellas y contradecian a la portada, que si tenia
+        test. Se quedaron viejas al retirar codigo que no lo era -la musica
+        que se leia como instrucciones-, y nada aviso, porque el binario
+        reensamblaba igual de bien.
+        """
+        codigo = sum(trazado(m)["report"]["code_bytes"] for m in MODULOS)
+        for pagina in ("es/EL-CODIGO.md", "THE-CODE.md"):
+            with open(os.path.join(DOCS, pagina), encoding="utf-8") as f:
+                texto = f.read()
+            m = re.search(r"\*\*93[.,\s]861 bytes\*\*[^*]*\*\*([\d.,\s]+)\*\*",
+                          texto)
+            self.assertIsNotNone(
+                m, "%s: no se encuentra la cifra de la cabecera" % pagina)
+            self.assertEqual(
+                self.numero(m.group(1)), codigo,
+                "%s: la cabecera no dice los bytes que mide el trazador"
+                % pagina)
+
+    @sin_trazado
     def test_los_bytes_de_datos_son_el_resto_de_la_cinta(self):
         codigo = sum(trazado(m)["report"]["code_bytes"] for m in MODULOS)
         datos = sum(MODULOS.values()) - codigo + DESCRIPTOR + BASIC
