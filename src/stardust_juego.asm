@@ -4647,7 +4647,7 @@ L_D1A8:
 	ld (iy+006h),h		;d1a8
 	ld (iy+007h),l		;d1ab
 	ret			;d1ae
-traza_estela:		; Dibuja la estela del objeto de 0xD3BD restando al puntero del buffer un paso fijo, 24 si le queda poca vida y 25 si le queda mas, o sea recta o en diagonal
+traza_estela:		; Anima la estela del objeto de 0xD3BD en tres fotogramas segun la vida que le queda, y siempre en vertical sobre la misma columna: con vida 3 pinta (iy+003) puntos subiendo desde la base, con vida 2 pasa DOS veces por el nucleo y saca el trazo entero de 2*(iy+003), y con vida 1 sube primero (iy+003) filas SIN pintar -su bucle de 0xD1D3 no escribe en el buffer- y pinta solo la mitad alta. O sea que el chorro crece, llega entero y se despega por abajo. El 24 y el 25 no son "recta o diagonal": los dos valen una fila, y el 25 solo compensa el `inc hl` del segundo byte de cada punto
 	ld iy,0d3bdh		;d1af
 	ld a,(iy+000h)		;d1b3
 	and a			;d1b6
@@ -4675,7 +4675,7 @@ L_D1DE:
 	pop af			;d1de
 	cp 003h			;d1df
 	ret nc			;d1e1
-pinta_tramo_estela:		; El nucleo de traza_estela: pinta (iy+003) puntos de la estela subiendo por el buffer, dos bytes por punto -(iy+006) y (iy+007) con `or (hl)`- y restando DE entre uno y otro. traza_estela entra aqui una vez con vida 3, DOS con vida 2 (la llama en 0xD1DB y ademas cae dentro tras el `cp 003h / ret nc` de 0xD1DF), y con vida 1 una sola vez pero despues de subir (iy+003) pasos de 24 sin pintar nada. OJO: el paso con el que PINTA es siempre 25; el 24 de 0xD1CF solo recoloca HL, porque su bucle (0xD1D3) no escribe en el buffer y el `inc de` de 0xD1D8 devuelve DE a 25 antes de pintar
+pinta_tramo_estela:		; El nucleo de traza_estela: pinta (iy+003) puntos de la estela subiendo por el buffer, dos bytes por punto -(iy+006) y (iy+007) con `or (hl)`- y restando DE=25 entre uno y otro. Como el `inc hl` del segundo byte suma 1 antes de la resta, el paso NETO es de 24, el ancho justo de la fila: cada punto cae en la misma columna una fila mas arriba, y la estela sale vertical. traza_estela entra aqui una vez con vida 3, DOS con vida 2 (la llama en 0xD1DB y ademas cae dentro tras el `cp 003h / ret nc` de 0xD1DF), y con vida 1 una sola vez pero despues de subir (iy+003) filas de 24 sin pintar nada
 	ld b,(iy+003h)		;d1e2
 L_D1E5:
 	ld a,(iy+006h)		;d1e5
@@ -5882,7 +5882,7 @@ tile_5D_espera:		; El 0x5D esperando: cada cuadro repone (ix+000) a cero para no
 	ld a,01fh		;da95
 	ld (0c9a3h),a		;da97
 	jp baja_tile_especial		;da9a
-arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB1. Los dos numeros de sprite son fotogramas del mismo tramo 0x00-0x1F que pinta actualiza_nave con `and 01fh`; que dibujan exactamente no esta establecido
+arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB1. Los dos sprites NO son la misma clase de cosa, aunque caigan en el mismo tramo: el 8 es la nave del jugador quieta y mirando hacia arriba -gira_rumbo remata con `or 008h`, o sea que los reposos de los ocho rumbos son 0x08 a 0x0F, y el rumbo 0 es arriba-, y por eso el relevo es continuo, con tile_5D_espera exigiendo justamente 0xC9A3 == 8 antes de disparar la escena; el 0x18, en cambio, no es ningun fotograma de vuelo -la aritmetica de gira_rumbo no lo alcanza nunca- sino CUATRO BARRAS HORIZONTALES blancas con trama de ajedrez entre ellas, un haz rayado del ancho de la nave, y el unico sitio de todo el bloque que lo pinta es esta rutina. O sea que lo que baja es el HAZ y lo que se arrastra es la NAVE
 	ld hl,(0c184h)		;da9d
 	push hl			;daa0
 	ld a,008h		;daa1

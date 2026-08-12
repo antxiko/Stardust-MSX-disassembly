@@ -5722,7 +5722,7 @@ L_C8E9:
 ; ----------------------------------------------------------------------
 ; DATOS instrumentos: Tabla de instrumentos: 16 entradas de 15 B que el comando 0x87 copia a (ix+016), las dos fases de la envolvente de volumen y las tres de la de tono. La musica pide hasta el instrumento 15, o sea que las dieciseis hacen falta
 ;   0xc8f7..0xc9e7  (240 bytes)
-; DATOS efectos_ruido: Tabla de efectos de ruido: entradas de 6 B que el comando 0x89 copia a 0xD0F6-0xD0FB. Caben tres enteras y una cuarta a la que le falta el sexto byte, que ya es el primero de la tabla de notas; no se lee nunca porque la longitud de su segunda fase vale 0. La musica solo pide la 0 y la 3
+; DATOS efectos_ruido: Tabla de efectos de ruido: entradas de 6 B que el comando 0x89 copia a 0xD0F6-0xD0FB. Caben TRES enteras y una cuarta a la que le falta el sexto byte, que ya es el primero de la tabla de notas. Ese byte prestado SI se copia -el bucle de op_efecto es de seis fijos, `ld d,006h`-, pero es inerte: cae en la espera de la segunda fase de la envolvente, y esa fase tiene cero pasos. La musica de este bloque pide la 0 y la 3, o sea que usa justamente la truncada
 ;   0xc9e7..0xc9fe  (23 bytes)
 ; DATOS la: TABLA DE NOTAS del interprete de sonido: 96 periodos de 16 bits, ocho octavas de do1 a si8. Es BYTE A BYTE la misma que la del juego de naves (0xE6E3), los 192 bytes. Estuvo dentro del rango declarado como graficos, que llegaba hasta 0xCAA0 y se pasaba
 ;   0xc9fe..0xcabe  (192 bytes)

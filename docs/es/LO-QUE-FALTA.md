@@ -415,22 +415,43 @@ confusión que llegó a publicar 1956 «rutinas».
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Un posible bug del juego original, en el alta de enemigos.** La rutina de
-  0xD41A calcula la dificultad con `rrca`, que *rota* en vez de desplazar: en
-  las zonas pares el bit bajo se le cuela al bit 7, la máscara se satura y la
-  probabilidad de que entre un enemigo por esa vía cae a una de cada 256.
-  Tiene toda la pinta de que se quería un `srl`. Está leído del listado, **no
-  medido en el emulador**, y por eso se cuenta aquí y no como hallazgo: los
-  enemigos siguen saliendo por la otra vía, así que las zonas pares no se
-  quedan vacías.
+- **Un despiste que viene del original, en el alta de enemigos.** La rutina de
+  0xD41A calcula la dificultad con `rrca`, que *rota* en vez de desplazar: como
+  `7 − zona` es impar justo en las zonas pares, ahí el bit bajo se le cuela al
+  bit 7, la máscara se satura en 0xFF y la probabilidad de que entre un enemigo
+  por esa vía cae a una de cada 256. La progresión sólo es limpia en las zonas
+  impares: 1/8, 1/4, 1/2, y en la 7 entra sin tirar.
+
+  **Y no es cosa de la conversión.** Cotejada contra el desensamblado que
+  publicaron los propios autores del ZX Spectrum, la rutina equivalente está en
+  $D4CF y trae la misma secuencia —`LD A,$07 / SUB B / RRCA / ADD A,E`—, con 52
+  de los 68 bytes idénticos y ni un opcode distinto: los 16 que cambian son los
+  operandos de dirección. El `rrca` estaba ahí en 1987 y el port lo copió
+  instrucción a instrucción.
+
+  Lo que **no** se puede afirmar es la intención. Que se quisiera un
+  desplazamiento lo sugiere todo —el juego usa `srl` para dividir en los dos
+  bloques, y `rra` está a un solo bit del `rrca`—, pero nadie puede leer la
+  cabeza de quien lo escribió, y los propios autores dejaron esa rutina sin
+  comentar. El efecto en partida tampoco está medido en el emulador, y se
+  atenúa porque esas tablas tienen otra vía de alta, por los tiles del mapa,
+  que no mira la zona.
 - **La escena que cierra la zona 7.** La mecánica está leída byte a byte —dos
   sprites que bajan y arrastran a la nave fuera de la pantalla—, pero no está
   comprobado qué dibujan exactamente esos dos sprites. Es justo la escena que
   enlaza con la segunda carga.
-- **La tabla de efectos de ruido se sale de su sitio, y en las dos mitades.**
-  Su última entrada se solapa con el principio de la tabla de notas. No rompe
-  nada, porque ese campo no llega a leerse nunca; que el solape sea deliberado
-  —economía de bytes— o casualidad del empaquetado, no está establecido.
+- **El motor de sonido trae un modo que el juego no usa.** El barrido de ruido
+  puede recargarse solo al agotarse, y eso lo enciende un bit que **ninguna de
+  las dos partituras enciende jamás**: todos los argumentos de ese comando valen
+  0, 1 o 2, y nunca el 4 que haría falta. Código muerto en las dos mitades.
+- **A la tabla de efectos de ruido le falta un byte, en las dos mitades**, y
+  cada una usa justo la entrada truncada. El byte que falta se lo roba a la
+  tabla de notas que empieza ahí mismo, y **sí se copia** —el bucle es de seis
+  fijos—, pero cae en un campo que no se llega a usar. Que el recorte sea
+  deliberado es lo que sugiere el detalle de que los cinco bytes que sobreviven
+  en una mitad son los mismos que la entrada completa de la otra: dos cortes
+  independientes de exactamente un byte, los dos en el único sitio inofensivo.
+  Sugerirlo no es demostrarlo.
 - **El comando 0x84 del intérprete de sonido**, que ya se sabe que cuenta una
   duración sin reatacar la nota: se salta entero el tramo de ataque. Que eso
   sea una ligadura es la lectura musical, y encaja con dónde aparece en la

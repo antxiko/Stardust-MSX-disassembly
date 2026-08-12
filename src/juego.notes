@@ -2025,7 +2025,28 @@ L 0xDA55 zona_despejada Vuelve con Z solo si no queda nada en pantalla: 0xCA91 e
 # esquema es una gramatica y no un copia-pega. La descripcion vieja contaba solo
 # el salto por longitudes -que es cierto- y se dejaba fuera lo esencial.
 L 0xDA06 descomprime_token Expande un token del mapa comprimido: si el bit 7 esta a cero es un literal, que escribe en (ix+000) y avanza IX; si esta a uno, sus siete bits bajos son el numero de frase del diccionario de 0xDE18, adonde llega saltando de frase en frase por el tamano que cada una lleva en su primer byte, y la expande LLAMANDOSE A SI MISMA una vez por cada token que contenga, de modo que una frase puede contener otras. El 0xFF cierra el flujo y se come la vuelta con el `pop hl` de 0xDA31
-L 0xD1AF traza_estela Dibuja la estela del objeto de 0xD3BD restando al puntero del buffer un paso fijo, 24 si le queda poca vida y 25 si le queda mas, o sea recta o en diagonal
+# EL 24 Y EL 25 DE LA ESTELA, que estuvieron publicados al reves de lo que son.
+# Aqui se dijo que el paso era "24 si le queda poca vida y 25 si le queda mas, o
+# sea recta o en diagonal". No hay ninguna diagonal: los DOS bucles avanzan
+# exactamente una fila, y los dos numeros existen para lo mismo.
+#
+# El bucle que PINTA (0xD1E5) escribe dos bytes por punto, y entre uno y otro
+# hace `inc hl`. Cuando llega al `sbc hl,de` el puntero ya vale HL+1, asi que
+# con DE=25 el paso neto es 25-1 = 24:
+#
+#     d1e5: ld a,(iy+006h) / or (hl) / ld (hl),a
+#     d1ea: inc hl                    <- +1, el segundo byte del punto
+#     d1eb: ld a,(iy+007h) / or (hl) / ld (hl),a
+#     d1f0: sbc hl,de                 <- -25 sobre HL+1  =>  -24 netos
+#
+# El bucle que NO pinta (0xD1D3) no tiene ese `inc hl`, y por eso el `dec de` de
+# 0xD1CF le baja DE a 24 y el `inc de` de 0xD1D8 lo devuelve a 25 al salir.
+# O sea que 24 es el ancho de la fila del buffer y punto: los dos bucles suben
+# una fila en la MISMA columna, y la estela es vertical siempre.
+#
+# (El carry esta limpio al llegar al `sbc` sin necesidad de `and a`, porque el
+# `or (hl)` de dos instrucciones antes lo pone a cero.)
+L 0xD1AF traza_estela Anima la estela del objeto de 0xD3BD en tres fotogramas segun la vida que le queda, y siempre en vertical sobre la misma columna: con vida 3 pinta (iy+003) puntos subiendo desde la base, con vida 2 pasa DOS veces por el nucleo y saca el trazo entero de 2*(iy+003), y con vida 1 sube primero (iy+003) filas SIN pintar -su bucle de 0xD1D3 no escribe en el buffer- y pinta solo la mitad alta. O sea que el chorro crece, llega entero y se despega por abajo. El 24 y el 25 no son "recta o diagonal": los dos valen una fila, y el 25 solo compensa el `inc hl` del segundo byte de cada punto
 
 # ============================================================================
 # LOS "DESTINOS DE SALTO SIN TRAZAR" NO ERAN DESTINOS DE SALTO
@@ -2142,7 +2163,7 @@ L 0xC190 tile_estalla El derrumbe de un tile especial: el estado que impacto_obj
 L 0xD314 tile_46 El comportamiento del tile 0x46 (`ld de,0d314h` en 0xC16B), que es una onda expansiva horizontal. El primer cuadro convierte (ix+002) -que traia el indice de tile, 0x46- en un contador que sube de 0 a 8 y ahi se queda, y con el pinta por pinta_banda_ruido una banda de 8 px de alto y (contador*2+4) bytes de ancho que arranca en la columna (ix+001) - contador*8: crece 16 px por cuadro, ocho por cada lado, de 32 px hasta 160. Suena 0xEAA1 en el canal 1 cada cuadro y, si la nave sigue viva (0xC188 por debajo de 4), la mata al tocarla con una caja que crece a la par: contador*16 + 0x1E contra 0x0C en el eje de columnas, y 6 contra 0x0C en el de filas. Antes de todo eso llama a impacto_objeto, o sea que se puede reventar como cualquier otro tile especial
 L 0xD383 pinta_banda_ruido La brocha de tile_46, y solo suya: pinta B columnas de un byte por 8 filas del buffer, y para CADA columna echa a suertes (`call azar / and 001h`) entre los dos patrones de 8 bytes de 0xD3AD y 0xD3B5, que son los dieciseis primeros de los 34 que figuraban en 0xD3AD como tabla sin dueno. Cada byte lo borra primero con el patron rotado y complementado (`ld a,(de) / rrca / cpl / and (hl)`) y lo pinta despues con `or (hl)`; entre fila y fila suma 24, el ancho del buffer, y entre columna y columna un `inc hl`
 L 0xD6C5 tile_43 El comportamiento del tile 0x43 (`ld de,0d6c5h` en 0xC158): entra por contacto_instalacion, o sea que mata a la nave al tocarla, y anima el aparato alternando su celda del mapa entre los tiles 0x43 y 0x44 con un `ld a,007h / xor (hl)` cada ocho cuadros. La fase la echa a suertes: en su primer cuadro -(ix+000) valiendo 1- mete en (ix+007) un `azar and 007h`, de modo que dos tiles 0x43 en pantalla no parpadeen a la vez. Dibujados desde el pozo de tiles, el 0x43 y el 0x44 son el mismo aparato con el interior cambiado
-L 0xD1E2 pinta_tramo_estela El nucleo de traza_estela: pinta (iy+003) puntos de la estela subiendo por el buffer, dos bytes por punto -(iy+006) y (iy+007) con `or (hl)`- y restando DE entre uno y otro. traza_estela entra aqui una vez con vida 3, DOS con vida 2 (la llama en 0xD1DB y ademas cae dentro tras el `cp 003h / ret nc` de 0xD1DF), y con vida 1 una sola vez pero despues de subir (iy+003) pasos de 24 sin pintar nada. OJO: el paso con el que PINTA es siempre 25; el 24 de 0xD1CF solo recoloca HL, porque su bucle (0xD1D3) no escribe en el buffer y el `inc de` de 0xD1D8 devuelve DE a 25 antes de pintar
+L 0xD1E2 pinta_tramo_estela El nucleo de traza_estela: pinta (iy+003) puntos de la estela subiendo por el buffer, dos bytes por punto -(iy+006) y (iy+007) con `or (hl)`- y restando DE=25 entre uno y otro. Como el `inc hl` del segundo byte suma 1 antes de la resta, el paso NETO es de 24, el ancho justo de la fila: cada punto cae en la misma columna una fila mas arriba, y la estela sale vertical. traza_estela entra aqui una vez con vida 3, DOS con vida 2 (la llama en 0xD1DB y ademas cae dentro tras el `cp 003h / ret nc` de 0xD1DF), y con vida 1 una sola vez pero despues de subir (iy+003) filas de 24 sin pintar nada
 #
 # ---------------------------------------------------------- el cierre de la zona 7
 #
@@ -2157,11 +2178,48 @@ L 0xD1E2 pinta_tramo_estela El nucleo de traza_estela: pinta (iy+003) puntos de 
 #
 L 0xDA3D tile_5D La rutina de gobierno que el despachador de 0xC170 le da al tile 0x5D (`cp 05dh / ld de,0da3dh`), el que cierra la zona 7. Al decimo cuadro de vida -(ix+000), que recorre_tiles_especiales sube uno por cuadro, contra el `cp 00ah / ret c` de 0xDA40- CONGELA EL SCROLL poniendo 0xCB04 a cero, que es la puerta que mira repinta_fondo en 0xC42A antes de bajar una fila del mapa, levanta la bandera 0xDAC5 -que corta la aparicion de enemigos sueltos en 0xD420 y la creacion de tandas nuevas en 0xD82C- y se cambia a si misma la rutina de gobierno por la de 0xDA72
 L 0xDA72 tile_5D_espera El 0x5D esperando: cada cuadro repone (ix+000) a cero para no caducar nunca en el `cp 060h` de recorre_tiles_especiales, y no hace nada hasta que se dan tres condiciones a la vez -que zona_despejada diga que no queda nada, que la nave este en la columna 0x58 (la misma en la que la deja el arranque de zona con `ld hl,0a058h`) y que 0xC9A3 valga exactamente 8-. Cuando se cumplen, parchea el operando del `jp` de va_a_nave_estado (0xC064) para que el bucle principal llame a arrastra_nave en vez de a la nave, parchea el de pinta_escudo (0xD0DD) con el `ret` de 0xD959 para apagar el indicador -los dos mismos trampolines que hud_reset repone en 0xBE9F y 0xBEA8-, devuelve el scroll poniendo 0xCB04 = 8, siembra 0xC9A3 con 0x1F y se da de baja
-L 0xDA9D arrastra_nave Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB1. Los dos numeros de sprite son fotogramas del mismo tramo 0x00-0x1F que pinta actualiza_nave con `and 01fh`; que dibujan exactamente no esta establecido
+L 0xDA9D arrastra_nave Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB1. Los dos sprites NO son la misma clase de cosa, aunque caigan en el mismo tramo: el 8 es la nave del jugador quieta y mirando hacia arriba -gira_rumbo remata con `or 008h`, o sea que los reposos de los ocho rumbos son 0x08 a 0x0F, y el rumbo 0 es arriba-, y por eso el relevo es continuo, con tile_5D_espera exigiendo justamente 0xC9A3 == 8 antes de disparar la escena; el 0x18, en cambio, no es ningun fotograma de vuelo -la aritmetica de gira_rumbo no lo alcanza nunca- sino CUATRO BARRAS HORIZONTALES blancas con trama de ajedrez entre ellas, un haz rayado del ancho de la nave, y el unico sitio de todo el bloque que lo pinta es esta rutina. O sea que lo que baja es el HAZ y lo que se arrastra es la NAVE
 #
 # ------------------------------------------------- el mapa, la partida y el bonus
 #
 L 0xDA33 descomprime_nivel El bucle del descompresor de mapas: pone IX = 0x5C50 -el destino, la entrada 5 de la tabla de 6 en 6 que empieza en 0x5C32- y llama sin parar a descomprime_token sobre el flujo que carga_zona le deja en HL desde la tabla de zonas de 0xDE03 (`call L_DA33` en 0xBF03). No tiene salida propia: el 0xFF que cierra el flujo hace que descomprime_token se coma la vuelta con el `pop hl` de 0xDA31, asi que el `jp` de 0xDA3A no llega a repetirse y el control vuelve directo a 0xBF06. Las siete zonas expanden a 450 bytes justos, 75 filas de a seis
+# EL `rrca` DE 0xD435, QUE PARECE UN DESPISTE Y VIENE DEL ORIGINAL.
+#
+# La dificultad de esta alta sale de b = rrca(7 - zona) + los dos contadores de
+# enemigos volando, y hay que sacar cero en `azar and (2^b - 1)`. Pero `rrca`
+# ROTA, no desplaza: el bit 0 se le va al bit 7. Y (7 - zona) es impar justo en
+# las zonas PARES:
+#
+#     zona 1 -> 6 -> rrca -> 3    mascara 0x07   1 de cada 8
+#     zona 2 -> 5 -> rrca -> 0x82 mascara 0xFF   1 de cada 256
+#     zona 3 -> 4 -> rrca -> 2    mascara 0x03   1 de cada 4
+#     zona 4 -> 3 -> rrca -> 0x81 mascara 0xFF   1 de cada 256
+#     zona 5 -> 2 -> rrca -> 1    mascara 0x01   1 de cada 2
+#     zona 6 -> 1 -> rrca -> 0x80 mascara 0xFF   1 de cada 256
+#     zona 7 -> 0 -> rrca -> 0    entra SIN tirar (el `jr z` de 0xD437)
+#
+# O sea que la progresion de dificultad solo es limpia en las zonas impares, y
+# en las pares esta via casi no entra. La zona es 1..7: se inicializa a 1 en
+# 0xBDF5 y 0xBE9C, sube en 0xD755, y el `cp 008h` de 0xD80F manda a la
+# multicarga.
+#
+# LO IMPORTANTE: NO ES COSA DE LA CONVERSION. Cotejada contra el desensamblado
+# que publicaron los autores del ZX Spectrum (TheJare/stardust-48k), la rutina
+# equivalente esta en $D4CF y trae la MISMA secuencia:
+#
+#     LD A,(CurrentLevel) / LD B,A / LD A,$07 / SUB B / RRCA / ADD A,E / JR Z
+#
+# 52 de los 68 bytes son identicos y los 16 que cambian son los siete operandos
+# de direccion: no cambia ni un opcode, y el 0x0F del `rrca` esta en el mismo
+# offset 27 en las dos maquinas. El port lo copio instruccion a instruccion.
+#
+# Que se quisiera dividir entre dos es lo que sugiere todo -el juego usa `srl`
+# para dividir en los dos bloques, y `rra` (0x1F) esta a un solo bit del `rrca`
+# (0x0F)-, pero eso es SUPOSICION: nadie puede afirmar la intencion, y los
+# propios autores dejaron esa rutina sin comentar en su repositorio. Y el efecto
+# real en partida NO esta medido en el emulador; ademas se atenua porque estas
+# dos tablas tienen otra via de alta por los tiles del mapa (0xE0B8/0xE0C1) que
+# no mira la zona.
 L 0xD41A alta_enemigo_cuadro El alta de enemigos cuadro a cuadro, la penultima llamada del bucle de partida (0xBF97). Tres filtros antes de nada: una tirada de cada 32 (`and 01fh`), la bandera 0xDAC5 a cero -o sea antes de que salga el tile de fin de zona- y una segunda tirada cuya dificultad sale de la zona y de cuantos enemigos hay ya volando: b = ((7 - zona) pasado por `rrca`) + 0xC97A + 0xC98F, y hay que sacar cero en `azar and (2^b - 1)`; si esa suma es cero entra sin tirar. Luego saca una columna al azar por debajo de 0xB0 y suelta el enemigo en la fila 0, en la tabla de 0xC990 si el bit 1 de esa columna esta puesto -con la de 0xC97B de reserva si estaba llena- y en la de 0xC97B si no. Es la hermana de la alta_enemigo_cuadro de la fase de a pie: mismo esquema con otros numeros, y solo 7 de sus 68 bytes coinciden
 L 0xD7A4 bonus_zona El remate de la zona, dentro del bucle de 0xD75B: mientras zona_despejada diga que queda algo en pantalla no hace mas que esperar 1000 vueltas, y en cuanto la zona esta limpia el contador de 0xDDF7 lleva el guion -19 cuadros de espera, 20 rotulando "BONUS xx00" (0xDDF8) en 0x40C7, y en el paso 0x28 se queda dando vueltas cobrando-. Cada vuelta del cobro paga 100 puntos, suena 0xEB2C y baja una unidad los dos digitos de 0xDDFE/0xDDFF, que L_D740 dejo en (zona + 0x32) y '0': la zona 1 cobra "30" y paga 3000, y la 7 cobra "90" y paga 9000. Cuando el contador llega a 0x50 desapila la vuelta y se va a carga_zona, o a 0xF71C -la multicarga- si la zona ya es la 8
 #

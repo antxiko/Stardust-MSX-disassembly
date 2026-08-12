@@ -412,22 +412,41 @@ published 1956 "routines".
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **A possible bug in the original game, in the enemy spawner.** The routine at
+- **A slip that comes from the original, in the enemy spawner.** The routine at
   0xD41A works out the difficulty with `rrca`, which *rotates* instead of
-  shifting: on even-numbered zones the low bit lands in bit 7, the mask
-  saturates, and the odds of an enemy entering by that route drop to one in
-  256. It looks very much like an `srl` was meant. This is read off the
-  listing, **not measured in the emulator**, which is why it is filed here and
-  not as a finding: enemies still arrive by the other route, so the
-  even-numbered zones are not left empty.
+  shifting: since `7 − zone` is odd on exactly the even-numbered zones, there
+  the low bit lands in bit 7, the mask saturates to 0xFF, and the odds of an
+  enemy entering by that route drop to one in 256. The progression is clean
+  only on the odd ones: 1/8, 1/4, 1/2, and on zone 7 it enters without rolling.
+
+  **And it is not the conversion's doing.** Checked against the disassembly
+  published by the ZX Spectrum authors themselves, the matching routine sits at
+  $D4CF with the same sequence — `LD A,$07 / SUB B / RRCA / ADD A,E` — 52 of its
+  68 bytes identical and not one opcode different: the 16 that change are
+  address operands. The `rrca` was there in 1987 and the port copied it
+  instruction by instruction.
+
+  What cannot be claimed is the intent. That a shift was meant is what
+  everything suggests — the game uses `srl` to divide in both blocks, and `rra`
+  is a single bit away from `rrca` — but nobody can read the mind of whoever
+  wrote it, and the authors themselves left that routine uncommented. Nor is the
+  in-game effect measured in the emulator, and it is softened by those tables
+  having another spawn route, through the map tiles, that ignores the zone.
 - **The scene that closes zone 7.** The mechanism has been read byte by byte —
   two sprites descend and drag the ship off the screen — but what those two
   sprites actually draw has not been checked. It is precisely the scene that
   leads into the second tape load.
-- **The noise-effect table runs past its own end, in both halves.** Its last
-  entry overlaps the start of the note table. Nothing breaks, because that
-  field is never read; whether the overlap is deliberate — saving bytes — or an
-  accident of the packing is not established.
+- **The sound engine carries a mode the game never uses.** The noise sweep can
+  reload itself when it runs out, and that is switched on by a bit **neither
+  score ever sets**: every argument of that command is 0, 1 or 2, never the 4 it
+  would take. Dead code in both halves.
+- **The noise-effect table is one byte short, in both halves**, and each half
+  uses precisely the truncated entry. The missing byte is borrowed from the note
+  table that starts right there, and it **is** copied — the loop is a fixed six —
+  but it lands in a field that never gets used. What suggests the trim was
+  deliberate is that the five surviving bytes in one half are the same as the
+  complete entry in the other: two independent one-byte cuts, both in the only
+  harmless spot. Suggesting is not proving.
 - **The sound interpreter's 0x84 command**, which is now known to consume a
   duration without re-attacking the note: it skips the attack section
   entirely. Reading that as a tie is the musical interpretation, and it fits

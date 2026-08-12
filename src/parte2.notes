@@ -108,7 +108,7 @@ D 0xC46A 0xC46E los CUATRO COLORES de la fase (E1/B1/A1/71, tinta sobre negro): 
 # y el 0x89 (0xC804) hace `ld de,00006h / call mul_a_de / ld de,0c9e7h`. La
 # aritmetica cierra sola: 0xC8F7 + 16*15 = 0xC9E7, justo la base del otro.
 D 0xC8F7 0xC9E7 instrumentos Tabla de instrumentos: 16 entradas de 15 B que el comando 0x87 copia a (ix+016), las dos fases de la envolvente de volumen y las tres de la de tono. La musica pide hasta el instrumento 15, o sea que las dieciseis hacen falta
-D 0xC9E7 0xC9FE efectos_ruido Tabla de efectos de ruido: entradas de 6 B que el comando 0x89 copia a 0xD0F6-0xD0FB. Caben tres enteras y una cuarta a la que le falta el sexto byte, que ya es el primero de la tabla de notas; no se lee nunca porque la longitud de su segunda fase vale 0. La musica solo pide la 0 y la 3
+D 0xC9E7 0xC9FE efectos_ruido Tabla de efectos de ruido: entradas de 6 B que el comando 0x89 copia a 0xD0F6-0xD0FB. Caben TRES enteras y una cuarta a la que le falta el sexto byte, que ya es el primero de la tabla de notas. Ese byte prestado SI se copia -el bucle de op_efecto es de seis fijos, `ld d,006h`-, pero es inerte: cae en la espera de la segunda fase de la envolvente, y esa fase tiene cero pasos. La musica de este bloque pide la 0 y la 3, o sea que usa justamente la truncada
 D 0xC9FE 0xCABE la TABLA DE NOTAS del interprete de sonido: 96 periodos de 16 bits, ocho octavas de do1 a si8. Es BYTE A BYTE la misma que la del juego de naves (0xE6E3), los 192 bytes. Estuvo dentro del rango declarado como graficos, que llegaba hasta 0xCAA0 y se pasaba
 D 0xCABE 0xCADC la tabla de saltos de los QUINCE opcodes del interprete: 15 punteros de 2 B. Son los del juego de naves (0xE7A3) reubicados unos 0x1CEB, con una holgura de un byte segun el opcode porque el codigo no es copia exacta
 D 0xCADC 0xCB04 la tabla de las VEINTE frases de musica: 20 punteros de 2 B. Los veinte son EXACTAMENTE los del juego de naves (0xE7C1) menos 0x1CE5, sin una sola excepcion
@@ -1638,3 +1638,34 @@ L 0xC891 op_transporte 0x8E n: escribe el argumento en 0xD114 + canal, que es la
 L 0xC83E mezclador_canal Enciende o apaga el tono y el ruido del canal que dice 0xD10C en la copia del registro 7 del PSG (0xD107): parte de D = 0x09 -bit 0 el tono y bit 3 el ruido del canal 0- y de E = complemento de A, los desplaza a la izquierda tantas veces como el numero de canal metiendo unos, y remata con `or d / and e`, o sea apaga la pareja entera y vuelve a encender solo lo que pide A. La llama tic_sonido dos veces por canal: con A=0 para callar el canal antes de leer el guion y con A=(ix+008) al atacar la nota. Gemela de la 0xE529 de la fase de naves
 L 0xC8BB div_bc_de BC = BC / DE por restas y desplazamientos, dieciseis vueltas de `rl c / rla / adc hl,hl / sbc hl,de`, dejando el resto en HL y conservando AF; simulada contra 4000 divisiones al azar da el cociente y el resto exactos. Su unico cliente es op_tempo, que la llama con BC = 0x1770 = 6000 y DE = argumento*8. Gemela de la 0xE5A6 de la fase de naves
 L 0xC8E2 vuelca_psg Vuelca al PSG los once bytes del bloque sombra 0xD100-0xD10A, que son los registros 0 a 10 del chip -los tres periodos de tono, el del ruido, el mezclador y los tres volumenes-, alternando el numero de registro por el puerto 0xA0 y el dato por el 0xA1. La llama tic_sonido una sola vez por interrupcion, al final, con los tres canales ya resueltos. Sus dieciocho ultimos bytes (0xC8E5-0xC8F6) son los de 0xE5D0 de la fase de naves sin tocar una coma; lo unico distinto son los tres del `ld hl,0d100h`
+
+# ============================================================================
+# DOS COSAS QUE SE VIERON AL REPASAR EL MOTOR DE SONIDO
+# ============================================================================
+#
+# LA RECARGA AUTOMATICA DEL BARRIDO DE RUIDO ES CODIGO MUERTO, en las DOS
+# mitades. El bit 2 de las banderas globales (0xD0FC aqui, 0xEE09 en naves) es
+# el que hace que 0xC69F vuelva a llamar a refresca_globales_sonido cuando el
+# barrido se agota. El unico que podria encenderlo es op_banderas, con su OR, y
+# no lo hace ninguna de las dos partituras: los 0x8A de este bloque valen 0x00,
+# 0x01 y 0x02, y los de naves 0x00, 0x01 y 0x02 tambien. Ninguno trae el 0x04.
+# Todo lo demas que toca esas variables las apaga (`res 2`) o las pone a cero.
+# O sea que el motor trae un modo de barrido continuo que el juego no usa.
+#
+# (De paso: los bits 0 y 1 de la global son de SOLO ESCRITURA. Quien los lee de
+# verdad es el espejo del canal, (ix+02D).)
+#
+# EL BYTE DE MAS DEL op_fin DE ESTA MITAD TAPA UN AGUJERO DE LA OTRA. Esta
+# version pone a cero la transposicion del canal al cerrar la voz y la de naves
+# no, y esa es toda la diferencia de tamano entre las dos. No es que en naves se
+# pegue la transposicion de una cancion a la siguiente -la cola de arranca_guion
+# limpia la del canal que se le pide, y sonido_reset las tres-, el agujero esta
+# en que limpia el canal PEDIDO: arranca_guion_libre recoloca el guion en otro
+# canal si el pedido esta ocupado, y ese no lo limpia nadie. En naves la unica
+# voz que cierra por op_fin con transposicion puesta es la del canal 1 de la
+# musica, y cierra siempre con 0xFD, tres semitonos por debajo; un efecto que
+# caiga luego en ese canal sonaria bajo. Aqui eso no puede pasar.
+#
+# Suena a arreglo hecho para la segunda parte, pero es SUPOSICION: lo que esta
+# establecido es la diferencia de codigo y las condiciones estaticas, no que
+# llegue a oirse. Sin medir en el emulador.
