@@ -78,13 +78,18 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 .galeria img{width:100%;height:auto;image-rendering:pixelated;
   border:1px solid var(--linea);border-radius:3px}
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html" style=color:var(--tinta)>The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="WHATS-MISSING.html">What's missing</a><a href="es/EL-JUEGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html" style=color:var(--tinta)>The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="OPEN-QUESTIONS.html">Open questions</a><a href="es/EL-JUEGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
 <h1 id="the-game">The game</h1>
 <p><em>Stardust</em> is a vertically scrolling shoot&#x27;em up. You fly a ship —the Astrohunter— over the surface of a fleet of enemy supercruisers heading for Earth, dodging or destroying whatever comes at you until you reach the shield generators.</p>
 <p>And then it changes game. On clearing the last ship zone the character <b>lands and carries on on foot</b>, and that is the final stage.</p>
+<p>This page gathers the game as it looks and sounds: the graphics, the 7+1 levels with their maps, the texts, the music, and two shots of the game running. The how and the why of each thing is in <a href="FINDINGS.html">Findings</a>.</p>
 <h2 id="the-graphics-taken-out-of-the-tape">The graphics, taken out of the tape</h2>
 <p>None of what follows is a screenshot: it is all drawn from the bytes of the binary, using the geometry the game itself uses. That is what makes it a check rather than an illustration — if the block&#x27;s layout were wrong, noise would come out.</p>
+<h3 id="the-logo">The logo</h3>
+<p><img src="imagenes/logo.png" alt="The STARDUST logo, drawn from the tape"></p>
+<p>It is the first thing in the game block: its first 256 bytes, a 128×16 bitmap at 16 bytes per row. It is the same sign the attract mode animates bouncing over the play area, and the one heading this site&#x27;s front page.</p>
 <h3 id="the-111-scenery-tiles">The 111 scenery tiles</h3>
 <p><img src="imagenes/tiles.png" alt="The 111 level tiles"></p>
 <p>They run from 0x6DE0 to 0xA55F and are <b>32×32 pixels</b>, four bytes per line, 128 bytes each. The arithmetic closes on its own: 111 × 128 = 14,208, and 0x6DE0 + 14,208 = 0xA560, which is exactly where the sprites begin.</p>
@@ -93,22 +98,54 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 <p>From 0xA560 to 0xBA1F, <b>16×16 pixels with a mask</b>: each line carries the bits of the drawing and the bits of the mask that says which pixels belong to it. That is 64 bytes per sprite. The mask is not a flourish — it is what the Spectrum&#x27;s software drawing needs, opening a hole with AND before painting with OR.</p>
 <h3 id="the-charset-and-the-sentinels">The charset and the sentinels</h3>
 <p><img src="imagenes/charset.png" alt="The character set"></p>
-<p>59 characters of 8×8 at 0x6000, and the fifteen 24×24 sentinel nodes at 0x69A8.</p>
-<h2 id="the-seven-zone-maps">The seven zone maps</h2>
+<p>59 characters of 8×8 at 0x6000. And the fifteen 24×24 sentinel nodes, at 0x69A8:</p>
+<p><img src="imagenes/centinelas.png" alt="The fifteen sentinel nodes"></p>
+<h2 id="the-eight-levels-seven-zones-and-a-tower">The eight levels: seven zones and a tower</h2>
+<p>The game is 7+1 levels: seven zones you fly over piloting the ship, and an eighth —the scoreboard itself numbers it ZONA:08— that is climbed on foot.</p>
+<h3 id="the-seven-ship-zones">The seven ship zones</h3>
 <p>Each zone takes about <b>250 bytes</b> on the tape, nowhere near enough for a map. They are <b>compressed</b>, and the scheme is a pretty one: a <em>recursive</em> phrase dictionary. Every byte of the stream is a token; with bit 7 clear it is a tile number that goes straight into the map, and with bit 7 set the low seven bits index a phrase in the dictionary. That phrase is expanded by calling the same routine, so <b>a phrase can contain other phrases</b>. It is a grammar, not a copy-paste. An 0xFF ends the level.</p>
 <p>Expanded, all seven zones come to <b>exactly 450 bytes</b>. Seven different streams landing on the same size is the sign that the decompressor is reading it right. And 450 = 6 × 75: the width isn&#x27;t a choice, it follows from the screen buffer being 24 characters wide and each tile being four. (This went out as 10 × 45, from reading the buffer&#x27;s axes backwards; with the right width the maps come out symmetrical and with their structures whole.)</p>
 <p>Every byte is a tile index, and they run from 0 to 110 when there are exactly 111 tiles. Zone 7 uses number 110, the last one. Another check that falls out on its own.</p>
 <p>Each zone&#x27;s colour comes from the same table as its pointer, and the seven cycle through three: red, white and cyan.</p>
 <p><img src="imagenes/zona1.png" alt="Zone 1 map"> <img src="imagenes/zona2.png" alt="Zone 2 map"> <img src="imagenes/zona3.png" alt="Zone 3 map"> <img src="imagenes/zona4.png" alt="Zone 4 map"> <img src="imagenes/zona5.png" alt="Zone 5 map"> <img src="imagenes/zona6.png" alt="Zone 6 map"> <img src="imagenes/zona7.png" alt="Zone 7 map"></p>
 <p>They are rebuilt with <code>tools/descomprime_nivel.py</code> and <code>tools/render_niveles.py</code>.</p>
-<h2 id="the-panel-and-the-zones">The panel and the zones</h2>
-<p>The play screen carries a decorated frame on all four sides and leaves a central window for the action, with the score and the zone number along the bottom. The frame is very much of its time and very much of the Spectrum: it takes advantage of the fact that the borders never change to fill them with detail at no cost.</p>
+<h3 id="zone-8-the-on-foot-tower">Zone 8: the on-foot tower</h3>
+<p>The last zone isn&#x27;t flown over: it is climbed. Its map sits at 0x840B —78 rows of 6 cells— and is drawn with its own pool of 45 tiles of 32×32, so the whole tower measures <b>192×2496 pixels</b>. Every byte of the map is two things at once, the cell&#x27;s drawing and its physics, and that story —with the camera, the checkpoints and death by falling— is in <a href="FINDINGS.html#the-whole-tower-and-a-map-that-is-two-maps">Findings</a>.</p>
+<p><img src="imagenes/torre_apie.png" alt="The on-foot tower, composed from its map and its tiles"></p>
+<p>Below the starting point sits the arrow sign pointing up (tiles 0x28 and 0x29 appear nowhere else), and row 0 is a cornice of rosettes. The bare structure, without the background pattern, and its tile pool:</p>
+<p><img src="imagenes/torre_estructura.png" alt="The tower&#x27;s structure, without the background pattern"></p>
+<p><img src="imagenes/tiles_apie.png" alt="The tower&#x27;s 45-tile pool"></p>
+<p>They are rebuilt with <code>tools/render_torre.py</code>.</p>
+<h2 id="the-frame-and-the-loading-screen">The frame and the loading screen</h2>
+<p>The play screen carries a decorated frame on all four sides and leaves a central window for the action, with the score and the zone number along the bottom. The frame is very much of its time and very much of the Spectrum: it takes advantage of the fact that the borders never change to fill them with detail at no cost. It is not drawn piece by piece: <b>it ships ready-drawn inside the game block</b>, which is why it can be composed straight from the tape:</p>
+<p><img src="imagenes/marco.png" alt="The play screen&#x27;s frame, drawn from the tape&#x27;s data"></p>
+<p>How it inherits its name table from the loading screen —and why that lets the scoreboard write drawings instead of letters— is told in <a href="FINDINGS.html#the-game-frame-travels-in-the-block-and-the-loading-screen-sets-the-table">Findings</a>.</p>
+<p><img src="imagenes/carga.png" alt="The screen you watch while it loads"></p>
+<p>The loading screen isn&#x27;t a capture either: it is drawn from the 12,288 bytes its own block sends to video memory. It is signed <b>CANO</b>, bottom left.</p>
 <h2 id="the-game-s-text">The game&#x27;s text</h2>
 <p>Read out of the binary, exactly as it sits there:</p>
-<ul><li>The menu: <code>JOYSTICK</code>, <code>TECLADO</code>, <code>REDEFINIR TECLAS</code>, <code>JUGAR</code> — joystick, keyboard, redefine keys, play.</li><li>The high-score table ships from the factory with in-house names: <code>JAVIER 100000</code>, <code>JUAN C 080000</code>, <code>MARTA 060000</code>, <code>MARIA 050000</code>, <code>TOPO 030000</code>, <code>SOFT 020000</code>.</li><li>And the credits, which are the most interesting thing in the whole text block, because they answer the question underlying this disassembly: <b>who made the MSX version</b>. The authors of the ZX Spectrum version warn in their own repository that they did not make it, and here is the name, in the binary:</li></ul>
-<p>``<code> CONVERSION POR CARLOS ARIAS GRAFICOS JUAN CARLOS Y JAVIER AREVALO ...ADEMAS DE... JULIO MARTIN MUSICA COMPUESTA POR GOMINOLAS BASADO  EN UNA IDEA  ORIGINAL JOSE MANUEL  MU&amp;OZ TOPO SOFT </code>``</p>
+<ul><li>The menu: <code>JOYSTICK</code>, <code>TECLADO</code>, <code>REDEFINIR TECLAS</code>, <code>JUGAR</code> — joystick, keyboard, redefine keys, play.</li><li>The high-score table ships from the factory with in-house names: <code>JAVIER 100000</code>, <code>JUAN C 080000</code>, <code>MARTA 060000</code>, <code>MARIA 050000</code>, <code>TOPO 030000</code>, <code>SOFT 020000</code>.</li><li>And the notice that the good part is coming, right before the second load: <code>HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN NO HA LLEGADO</code> — you have broken through the flagship&#x27;s defences, but the worst is yet to come.</li></ul>
+<p>And the credits, which are the most interesting thing in the whole text block, because they answer the question underlying this disassembly: <b>who made the MSX version</b>. The authors of the ZX Spectrum version warn in their own repository that they did not make it, and here is the name, in the binary:</p>
+<pre><code>CONVERSION POR
+CARLOS ARIAS
+GRAFICOS
+JUAN CARLOS Y JAVIER AREVALO
+...ADEMAS DE...
+JULIO MARTIN
+MUSICA COMPUESTA POR
+GOMINOLAS
+BASADO  EN
+UNA IDEA  ORIGINAL
+JOSE MANUEL  MU&amp;OZ
+TOPO SOFT</code></pre>
 <p>&quot;Conversion by Carlos Arias; graphics by Juan Carlos and Javier Arévalo; and also Julio Martín; music composed by Gominolas; based on an original idea by José Manuel Muñoz.&quot; The graphics are still the Arévalo brothers&#x27;, the same as the original version, which fits with the artwork having been carried across as it was. The conversion of the code, on the other hand, is signed by Carlos Arias. That <code>&amp;</code> in <code>MU&amp;OZ</code> is not a transcription slip: it is how the game&#x27;s charset encodes the letter ñ.</p>
-<ul><li>And the notice that the good part is coming, right before the second load: <code>HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN NO HA LLEGADO</code> — you have broken through the flagship&#x27;s defences, but the worst is yet to come.</li></ul>
+<h2 id="the-music-as-the-chip-put-it-out">The music, as the chip put it out</h2>
+<p>Stardust stores its music in a language of its own, fifteen commands strong, and that story —the interpreter, the three voices, a score that doesn&#x27;t hold a single note— is in <a href="FINDINGS.html#sound-is-a-language">Findings</a>. Here is the result, which is what 1987 got to hear.</p>
+<p>These two pieces are <b>not synthesised from the listing: they are what the sound chip put out</b>, captured register by register with the game running in the emulator and turned back into sound. That is why their names say &quot;medida&quot; —measured. The reading of the score was verified separately, frame by frame against these same captures.</p>
+<p>The ship game&#x27;s music —the C–A–F–G progression, two bars per chord—:</p>
+<audio controls src="audio/musica_naves_medida.mp3"></audio>
+<p>And the on-foot stage&#x27;s high-score table music:</p>
+<audio controls src="audio/musica_records_medida.mp3"></audio>
 <h2 id="and-this-is-it-running">And this is it running</h2>
 <p>Everything above is drawn from the tape. These two are the opposite: two frames of the recorded playthrough that ships with the repository (<code>Stardust.omr</code>), taken with openMSX at seconds 1002 and 2150 of the recording. A render proves the data has been understood; a screenshot proves something else — that the program starts and runs.</p>
 <p><img src="imagenes/emulador_naves.png" alt="The ship stage at second 1002 of the recording: ZONA:05"></p>

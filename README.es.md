@@ -4,11 +4,11 @@ Una cinta de cassette de 1987, desmontada bloque a bloque. Los **93 861 bytes**
 que trae están acotados y con dueño, y por dentro resultó ser **una conversión
 del ZX Spectrum que se trajo hasta el sistema de grabación**.
 
-⚠️ **Esto no está terminado, y se sigue trabajando en ello.** Que el presupuesto
-cierre al 100 % significa que cada byte tiene un nombre y una medida detrás, no
-que se sepa para qué sirve: quedan **3349 bytes sin identificar** y buena parte
-del código sin comentar. Lo que falta, con sus cifras, está en
-[la página de lo que falta](https://antxiko.github.io/Stardust-MSX-disassembly/es/LO-QUE-FALTA.html).
+✅ **El desensamblado está terminado**: cada byte de la cinta tiene dueño, los
+cinco bloques reensamblan byte a byte y las **335 rutinas** del listado están
+comentadas con su evidencia. «Terminado» no quiere decir agotado: las preguntas
+que siguen abiertas, con sus cifras, están en
+[la página de preguntas abiertas](https://antxiko.github.io/Stardust-MSX-disassembly/es/PREGUNTAS-ABIERTAS.html).
 
 📖 **[Documentación completa](https://antxiko.github.io/Stardust-MSX-disassembly/)**
 · [En castellano](https://antxiko.github.io/Stardust-MSX-disassembly/es/)
@@ -51,9 +51,10 @@ TOTAL 93861 bytes, 93861 explicados (100.00%), 0 sin explicar
 Ojo con ese 100 %, que es fácil de leer mal: quiere decir que **cada byte tiene
 dueño** —o es código que el trazador alcanza de verdad, o cae en un rango con
 nombre y medida—, no que se sepa para qué sirve cada uno. Los rangos cuyo nombre
-es «datos sin clasificar» cuentan como explicados en el sentido de estar
-acotados y medidos, no en el de estar entendidos. Son 3349 bytes y están
-[contados uno a uno](https://antxiko.github.io/Stardust-MSX-disassembly/es/LO-QUE-FALTA.html).
+era «datos sin clasificar» contaban como explicados en el sentido de estar
+acotados y medidos, no en el de estar entendidos; llegaron a ser 4089 bytes y
+hoy no queda ninguno. El camino está
+[contado paso a paso](https://antxiko.github.io/Stardust-MSX-disassembly/es/PREGUNTAS-ABIERTAS.html).
 
 Hay además un **presupuesto**, que es una comprobación distinta: cada byte tiene
 que ser o código que el trazador alcanza de verdad, o un rango de datos con

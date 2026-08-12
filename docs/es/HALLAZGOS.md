@@ -4,9 +4,41 @@ Stardust es una conversión del ZX Spectrum, y eso se sabía. Lo que no se
 esperaba al abrir la cinta es **hasta dónde llega la conversión**: no se
 trajeron los gráficos y rehicieron lo demás, se trajeron el sistema de
 grabación, la rutina de carga y la forma de dibujar. Lo que sigue es lo que
-apareció al desmontarla, cada cosa con la prueba que la sostiene.
+apareció al desmontarla, cada cosa con la prueba que la sostiene, ordenado por
+temas: la conversión, la carga, los dos motores, el oficio de dibujar, el
+mundo y sus criaturas, el sonido, y el final.
 
-## La cinta no es una cinta de MSX
+## Quién hizo esta versión
+
+Los autores de la versión de ZX Spectrum avisan en su propio repositorio de
+que la de MSX la hizo otra gente. El juego contesta él mismo, en su pantalla
+de créditos, en 0xF124:
+
+```
+CONVERSION POR
+CARLOS ARIAS
+GRAFICOS
+JUAN CARLOS Y JAVIER AREVALO
+...ADEMAS DE...
+JULIO MARTIN
+MUSICA COMPUESTA POR
+GOMINOLAS
+BASADO  EN
+UNA IDEA  ORIGINAL
+JOSE MANUEL  MU&OZ
+TOPO SOFT
+```
+
+La conversión es de **Carlos Arias**. Los gráficos siguen siendo de los
+hermanos Arévalo, los mismos de la versión original, lo que encaja con que el
+dibujo se trajera tal cual.
+
+## Una conversión hasta los huesos
+
+Lo primero que apareció: cuánto de esta cinta no es de MSX, sino del
+Spectrum del que viene.
+
+### La cinta no es una cinta de MSX
 
 Un juego de MSX se graba en bloques **KCS**, que es el formato del sistema: lo
 escribe la propia BIOS y lo lee la propia BIOS. Los otros títulos de Topo Soft
@@ -29,7 +61,7 @@ ROM del Spectrum, con su mismo interfaz de registros:
 Quien haya programado un Spectrum reconoce esa llamada: es la de `0x0556` de su
 ROM, parámetro por parámetro.
 
-## Los 64K que el Spectrum tiene y el MSX no
+### Los 64K que el Spectrum tiene y el MSX no
 
 Antes de cargar nada, el cargador hace algo que en un juego de MSX normal no
 haría falta: **busca RAM y la mapea en las páginas 1 y 2**.
@@ -43,7 +75,109 @@ planos de RAM y el MSX no: en el MSX, la mitad baja de la memoria la ocupa la
 ROM del BASIC. Para que el juego portado encuentre la memoria donde la espera,
 hay que quitar la ROM de en medio.
 
-## El cargador trae una puerta trasera para trainers
+### La segunda carga trae LD-BYTES del Spectrum otra vez
+
+De la cinta ya se contó que el cargador es una reimplementación de LD-BYTES, la
+rutina con la que la ROM del ZX Spectrum lee de cinta. Y también que la rutina
+con la que el juego se carga a sí mismo la segunda parte **no** es copia de
+aquella: se buscó su firma byte a byte en los tres bloques y no aparece.
+
+Son dos rutinas distintas, pero vienen del mismo sitio, y ésta lo lleva escrito
+en las constantes. Tres números, cada uno en su sitio y en el mismo orden que
+en el original:
+
+    0x16     el retardo de LD-EDGE-1
+    0x0415   la espera de LD-START
+    0x9C y 0xC6   los umbrales con que LD-LEADER reconoce el tono guía
+                  midiendo cuánto dura el pulso
+
+Hasta el reparto en dos rutinas es el mismo: una llama a la otra y vuelve si
+falla, que es lo que hacen LD-EDGE-2 y LD-EDGE-1. Lo único portado de verdad es
+la lectura del bit, porque el Spectrum va por `in a,(0feh)` y aquí hay que ir
+por el registro 14 del PSG.
+
+Y de propina, el espectáculo: en cada flanco leído, la rutina le mete al color
+del borde el registro de refresco enmascarado (`ld a,r / and 00fh`), que es
+exactamente **las rayas de colores que hace el Spectrum mientras carga**,
+montadas sobre el único sitio donde el MSX tiene un color de borde.
+
+Esto es una identificación por estructura y por constantes, **no un diff**: en
+el repositorio no hay ninguna ROM del Spectrum con la que cotejar. Con tres
+números tan concretos cayendo cada uno en su sitio es difícil que sea otra
+cosa, pero conviene que se sepa de qué clase es la prueba.
+
+### Las explosiones llevan un fósil del Spectrum dentro
+
+Las dos fases tienen explosión de partículas, cada una con su copia del código.
+La de naves —cuando derriban al protagonista— siembra **64 partículas** en la
+posición de la nave y las mueve **con gravedad**: la velocidad vertical crece
+un punto por cuadro, y cada partícula es un píxel suelto dibujado sobre el
+buffer. La del final feliz —la nave insignia vista desde fuera— son **200
+partículas de metralla** sesgadas hacia arriba, sin gravedad.
+
+Y en las dos, dentro del bucle que pinta cada partícula, está esto:
+
+```
+c663: and 018h / out (0feh),a
+```
+
+**0xFE es el puerto del borde del ZX Spectrum.** En el original, cada partícula
+hacía parpadear el borde de la pantalla; en el MSX ese puerto no hace nada, y
+ahí sigue la instrucción, ejecutándose en balde en cada partícula desde 1987.
+Las dos copias del efecto la arrastran: la prueba más limpia que ha dado el
+proyecto de que estas rutinas se trajeron del original tal cual.
+
+De paso: el azar de las partículas —y del campo de 48 estrellas del fondo de
+naves, que son alturas aleatorias pintadas con el patrón fijo `0x18`— sale de
+un generador que **lee la ROM del BIOS como tabla de entropía**. Y el POKE de
+inmortalidad de la revista Input MSX (el que parchea 0xC06E) actúa justo en el
+despachador que decide si la nave está viva o explotando: la inmortalidad es,
+literalmente, no dejar que se llame nunca al sistema de partículas.
+
+### Un despiste del alta de enemigos, heredado instrucción a instrucción
+
+La rutina de 0xD41A calcula la dificultad con `rrca`, que *rota* en vez de
+desplazar: como `7 − zona` es impar justo en las zonas pares, ahí el bit bajo
+se le cuela al bit 7, la máscara se satura en 0xFF y la probabilidad de que
+entre un enemigo por esa vía cae a una de cada 256. La progresión solo es
+limpia en las zonas impares: 1/8, 1/4, 1/2, y en la 7 entra sin tirar.
+
+Y no es cosa de la conversión. Cotejada contra el desensamblado que publicaron
+los propios autores del ZX Spectrum, la rutina equivalente está en $D4CF y
+trae la misma secuencia —`LD A,$07 / SUB B / RRCA / ADD A,E`—, con 52 de los
+68 bytes idénticos y ni un opcode distinto: los 16 que cambian son los
+operandos de dirección. El `rrca` estaba ahí en 1987 y el port lo copió
+instrucción a instrucción.
+
+Y en partida pasa exactamente eso. Poniendo el emulador a mirar el `add a,e`
+de 0xD436 —justo después del `rrca`, con la zona al lado— sobre el tramo de la
+partida grabada en que manda el juego de naves, las 206 veces que se ejecuta
+dan esta tabla y ninguna otra:
+
+```
+zona 2   A=0x82      zona 3   A=0x02
+zona 4   A=0x81      zona 5   A=0x01
+zona 6   A=0x80      zona 7   A=0x00
+```
+
+Las tres zonas pares que se llegaron a jugar traen el bit 7 puesto, o sea que
+la máscara se satura de verdad; las impares dan la progresión limpia. Y la
+zona 7 sale con 0x00, que es el caso en que el enemigo entra sin tirar los
+dados. Se atenúa, eso sí, porque esas tablas tienen otra vía de alta, por los
+tiles del mapa, que no mira la zona.
+
+Lo que **no** se puede afirmar es la intención. Que se quisiera un
+desplazamiento lo sugiere todo —el juego usa `srl` para dividir en los dos
+bloques, y `rra` está a un solo bit del `rrca`—, pero nadie puede leer la
+cabeza de quien lo escribió, y los propios autores dejaron esa rutina sin
+comentar.
+
+## La carga, y lo que lleva dentro
+
+El cargador da para varios hallazgos él solo, y el juego esconde otro
+cargador dentro.
+
+### El cargador trae una puerta trasera para trainers
 
 Esta es la mejor. El cargador, antes de arrancar el juego, copia **94 bytes**
 desde 0xDAC0 a 0xFDE8 —memoria alta, donde nada los va a machacar— y luego mira
@@ -74,7 +208,7 @@ del binario antes de aplicarlos:
 El segundo cambia el `1` de un `ld a,001h` por un `0`. Aplicados por el propio
 cargador del juego, la nave aguantó dieciséis minutos seguidos sin morir.
 
-### Y el primero salta a una rutina que el juego trae de fábrica y no usa
+#### Y el primero salta a una rutina que el juego trae de fábrica y no usa
 
 Aquí estuvo escrito que ese parche «convierte un salto condicional en
 incondicional, saltándose una comprobación». Era falso, y el propio renglón de
@@ -105,7 +239,7 @@ comportamiento, y por partida doble: en el muestreo de la sesión larga —jugad
 el sembrador de partículas de la explosión **ninguna**; en el muestreo de una
 partida jugada a mano **sin** trainer, 0xC05C no aparece y la explosión sí.
 
-## Cómo pide el juego la segunda parte
+### Cómo pide el juego la segunda parte
 
 Al superar la última zona de naves sale una pantalla que dice
 
@@ -154,7 +288,25 @@ cargador ya en marcha —su primer fotograma tiene el contador de programa en
 no tiene nada que cazar. El 0xF89F que había en la pila solo puede haberlo
 puesto el `push hl` de 0xF7F9.
 
-## Dos motores distintos en una cinta
+### Por qué la segunda parte carga justo en 0x61D0
+
+La dirección de carga del bloque de la fase de a pie parecía arbitraria hasta
+que salió la fuente. Los dos rotuladores de esa fase —el del rótulo DEMO y el
+menú, que pinta a doble altura con el damero, y el del marco, que escribe
+directo a la memoria de vídeo— usan la misma fuente ASCII, indexada como
+`0x5F00 + código×8`. La fuente la deja cargada el bloque de naves, y la fase de
+a pie la reutiliza.
+
+La cuenta cierra sola: el último carácter que la fuente necesita es la `Y`
+(código 89), y 0x5F00 + 90×8 = **0x61D0 exacto**. El bloque de la segunda parte
+carga en el primer byte libre después del glifo de la `Y`: ni un byte antes,
+para no comerse la fuente heredada.
+
+## Dos motores, una misma biblioteca
+
+Las dos mitades del juego no comparten motor, pero sí las herramientas.
+
+### Dos motores distintos en una cinta
 
 Las dos partes del juego no comparten motor, y se ve en cómo llevan a sus
 criaturas. En la parte de naves cada entidad apunta en su estructura de 8 bytes
@@ -215,7 +367,7 @@ del **dibujo** de una mitad con la de la **máscara** de la otra, que no son
 gemelas sino las dos mitades de la misma rutina. Emparejadas como toca salen
 **26 bytes iguales de 28**, y la única diferencia es el operando de un salto.)
 
-### Y no son solo los sprites: comparten una biblioteca entera
+#### Y no son solo los sprites: comparten una biblioteca entera
 
 Eso de arriba se quedó corto. Mirando el resto de rutinas de servicio aparece
 que **no es que se parezcan: son las mismas rutinas, copiadas y reubicadas**.
@@ -263,7 +415,7 @@ y el protagonista de a pie cambia de dirección al instante**.
 Con esto, la frase de arriba se puede afinar: los dos motores de juego son
 distintos, la biblioteca de servicio es la misma.
 
-### Cómo se coloca un dibujo entre dos bytes: cuatro escaleras
+#### Cómo se coloca un dibujo entre dos bytes: cuatro escaleras
 
 La memoria de vídeo va por bytes, de ocho píxeles en ocho. Para poner una nave
 en la columna 173 hay que **correr el dibujo dentro del byte**, y eso, en un
@@ -333,168 +485,12 @@ más en 0xE03D que resultaron ser un comportamiento de objeto, instalado como
 puntero desde dos sitios del propio bloque. Quince bytes que estaban en la
 columna equivocada.
 
-## Dos `call 0000h` que no existen, y 192 bytes que no eran texto
+## El oficio de dibujar en un MSX
 
-Lo primero que hace el juego, antes que nada, es el logo STARDUST rebotando. Y
-esa animación esconde la razón por la que un desensamblador en frío no puede con
-esta zona.
+Lo que hubo que inventar para dibujar un juego de Spectrum en una máquina
+que guarda la pantalla detrás de un puerto.
 
-Montar un fotograma son dos operaciones: **pintar** el logo estirado a la altura
-que toque y **borrar** las filas que dejó sucias el fotograma anterior. Y el
-orden de las dos depende de si el logo sube o baja. En vez de resolverlo con un
-`if`, la rutina **se escribe los dos `call` a sí misma**:
-
-    f000:  ld (0f016h),hl        el operando del primer call
-    f003:  ld (0f019h),de        el del segundo
-    ...
-    f015:  call 0000h            se rellena con HL
-    f018:  call 0000h            se rellena con DE
-
-En la cinta esos operandos son `00 00`, así que el listado en frío enseña dos
-`call 0000h` —y un desensamblador servicial les cuelga el comentario de una
-rutina de la BIOS que no pinta nada—. En marcha son siempre las mismas dos
-direcciones, en el orden que decida un `ex de,hl`.
-
-Conviene mirarlo dos veces antes de dar algo por huérfano: esas dos rutinas
-figuraban como «no las llama nadie», y es verdad que ningún `call` las nombra,
-pero sus direcciones **sí** están escritas en el binario, una sola vez cada una,
-como operandos de un `ld`.
-
-Y tirando de ahí apareció un descuadre en lo publicado. **Los textos de los
-créditos no son 429 bytes, son 234.** El rango declarado empezaba 192 bytes
-antes de tiempo y se comía **la tabla de fotogramas del logo**: 96 pares (fila de
-la cima, altura) que describen el rebote —la altura crece de 1 a 16, el logo baja
-hasta la fila 186 aplastándose, y vuelve— con un `0xFF` cerrando la lista. Dónde
-empieza el texto de verdad lo dice el propio código, y el binario lo confirma:
-antes del `CONVERSION POR` hay pares crecientes que no son texto ni lo parecen.
-
-## La casilla del mapa es a la vez el dibujo y el estado
-
-Las cosas que están clavadas en el decorado —las torretas y los nidos de cada
-zona— no son enemigos que vuelan: son **objetos de ocho bytes** que el
-constructor del nivel crea al entrar en la zona, uno por casilla ocupada de una
-rejilla de 5×5. Cada uno lleva su posición, el tipo, **un puntero a su casilla**
-de esa rejilla y la dirección de la rutina que lo gobierna.
-
-Y ahí está lo bonito: **la instalación no guarda su fotograma**. Lo escribe en la
-casilla a la que apunta, y el que pinta la zona dibuja lo que diga la casilla. Por
-eso el ciclo de recarga de una torreta se lee, en el listado, como una cuenta de
-6 a 10 sobre un byte del mapa: 6 es el cañón cargado, 7, 8 y 9 la animación, y al
-llegar a 10 vuelve a 6. La misma idea que ya apareció en la fase de a pie, donde
-el byte de celda es el índice del dibujo y a la vez el sólido de la física.
-
-Los estados se encadenan **reescribiéndose la rutina a sí mismos**: la torreta
-dispara y se convierte en «torreta recargando»; el nido suelta un enemigo
-apuntado a la nave y se marca; lo que revienta va subiendo su casilla hasta 0x10
-y se retira instalándose como comportamiento la dirección de un `ret` que ya
-existe en el código, para que el bucle pueda seguir llamando a todos sin
-preguntar.
-
-Y el constructor del nivel decide qué es cada casilla por su valor, con una
-tirada de azar de por medio: `call azar / and 004h / add a,006h` convierte el
-valor 6 en 6 o en 10, así que **la misma casilla del mismo nivel unas veces sale
-torreta y otras nido**.
-
-De ahí sale, además, de dónde viene el disparo cuádruple. Lo deja **el bonus que
-suelta al reventar una instalación de un tipo concreto**, y sólo si ya llevas 10
-de energía y te toca una de cada cuatro; si no, lo que da son diez de energía.
-
-### Siete tablas seguidas, y ninguna frontera hay que suponerla
-
-Ese mapa de RAM se puede leer entero sin adivinar nada, porque cada tabla lleva
-su contador delante y **muere exactamente donde empieza el contador de la
-siguiente**. El tope y el tamaño de entrada no se estiman: salen de la propia
-rutina de alta, del `cp` con que comprueba el tope y de cómo indexa.
-
-    0xC8D7  contador          0xC8D8  9 instalaciones de 8 B   →  0xC920
-    0xC920  la rejilla 5×5 de la zona, 25 B                    →  0xC939
-    0xC939  contador          0xC93A  6 tiros enemigos de 4 B  →  0xC952
-    0xC952  contador          0xC953  9 disparos tuyos de 4 B  →  0xC977
-    0xC977  las dos variables del recorredor de tablas         →  0xC97A
-    0xC97A  contador          0xC97B  4 objetos de 5 B         →  0xC98F
-    0xC98F  contador          0xC990  2 objetos de 4 B         →  0xC998
-    0xC998  contador          0xC999  2 objetos de 5 B         →  0xC9A3
-
-6×4, 9×4, 4×5, 2×4 y 2×5 caen clavados. Hay una segunda tabla igual, la de los
-tiles especiales, con su contador en 0xCA92 y ocho objetos desde 0xCB3A: 64
-bytes que acaban justo donde acababa el rango declarado.
-
-Una cosa que conviene decir aunque no quede redonda: **la primera tabla no
-comprueba su tope**. El constructor incrementa el contador sin mirar, y sólo hay
-sitio para nueve antes de que empiece la rejilla. O lo garantizan los datos de
-los niveles, o hay desbordamiento; aquí no se ha medido cuál de las dos.
-
-## Nadie vigila las colisiones: cada uno se pregunta por sí mismo
-
-En las dos mitades del juego hay dos tablas de cosas volando, y cada una es de
-un bando: una la llena el gatillo del jugador y otra la llenan los enemigos. Lo
-que no hay es un detector central que las cruce. **Cada objeto, justo después de
-pintarse, pregunta si le han dado**, y siempre con la misma rutina, cambiando
-sólo la caja de contacto y lo que se cobra:
-
-    quién pregunta            caja        premio
-    la bandada de enemigos    4 × 0x0C    130 puntos
-    los objetos del enjambre  4 × 0x0C    140
-    un tiro enemigo           4 × 8        53
-    la nave (contra la otra tabla)         un punto de escudo
-
-Cuidado al leer esos precios, porque aquí hay una trampa fácil: la rutina que
-paga no suma puntos, **suma al dígito que le señalen**, y el acarreo va hacia la
-izquierda. Así que el mismo valor son 130 puntos o 13 según en qué cifra del
-marcador caiga. Los 53 puntos de derribar un tiro enemigo son idénticos en las
-dos mitades del juego, con el mismo número y en el mismo dígito.
-
-### El disparo cuádruple suena una sola vez, y lo consigue amordazando el sonido
-
-Con la mejora recogida, el gatillo suelta cuatro disparos en cruz en vez de uno.
-Y como cada alta de la tabla arranca su propio efecto de sonido, sonarían cuatro
-«pium» a la vez. Lo que hace el juego es **meter un `ret` en el segundo byte de
-la rutina que arranca sonidos** antes de los tres disparos extra, y reponerlo
-después.
-
-Lo bonito es cómo lo repone: no hay ninguna constante guardada para eso. **Copia
-el byte de su rutina gemela**, la que arranca guiones sin buscar canal libre,
-que tiene el mismo prólogo. Se toma prestado de la de al lado.
-
-Y hay una asimetría curiosa entre las dos mitades: **la fase de a pie tiene el
-mismo disparo cuádruple y no puede encenderlo nunca**. El byte que lo decide se
-lee en un sitio y se escribe en uno solo, detrás de un `xor a`; o sea que sólo se
-le escribe un cero. Las tres altas extra son código muerto en la versión que
-salió a la calle. Tampoco tiene el parche de silencio: si llegaran a salir los
-cuatro disparos, sonarían los cuatro.
-
-## La segunda carga trae LD-BYTES del Spectrum otra vez
-
-De la cinta ya se contó que el cargador es una reimplementación de LD-BYTES, la
-rutina con la que la ROM del ZX Spectrum lee de cinta. Y también que la rutina
-con la que el juego se carga a sí mismo la segunda parte **no** es copia de
-aquella: se buscó su firma byte a byte en los tres bloques y no aparece.
-
-Son dos rutinas distintas, pero vienen del mismo sitio, y ésta lo lleva escrito
-en las constantes. Tres números, cada uno en su sitio y en el mismo orden que
-en el original:
-
-    0x16     el retardo de LD-EDGE-1
-    0x0415   la espera de LD-START
-    0x9C y 0xC6   los umbrales con que LD-LEADER reconoce el tono guía
-                  midiendo cuánto dura el pulso
-
-Hasta el reparto en dos rutinas es el mismo: una llama a la otra y vuelve si
-falla, que es lo que hacen LD-EDGE-2 y LD-EDGE-1. Lo único portado de verdad es
-la lectura del bit, porque el Spectrum va por `in a,(0feh)` y aquí hay que ir
-por el registro 14 del PSG.
-
-Y de propina, el espectáculo: en cada flanco leído, la rutina le mete al color
-del borde el registro de refresco enmascarado (`ld a,r / and 00fh`), que es
-exactamente **las rayas de colores que hace el Spectrum mientras carga**,
-montadas sobre el único sitio donde el MSX tiene un color de borde.
-
-Esto es una identificación por estructura y por constantes, **no un diff**: en
-el repositorio no hay ninguna ROM del Spectrum con la que cotejar. Con tres
-números tan concretos cayendo cada uno en su sitio es difícil que sea otra
-cosa, pero conviene que se sepa de qué clase es la prueba.
-
-## Lo que el MSX obligó a cambiar
+### Lo que el MSX obligó a cambiar
 
 Hay una diferencia de fondo entre las dos máquinas que la conversión no pudo
 esquivar. El Spectrum escribe **directamente** en su memoria de pantalla, que es
@@ -521,75 +517,72 @@ ruido. Y encaja con lo que se ve jugando, que es de donde salió la duda: 24
 bytes son 192 píxeles, más estrecho que la pantalla —por eso el marco de los
 lados no se mueve—, y lo que sobra está a lo alto, que es por donde scrollea.
 
-## La fase de a pie tiene su propia demo, y su propia partida grabada
+### Un solo plano, y por qué parece que hay dos
 
-La demo de la parte de naves no es una máquina jugando: son **869 bytes de
-partida grabada**, un byte por fotograma. La fase de a pie tiene la suya, y no
-podría ser de otro modo: la grabación de las naves está en 0xBA20 y su lector en
-0xC1AF, y **las dos direcciones caen dentro de 0x61D0-0xD674**, o sea que la
-segunda parte las machaca al cargarse.
+Quien lo jugó recuerda dos pisos moviéndose a velocidades distintas, con su
+sensación de profundidad. Se buscó en serio: vigilando qué rutina escribe en
+cada banda del buffer, y levantando cuadro a cuadro la tabla de «qué fila se
+dibujó desde qué dirección», que permite medir el desplazamiento por igualdad
+exacta de números en vez de comparando imágenes.
 
-La suya empieza en **0x9FF3** y son **646 bytes**, que a 50 Hz son 12,9 segundos.
-El sitio lo dice el propio código —`ld hl,09ff3h` en 0xA3FF— y el corte se ve a
-simple vista, porque justo antes hay dibujo:
+El resultado es rotundo: **el fondo es un solo plano**. En cuatro medidas —tres
+momentos de la fase de a pie y uno de la de naves— las dieciocho tiras del
+buffer (tres bandas por seis columnas) se desplazan **igual**: +2 filas por
+cuadro andando, 0 paradas, −2 hacia atrás, con el 100 % de acierto y sin
+desplazamiento horizontal.
 
-```
-9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   <- damero, dos valores
-9FF3  00 00 00 00 00 00 00 00 ...                       <- ya no
-```
+La profundidad está en otro sitio: en el **orden de dibujo**. Numerando cada
+escritura al buffer dentro del cuadro, en la fase de naves sale siempre la
+misma secuencia: primero el fondo entero, después los sprites, y **después de
+los sprites** una rutina más (0xC77A) que pinta columnas del decorado leyendo
+de su propio almacén de tiles. Se le vio hacerlo en directo: un pilar bajando,
+la nave subiendo hacia él, y al cruzarse los destinos el pilar quedó pintado
+encima. La nave no pasa *por debajo del piso*: pasa **por detrás de lo que se
+repinta después**.
 
-Los 646 bytes usan 17 valores distintos, **todos pares y ninguno mayor de 0x1E**:
-es la máscara de controles, un byte por fotograma.
+Y en la fase de a pie el parallax **existe de verdad**, solo que no es un
+plano: es un dibujo que se redibuja distinto. El fondo se pinta **dos veces
+por cuadro parcheando un opcode**: el bucle de juego escribe `0xC2` (`jp nz`)
+en 0xA98E y llama al redibujado —así solo se pintan las celdas vacías, que
+llevan el tile 0— y después escribe `0xCA` (`jp z`) y vuelve a llamar, para
+las sólidas. Y ese tile 0 está vivo: cada paso de scroll lo **rota una fila de
+píxel** (0xB140 al subir, 0xB167 al bajar; la fila que sale entra por el otro
+lado). Una fila de trama por cada dos de scroll: **el fondo de los huecos se
+mueve a mitad de velocidad que las plataformas**. Por eso las tiras del buffer
+se desplazan todas igual —lo del párrafo de arriba sigue siendo cierto— y aun
+así el ojo ve dos velocidades. Medido sobre la partida entera: 4712 pases con
+cada opcode, ni un cuadro con otro valor.
 
-Y lo interesante es **cómo se enciende**. En 0xA688 hay una llamada cuyo operando
-se reescribe desde dos sitios:
+#### Y hay un tercer opcode, que es un salto imposible
 
-```
-a313: ld hl,0a6fch / ld (0a689h),hl   <- partida normal: lee los mandos
-b6ca: ld hl,0a6eeh / ld (0a689h),hl   <- demo: lee la grabación
-```
+Aquí estuvo publicado que los opcodes eran dos. Son **tres**, y el que faltaba
+es el más listo de los tres. La instrucción de justo antes del salto parcheado
+es un `and a`, que **pone el carry a cero por definición**:
 
-La misma llamada, dos orígenes, conmutados parcheando el código. Y el rótulo
-DEMO que parpadea abajo a la derecha **no consulta ningún indicador**: le
-pregunta a la instrucción parcheada.
+    a98a: and a                <- el carry queda a 0, siempre
+    a98b: ld b,(iy+004h)
+    a98e: jp ?,L_A9E4          <- el opcode que se parchea
 
-```
-a4d1: ld a,(0a689h)   ; el operando de esa llamada
-a4d4: cp 0eeh         ; ¿apunta a 0xA6EE, el lector de la grabación?
-a4d6: jr nz,...       ; si no, no estamos en demo
-```
+Así que el tercer valor, `0xDA` (`jp c`), **no salta nunca**. No es una tercera
+condición: es la manera de que no haya condición. Con `0xC2` se pintan solo las
+celdas vacías, con `0xCA` solo las sólidas, y con `0xDA` se pintan **todas de
+una pasada**.
 
-Esto apareció porque un jugador se pasó el juego y contó que, tras la tabla de
-récords, arrancaba una demo **de la fase a pie**. El lector estaba dentro de un
-rango que este proyecto tenía etiquetado como «tabla».
+Lo escribe una sola rutina, y para llegar a ella hay que cumplir tres cosas a
+la vez: el scroll arriba del todo (fila 0x47), **los seis objetivos
+destruidos** y el jugador colocado entre 0x50 y 0x5F. O sea el remate de la
+fase.
 
-## Lo que decía aquí sobre la música, y por qué ya no
+Y eso explica por qué la medida de los 4712 pases no vio nunca ese valor,
+sin que ninguna de las dos cosas deje de ser cierta: **la ventana de aquella
+medida se quedaba antes del remate de la fase**, así que esas tres condiciones
+no se cumplían ni una vez dentro de ella. El único uso del tercer opcode en
+toda la partida es el travelling del final, y se ha visto ejecutarse: está
+contado en [Cómo termina el juego](#como-termina-el-juego-y-una-tabla-de-punteros-que-eran-coordenadas).
+La medida era buena; lo que se quedaba corto era la conclusión de que solo
+hubiera dos valores posibles.
 
-Aquí se afirmaba que las tablas de música se habían portado enteras, con 754
-bytes idénticos a los de la versión de Spectrum en 0xAB0E. **Se retira.**
-
-Esa coincidencia la daba la misma herramienta de cotejo cuya búsqueda resultó
-estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites
-(0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se
-buscaba código, que es exactamente el fallo que contaminó el trazado entero.
-
-**Y ahora se puede cerrar del todo, por una segunda vía.** Con el lenguaje del
-sonido ya descifrado, los bytes de 0xAB0E se pueden leer como si fueran música,
-y no lo son: 306 de esos 754 bytes son valores por encima de 0x7F que **no
-existen como comandos** en un lenguaje cuyas órdenes van de 0x80 a 0x8E. Haciendo
-la misma cuenta sobre 754 bytes de la zona de música de verdad salen siete. Sean
-lo que sean esos bytes —y el rango de sprites dice que dibujo—, no son una
-partitura.
-
-La pregunta que la retirada dejaba en el aire —si las dos partes comparten el
-sonido— sí tiene respuesta ahora, y ha salido del binario y no de un cotejo: la
-parte de a pie se lleva **el subsistema de sonido entero del juego de naves,
-reubicado**. La tabla de notas son los mismos 192 bytes clavados, la rutina que
-vuelca los registros al chip son los mismos dieciocho, y los veinte punteros de
-frase están todos a un desplazamiento constante. Así que sí lo comparten, pero ni
-en el sitio ni por el motivo que decía la afirmación retirada.
-
-## La misma letra, nítida o transparente
+### La misma letra, nítida o transparente
 
 En la tabla de récords el texto sale con los píxeles separados, como si fuera
 medio transparente, y en cambio el rótulo `DEMO` se ve totalmente nítido.
@@ -626,166 +619,284 @@ y con el primer código 0x20 eso da 0x6000, que es justo donde están los 59
 caracteres. Y el paso entre líneas de pantalla es 24, el alto del buffer por
 columnas.
 
-## Un solo plano, y por qué parece que hay dos
+### Dos `call 0000h` que no existen, y 192 bytes que no eran texto
 
-Quien lo jugó recuerda dos pisos moviéndose a velocidades distintas, con su
-sensación de profundidad. Se buscó en serio: vigilando qué rutina escribe en
-cada banda del buffer, y levantando cuadro a cuadro la tabla de «qué fila se
-dibujó desde qué dirección», que permite medir el desplazamiento por igualdad
-exacta de números en vez de comparando imágenes.
+Lo primero que hace el juego, antes que nada, es el logo STARDUST rebotando. Y
+esa animación esconde la razón por la que un desensamblador en frío no puede con
+esta zona.
 
-El resultado es rotundo: **el fondo es un solo plano**. En cuatro medidas —tres
-momentos de la fase de a pie y uno de la de naves— las dieciocho tiras del
-buffer (tres bandas por seis columnas) se desplazan **igual**: +2 filas por
-cuadro andando, 0 paradas, −2 hacia atrás, con el 100 % de acierto y sin
-desplazamiento horizontal.
+Montar un fotograma son dos operaciones: **pintar** el logo estirado a la altura
+que toque y **borrar** las filas que dejó sucias el fotograma anterior. Y el
+orden de las dos depende de si el logo sube o baja. En vez de resolverlo con un
+`if`, la rutina **se escribe los dos `call` a sí misma**:
 
-La profundidad está en otro sitio: en el **orden de dibujo**. Numerando cada
-escritura al buffer dentro del cuadro, en la fase de naves sale siempre la
-misma secuencia: primero el fondo entero, después los sprites, y **después de
-los sprites** una rutina más (0xC77A) que pinta columnas del decorado leyendo
-de su propio almacén de tiles. Se le vio hacerlo en directo: un pilar bajando,
-la nave subiendo hacia él, y al cruzarse los destinos el pilar quedó pintado
-encima. La nave no pasa *por debajo del piso*: pasa **por detrás de lo que se
-repinta después**.
+    f000:  ld (0f016h),hl        el operando del primer call
+    f003:  ld (0f019h),de        el del segundo
+    ...
+    f015:  call 0000h            se rellena con HL
+    f018:  call 0000h            se rellena con DE
 
-Y en la fase de a pie el parallax **existe de verdad**, solo que no es un
-plano: es un dibujo que se redibuja distinto. El fondo se pinta **dos veces
-por cuadro parcheando un opcode**: el bucle de juego escribe `0xC2` (`jp nz`)
-en 0xA98E y llama al redibujado —así solo se pintan las celdas vacías, que
-llevan el tile 0— y después escribe `0xCA` (`jp z`) y vuelve a llamar, para
-las sólidas. Y ese tile 0 está vivo: cada paso de scroll lo **rota una fila de
-píxel** (0xB140 al subir, 0xB167 al bajar; la fila que sale entra por el otro
-lado). Una fila de trama por cada dos de scroll: **el fondo de los huecos se
-mueve a mitad de velocidad que las plataformas**. Por eso las tiras del buffer
-se desplazan todas igual —lo del párrafo de arriba sigue siendo cierto— y aun
-así el ojo ve dos velocidades. Medido sobre la partida entera: 4712 pases con
-cada opcode, ni un cuadro con otro valor.
+En la cinta esos operandos son `00 00`, así que el listado en frío enseña dos
+`call 0000h` —y un desensamblador servicial les cuelga el comentario de una
+rutina de la BIOS que no pinta nada—. En marcha son siempre las mismas dos
+direcciones, en el orden que decida un `ex de,hl`.
 
-### Y hay un tercer opcode, que es un salto imposible
+Conviene mirarlo dos veces antes de dar algo por huérfano: esas dos rutinas
+figuraban como «no las llama nadie», y es verdad que ningún `call` las nombra,
+pero sus direcciones **sí** están escritas en el binario, una sola vez cada una,
+como operandos de un `ld`.
 
-Aquí estuvo publicado que los opcodes eran dos. Son **tres**, y el que faltaba
-es el más listo de los tres. La instrucción de justo antes del salto parcheado
-es un `and a`, que **pone el carry a cero por definición**:
+Y tirando de ahí apareció un descuadre en lo publicado. **Los textos de los
+créditos no son 429 bytes, son 234.** El rango declarado empezaba 192 bytes
+antes de tiempo y se comía **la tabla de fotogramas del logo**: 96 pares (fila de
+la cima, altura) que describen el rebote —la altura crece de 1 a 16, el logo baja
+hasta la fila 186 aplastándose, y vuelve— con un `0xFF` cerrando la lista. Dónde
+empieza el texto de verdad lo dice el propio código, y el binario lo confirma:
+antes del `CONVERSION POR` hay pares crecientes que no son texto ni lo parecen.
 
-    a98a: and a                <- el carry queda a 0, siempre
-    a98b: ld b,(iy+004h)
-    a98e: jp ?,L_A9E4          <- el opcode que se parchea
+### Los créditos pasan con un scroll que no mueve el dibujo
 
-Así que el tercer valor, `0xDA` (`jp c`), **no salta nunca**. No es una tercera
-condición: es la manera de que no haya condición. Con `0xC2` se pintan solo las
-celdas vacías, con `0xCA` solo las sólidas, y con `0xDA` se pintan **todas de
-una pasada**.
+Los créditos del juego —los cinco carteles con los nombres de quienes hicieron
+la versión de MSX— se muestran de uno en uno en la franja central de la
+pantalla, con una pausa para leerlos, y cada uno se despide **deslizándose
+hacia arriba**.
 
-Lo escribe una sola rutina, y para llegar a ella hay que cumplir tres cosas a
-la vez: el scroll arriba del todo (fila 0x47), **los seis objetivos
-destruidos** y el jugador colocado entre 0x50 y 0x5F. O sea el remate de la
-fase.
+Mover esa franja parece caro: son 2.048 bytes de dibujos. La rutina no los
+toca. Recuerda que en el MSX hay dos tablas, la de qué dibujo lleva cada celda
+y la de los dibujos, y **mueve la primera**: 256 bytes en vez de 2.048. Como
+cada celda apunta a su dibujo, correr los índices corre la imagen. Ocho veces
+sale ocho veces más barato.
 
-Y eso explica por qué la medida de la partida entera no vio nunca ese valor,
-sin que ninguna de las dos cosas deje de ser cierta: **la partida grabada no
-llega al final de esta fase**, como se cuenta en
-<a href='LO-QUE-FALTA.html'>Lo que falta</a>, así que esas tres condiciones no
-se cumplen ni una vez. La medida era buena; lo que se quedaba corto era la
-conclusión de que solo hubiera dos valores posibles.
+El paso de cada tirón son 32 posiciones, que es justo una fila de la pantalla,
+y da ocho tirones: las ocho filas de la franja. Al terminar borra los dibujos
+y **reconstruye la tabla de celdas**, y ahí aparece la confirmación bonita: la
+reconstruye con el mismo entrelazado de ocho en ocho que dejó la pantalla de
+carga —0, 8, 16… 248, luego 1, 9, 17…— en seis instrucciones. El juego sabe
+perfectamente cómo viene esa tabla y se encarga de devolverla a su sitio.
 
-## Cómo termina el juego, y una tabla de punteros que eran coordenadas
+Hasta ahora ese entrelazado sólo se había leído en el código de la pantalla de
+carga. Aquí aparece por segunda vez, escrito por otra mano y en otro bloque, y
+explica de paso por qué el marcador puede escribir dibujos y acertar siempre
+de celda.
 
-Tirando del hilo del tercer opcode aparece la secuencia con la que Stardust
-acaba, que estaba en el tramo dado por no explorado. Son tres cosas seguidas.
+### El marcador no escribe letras: redibuja las celdas
 
-**Un travelling que acelera.** La cámara sube una fila de celda dieciséis
-veces, repintando cada vez, y después entra en un bucle que la desplaza *A*
-veces por cuadro. Ese *A* no es fijo: empieza en 2 y **sube de dos en dos cada
-diez cuadros** hasta llegar a 16, donde se queda.
+Todo el marcador de la fase de naves —los puntos, las vidas, el número de
+zona— sale de una sola rutina, en 0xF41D, y lo primero que sorprende de ella
+es que **no escribe caracteres**. En la memoria de vídeo del MSX hay una tabla
+que dice qué dibujo lleva cada celda de la pantalla y otra que guarda los
+dibujos. Lo normal para escribir un "7" sería poner el número del dibujo del
+siete en la celda que toca. Esta rutina hace lo contrario: deja las celdas
+como están y **cambia el dibujo que hay debajo**.
 
-    bdd3: ld a,002h / ld (0c468h),a
-    bdf8: ld a,(0c468h) / cp 010h / jr z,...
-    bdff: inc a / inc a / ld (0c468h),a
+Puede permitírselo porque la mesa ya está puesta. La tabla de celdas la dejó
+la pantalla de carga y el juego la hereda intacta, así que cada hueco del
+marcador ya apunta a un dibujo propio que no usa nadie más. Escribir se
+convierte en volcar los ocho bytes de la letra encima.
 
-Así que la torre se aleja por debajo cada vez más deprisa, hasta que el scroll
-se agota.
+El detalle que lo remata es el paso entre glifo y glifo: **0x40 bytes**, que
+son ocho dibujos. Parece un salto raro hasta que se recuerda que la tabla de
+celdas viene **entrelazada de ocho en ocho** de la pantalla de carga. Con ese
+entrelazado, saltar ocho dibujos es caer justo en la celda de al lado. Las dos
+rarezas se cancelan.
 
-**Una pantalla de estrellas.** Silencio, colores, el buffer a cero, las 48
-estrellas que salen de la ROM del MSX, una imagen de fondo, cuatro esperas
-largas seguidas y una melodía nueva.
+Cuatro sitios del código la llaman, y cada uno es un indicador:
 
-**Y una animación escrita como un guion.** Aquí está lo bueno. En 0x61D8 hay
-una lista que el juego recorre así: un byte por encima de 0xC0 **cambia el
-fotograma** —y lo hace parcheando el operando de la instrucción que lo pinta—,
-un `0xC0` termina, y todo lo demás son parejas de bytes que son la posición.
+- Los **puntos** son seis dígitos guardados como texto en 0xDD80. Una rutina
+  los pone a "000000" al empezar, y otra les suma **haciendo la aritmética
+  decimal a mano sobre el ASCII**: incrementa el dígito, y si se pasa del "9"
+  lo devuelve al "0" y se lleva una al de la izquierda. Nunca hay un número
+  binario que convertir, porque el marcador *es* el número.
+- Las **vidas** y la **zona** son un dígito cada una (0xE156 y 0xE157), y se
+  pintan sumándoles 0x30 para pasarlas a ASCII.
 
-Decodificada entera son **78 pasos y trece fotogramas**. La columna arranca en
-0x78, que es el centro exacto de los 192 píxeles de ancho, y la fila en 0xBA,
-abajo del todo. **La fila baja siempre, sin una sola excepción en los 78
-pasos**, y la columna se va hacia la izquierda hasta que el último paso es
-(0, 0). Algo que despega del centro, sube y se aleja por la esquina.
+Y hay una coincidencia que dice mucho: los puntos se pintan en la misma
+dirección de vídeo, 0x12B0, en las dos fases del juego. La de naves y la de a
+pie no comparten ni una línea de código, pero ponen el marcador en el mismo
+sitio de la pantalla.
 
-Y esa lista **estuvo publicada como una «tabla de punteros a los gráficos»**.
-Se entiende el engaño: leídas como palabras little-endian, las parejas dan
-0x78BA, 0x78B8, 0x78B6… que es literalmente «palabras descendiendo de dos en
-dos», y como caen dentro del rango de los gráficos parecían apuntar ahí. Lo
-que descendía de dos en dos no era una tabla ordenada: era el dibujo subiendo
-por la pantalla.
+#### Las dos fases se mueren igual
 
-Y se puede mirar, que es la comprobación que vale en este proyecto: dibujando
-esos 720 bytes con la geometría que dice la rutina de copia —40 filas de 18
-bytes— sale una superficie, no ruido. Y poniendo encima el recorrido de los 78
-pasos del guion, se ve lo que hace: sale del suelo por el centro, sube recto un
-buen trecho y arriba se curva a la izquierda hasta salir de la pantalla.
+Puestos a leer las vidas de la fase de naves, aparecen tres cosas idénticas a
+las de la fase de a pie, y ninguna es casualidad:
 
-![La imagen de fondo de la escena final, dibujada desde la cinta](../imagenes/escena_final.png)
+- **Se inicializan dos veces, y manda la segunda**: el menú deja un tres y el
+  arranque de la partida lo pisa con un dos. Exactamente el mismo par que a
+  pie, hasta en el orden.
+- **La vida extra por puntos tiene tope nueve** en las dos.
+- Y el descuento solo se dispara cuando un contador llega a **45**, que es el
+  mismo número que cierra la agonía de la fase de a pie. La dirección cambia
+  —0xC188 aquí, 0xA6ED allí— pero el mecanismo es el mismo: un byte que vale
+  poco mientras vives y se pone a contar en cuanto te matan.
 
-![La misma imagen con el recorrido de los 78 pasos del guion encima](../imagenes/escena_final_guion.png)
+Y ese «vale poco mientras vives» es más concreto de lo que parecía: **es el
+escudo**. De 0 a 3 cuenta los impactos que la nave aguanta, y hay dos clases de
+impacto, uno que gasta un punto y otro que gasta dos —el segundo comprueba dos
+veces, entre resta y resta, si el primero ya bastaba para matarte—. De las seis
+escrituras que tiene esa variable, **una sola mete el cuatro** que arranca la
+explosión, y a ella llegan diez sitios del listado: la muerte tiene una única
+puerta.
 
-Ninguna de las dos es una captura: están dibujadas a partir del binario con la
-geometría que usa el propio juego.
+Con eso el premio de los 10.000 puntos se entiende del todo. Antes de dar la
+vida, el juego mira el escudo: si vienes con menos de 2, en lugar de una vida
+**te reponen el escudo a 3**. O sea que el mismo premio es una cosa o la otra
+según cómo llegues — con la nave tocada te curan, y con la nave entera te dan
+una vida.
 
-La aritmética lo remata por los dos lados. El guion acaba en 0x6284; la imagen
-de fondo de la escena empieza en 0x6285 y mide 720 bytes —40 filas de 18, que
-es justo lo que la rutina de copia lleva a la banda central del buffer—; y
-0x6285 + 0x2D0 = **0x6555**, que es exactamente donde arranca el pool de
-sprites de la fase. Tres tramos pegados sin un byte de holgura, y con eso
-desaparecen de la clasificación tres «tablas» que se habían medido por su
-entropía: eran trozos del mismo guion, cortados por donde no era.
+Ahí encaja, por fin, una pieza que llevaba suelta desde el primer día. El POKE
+de inmortalidad que publicó la revista *Input MSX* nº 19 parchea un salto para
+saltarse la comparación de ese contador contra cuatro. Es **la misma puerta de
+invulnerabilidad** que la fase de a pie tiene por triplicado: con el contador
+ya en cuatro o más, el juego ignora los choques porque cree que estás
+muriéndote. El POKE no regala vidas: deja al jugador permanentemente en ese
+estado.
 
-### Y esto, que estaba leído, ahora está visto
+### El marco del juego viaja en el bloque, y la pantalla de carga le deja la mesa puesta
 
-Todo lo anterior salió del listado, y aquí llegó a estar publicado que la
-secuencia **no se había visto ocurrir**, porque la partida grabada no llegaba
-hasta ahí. Sí llegaba. Poniendo un punto de interrupción en cada rutina de la
-cadena y reproduciendo la partida, salen las cinco con su hora:
+El cuadro decorado que rodea el área de juego —con su HUD: la roseta con la
+nave, los medidores de colores, la barra de PUNTOS y ZONA— no se dibuja pieza
+a pieza: **viene dibujado de fábrica dentro del bloque del juego**. Sus
+primeros 1415 bytes son el logo STARDUST (un bitmap de 128×16 que el modo
+atracción anima en el área central) y, detrás, los patrones y los colores del
+marco, 0x900 bytes de cada, que una rutina del arranque copia a la memoria de
+vídeo.
 
-    t=3060,95   la puerta del remate: scroll arriba del todo, los seis
-                objetivos muertos y el jugador en la franja central
-    t=3060,95   el travelling
-    t=3081,06   la pantalla de estrellas
-    t=3083,49   la animación: 79 pasadas, y el guion tiene 78 pasos
-    t=3107,67   las 200 partículas, inicializadas
-    t=3113,31   la explosión, 110 pasadas
+La copia tiene una forma rara —dos filas de carácter por tercio de pantalla y
+cuarenta y ocho tiras sueltas— que solo cobra sentido con la otra mitad del
+truco: el juego **no construye la tabla de nombres** del SCREEN 2. **La hereda
+de la pantalla de carga**, que la había rellenado «sumando ocho»: el carácter
+n de cada tercio se ve en la columna n÷8, fila n mod 8. La carga de la cinta
+machaca en RAM el programa de la pantalla de carga, pero la memoria de vídeo
+sobrevive, y el juego cuenta con ello. Con ese mapeo heredado, el reparto raro
+es, sencillamente, **la forma del marco**: los caracteres 0 a 31 y 224 a 255
+de cada tercio son las cuatro columnas de cada lado, y las tiras, la fila de
+arriba y la barra de abajo.
 
-Y con eso cae de paso otra afirmación que estaba en las notas: que el tercer
-opcode del fondo —el que pinta todas las celdas de una pasada— nunca se había
-visto usar. Se usa aquí, en el travelling, y es su único uso en toda la
-partida.
+Las dos mitades están contrastadas con el emulador: la tabla de nombres real
+del juego en marcha coincide **768 de 768** con el patrón heredado, y los
+patrones y colores de la cinta aparecen idénticos en el **97,4 %** —el resto
+es lo que el juego pinta encima: el campo de estrellas, los marcadores vivos—.
+Y la prueba que vale por todas es dibujarlo desde la cinta con ese mapeo:
 
-![El travelling: la torre repintada de una pasada, con la nave despegando](../imagenes/final_travelling.png)
+![El marco de la pantalla de juego, dibujado desde los datos de la cinta](../imagenes/marco.png)
 
-![La pantalla de estrellas: la nave insignia abajo y la tuya subiendo](../imagenes/final_estrellas.png)
+### La pantalla de carga
 
-![El texto, escrito encima de la escena](../imagenes/final_felicidades.png)
+![La pantalla que se ve mientras carga](../imagenes/carga.png)
 
-![Y la nave insignia convertida en 200 partículas](../imagenes/final_metralla.png)
+No es una captura: está dibujada a partir de los 12.288 bytes que el propio
+bloque vuelca —6144 de patrón a la memoria de vídeo 0x0000 y 6144 de color a
+0x2000—, siguiendo lo que hace su rutina de 0x9C10.
 
-**Y el final malo es este mismo, quitándole todo.** Al quedarse sin vidas —o al
-agotarse la cuenta atrás— el juego no enseña ninguna pantalla propia: salta al
-estado inicial y de ahí a la tabla de récords. No hay huida, no hay explosión y
-no hay texto; el final malo se define por lo que falta.
+Tiene truco, y de los que enseñan algo. La tabla que dice qué dibujo va en cada
+casilla no se rellena en orden 0, 1, 2, 3… sino **sumando ocho**: 0, 8, 16 …
+248, 1, 9, 17 … Son los mismos 256 valores por tercio de pantalla, pero
+intercalados. Dibujarla suponiendo orden secuencial da ruido convincente, que es
+el peor tipo de error: parece que el reparto del bloque está mal cuando lo que
+está mal es cómo lo lees.
 
-![El final malo: ni huida ni explosión, directo a los récords](../imagenes/final_malo.png)
+Va firmada **CANO**, abajo a la izquierda.
 
+## El mundo y sus criaturas
 
-## La torre entera, y un mapa que es dos mapas
+Cómo lleva el juego sus mapas, sus enemigos, sus colisiones y sus muertes.
+
+### La casilla del mapa es a la vez el dibujo y el estado
+
+Las cosas que están clavadas en el decorado —las torretas y los nidos de cada
+zona— no son enemigos que vuelan: son **objetos de ocho bytes** que el
+constructor del nivel crea al entrar en la zona, uno por casilla ocupada de una
+rejilla de 5×5. Cada uno lleva su posición, el tipo, **un puntero a su casilla**
+de esa rejilla y la dirección de la rutina que lo gobierna.
+
+Y ahí está lo bonito: **la instalación no guarda su fotograma**. Lo escribe en la
+casilla a la que apunta, y el que pinta la zona dibuja lo que diga la casilla. Por
+eso el ciclo de recarga de una torreta se lee, en el listado, como una cuenta de
+6 a 10 sobre un byte del mapa: 6 es el cañón cargado, 7, 8 y 9 la animación, y al
+llegar a 10 vuelve a 6. La misma idea que ya apareció en la fase de a pie, donde
+el byte de celda es el índice del dibujo y a la vez el sólido de la física.
+
+Los estados se encadenan **reescribiéndose la rutina a sí mismos**: la torreta
+dispara y se convierte en «torreta recargando»; el nido suelta un enemigo
+apuntado a la nave y se marca; lo que revienta va subiendo su casilla hasta 0x10
+y se retira instalándose como comportamiento la dirección de un `ret` que ya
+existe en el código, para que el bucle pueda seguir llamando a todos sin
+preguntar.
+
+Y el constructor del nivel decide qué es cada casilla por su valor, con una
+tirada de azar de por medio: `call azar / and 004h / add a,006h` convierte el
+valor 6 en 6 o en 10, así que **la misma casilla del mismo nivel unas veces sale
+torreta y otras nido**.
+
+De ahí sale, además, de dónde viene el disparo cuádruple. Lo deja **el bonus que
+suelta al reventar una instalación de un tipo concreto**, y sólo si ya llevas 10
+de energía y te toca una de cada cuatro; si no, lo que da son diez de energía.
+
+#### Siete tablas seguidas, y ninguna frontera hay que suponerla
+
+Ese mapa de RAM se puede leer entero sin adivinar nada, porque cada tabla lleva
+su contador delante y **muere exactamente donde empieza el contador de la
+siguiente**. El tope y el tamaño de entrada no se estiman: salen de la propia
+rutina de alta, del `cp` con que comprueba el tope y de cómo indexa.
+
+    0xC8D7  contador          0xC8D8  9 instalaciones de 8 B   →  0xC920
+    0xC920  la rejilla 5×5 de la zona, 25 B                    →  0xC939
+    0xC939  contador          0xC93A  6 tiros enemigos de 4 B  →  0xC952
+    0xC952  contador          0xC953  9 disparos tuyos de 4 B  →  0xC977
+    0xC977  las dos variables del recorredor de tablas         →  0xC97A
+    0xC97A  contador          0xC97B  4 objetos de 5 B         →  0xC98F
+    0xC98F  contador          0xC990  2 objetos de 4 B         →  0xC998
+    0xC998  contador          0xC999  2 objetos de 5 B         →  0xC9A3
+
+6×4, 9×4, 4×5, 2×4 y 2×5 caen clavados. Hay una segunda tabla igual, la de los
+tiles especiales, con su contador en 0xCA92 y ocho objetos desde 0xCB3A: 64
+bytes que acaban justo donde acababa el rango declarado.
+
+Una cosa que conviene decir aunque no quede redonda: **la primera tabla no
+comprueba su tope**. El constructor incrementa el contador sin mirar, y sólo hay
+sitio para nueve antes de que empiece la rejilla. O lo garantizan los datos de
+los niveles, o hay desbordamiento; aquí no se ha medido cuál de las dos.
+
+### Nadie vigila las colisiones: cada uno se pregunta por sí mismo
+
+En las dos mitades del juego hay dos tablas de cosas volando, y cada una es de
+un bando: una la llena el gatillo del jugador y otra la llenan los enemigos. Lo
+que no hay es un detector central que las cruce. **Cada objeto, justo después de
+pintarse, pregunta si le han dado**, y siempre con la misma rutina, cambiando
+sólo la caja de contacto y lo que se cobra:
+
+    quién pregunta            caja        premio
+    la bandada de enemigos    4 × 0x0C    130 puntos
+    los objetos del enjambre  4 × 0x0C    140
+    un tiro enemigo           4 × 8        53
+    la nave (contra la otra tabla)         un punto de escudo
+
+Cuidado al leer esos precios, porque aquí hay una trampa fácil: la rutina que
+paga no suma puntos, **suma al dígito que le señalen**, y el acarreo va hacia la
+izquierda. Así que el mismo valor son 130 puntos o 13 según en qué cifra del
+marcador caiga. Los 53 puntos de derribar un tiro enemigo son idénticos en las
+dos mitades del juego, con el mismo número y en el mismo dígito.
+
+#### El disparo cuádruple suena una sola vez, y lo consigue amordazando el sonido
+
+Con la mejora recogida, el gatillo suelta cuatro disparos en cruz en vez de uno.
+Y como cada alta de la tabla arranca su propio efecto de sonido, sonarían cuatro
+«pium» a la vez. Lo que hace el juego es **meter un `ret` en el segundo byte de
+la rutina que arranca sonidos** antes de los tres disparos extra, y reponerlo
+después.
+
+Lo bonito es cómo lo repone: no hay ninguna constante guardada para eso. **Copia
+el byte de su rutina gemela**, la que arranca guiones sin buscar canal libre,
+que tiene el mismo prólogo. Se toma prestado de la de al lado.
+
+Y hay una asimetría curiosa entre las dos mitades: **la fase de a pie tiene el
+mismo disparo cuádruple y no puede encenderlo nunca**. El byte que lo decide se
+lee en un sitio y se escribe en uno solo, detrás de un `xor a`; o sea que sólo se
+le escribe un cero. Las tres altas extra son código muerto en la versión que
+salió a la calle. Tampoco tiene el parche de silencio: si llegaran a salir los
+cuatro disparos, sonarían los cuatro.
+
+### La torre entera, y un mapa que es dos mapas
 
 La zona de la fase de a pie es una torre, y su mapa está en 0x840B: **78 filas
 de 6 celdas**, 468 bytes, 280 celdas con suelo. Lo delata `base_mapa` (0xA9F5),
@@ -812,15 +923,12 @@ independientes: el tile de 128 bytes, la división entre 32 de `consulta_mapa`,
 y el scroll fino, que da dieciséis pasos de 2 píxeles entre fila y fila. La
 torre es de **192×2496 píxeles**, el doble de alta de lo publicado.
 
-Con el mapa y el pozo, la torre se dibuja entera:
-
-![La torre de la fase de a pie, compuesta desde su mapa y sus tiles](../imagenes/torre_apie.png)
-
-Abajo del punto de salida está el **cartel de flechas** que señala hacia
-arriba (los tiles 0x28 y 0x29, que solo aparecen ahí), y la fila 0 es una
-cornisa de rosetas (el tile 0x2A). La estructura sola, sin la trama de fondo,
-está en [torre_estructura.png](../imagenes/torre_estructura.png), y el pozo de
-45 tiles en [tiles_apie.png](../imagenes/tiles_apie.png).
+Con el mapa y el pozo, la torre se dibuja entera — está en
+[El juego](EL-JUEGO.html#la-zona-8-la-torre-de-a-pie), junto a los mapas de
+las otras siete zonas, con su estructura y su pozo de 45 tiles. Abajo del
+punto de salida está el **cartel de flechas** que señala hacia arriba (los
+tiles 0x28 y 0x29, que solo aparecen ahí), y la fila 0 es una cornisa de
+rosetas (el tile 0x2A).
 
 La cámara que recorre la torre es el par (0xAD2A, 0xAD2C): fila del mapa más
 desplazamiento fino en píxeles. El actualizador (0xA8DB) mueve el fino de 2 en
@@ -830,7 +938,7 @@ paso siguiente `(fila 56, fino 2)`. Cada paso sobre suelo firme guarda además
 un **checkpoint** (posición en 0xA6E9, cámara en 0xC466/67), que es adonde te
 devuelve la muerte.
 
-## La muerte del jugador estaba en otra parte
+### La muerte del jugador estaba en otra parte
 
 El jugador muere al pisar el vacío, y la rutina que parecía explicarlo —una
 variante «fina» de la consulta del mapa, con lógica de sub-celda— resultó **no
@@ -874,7 +982,7 @@ contador (0xA30B), pero el arranque de la partida lo pisa con un dos (0xA3CB,
 `ld a,002h`). Por eso la primera muerte de cualquier partida encuentra el
 contador a dos.
 
-### El estado de agonía: no hay temporizador, hay un bucle lento
+#### El estado de agonía: no hay temporizador, hay un bucle lento
 
 Entre que el juego te da por muerto y que de verdad te quita la vida pasan
 unos cinco segundos, y no los cuenta ningún reloj. El contador sube **uno por
@@ -892,7 +1000,7 @@ a ese ritmo son 5,04 segundos, y el emulador mide 23 agonías de entre 4,76 y
 Mientras dura, eres intocable: tres comprobaciones independientes del listado
 se saltan la colisión si el estado ya llegó a cuatro.
 
-### Veintitrés muertes, y otras cuarenta y cuatro que no son tuyas
+#### Veintitrés muertes, y otras cuarenta y cuatro que no son tuyas
 
 Sobre la partida grabada sale el retrato completo: **veintitrés muertes, 22
 por contacto y una sola por caída**, las veintitrés pasando por el mismo
@@ -932,7 +1040,7 @@ mientras la demo juega. Preguntándole a ese byte en cada muerte, las dos
 pasadas de demo de la grabación —la de antes de empezar y la de después de la
 tabla de récords— se separan solas de los once minutos de partida de verdad.
 
-## La cuenta atrás es una torre que crece
+### La cuenta atrás es una torre que crece
 
 Al final de la fase de a pie hay que destruir seis objetivos, y al caer el
 sexto arranca una cuenta atrás. No son dígitos: es una **torre blanca que gana
@@ -953,61 +1061,80 @@ destrucción, y de ahí directo a la tabla de récords. Game over, sin
 FELICIDADES. Las cuentas de la partida real salen finas: escapó con unos **30
 segundos de margen** de los 5,8 minutos que da el juego.
 
-## Las explosiones llevan un fósil del Spectrum dentro
+### La fase de a pie tiene su propia demo, y su propia partida grabada
 
-Las dos fases tienen explosión de partículas, cada una con su copia del código.
-La de naves —cuando derriban al protagonista— siembra **64 partículas** en la
-posición de la nave y las mueve **con gravedad**: la velocidad vertical crece
-un punto por cuadro, y cada partícula es un píxel suelto dibujado sobre el
-buffer. La del final feliz —la nave insignia vista desde fuera— son **200
-partículas de metralla** sesgadas hacia arriba, sin gravedad.
+La demo de la parte de naves no es una máquina jugando: son **869 bytes de
+partida grabada**, un byte por fotograma. La fase de a pie tiene la suya, y no
+podría ser de otro modo: la grabación de las naves está en 0xBA20 y su lector en
+0xC1AF, y **las dos direcciones caen dentro de 0x61D0-0xD674**, o sea que la
+segunda parte las machaca al cargarse.
 
-Y en las dos, dentro del bucle que pinta cada partícula, está esto:
+La suya empieza en **0x9FF3** y son **646 bytes**, que a 50 Hz son 12,9 segundos.
+El sitio lo dice el propio código —`ld hl,09ff3h` en 0xA3FF— y el corte se ve a
+simple vista, porque justo antes hay dibujo:
 
 ```
-c663: and 018h / out (0feh),a
+9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   <- damero, dos valores
+9FF3  00 00 00 00 00 00 00 00 ...                       <- ya no
 ```
 
-**0xFE es el puerto del borde del ZX Spectrum.** En el original, cada partícula
-hacía parpadear el borde de la pantalla; en el MSX ese puerto no hace nada, y
-ahí sigue la instrucción, ejecutándose en balde en cada partícula desde 1987.
-Las dos copias del efecto la arrastran: la prueba más limpia que ha dado el
-proyecto de que estas rutinas se trajeron del original tal cual.
+Los 646 bytes usan 17 valores distintos, **todos pares y ninguno mayor de 0x1E**:
+es la máscara de controles, un byte por fotograma.
 
-De paso: el azar de las partículas —y del campo de 48 estrellas del fondo de
-naves, que son alturas aleatorias pintadas con el patrón fijo `0x18`— sale de
-un generador que **lee la ROM del BIOS como tabla de entropía**. Y el POKE de
-inmortalidad de la revista Input MSX (el que parchea 0xC06E) actúa justo en el
-despachador que decide si la nave está viva o explotando: la inmortalidad es,
-literalmente, no dejar que se llame nunca al sistema de partículas.
+Y lo interesante es **cómo se enciende**. En 0xA688 hay una llamada cuyo operando
+se reescribe desde dos sitios:
 
-## Por qué la segunda parte carga justo en 0x61D0
+```
+a313: ld hl,0a6fch / ld (0a689h),hl   <- partida normal: lee los mandos
+b6ca: ld hl,0a6eeh / ld (0a689h),hl   <- demo: lee la grabación
+```
 
-La dirección de carga del bloque de la fase de a pie parecía arbitraria hasta
-que salió la fuente. Los dos rotuladores de esa fase —el del rótulo DEMO y el
-menú, que pinta a doble altura con el damero, y el del marco, que escribe
-directo a la memoria de vídeo— usan la misma fuente ASCII, indexada como
-`0x5F00 + código×8`. La fuente la deja cargada el bloque de naves, y la fase de
-a pie la reutiliza.
+La misma llamada, dos orígenes, conmutados parcheando el código. Y el rótulo
+DEMO que parpadea abajo a la derecha **no consulta ningún indicador**: le
+pregunta a la instrucción parcheada.
 
-La cuenta cierra sola: el último carácter que la fuente necesita es la `Y`
-(código 89), y 0x5F00 + 90×8 = **0x61D0 exacto**. El bloque de la segunda parte
-carga en el primer byte libre después del glifo de la `Y`: ni un byte antes,
-para no comerse la fuente heredada.
+```
+a4d1: ld a,(0a689h)   ; el operando de esa llamada
+a4d4: cp 0eeh         ; ¿apunta a 0xA6EE, el lector de la grabación?
+a4d6: jr nz,...       ; si no, no estamos en demo
+```
 
-## Un intérprete de guiones
+Esto apareció porque un jugador se pasó el juego y contó que, tras la tabla de
+récords, arrancaba una demo **de la fase a pie**. El lector estaba dentro de un
+rango que este proyecto tenía etiquetado como «tabla».
 
-Dentro del juego de naves hay una máquina virtual pequeña. Los guiones que
-gobiernan a los enemigos son bytes, y los que valen 0x80 o más son **opcodes**:
+## El sonido es un lenguaje
 
-    e230: ld a,(bc) / cp 080h / jp c,0e231h   ; por debajo de 0x80 no es opcode
+La música no está guardada como notas: está escrita en un lenguaje propio,
+y se puede leer — y contrastar con el chip.
+
+### Un intérprete de guiones
+
+El sonido de Stardust no está escrito como código: son guiones que interpreta
+una máquina virtual pequeña. Los bytes por debajo de 0x80 son notas; los que
+valen 0x80 o más son **comandos**:
+
+    e230: ld a,(bc) / cp 080h / jp c,0e231h   ; por debajo de 0x80 no es comando
           sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)
 
-y `0xE5C0` es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de 0xE7A3
-tiene **35 entradas**, y que son 35 y no más no es una estimación: la tabla
-acaba en 0xE7E8 y el código del opcode 0x90 empieza pegado, en 0xE7E9.
+y `0xE5C0` es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de saltos de
+0xE7A3 tiene **quince entradas**, de 0x80 a 0x8E, y muere ahí: el límite lo
+fija el propio intérprete, cuyo comando de llamada lee las frases de la música
+desde 0xE7C1, que es 0xE7A3 + 15×2.
 
-## El sonido del juego es un lenguaje, y se puede leer
+Aquí estuvo publicado que los opcodes eran **35** y que estos guiones
+gobernaban a los enemigos, y las dos cosas eran lecturas de más. Detrás de los
+quince punteros de comando vienen pegados otros veinte que parecen continuar
+la tabla y son **otra tabla**: la de las frases de la música. Contados como
+una sola de 35, mandaron al desensamblador a leer las melodías del juego como
+si fueran rutinas — veinte «rutinas» publicadas que no existían. Cómo se
+deshizo, con sus cifras, está en [Preguntas abiertas](PREGUNTAS-ABIERTAS.html).
+
+Esa tabla es también la primera trampa del trazado: si no se declara como
+datos, el trazador se mete dentro y desensambla direcciones como si fueran
+instrucciones.
+
+### El sonido del juego es un lenguaje, y se puede leer
 
 Stardust no guarda su música como notas sueltas: trae un **intérprete** con su
 propio lenguaje de quince comandos, y las melodías están escritas en él. Los
@@ -1086,7 +1213,7 @@ Lo que sale del recorrido: **veintiún sonidos**. Diecisiete son cortos, de 9 a
 repartida en tres voces como se cuenta justo abajo. Otros dos no terminan: dan
 la vuelta y siguen sonando en bucle.
 
-### La música es una sola, a tres voces
+#### La música es una sola, a tres voces
 
 Aquí estuvo publicado que había "dos canciones largas, de 378 y 149 bytes", y
 estaba mal partido. La rutina que arranca la música instala **tres guiones de
@@ -1104,7 +1231,7 @@ Eso explica de paso algo que despistaba: al sintetizar el primer guion por su
 cuenta salían cuatro notas graves repitiéndose. No es que la música fuera
 pobre; es que se estaba escuchando **la línea de bajo sola**.
 
-### Las canciones no tienen ni una nota
+#### Las canciones no tienen ni una nota
 
 Y aquí está lo mejor del asunto. Descodificada, la canción de 378 bytes resulta
 ser **152 llamadas a frase y cero notas propias**. La de 149, cincuenta y seis
@@ -1156,7 +1283,7 @@ el código; la más repetida, siete veces, es el mismo efecto. Dos de ellas
 apuntan a **mitad** de una melodía en vez de a su principio: es una manera
 barata de tener variaciones sin gastar un byte más.
 
-### Y luego lo contrastamos con el chip
+#### Y luego lo contrastamos con el chip
 
 Todo lo anterior es deducción. Quince comandos, cuántos argumentos consume cada
 uno, frases llamadas con pila, una tabla de noventa y seis periodos: todo leído
@@ -1216,7 +1343,7 @@ música el último periodo se queda ahí puesto; sin mirar también el volumen y
 mezclador, un canal que lleva veinte segundos mudo parece una nota de mil
 cuadros.
 
-### La música se arrastra mientras juegas, y la culpa es del juego
+#### La música se arrastra mientras juegas, y la culpa es del juego
 
 La parte de a pie tiene dos piezas, y al comprobar la segunda salió algo mejor
 que un porcentaje. Sus notas salían **todas bien y todas mal de duración**: donde
@@ -1257,145 +1384,128 @@ lanzados en cuatro minutos de partida, **150 van al canal 2** —el 55 %—, que
 justo por lo que la música lo deja vacío. Pero 63 van al canal 1 y 58 al 0,
 pisando la música. No está reservado; es que es el más concurrido.
 
-## Los créditos pasan con un scroll que no mueve el dibujo
+### Lo que decía aquí sobre la música, y por qué ya no
 
-Los créditos del juego —los cinco carteles con los nombres de quienes hicieron
-la versión de MSX— se muestran de uno en uno en la franja central de la
-pantalla, con una pausa para leerlos, y cada uno se despide **deslizándose
-hacia arriba**.
+Aquí se afirmaba que las tablas de música se habían portado enteras, con 754
+bytes idénticos a los de la versión de Spectrum en 0xAB0E. **Se retira.**
 
-Mover esa franja parece caro: son 2.048 bytes de dibujos. La rutina no los
-toca. Recuerda que en el MSX hay dos tablas, la de qué dibujo lleva cada celda
-y la de los dibujos, y **mueve la primera**: 256 bytes en vez de 2.048. Como
-cada celda apunta a su dibujo, correr los índices corre la imagen. Ocho veces
-sale ocho veces más barato.
+Esa coincidencia la daba la misma herramienta de cotejo cuya búsqueda resultó
+estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites
+(0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se
+buscaba código, que es exactamente el fallo que contaminó el trazado entero.
 
-El paso de cada tirón son 32 posiciones, que es justo una fila de la pantalla,
-y da ocho tirones: las ocho filas de la franja. Al terminar borra los dibujos
-y **reconstruye la tabla de celdas**, y ahí aparece la confirmación bonita: la
-reconstruye con el mismo entrelazado de ocho en ocho que dejó la pantalla de
-carga —0, 8, 16… 248, luego 1, 9, 17…— en seis instrucciones. El juego sabe
-perfectamente cómo viene esa tabla y se encarga de devolverla a su sitio.
+**Y ahora se puede cerrar del todo, por una segunda vía.** Con el lenguaje del
+sonido ya descifrado, los bytes de 0xAB0E se pueden leer como si fueran música,
+y no lo son: 306 de esos 754 bytes son valores por encima de 0x7F que **no
+existen como comandos** en un lenguaje cuyas órdenes van de 0x80 a 0x8E. Haciendo
+la misma cuenta sobre 754 bytes de la zona de música de verdad salen siete. Sean
+lo que sean esos bytes —y el rango de sprites dice que dibujo—, no son una
+partitura.
 
-Hasta ahora ese entrelazado sólo se había leído en el código de la pantalla de
-carga. Aquí aparece por segunda vez, escrito por otra mano y en otro bloque, y
-explica de paso por qué el marcador puede escribir dibujos y acertar siempre
-de celda.
+La pregunta que la retirada dejaba en el aire —si las dos partes comparten el
+sonido— sí tiene respuesta ahora, y ha salido del binario y no de un cotejo: la
+parte de a pie se lleva **el subsistema de sonido entero del juego de naves,
+reubicado**. La tabla de notas son los mismos 192 bytes clavados, la rutina que
+vuelca los registros al chip son los mismos dieciocho, y los veinte punteros de
+frase están todos a un desplazamiento constante. Así que sí lo comparten, pero ni
+en el sitio ni por el motivo que decía la afirmación retirada.
 
-## El marcador no escribe letras: redibuja las celdas
+## El final
 
-Todo el marcador de la fase de naves —los puntos, las vidas, el número de
-zona— sale de una sola rutina, en 0xF41D, y lo primero que sorprende de ella
-es que **no escribe caracteres**. En la memoria de vídeo del MSX hay una tabla
-que dice qué dibujo lleva cada celda de la pantalla y otra que guarda los
-dibujos. Lo normal para escribir un "7" sería poner el número del dibujo del
-siete en la celda que toca. Esta rutina hace lo contrario: deja las celdas
-como están y **cambia el dibujo que hay debajo**.
+La secuencia con la que acaba el juego, leída del listado y después vista
+ocurrir.
 
-Puede permitírselo porque la mesa ya está puesta. La tabla de celdas la dejó
-la pantalla de carga y el juego la hereda intacta, así que cada hueco del
-marcador ya apunta a un dibujo propio que no usa nadie más. Escribir se
-convierte en volcar los ocho bytes de la letra encima.
+### Cómo termina el juego, y una tabla de punteros que eran coordenadas
 
-El detalle que lo remata es el paso entre glifo y glifo: **0x40 bytes**, que
-son ocho dibujos. Parece un salto raro hasta que se recuerda que la tabla de
-celdas viene **entrelazada de ocho en ocho** de la pantalla de carga. Con ese
-entrelazado, saltar ocho dibujos es caer justo en la celda de al lado. Las dos
-rarezas se cancelan.
+Tirando del hilo del tercer opcode aparece la secuencia con la que Stardust
+acaba, que estaba en el tramo dado por no explorado. Son tres cosas seguidas.
 
-Cuatro sitios del código la llaman, y cada uno es un indicador:
+**Un travelling que acelera.** La cámara sube una fila de celda dieciséis
+veces, repintando cada vez, y después entra en un bucle que la desplaza *A*
+veces por cuadro. Ese *A* no es fijo: empieza en 2 y **sube de dos en dos cada
+diez cuadros** hasta llegar a 16, donde se queda.
 
-- Los **puntos** son seis dígitos guardados como texto en 0xDD80. Una rutina
-  los pone a "000000" al empezar, y otra les suma **haciendo la aritmética
-  decimal a mano sobre el ASCII**: incrementa el dígito, y si se pasa del "9"
-  lo devuelve al "0" y se lleva una al de la izquierda. Nunca hay un número
-  binario que convertir, porque el marcador *es* el número.
-- Las **vidas** y la **zona** son un dígito cada una (0xE156 y 0xE157), y se
-  pintan sumándoles 0x30 para pasarlas a ASCII.
+    bdd3: ld a,002h / ld (0c468h),a
+    bdf8: ld a,(0c468h) / cp 010h / jr z,...
+    bdff: inc a / inc a / ld (0c468h),a
 
-Y hay una coincidencia que dice mucho: los puntos se pintan en la misma
-dirección de vídeo, 0x12B0, en las dos fases del juego. La de naves y la de a
-pie no comparten ni una línea de código, pero ponen el marcador en el mismo
-sitio de la pantalla.
+Así que la torre se aleja por debajo cada vez más deprisa, hasta que el scroll
+se agota.
 
-### Las dos fases se mueren igual
+**Una pantalla de estrellas.** Silencio, colores, el buffer a cero, las 48
+estrellas que salen de la ROM del MSX, una imagen de fondo, cuatro esperas
+largas seguidas y una melodía nueva.
 
-Puestos a leer las vidas de la fase de naves, aparecen tres cosas idénticas a
-las de la fase de a pie, y ninguna es casualidad:
+**Y una animación escrita como un guion.** Aquí está lo bueno. En 0x61D8 hay
+una lista que el juego recorre así: un byte por encima de 0xC0 **cambia el
+fotograma** —y lo hace parcheando el operando de la instrucción que lo pinta—,
+un `0xC0` termina, y todo lo demás son parejas de bytes que son la posición.
 
-- **Se inicializan dos veces, y manda la segunda**: el menú deja un tres y el
-  arranque de la partida lo pisa con un dos. Exactamente el mismo par que a
-  pie, hasta en el orden.
-- **La vida extra por puntos tiene tope nueve** en las dos.
-- Y el descuento solo se dispara cuando un contador llega a **45**, que es el
-  mismo número que cierra la agonía de la fase de a pie. La dirección cambia
-  —0xC188 aquí, 0xA6ED allí— pero el mecanismo es el mismo: un byte que vale
-  poco mientras vives y se pone a contar en cuanto te matan.
+Decodificada entera son **78 pasos y trece fotogramas**. La columna arranca en
+0x78, que es el centro exacto de los 192 píxeles de ancho, y la fila en 0xBA,
+abajo del todo. **La fila baja siempre, sin una sola excepción en los 78
+pasos**, y la columna se va hacia la izquierda hasta que el último paso es
+(0, 0). Algo que despega del centro, sube y se aleja por la esquina.
 
-Y ese «vale poco mientras vives» es más concreto de lo que parecía: **es el
-escudo**. De 0 a 3 cuenta los impactos que la nave aguanta, y hay dos clases de
-impacto, uno que gasta un punto y otro que gasta dos —el segundo comprueba dos
-veces, entre resta y resta, si el primero ya bastaba para matarte—. De las seis
-escrituras que tiene esa variable, **una sola mete el cuatro** que arranca la
-explosión, y a ella llegan diez sitios del listado: la muerte tiene una única
-puerta.
+Y esa lista **estuvo publicada como una «tabla de punteros a los gráficos»**.
+Se entiende el engaño: leídas como palabras little-endian, las parejas dan
+0x78BA, 0x78B8, 0x78B6… que es literalmente «palabras descendiendo de dos en
+dos», y como caen dentro del rango de los gráficos parecían apuntar ahí. Lo
+que descendía de dos en dos no era una tabla ordenada: era el dibujo subiendo
+por la pantalla.
 
-Con eso el premio de los 10.000 puntos se entiende del todo. Antes de dar la
-vida, el juego mira el escudo: si vienes con menos de 2, en lugar de una vida
-**te reponen el escudo a 3**. O sea que el mismo premio es una cosa o la otra
-según cómo llegues — con la nave tocada te curan, y con la nave entera te dan
-una vida.
+Y se puede mirar, que es la comprobación que vale en este proyecto: dibujando
+esos 720 bytes con la geometría que dice la rutina de copia —40 filas de 18
+bytes— sale una superficie, no ruido. Y poniendo encima el recorrido de los 78
+pasos del guion, se ve lo que hace: sale del suelo por el centro, sube recto un
+buen trecho y arriba se curva a la izquierda hasta salir de la pantalla.
 
-Ahí encaja, por fin, una pieza que llevaba suelta desde el primer día. El POKE
-de inmortalidad que publicó la revista *Input MSX* nº 19 parchea un salto para
-saltarse la comparación de ese contador contra cuatro. Es **la misma puerta de
-invulnerabilidad** que la fase de a pie tiene por triplicado: con el contador
-ya en cuatro o más, el juego ignora los choques porque cree que estás
-muriéndote. El POKE no regala vidas: deja al jugador permanentemente en ese
-estado.
+![La imagen de fondo de la escena final, dibujada desde la cinta](../imagenes/escena_final.png)
 
-## El marco del juego viaja en el bloque, y la pantalla de carga le deja la mesa puesta
+![La misma imagen con el recorrido de los 78 pasos del guion encima](../imagenes/escena_final_guion.png)
 
-El cuadro decorado que rodea el área de juego —con su HUD: la roseta con la
-nave, los medidores de colores, la barra de PUNTOS y ZONA— no se dibuja pieza
-a pieza: **viene dibujado de fábrica dentro del bloque del juego**. Sus
-primeros 1415 bytes son el logo STARDUST (un bitmap de 128×16 que el modo
-atracción anima en el área central) y, detrás, los patrones y los colores del
-marco, 0x900 bytes de cada, que una rutina del arranque copia a la memoria de
-vídeo.
+Ninguna de las dos es una captura: están dibujadas a partir del binario con la
+geometría que usa el propio juego.
 
-La copia tiene una forma rara —dos filas de carácter por tercio de pantalla y
-cuarenta y ocho tiras sueltas— que solo cobra sentido con la otra mitad del
-truco: el juego **no construye la tabla de nombres** del SCREEN 2. **La hereda
-de la pantalla de carga**, que la había rellenado «sumando ocho»: el carácter
-n de cada tercio se ve en la columna n÷8, fila n mod 8. La carga de la cinta
-machaca en RAM el programa de la pantalla de carga, pero la memoria de vídeo
-sobrevive, y el juego cuenta con ello. Con ese mapeo heredado, el reparto raro
-es, sencillamente, **la forma del marco**: los caracteres 0 a 31 y 224 a 255
-de cada tercio son las cuatro columnas de cada lado, y las tiras, la fila de
-arriba y la barra de abajo.
+La aritmética lo remata por los dos lados. El guion acaba en 0x6284; la imagen
+de fondo de la escena empieza en 0x6285 y mide 720 bytes —40 filas de 18, que
+es justo lo que la rutina de copia lleva a la banda central del buffer—; y
+0x6285 + 0x2D0 = **0x6555**, que es exactamente donde arranca el pool de
+sprites de la fase. Tres tramos pegados sin un byte de holgura, y con eso
+desaparecen de la clasificación tres «tablas» que se habían medido por su
+entropía: eran trozos del mismo guion, cortados por donde no era.
 
-Las dos mitades están contrastadas con el emulador: la tabla de nombres real
-del juego en marcha coincide **768 de 768** con el patrón heredado, y los
-patrones y colores de la cinta aparecen idénticos en el **97,4 %** —el resto
-es lo que el juego pinta encima: el campo de estrellas, los marcadores vivos—.
-Y la prueba que vale por todas es dibujarlo desde la cinta con ese mapeo:
+#### Y esto, que estaba leído, ahora está visto
 
-![El marco de la pantalla de juego, dibujado desde los datos de la cinta](../imagenes/marco.png)
+Todo lo anterior salió del listado, y aquí llegó a estar publicado que la
+secuencia **no se había visto ocurrir**, porque la partida grabada no llegaba
+hasta ahí. Sí llegaba. Poniendo un punto de interrupción en cada rutina de la
+cadena y reproduciendo la partida, salen las cinco con su hora:
 
-## La pantalla de carga
+    t=3060,95   la puerta del remate: scroll arriba del todo, los seis
+                objetivos muertos y el jugador en la franja central
+    t=3060,95   el travelling
+    t=3081,06   la pantalla de estrellas
+    t=3083,49   la animación: 79 pasadas, y el guion tiene 78 pasos
+    t=3107,67   las 200 partículas, inicializadas
+    t=3113,31   la explosión, 110 pasadas
 
-![La pantalla que se ve mientras carga](../imagenes/carga.png)
+Y con eso cae de paso otra afirmación que estaba en las notas: que el tercer
+opcode del fondo —el que pinta todas las celdas de una pasada— nunca se había
+visto usar. Se usa aquí, en el travelling, y es su único uso en toda la
+partida.
 
-No es una captura: está dibujada a partir de los 12.288 bytes que el propio
-bloque vuelca —6144 de patrón a la memoria de vídeo 0x0000 y 6144 de color a
-0x2000—, siguiendo lo que hace su rutina de 0x9C10.
+![El travelling: la torre repintada de una pasada, con la nave despegando](../imagenes/final_travelling.png)
 
-Tiene truco, y de los que enseñan algo. La tabla que dice qué dibujo va en cada
-casilla no se rellena en orden 0, 1, 2, 3… sino **sumando ocho**: 0, 8, 16 …
-248, 1, 9, 17 … Son los mismos 256 valores por tercio de pantalla, pero
-intercalados. Dibujarla suponiendo orden secuencial da ruido convincente, que es
-el peor tipo de error: parece que el reparto del bloque está mal cuando lo que
-está mal es cómo lo lees.
+![La pantalla de estrellas: la nave insignia abajo y la tuya subiendo](../imagenes/final_estrellas.png)
 
-Va firmada **CANO**, abajo a la izquierda.
+![El texto, escrito encima de la escena](../imagenes/final_felicidades.png)
+
+![Y la nave insignia convertida en 200 partículas](../imagenes/final_metralla.png)
+
+**Y el final malo es este mismo, quitándole todo.** Al quedarse sin vidas —o al
+agotarse la cuenta atrás— el juego no enseña ninguna pantalla propia: salta al
+estado inicial y de ahí a la tabla de récords. No hay huida, no hay explosión y
+no hay texto; el final malo se define por lo que falta.
+
+![El final malo: ni huida ni explosión, directo a los récords](../imagenes/final_malo.png)

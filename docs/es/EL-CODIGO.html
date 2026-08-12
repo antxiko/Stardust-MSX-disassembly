@@ -78,8 +78,9 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 .galeria img{width:100%;height:auto;image-rendering:pixelated;
   border:1px solid var(--linea);border-radius:3px}
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html" style=color:var(--tinta)>El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="LO-QUE-FALTA.html">Lo que falta</a><a href="../THE-CODE.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html" style=color:var(--tinta)>El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="PREGUNTAS-ABIERTAS.html">Preguntas abiertas</a><a href="../THE-CODE.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
 <h1 id="el-codigo">El código</h1>
 <p>Los cinco bloques de la cinta suman <b>93 861 bytes</b>, y de ellos <b>20 076</b> son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno, todo con su nombre.</p>
 <p>Esa cifra es baja a propósito: sólo cuenta el código al que se llega de verdad siguiendo llamadas y saltos desde un punto de entrada conocido. Hay más código en la cinta, pero mientras no se sepa por dónde se entra no se cuenta, porque darlo por trazado es justo el error que hizo falta deshacer aquí.</p>
@@ -104,13 +105,13 @@ c4cc: adc hl,hl / adc a,a / adc hl,hl / adc a,a / ...</code></pre>
 <p>Esa técnica es la que despista al trazador: el <code>jp</code> salta la tira entera, y a los <code>adc</code> se entra por un salto calculado que no está en el binario. Se sabe que se ejecutan porque el emulador los pilló ejecutándose a media tira.</p>
 <p>Y el MSX <b>sí tiene sprites por hardware</b>, que aquí no se usan para esto: la conversión se trajo el método de la máquina de origen.</p>
 <h2 id="un-interprete-de-guiones">Un intérprete de guiones</h2>
-<p>El comportamiento de los enemigos no está escrito como código, sino como guiones que interpreta una máquina virtual pequeña. Los bytes por debajo de 0x80 son datos; de 0x80 para arriba son opcodes:</p>
+<p>El sonido no está escrito como código, sino como guiones que interpreta una máquina virtual pequeña. Los bytes por debajo de 0x80 son notas; de 0x80 para arriba son comandos:</p>
 <pre><code>e230: ld a,(bc) / cp 080h / jp c,0e231h
       sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)</code></pre>
-<p>con <code>0xE5C0</code> haciendo «HL = tabla + A×2, HL = (HL)». Son <b>35 opcodes</b>, y esa tabla de saltos es también la primera trampa del trazado: si no se declara como datos, el trazador se mete dentro y empieza a desensamblar direcciones como si fueran instrucciones.</p>
+<p>con <code>0xE5C0</code> haciendo «HL = tabla + A×2, HL = (HL)». Son <b>quince comandos</b> —aquí estuvo publicado 35, y los veinte punteros de más eran las melodías del juego leídas como si fueran código—, y esa tabla de saltos es también la primera trampa del trazado: si no se declara como datos, el trazador se mete dentro y empieza a desensamblar direcciones como si fueran instrucciones.</p>
 <h2 id="cada-objeto-lleva-su-rutina">Cada objeto lleva su rutina</h2>
 <p>La parte de naves resuelve así el comportamiento de las entidades: cada una guarda en su estructura de <b>8 bytes</b> un puntero a la rutina que la gobierna, y el juego salta ahí con <code>jp (hl)</code>. Esas estructuras vienen <b>a 0xFF en la cinta</b> y se rellenan jugando, así que los destinos no se pueden leer del binario: hay que capturarlos con el juego en marcha. Haciéndolo salen ocho rutinas, y los IX capturados van de 8 en 8.</p>
-<p>La misma medida en la parte de a pie daba pasos de <b>46</b>, y aquí estuvo publicado que eran entidades casi seis veces mayores, prueba de dos motores distintos. La medida era buena; la lectura, no. Ese <code>jp (hl)</code> —el de 0xC544— no despacha entidades sino los <b>comandos del intérprete de sonido</b>, y los objetos de 46 bytes son sus tres canales: la rutina que arranca un sonido recibe el número de canal y lo multiplica por 46 (<code>ld de,0002eh</code>) para llegar a su estado. Está contado entero en &lt;a href=&#x27;HALLAZGOS.html&#x27;&gt;Hallazgos&lt;/a&gt;.</p>
+<p>La misma medida en la parte de a pie daba pasos de <b>46</b>, y aquí estuvo publicado que eran entidades casi seis veces mayores, prueba de dos motores distintos. La medida era buena; la lectura, no. Ese <code>jp (hl)</code> —el de 0xC544— no despacha entidades sino los <b>comandos del intérprete de sonido</b>, y los objetos de 46 bytes son sus tres canales: la rutina que arranca un sonido recibe el número de canal y lo multiplica por 46 (<code>ld de,0002eh</code>) para llegar a su estado. Está contado entero en <a href="HALLAZGOS.html">Hallazgos</a>.</p>
 <p>Los enemigos de a pie no llevan rutina apuntada. Viven en <b>tablas de 5 bytes por objeto</b> —los andantes en 0xACE4, los voladores en 0xACF9, los dos tiros de la torreta en 0xAD04— y los mueven bucles fijos, uno por especie.</p>
 <h2 id="codigo-que-se-escribe-a-si-mismo">Código que se escribe a sí mismo</h2>
 <p>Hay un despachador que se parchea sus propias llamadas:</p>

@@ -23,11 +23,11 @@ from estilo_web import ESTILO  # noqa: E402
 NAV_EN = [("index.html", "Home"), ("GETTING-STARTED.html", "Start"),
           ("THE-GAME.html", "The game"), ("THE-TAPE.html", "The tape"),
           ("THE-CODE.html", "The code"), ("FINDINGS.html", "Findings"),
-          ("WHATS-MISSING.html", "What's missing")]
+          ("OPEN-QUESTIONS.html", "Open questions")]
 NAV_ES = [("index.html", "Portada"), ("EMPEZAR.html", "Empezar"),
           ("EL-JUEGO.html", "El juego"), ("LA-CINTA.html", "La cinta"),
           ("EL-CODIGO.html", "El código"), ("HALLAZGOS.html", "Hallazgos"),
-          ("LO-QUE-FALTA.html", "Lo que falta")]
+          ("PREGUNTAS-ABIERTAS.html", "Preguntas abiertas")]
 
 # Cada documento se llama distinto en cada idioma, asi que el selector de idioma
 # necesita saber cual es la pareja de cada pagina. Sin esto, cambiar de idioma te
@@ -37,7 +37,7 @@ _PAREJAS = [("GETTING-STARTED.html", "EMPEZAR.html"),
             ("THE-TAPE.html", "LA-CINTA.html"),
             ("THE-CODE.html", "EL-CODIGO.html"),
             ("FINDINGS.html", "HALLAZGOS.html"),
-            ("WHATS-MISSING.html", "LO-QUE-FALTA.html")]
+            ("OPEN-QUESTIONS.html", "PREGUNTAS-ABIERTAS.html")]
 PAREJA = {}
 for _en, _es in _PAREJAS:
     PAREJA[_en] = _es
@@ -156,6 +156,19 @@ def convierte(texto, titulo, actual, idioma="en"):
             while i < len(ln) and ln[i].startswith(">"):
                 cita.append(ln[i].lstrip("> ").rstrip()); i += 1
             out.append(f"<blockquote>{enlinea(' '.join(cita))}</blockquote>"); continue
+        if l.lstrip().startswith("<audio "):        # el reproductor de la musica medida
+            out.append(l.strip()); i += 1; continue
+        if re.match(r"^ {4,}\S", l):                # bloque de codigo indentado
+            cuerpo = []
+            while i < len(ln) and re.match(r"^ {4,}\S", ln[i]):
+                cuerpo.append(ln[i][4:])
+                i += 1
+                # una linea en blanco no corta el bloque si detras sigue indentado
+                if i < len(ln) and not ln[i].strip() and \
+                        i + 1 < len(ln) and re.match(r"^ {4,}\S", ln[i + 1]):
+                    cuerpo.append(""); i += 1
+            out.append("<pre><code>" + html.escape("\n".join(cuerpo)) + "</code></pre>")
+            continue
         m = re.match(r"^\s*([-*]|\d+\.)\s+", l)
         if m:
             orden = not m.group(1) in "-*"

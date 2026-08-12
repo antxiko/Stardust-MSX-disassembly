@@ -22,7 +22,8 @@ make web      # regenera la web de docs/
 
 `make` sin más hace el ciclo entero y **falla si algo no cuadra**: si un listado
 deja de reproducir su bloque byte a byte, si el trazador se mete en una zona de
-datos, o si queda un solo byte de la cinta sin asignar.
+datos, si un punto de entrada cae dentro de un rango declarado como datos, o si
+queda un solo byte de la cinta sin asignar.
 
 ## Sin la cinta
 
@@ -52,12 +53,16 @@ divergir: el fichero que se publica es el que se verifica.
 |---|---|
 | `tools/perfil.py` | radiografía un binario y dice dónde cambia la naturaleza de los datos |
 | `tools/clasifica_huecos.py` | clasifica un rango midiendo, y dice de qué medida sale |
+| `tools/check_entradas.py` | rechaza cualquier punto de entrada que caiga dentro de un rango declarado como datos |
 | `tools/coteja_spectrum.py` | coteja este binario contra el de la versión de Spectrum |
 | `tools/render_graficos.py` | dibuja tiles, sprites y tipografía desde la cinta |
 | `tools/omsx_*.tcl` | arneses de openMSX: sacan del juego en marcha lo que el binario no dice |
+| `tools/omsx_replay.tcl` | reproduce una partida grabada y muestrea el contador de programa |
 
 ## Si quieres tirar del hilo
 
-Lo que falta está contado con cifras en [Lo que falta](LO-QUE-FALTA.html). Las
-dos líneas donde más se puede avanzar ahora mismo son los 3349 bytes sin
-identificar y las rutinas de la segunda parte, que apenas se ha jugado.
+Ya no quedan bytes sin dueño ni rutinas sin comentar, pero sí cabos sueltos
+—los 149 bytes de música que nadie nombra, el modo de ruido que ninguna
+partitura enciende—, y están contados con sus cifras en
+[Preguntas abiertas](PREGUNTAS-ABIERTAS.html). Todo lo necesario para mirarlos
+está en el repositorio.

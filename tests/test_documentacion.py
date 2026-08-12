@@ -417,9 +417,9 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
                     "parte2": trazado("parte2")["report"]["coverage"]}
         # La pagina inglesa usa otros nombres de bloque y el punto decimal.
         for pagina, etiquetas, coma in (
-                (os.path.join(DOCS, "WHATS-MISSING.md"),
+                (os.path.join(DOCS, "OPEN-QUESTIONS.md"),
                  {"ship game": "juego", "on-foot part": "parte2"}, "."),
-                (os.path.join(DOCS, "es", "LO-QUE-FALTA.md"),
+                (os.path.join(DOCS, "es", "PREGUNTAS-ABIERTAS.md"),
                  {"juego de naves": "juego", "parte de a pie": "parte2"}, ",")):
             with open(pagina, encoding="utf-8") as f:
                 texto = f.read()
@@ -478,8 +478,8 @@ class TestLasCifrasQuePublicamos(unittest.TestCase):
         sin_resolver = total - len(despachadores) - 1
         self.assertEqual(sin_resolver, 0, "ha vuelto a aparecer un salto ciego"
                                           " sin destino conocido")
-        for pagina, idioma in ((os.path.join(DOCS, "WHATS-MISSING.md"), "en"),
-                               (os.path.join(DOCS, "es", "LO-QUE-FALTA.md"), "es")):
+        for pagina, idioma in ((os.path.join(DOCS, "OPEN-QUESTIONS.md"), "en"),
+                               (os.path.join(DOCS, "es", "PREGUNTAS-ABIERTAS.md"), "es")):
             with open(pagina, encoding="utf-8") as f:
                 texto = f.read().lower()
             # el total y los del bloque del juego, dichos con todas las letras
@@ -1028,7 +1028,7 @@ class TestLaCifraDeRutinasComentadas(unittest.TestCase):
 
     def test_las_dos_paginas_dicen_lo_que_miden_las_herramientas(self):
         total, comentadas = self.medido()
-        for pagina in ("es/LO-QUE-FALTA.md", "WHATS-MISSING.md"):
+        for pagina in ("es/PREGUNTAS-ABIERTAS.md", "OPEN-QUESTIONS.md"):
             filas = self.cifras_de(pagina)
             self.assertEqual(len(filas), 3,
                              "%s: se esperaban tres filas (naves, a pie, total)"
@@ -1051,10 +1051,10 @@ class TestLaCifraDeRutinasComentadas(unittest.TestCase):
     # rutinas que quedan". Por eso el recuento se exige siempre y la linea de
     # trabajo solo cuando de verdad queda trabajo; y si vuelve a quedar alguna
     # -porque el trazador acote una rutina nueva-, vuelve a exigirse.
-    RECUENTO = (("es/LO-QUE-FALTA.md", r"quedan (\d+) sin comentar"),
-                ("WHATS-MISSING.md", r"\*\*(\d+) are left\*\*"))
-    LINEA_DE_TRABAJO = (("es/LO-QUE-FALTA.md", r"Comentar las (\d+) rutinas"),
-                        ("WHATS-MISSING.md", r"Commenting the (\d+) routines"))
+    RECUENTO = (("es/PREGUNTAS-ABIERTAS.md", r"quedan (\d+) sin comentar"),
+                ("OPEN-QUESTIONS.md", r"\*\*(\d+) are left\*\*"))
+    LINEA_DE_TRABAJO = (("es/PREGUNTAS-ABIERTAS.md", r"Comentar las (\d+) rutinas"),
+                        ("OPEN-QUESTIONS.md", r"Commenting the (\d+) routines"))
 
     def test_las_que_quedan_cuadran_con_el_total(self):
         """El '180 que quedan' del texto tiene que ser total - comentadas."""

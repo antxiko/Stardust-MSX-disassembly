@@ -8,12 +8,26 @@ los generadores de escudo.
 Y luego cambia de juego. Al superar la última zona de naves, el protagonista
 **aterriza y sigue a pie**, y esa es la fase final.
 
+Esta página reúne el juego tal como se ve y se oye: los gráficos, los 7+1
+niveles con sus mapas, los textos, la música y dos capturas del juego en
+marcha. El cómo y el porqué de cada cosa está en
+[Hallazgos](HALLAZGOS.html).
+
 ## Los gráficos, sacados de la cinta
 
 Nada de lo que hay aquí son capturas: todo está dibujado a partir de los bytes
 del binario, con la geometría que usa el propio juego. Eso es lo que lo
 convierte en una comprobación y no en una ilustración: si el reparto del bloque
 estuviera mal, saldría ruido.
+
+### El logo
+
+![El logotipo STARDUST, dibujado desde la cinta](../imagenes/logo.png)
+
+Es lo primero que hay en el bloque del juego: sus 256 primeros bytes, un bitmap
+de 128×16 píxeles a 16 bytes por fila. Es el mismo rótulo que el modo atracción
+anima rebotando sobre el área de juego, y el que encabeza la portada de esta
+web.
 
 ### Los 111 tiles del decorado
 
@@ -36,9 +50,17 @@ software del Spectrum, que abre hueco con AND antes de pintar con OR.
 
 ![El juego de caracteres](../imagenes/charset.png)
 
-59 caracteres de 8×8 en 0x6000, y los quince nodos centinela de 24×24 en 0x69A8.
+59 caracteres de 8×8 en 0x6000. Y los quince nodos centinela de 24×24, en
+0x69A8:
 
-## Los mapas de las siete zonas
+![Los quince nodos centinela](../imagenes/centinelas.png)
+
+## Los ocho niveles: siete zonas y una torre
+
+El juego son 7+1 niveles: siete zonas que se sobrevuelan pilotando la nave, y
+una octava —el propio marcador la numera ZONA:08— que se escala a pie.
+
+### Las siete zonas de naves
 
 Cada zona ocupa unos **250 bytes** en la cinta, que no da ni de lejos para un
 mapa. Van **comprimidos**, y el esquema es bonito: un diccionario de frases
@@ -71,12 +93,48 @@ entre tres: rojo, blanco y cian.
 
 Se rehacen con `tools/descomprime_nivel.py` y `tools/render_niveles.py`.
 
-## El marcador y las zonas
+### La zona 8: la torre de a pie
+
+La última zona no se sobrevuela: se escala. Su mapa está en 0x840B —78 filas de
+6 celdas— y se dibuja con un pozo propio de 45 tiles de 32×32, así que la torre
+entera mide **192×2496 píxeles**, casi el doble de alta que las siete zonas de
+naves juntas a lo ancho. Cada byte del mapa es dos cosas a la vez, el dibujo de
+la celda y su física, y esa historia —con la cámara, los checkpoints y la
+muerte por caída— está en
+[Hallazgos](HALLAZGOS.html#la-torre-entera-y-un-mapa-que-es-dos-mapas).
+
+![La torre de la fase de a pie, compuesta desde su mapa y sus tiles](../imagenes/torre_apie.png)
+
+Abajo del punto de salida está el cartel de flechas que señala hacia arriba
+(los tiles 0x28 y 0x29 solo aparecen ahí), y la fila 0 es una cornisa de
+rosetas. La estructura sola, sin la trama de fondo, y su pozo de tiles:
+
+![La estructura de la torre, sin la trama de fondo](../imagenes/torre_estructura.png)
+
+![El pozo de 45 tiles de la torre](../imagenes/tiles_apie.png)
+
+Se rehacen con `tools/render_torre.py`.
+
+## El marco y la pantalla de carga
 
 La pantalla de juego lleva un marco de adornos por los cuatro lados y deja una
 ventana central para la acción, con la puntuación y el número de zona abajo. El
 marco es muy de la época y muy de Spectrum: aprovecha que los bordes no cambian
-para llenarlos de detalle sin coste.
+para llenarlos de detalle sin coste. No se dibuja pieza a pieza: **viene
+dibujado de fábrica dentro del bloque del juego**, y por eso puede componerse
+desde la cinta:
+
+![El marco de la pantalla de juego, dibujado desde los datos de la cinta](../imagenes/marco.png)
+
+Cómo hereda su tabla de nombres de la pantalla de carga —y por qué eso permite
+al marcador escribir dibujos en vez de letras— está contado en
+[Hallazgos](HALLAZGOS.html#el-marco-del-juego-viaja-en-el-bloque-y-la-pantalla-de-carga-le-deja-la-mesa-puesta).
+
+![La pantalla que se ve mientras carga](../imagenes/carga.png)
+
+La pantalla de carga tampoco es una captura: está dibujada a partir de los
+12 288 bytes que su propio bloque vuelca a la memoria de vídeo. Va firmada
+**CANO**, abajo a la izquierda.
 
 ## Los textos del juego
 
@@ -85,33 +143,55 @@ Leídos del binario, tal cual están:
 - El menú: `JOYSTICK`, `TECLADO`, `REDEFINIR TECLAS`, `JUGAR`.
 - La tabla de récords viene de fábrica con nombres de la casa: `JAVIER 100000`,
   `JUAN C 080000`, `MARTA 060000`, `MARIA 050000`, `TOPO 030000`, `SOFT 020000`.
-- Y los créditos, que son lo más interesante de todo el bloque de texto,
-  porque contestan la pregunta de fondo de este desensamblado: **quién hizo la
-  versión de MSX**. Los autores de la versión de ZX Spectrum avisan en su propio
-  repositorio de que ellos no la hicieron, y aquí está el nombre, en el binario:
-
-  ```
-  CONVERSION POR
-  CARLOS ARIAS
-  GRAFICOS
-  JUAN CARLOS Y JAVIER AREVALO
-  ...ADEMAS DE...
-  JULIO MARTIN
-  MUSICA COMPUESTA POR
-  GOMINOLAS
-  BASADO  EN
-  UNA IDEA  ORIGINAL
-  JOSE MANUEL  MU&OZ
-  TOPO SOFT
-  ```
-
-  Los gráficos siguen siendo de los hermanos Arévalo, los mismos de la versión
-  original, lo que encaja con que el dibujo se trajera tal cual. La conversión
-  del código, en cambio, la firma Carlos Arias. Ese `&` de `MU&OZ` no es una
-  errata de la transcripción: es cómo la tipografía del juego codifica la eñe.
 - Y el aviso de que viene lo bueno, justo antes de la segunda carga:
   `HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN
   NO HA LLEGADO`.
+
+Y los créditos, que son lo más interesante de todo el bloque de texto, porque
+contestan la pregunta de fondo de este desensamblado: **quién hizo la versión
+de MSX**. Los autores de la versión de ZX Spectrum avisan en su propio
+repositorio de que ellos no la hicieron, y aquí está el nombre, en el binario:
+
+```
+CONVERSION POR
+CARLOS ARIAS
+GRAFICOS
+JUAN CARLOS Y JAVIER AREVALO
+...ADEMAS DE...
+JULIO MARTIN
+MUSICA COMPUESTA POR
+GOMINOLAS
+BASADO  EN
+UNA IDEA  ORIGINAL
+JOSE MANUEL  MU&OZ
+TOPO SOFT
+```
+
+Los gráficos siguen siendo de los hermanos Arévalo, los mismos de la versión
+original, lo que encaja con que el dibujo se trajera tal cual. La conversión
+del código, en cambio, la firma Carlos Arias. Ese `&` de `MU&OZ` no es una
+errata de la transcripción: es cómo la tipografía del juego codifica la eñe.
+
+## La música, tal como la soltó el chip
+
+Stardust guarda su música en un lenguaje propio de quince comandos, y esa
+historia —el intérprete, las tres voces, una partitura que no tiene ni una
+nota— está en [Hallazgos](HALLAZGOS.html#el-sonido-es-un-lenguaje). Aquí está
+el resultado, que es lo que se oía en 1987.
+
+Estas dos piezas **no son una sintetización del listado: son lo que el chip de
+sonido emitió**, capturado registro a registro con el juego corriendo en el
+emulador y vuelto a sonido. Por eso llevan «medida» en el nombre. La lectura de
+la partitura se verificó aparte, cuadro a cuadro contra estas mismas capturas.
+
+La música del juego de naves —la progresión do–la–fa–sol, dos compases por
+acorde—:
+
+<audio controls src="../audio/musica_naves_medida.mp3"></audio>
+
+Y la de la tabla de récords de la fase de a pie:
+
+<audio controls src="../audio/musica_records_medida.mp3"></audio>
 
 ## Y así se ve corriendo
 

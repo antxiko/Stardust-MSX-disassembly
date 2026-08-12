@@ -8,12 +8,24 @@ generators.
 And then it changes game. On clearing the last ship zone the character **lands
 and carries on on foot**, and that is the final stage.
 
+This page gathers the game as it looks and sounds: the graphics, the 7+1
+levels with their maps, the texts, the music, and two shots of the game
+running. The how and the why of each thing is in [Findings](FINDINGS.html).
+
 ## The graphics, taken out of the tape
 
 None of what follows is a screenshot: it is all drawn from the bytes of the
 binary, using the geometry the game itself uses. That is what makes it a check
 rather than an illustration — if the block's layout were wrong, noise would come
 out.
+
+### The logo
+
+![The STARDUST logo, drawn from the tape](imagenes/logo.png)
+
+It is the first thing in the game block: its first 256 bytes, a 128×16 bitmap
+at 16 bytes per row. It is the same sign the attract mode animates bouncing
+over the play area, and the one heading this site's front page.
 
 ### The 111 scenery tiles
 
@@ -37,9 +49,17 @@ OR.
 
 ![The character set](imagenes/charset.png)
 
-59 characters of 8×8 at 0x6000, and the fifteen 24×24 sentinel nodes at 0x69A8.
+59 characters of 8×8 at 0x6000. And the fifteen 24×24 sentinel nodes, at
+0x69A8:
 
-## The seven zone maps
+![The fifteen sentinel nodes](imagenes/centinelas.png)
+
+## The eight levels: seven zones and a tower
+
+The game is 7+1 levels: seven zones you fly over piloting the ship, and an
+eighth —the scoreboard itself numbers it ZONA:08— that is climbed on foot.
+
+### The seven ship zones
 
 Each zone takes about **250 bytes** on the tape, nowhere near enough for a map.
 They are **compressed**, and the scheme is a pretty one: a *recursive* phrase
@@ -73,12 +93,46 @@ through three: red, white and cyan.
 
 They are rebuilt with `tools/descomprime_nivel.py` and `tools/render_niveles.py`.
 
-## The panel and the zones
+### Zone 8: the on-foot tower
+
+The last zone isn't flown over: it is climbed. Its map sits at 0x840B —78 rows
+of 6 cells— and is drawn with its own pool of 45 tiles of 32×32, so the whole
+tower measures **192×2496 pixels**. Every byte of the map is two things at
+once, the cell's drawing and its physics, and that story —with the camera, the
+checkpoints and death by falling— is in
+[Findings](FINDINGS.html#the-whole-tower-and-a-map-that-is-two-maps).
+
+![The on-foot tower, composed from its map and its tiles](imagenes/torre_apie.png)
+
+Below the starting point sits the arrow sign pointing up (tiles 0x28 and 0x29
+appear nowhere else), and row 0 is a cornice of rosettes. The bare structure,
+without the background pattern, and its tile pool:
+
+![The tower's structure, without the background pattern](imagenes/torre_estructura.png)
+
+![The tower's 45-tile pool](imagenes/tiles_apie.png)
+
+They are rebuilt with `tools/render_torre.py`.
+
+## The frame and the loading screen
 
 The play screen carries a decorated frame on all four sides and leaves a central
 window for the action, with the score and the zone number along the bottom. The
 frame is very much of its time and very much of the Spectrum: it takes advantage
 of the fact that the borders never change to fill them with detail at no cost.
+It is not drawn piece by piece: **it ships ready-drawn inside the game block**,
+which is why it can be composed straight from the tape:
+
+![The play screen's frame, drawn from the tape's data](imagenes/marco.png)
+
+How it inherits its name table from the loading screen —and why that lets the
+scoreboard write drawings instead of letters— is told in
+[Findings](FINDINGS.html#the-game-frame-travels-in-the-block-and-the-loading-screen-sets-the-table).
+
+![The screen you watch while it loads](imagenes/carga.png)
+
+The loading screen isn't a capture either: it is drawn from the 12,288 bytes
+its own block sends to video memory. It is signed **CANO**, bottom left.
 
 ## The game's text
 
@@ -89,37 +143,59 @@ Read out of the binary, exactly as it sits there:
 - The high-score table ships from the factory with in-house names: `JAVIER
   100000`, `JUAN C 080000`, `MARTA 060000`, `MARIA 050000`, `TOPO 030000`,
   `SOFT 020000`.
-- And the credits, which are the most interesting thing in the whole text block,
-  because they answer the question underlying this disassembly: **who made the
-  MSX version**. The authors of the ZX Spectrum version warn in their own
-  repository that they did not make it, and here is the name, in the binary:
-
-  ```
-  CONVERSION POR
-  CARLOS ARIAS
-  GRAFICOS
-  JUAN CARLOS Y JAVIER AREVALO
-  ...ADEMAS DE...
-  JULIO MARTIN
-  MUSICA COMPUESTA POR
-  GOMINOLAS
-  BASADO  EN
-  UNA IDEA  ORIGINAL
-  JOSE MANUEL  MU&OZ
-  TOPO SOFT
-  ```
-
-  "Conversion by Carlos Arias; graphics by Juan Carlos and Javier Arévalo; and
-  also Julio Martín; music composed by Gominolas; based on an original idea by
-  José Manuel Muñoz." The graphics are still the Arévalo brothers', the same as
-  the original version, which fits with the artwork having been carried across
-  as it was. The conversion of the code, on the other hand, is signed by Carlos
-  Arias. That `&` in `MU&OZ` is not a transcription slip: it is how the game's
-  charset encodes the letter ñ.
 - And the notice that the good part is coming, right before the second load:
   `HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN
   NO HA LLEGADO` — you have broken through the flagship's defences, but the
   worst is yet to come.
+
+And the credits, which are the most interesting thing in the whole text block,
+because they answer the question underlying this disassembly: **who made the
+MSX version**. The authors of the ZX Spectrum version warn in their own
+repository that they did not make it, and here is the name, in the binary:
+
+```
+CONVERSION POR
+CARLOS ARIAS
+GRAFICOS
+JUAN CARLOS Y JAVIER AREVALO
+...ADEMAS DE...
+JULIO MARTIN
+MUSICA COMPUESTA POR
+GOMINOLAS
+BASADO  EN
+UNA IDEA  ORIGINAL
+JOSE MANUEL  MU&OZ
+TOPO SOFT
+```
+
+"Conversion by Carlos Arias; graphics by Juan Carlos and Javier Arévalo; and
+also Julio Martín; music composed by Gominolas; based on an original idea by
+José Manuel Muñoz." The graphics are still the Arévalo brothers', the same as
+the original version, which fits with the artwork having been carried across
+as it was. The conversion of the code, on the other hand, is signed by Carlos
+Arias. That `&` in `MU&OZ` is not a transcription slip: it is how the game's
+charset encodes the letter ñ.
+
+## The music, as the chip put it out
+
+Stardust stores its music in a language of its own, fifteen commands strong,
+and that story —the interpreter, the three voices, a score that doesn't hold a
+single note— is in [Findings](FINDINGS.html#sound-is-a-language). Here is the
+result, which is what 1987 got to hear.
+
+These two pieces are **not synthesised from the listing: they are what the
+sound chip put out**, captured register by register with the game running in
+the emulator and turned back into sound. That is why their names say "medida"
+—measured. The reading of the score was verified separately, frame by frame
+against these same captures.
+
+The ship game's music —the C–A–F–G progression, two bars per chord—:
+
+<audio controls src="audio/musica_naves_medida.mp3"></audio>
+
+And the on-foot stage's high-score table music:
+
+<audio controls src="audio/musica_records_medida.mp3"></audio>
 
 ## And this is it running
 

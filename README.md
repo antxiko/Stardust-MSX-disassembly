@@ -4,11 +4,11 @@ A 1987 cassette tape, taken apart block by block. All **93,861 bytes** on it are
 bounded and owned — and inside it turned out to be **a ZX Spectrum conversion
 that brought the tape system across with it**.
 
-⚠️ **This is not finished, and work continues.** The budget closing at 100% means
-every byte has a name and a measurement behind it, not that its purpose is
-known: **3349 bytes remain unidentified** and much of the code is still
-uncommented. What's missing, with figures, is on
-[the what's-missing page](https://antxiko.github.io/Stardust-MSX-disassembly/WHATS-MISSING.html).
+✅ **The disassembly is finished**: every byte on the tape has an owner, all
+five blocks reassemble byte for byte, and the listing's **335 routines** are
+commented, evidence included. "Finished" does not mean exhausted: the questions
+still open, figures and all, are on
+[the open-questions page](https://antxiko.github.io/Stardust-MSX-disassembly/OPEN-QUESTIONS.html).
 
 📖 **[Full documentation](https://antxiko.github.io/Stardust-MSX-disassembly/)**
 · [En castellano](https://antxiko.github.io/Stardust-MSX-disassembly/es/)

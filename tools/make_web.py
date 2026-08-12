@@ -27,13 +27,15 @@ TXT = {
         claim="Una cinta de cassette de 1987, desmontada bloque a bloque. Por "
               "dentro resultó ser <b>una conversión del ZX Spectrum que se trajo "
               "hasta el sistema de grabación</b>.",
-        aviso="<b>Esto no está terminado, y se sigue trabajando en ello.</b> Que "
-              "el presupuesto cierre al 100 % quiere decir que cada byte de la "
-              "cinta tiene dueño —o es código que el trazador alcanza de verdad, "
-              "o cae en un rango con nombre y medida—, <b>no</b> que se sepa para "
-              "qué sirve cada uno. Cada byte tiene ya nombre, pero queda "
-              "código sin trazar y buena parte de las rutinas sin comentar. Está contado con cifras en "
-              "<a href='LO-QUE-FALTA.html'>Lo que falta</a>.",
+        aviso="<b>El desensamblado está terminado, y «terminado» no quiere decir "
+              "agotado.</b> Cada byte de la cinta tiene dueño —o es código que el "
+              "trazador alcanza de verdad, o cae en un rango con nombre y "
+              "medida—, los cinco bloques reensamblan byte a byte y las 335 "
+              "rutinas del listado tienen escrito qué hacen y con qué evidencia. "
+              "Eso <b>no</b> quiere decir que se sepa para qué sirve cada byte ni "
+              "que todo esté comprobado en marcha: lo que sigue abierto está "
+              "contado con cifras en "
+              "<a href='PREGUNTAS-ABIERTAS.html'>Preguntas abiertas</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
                "Carga de cinta <b>multicarga</b>", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "Las cifras"), ("#findings", "Hallazgos"),
@@ -41,7 +43,7 @@ TXT = {
         docnav=[("EMPEZAR.html", "Empezar"), ("EL-JUEGO.html", "El juego"),
                 ("LA-CINTA.html", "La cinta"), ("EL-CODIGO.html", "El código"),
                 ("HALLAZGOS.html", "Hallazgos"),
-                ("LO-QUE-FALTA.html", "Lo que falta")],
+                ("PREGUNTAS-ABIERTAS.html", "Preguntas abiertas")],
         otro=("../", "In English"),
         h_num="El juego en cifras", h_find="Lo que apareció al desmontarlo",
         h_scr="Los gráficos", h_met="Cómo se hizo",
@@ -68,13 +70,15 @@ TXT = {
         claim="A 1987 cassette tape, taken apart block by block. Inside it turned "
               "out to be <b>a ZX Spectrum conversion that brought the tape system "
               "across with it</b>.",
-        aviso="<b>This is not finished, and work continues.</b> The budget closing "
-              "at 100% means every byte on the tape has an owner —either code the "
-              "tracer genuinely reaches, or a range with a name and a "
-              "measurement— <b>not</b> that its purpose is known. Every byte now has a name, but there is "
-              "still untraced code and much of it remains uncommented. It "
-              "is set out with figures in "
-              "<a href='WHATS-MISSING.html'>What's missing</a>.",
+        aviso="<b>The disassembly is finished, and \"finished\" does not mean "
+              "exhausted.</b> Every byte on the tape has an owner —either code "
+              "the tracer genuinely reaches, or a range with a name and a "
+              "measurement—, all five blocks reassemble byte for byte, and the "
+              "listing's 335 routines have what they do written down, evidence "
+              "included. That does <b>not</b> mean every byte's purpose is known, "
+              "nor that everything has been checked running: what remains open is "
+              "set out with figures in "
+              "<a href='OPEN-QUESTIONS.html'>Open questions</a>.",
         ficha=["Topo Soft · <b>1987</b>", "A <b>ZX Spectrum</b> conversion",
                "<b>Multiload</b> from tape", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "The numbers"), ("#findings", "What turned up"),
@@ -83,7 +87,7 @@ TXT = {
                 ("THE-GAME.html", "The game"),
                 ("THE-TAPE.html", "The tape"), ("THE-CODE.html", "The code"),
                 ("FINDINGS.html", "Findings"),
-                ("WHATS-MISSING.html", "What's missing")],
+                ("OPEN-QUESTIONS.html", "Open questions")],
         otro=("es/", "En castellano"),
         h_num="The game in numbers", h_find="What turned up when we took it apart",
         h_scr="The graphics", h_met="How it was done",
@@ -131,11 +135,12 @@ HALLAZGOS = {
          "que enciende el motor de la cinta y lee el bit de datos del chip de "
          "sonido.</p>"
          "<p>Los dos programas ni siquiera comparten motor: los objetos de la "
-         "primera parte llevan estructuras de 8 bytes, y la segunda mezcla dos "
-         "sistemas: unas entidades de 46 bytes que llevan apuntada dentro la rutina "
-         "que las gobierna, y tablas ligeras de 5 para los enemigos —cuatro "
-         "andantes como máximo, con los voladores aparte—. (Aquí decía «de 46 en la "
-         "segunda» a secas: ese 46 es solo el de las entidades con puntero.)</p>"),
+         "primera parte llevan estructuras de 8 bytes con la rutina que los "
+         "gobierna apuntada dentro, y los enemigos de la segunda viven en tablas "
+         "ligeras de 5 bytes movidas por bucles fijos —cuatro andantes como "
+         "máximo, con los voladores aparte—. (Aquí estuvo publicado que la "
+         "segunda usaba «entidades de 46 bytes»: esos objetos existen, pero son "
+         "los tres canales del intérprete de sonido, no enemigos.)</p>"),
         ("Lo que el MSX obligó a cambiar",
          "<p>El Spectrum escribe directamente en su memoria de pantalla, que es RAM "
          "normal. En el MSX la memoria de vídeo está detrás del chip gráfico y hay "
@@ -155,9 +160,12 @@ HALLAZGOS = {
          "<p>El MSX tiene sprites por hardware. Aquí no se usan: se dibujan por "
          "software, a la manera del Spectrum, desplazando el dibujo bit a bit y "
          "componiéndolo con AND y OR.</p>"
-         "<p>Las dos partes del juego comparten esa rutina. De 40 bytes comparados "
-         "solo difieren seis, y tres de ellos son <code>and (hl)</code> contra "
-         "<code>or (hl)</code>.</p>"),
+         "<p>Las dos partes del juego llevan esa rutina, copiada y reubicada: el "
+         "pintor de sprites mide 198 bytes y, emparejadas sus dos mitades como "
+         "toca, las diferencias son diez direcciones reubicadas y un solo byte, "
+         "el del recorte por abajo. (Aquí estuvo publicado «de 40 bytes solo "
+         "difieren seis, tres de ellos and contra or»: comparaba la tira del "
+         "dibujo de una mitad con la de la máscara de la otra.)</p>"),
         ("Una cobertura que era mentira, dos veces",
          "<p>A mitad del trabajo, sembrar el trazador con rutinas sacadas del cotejo "
          "con la versión de Spectrum subió la cobertura <b>del 25 % al 75,8 % de "
@@ -209,12 +217,13 @@ HALLAZGOS = {
          "second part where the character continues on foot. And it doesn't use the "
          "loader's routine, still alive in memory: <b>it brings its own</b>, which "
          "starts the tape motor and reads the data bit off the sound chip.</p>"
-         "<p>The two programs don't even share an engine: objects in the first part "
-         "carry 8-byte structures, while the second part mixes two systems: 46-byte "
-         "entities that carry a pointer to their governing routine, and light 5-byte "
-         "tables for the enemies —four walkers at most, with the flyers kept "
-         "apart—. (This page used to say just \"46-byte ones in the second\": that "
-         "46 belongs only to the pointer-carrying entities.)</p>"),
+         "<p>The two programs don't even share an engine: objects in the first "
+         "part carry 8-byte structures with their governing routine's pointer "
+         "inside, while the second part's enemies live in light 5-byte tables "
+         "moved by fixed loops —four walkers at most, with the flyers kept "
+         "apart—. (This page used to report \"46-byte entities\" in the second "
+         "part: those objects exist, but they are the sound interpreter's three "
+         "channels, not enemies.)</p>"),
         ("What the MSX forced them to change",
          "<p>The Spectrum writes straight into its screen memory, which is ordinary "
          "RAM. On the MSX, video memory sits behind the graphics chip and has to be "
@@ -234,9 +243,12 @@ HALLAZGOS = {
          "<p>The MSX has hardware sprites. They aren't used here: sprites are drawn "
          "in software, the Spectrum way, shifting the image bit by bit and "
          "compositing it with AND and OR.</p>"
-         "<p>Both halves of the game share that routine. Of 40 bytes compared only "
-         "six differ, and three of those are <code>and (hl)</code> versus "
-         "<code>or (hl)</code>.</p>"),
+         "<p>Both halves of the game carry that routine, copied and relocated: "
+         "the sprite painter is 198 bytes, and with its two halves paired "
+         "correctly the differences are ten relocated addresses and a single "
+         "byte, the bottom clip. (This page used to say \"of 40 bytes only six "
+         "differ, three of them and versus or\": that compared one half's "
+         "drawing run against the other half's mask run.)</p>"),
         ("A coverage figure that was a lie, twice over",
          "<p>Midway through, seeding the tracer with routines from the cross-check "
          "against the Spectrum version pushed coverage <b>from 25% to 75.8% in one "

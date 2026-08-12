@@ -55,13 +55,15 @@ apart: the file that gets published is the file that gets checked.
 | `tools/perfil.py` | X-rays a binary and says where the nature of the data changes |
 | `tools/clasifica_huecos.py` | classifies a range by measuring it, and says which measurement the label came from |
 | `tools/check_entradas.py` | refuses any entry point that falls inside a range declared as data |
+| `tools/coteja_spectrum.py` | cross-checks this binary against the Spectrum version's |
 | `tools/render_graficos.py` | draws tiles, sprites and charset straight from the tape |
 | `tools/omsx_*.tcl` | openMSX harnesses: they pull out of the running game what the binary won't say |
 | `tools/omsx_replay.tcl` | replays a recorded playthrough and samples the program counter |
 
 ## If you want to pull on a thread
 
-What's missing is set out with figures in [What's missing](WHATS-MISSING.html).
-The two lines where most ground can be gained right now are the 3349
-unidentified bytes and the routines of the second part, which has barely been
-played.
+No bytes are left unowned and no routines uncommented, but there are loose
+ends —the 149 bytes of music nothing names, the noise mode no score ever
+switches on—, and they are counted, figures and all, in
+[Open questions](OPEN-QUESTIONS.html). Everything needed to look into them is
+in the repository.

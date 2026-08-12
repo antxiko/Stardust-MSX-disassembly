@@ -72,19 +72,20 @@ conversión se trajo el método de la máquina de origen.
 
 ## Un intérprete de guiones
 
-El comportamiento de los enemigos no está escrito como código, sino como
-guiones que interpreta una máquina virtual pequeña. Los bytes por debajo de 0x80
-son datos; de 0x80 para arriba son opcodes:
+El sonido no está escrito como código, sino como guiones que interpreta una
+máquina virtual pequeña. Los bytes por debajo de 0x80 son notas; de 0x80 para
+arriba son comandos:
 
 ```
 e230: ld a,(bc) / cp 080h / jp c,0e231h
       sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)
 ```
 
-con `0xE5C0` haciendo «HL = tabla + A×2, HL = (HL)». Son **35 opcodes**, y esa
-tabla de saltos es también la primera trampa del trazado: si no se declara como
-datos, el trazador se mete dentro y empieza a desensamblar direcciones como si
-fueran instrucciones.
+con `0xE5C0` haciendo «HL = tabla + A×2, HL = (HL)». Son **quince comandos**
+—aquí estuvo publicado 35, y los veinte punteros de más eran las melodías del
+juego leídas como si fueran código—, y esa tabla de saltos es también la
+primera trampa del trazado: si no se declara como datos, el trazador se mete
+dentro y empieza a desensamblar direcciones como si fueran instrucciones.
 
 ## Cada objeto lleva su rutina
 
@@ -101,7 +102,7 @@ distintos. La medida era buena; la lectura, no. Ese `jp (hl)` —el de 0xC544—
 despacha entidades sino los **comandos del intérprete de sonido**, y los objetos
 de 46 bytes son sus tres canales: la rutina que arranca un sonido recibe el
 número de canal y lo multiplica por 46 (`ld de,0002eh`) para llegar a su estado.
-Está contado entero en <a href='HALLAZGOS.html'>Hallazgos</a>.
+Está contado entero en [Hallazgos](HALLAZGOS.html).
 
 Los enemigos de a pie no llevan rutina apuntada. Viven en **tablas de 5 bytes
 por objeto** —los andantes en 0xACE4, los voladores en 0xACF9, los dos tiros de

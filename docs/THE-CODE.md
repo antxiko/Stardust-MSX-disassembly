@@ -73,18 +73,19 @@ conversion brought the source machine's method across with it.
 
 ## A script interpreter
 
-Enemy behaviour is not written as code but as scripts run by a small virtual
-machine. Bytes below 0x80 are data; from 0x80 up they are opcodes:
+The sound is not written as code but as scripts run by a small virtual
+machine. Bytes below 0x80 are notes; from 0x80 up they are commands:
 
 ```
 e230: ld a,(bc) / cp 080h / jp c,0e231h
       sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)
 ```
 
-with `0xE5C0` doing "HL = table + A×2, HL = (HL)". There are **35 opcodes**, and
-that jump table is also the first trap in tracing: if it isn't declared as data,
-the tracer walks into it and starts disassembling addresses as though they were
-instructions.
+with `0xE5C0` doing "HL = table + A×2, HL = (HL)". There are **fifteen
+commands** —this page used to say 35, and the twenty extra pointers were the
+game's melodies read as if they were code—, and that jump table is also the
+first trap in tracing: if it isn't declared as data, the tracer walks into it
+and starts disassembling addresses as though they were instructions.
 
 ## Every object carries its own routine
 
@@ -101,7 +102,7 @@ engines. The measurement was sound; the reading was not. That `jp (hl)` —the o
 at 0xC544— dispatches not entities but the **sound interpreter's commands**, and
 the 46-byte objects are its three channels: the routine that starts a sound takes
 the channel number and multiplies it by 46 (`ld de,0002eh`) to reach its state.
-The whole story is in <a href='FINDINGS.html'>Findings</a>.
+The whole story is in [Findings](FINDINGS.html).
 
 The on-foot enemies carry no routine pointer. They live in **5-byte tables**
 —walkers at 0xACE4, flyers at 0xACF9, the turret's two shots at 0xAD04— and

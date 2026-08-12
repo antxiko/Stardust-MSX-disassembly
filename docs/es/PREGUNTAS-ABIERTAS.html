@@ -1,0 +1,169 @@
+<title>Preguntas abiertas — Stardust (1987)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,640px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="PREGUNTAS-ABIERTAS.html" style=color:var(--tinta)>Preguntas abiertas</a><a href="../OPEN-QUESTIONS.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<h1 id="preguntas-abiertas">Preguntas abiertas</h1>
+<p>Esta página se llamó «Lo que falta», y nació para que el «100 %» de la portada no se leyera como lo que no es, cuando quedaba de todo por hacer. Hoy los siete criterios que se fijó el proyecto están cumplidos: cada byte de la cinta tiene dueño, los cinco bloques reensamblan byte a byte, y las 335 rutinas del listado tienen escrito qué hacen y con qué evidencia. <b>Ya no falta nada que se pueda contar en bytes</b>: lo que hay son preguntas abiertas, y abren la página.</p>
+<p>Detrás de ellas quedan las cuentas, por el mismo motivo de siempre: decir con exactitud <b>qué significa cada cifra y qué no</b>.</p>
+<h2 id="las-preguntas-abiertas">Las preguntas abiertas</h2>
+<p>Esto es lo que queda, por orden de lo que más rendiría:</p>
+<ul><li><b>La escena que cierra la zona 7.</b> La mecánica está leída byte a byte —dos sprites que bajan y arrastran a la nave fuera de la pantalla—, pero no está comprobado qué dibujan exactamente esos dos sprites. Es justo la escena que enlaza con la segunda carga.</li><li><b>Los 149 bytes de 0xECCC, sin dueño.</b> Un bloque escrito en el lenguaje del intérprete de sonido —56 llamadas a dos frases, con pinta de percusión— al que <b>nada apunta</b>: el valor 0xECCC no aparece ni una vez en los tres bloques de la cinta, y ninguna frase llega tan arriba. La historia entera, con su control, está en <a href="HALLAZGOS.html#el-sonido-es-un-lenguaje">Hallazgos</a>.</li><li><b>El motor de sonido trae un modo que el juego no usa.</b> El barrido de ruido puede recargarse solo al agotarse, y eso lo enciende un bit que <b>ninguna de las dos partituras enciende jamás</b>: todos los argumentos de ese comando valen 0, 1 o 2, y nunca el 4 que haría falta. Código muerto en las dos mitades.</li><li><b>A la tabla de efectos de ruido le falta un byte, en las dos mitades</b>, y cada una usa justo la entrada truncada. El byte que falta se lo roba a la tabla de notas que empieza ahí mismo, y <b>sí se copia</b> —el bucle es de seis fijos—, pero cae en un campo que no se llega a usar. Que el recorte sea deliberado es lo que sugiere el detalle de que los cinco bytes que sobreviven en una mitad son los mismos que la entrada completa de la otra: dos cortes independientes de exactamente un byte, los dos en el único sitio inofensivo. Sugerirlo no es demostrarlo.</li><li><b>El comando 0x84 del intérprete de sonido</b>, que ya se sabe que cuenta una duración sin reatacar la nota: se salta entero el tramo de ataque. Que eso sea una ligadura es la lectura musical, y encaja con dónde aparece en la partitura, pero no está probado contra el chip como sí lo está el resto del intérprete.</li><li><b>Cuántos finales distintos hay</b>, dicho arriba: no se ha buscado si la puntuación o el marcador cambian algo en el remate.</li></ul>
+<p>Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu cuenta, todo lo necesario está en el repositorio: los listados, las herramientas de medida y los ficheros de notas donde se anota cada hallazgo.</p>
+<h2 id="que-significa-ese-100-y-que-no">Qué significa ese 100 %, y qué no</h2>
+<p>El presupuesto de bytes dice:</p>
+<pre><code>TOTAL 93861 bytes, 93861 explicados (100.00%), 0 sin explicar</code></pre>
+<p>Eso quiere decir una cosa muy concreta: <b>cada byte de la cinta tiene dueño</b>. O es código que el trazador alcanza siguiendo el flujo de verdad, o cae dentro de un rango declarado con un nombre y una explicación de cómo se sabe.</p>
+<p>Lo que <b>no</b> quiere decir es que se sepa para qué sirve cada byte. Durante casi todo el proyecto hubo rangos cuyo nombre era, literalmente, «datos sin clasificar»: contaban como explicados en el sentido de estar medidos y acotados, no en el de entenderse. Confundir las dos cosas sería vender humo. Esa categoría llegó a tener 4089 bytes y hoy está <b>vacía</b>; cómo se vació está contado al final de esta página.</p>
+<h2 id="las-rutinas-contadas">Las rutinas, contadas</h2>
+<p>Una rutina de este desensamblado pasa por tres estados, y conviene no confundirlos:</p>
+<ol><li><b>acotada</b>: el trazador sabe dónde empieza y dónde acaba;</li><li><b>nombrada</b>: alguien ha averiguado qué es y le ha puesto nombre;</li><li><b>comentada</b>: está escrito qué hace, y con qué evidencia.</li></ol>
+<p>El tercero es el que cuesta, y va así:</p>
+<pre><code>fase de naves    191 rutinas, 191 comentadas (100 %)
+fase de a pie    144 rutinas, 144 comentadas (100 %)
+------------------------------------------------------
+total            335 rutinas, 335 comentadas (100 %)</code></pre>
+<p>O sea que <b>quedan 0 sin comentar</b>. La cifra la mide <code>tools/rutinas_comentadas.py</code> y la vigila un test, para que no pueda quedarse vieja aquí mientras el listado avanza; es la misma precaución que se tomó con las cifras de la portada, que ya se quedaron desfasadas una vez.</p>
+<p><b>Y ese 100 % tampoco quiere decir «terminado», igual que el de los bytes.</b> Quiere decir que cada rutina tiene escrito qué hace y con qué evidencia. No quiere decir que todo se haya comprobado en marcha: unas cuantas se sostienen sobre la lectura del listado y están marcadas como tales allí donde lo están, y las preguntas que siguen abiertas se cuentan más abajo.</p>
+<p>Cuenta como rutina una etiqueta que sea destino de al menos un <code>call</code>, o que esté declarada como punto de entrada. Los destinos de salto no cuentan: la mayoría son bucles internos de otra rutina, y contarlos es exactamente la confusión que llegó a publicar 1956 «rutinas».</p>
+<h2 id="lo-que-el-trazador-no-alcanza">Lo que el trazador no alcanza</h2>
+<p>El presupuesto mide bytes; la cobertura mide otra cosa. Del código de los dos bloques grandes, el trazador alcanza esto:</p>
+<pre><code>juego de naves    23,0 %
+parte de a pie    28,6 %</code></pre>
+<p>El resto son datos, sí, pero también hay <b>código al que no se llega siguiendo el flujo</b>: rutinas a las que solo se entra por saltos calculados, por tablas o por punteros que se rellenan jugando. De algunas ya se sabe que existen porque el emulador las pilló ejecutándose; de otras, no se sabe.</p>
+<p>La medida exacta de esa ceguera son los <b>saltos indirectos</b>: <code>jp (hl)</code>, donde el destino no está escrito en el binario sino en un registro, y el trazador se para porque no puede saber a dónde va. Hay <b>cuatro</b>, tres en la parte de naves y uno en la de a pie, y salen listados en el propio trazado:</p>
+<pre><code>python3 -c &quot;import json;print(json.load(open(&#x27;work/juego.trace.json&#x27;))[&#x27;blind&#x27;])&quot;</code></pre>
+<p><b>Los cuatro están resueltos</b>, y por primera vez no queda ninguno pendiente. El de 0xE230 es el despachador del intérprete de guiones del sonido, y su tabla de quince punteros se lee del binario. Los otros tres —0xCB99 y 0xD6B8 en la parte de naves, 0xC544 en la de a pie— no se resolvieron leyendo código sino jugando con el emulador delante y anotando el destino cada vez que el salto se ejecutaba, porque las estructuras que llevan esos punteros vienen a 0xFF en la cinta y se rellenan jugando.</p>
+<h3 id="el-quinto-no-existia">El quinto no existía</h3>
+<p>Aquí figuraba un quinto, en 0x984D, «sin resolver» porque no se disparaba nunca. Ahora se sabe por qué: <b>no es un salto</b>. Es un <code>0xE9</code> dentro de un dibujo:</p>
+<pre><code>9840  A5 AA AA 17 55 69 55 0E
+9848  A5 AA AA 17 55 E9 50 0B      &lt;- ese E9</code></pre>
+<p>No había que buscarle destino, había que retirarlo. Y detrás de él estaba el error más grande que ha tenido este bloque, contado al final de la página.</p>
+<h2 id="lo-que-no-se-ha-comprobado">Lo que no se ha comprobado</h2>
+<ul><li>Aquí figuraba que la segunda parte <b>no se había jugado entera</b> y que su remate estaba «leído en el listado, no visto ocurrir». Las dos cosas eran falsas: la partida grabada llega al final, y las cinco rutinas de la secuencia se han visto ejecutarse con su hora, contadas en <a href="HALLAZGOS.html">Hallazgos</a>. Lo que sí sigue sin comprobarse es <b>cuántos finales distintos hay</b>: se han visto los dos —terminar el juego y quedarse sin vidas— pero no se ha buscado si el marcador o la puntuación cambian algo más.</li><li>El cotejo con la versión de Spectrum no puede decir nada sobre esa segunda parte: el snapshot con el que se compara se capturó en el menú de la primera, así que la fase de a pie del original no está ahí.</li><li><b>Que las 335 rutinas tengan comentario no quiere decir que estén todas comprobadas en marcha.</b> Unas cuantas se sostienen sólo sobre la lectura del listado, y allí donde es así queda dicho.</li></ul>
+<h2 id="por-que-se-publica-asi">Por qué se publica así</h2>
+<p>Porque un desensamblado que dice claramente dónde está cada afirmación —y de qué clase de evidencia cuelga— es útil, y uno que aparenta más de lo que sabe es peor que nada: manda a quien venga detrás a buscar en el sitio equivocado.</p>
+<p>El criterio de toda la serie es que cada afirmación se pueda contrastar con el binario. Eso incluye las afirmaciones sobre lo que <b>no</b> se sabe: por eso los bytes sin clasificar estuvieron acotados uno a uno mientras existieron, y por eso las cifras de cobertura salen del trazador y no de una impresión.</p>
+<h2 id="como-se-vacio-el-presupuesto-y-los-errores-que-costo">Cómo se vació el presupuesto, y los errores que costó</h2>
+<p>Lo que sigue es historia: el camino por el que los «datos sin clasificar» pasaron de 4089 bytes a cero, y los errores propios que se destaparon por el camino. Se conserva porque el método —y sus trampas— vale para cualquier desensamblado.</p>
+<h3 id="lo-que-resultaron-ser-los-bytes-sin-nombre">Lo que resultaron ser los bytes sin nombre</h3>
+<p>El camino, por tandas: primero se identificaron 1221; después <b>1415 de una sola tacada</b>, cuando el tramo grande del principio del bloque resultó ser el marco de la pantalla de juego; después otros <b>1141</b>, el relleno de la grabación que remata el bloque; después <b>252</b>, los instrumentos del intérprete de sonido; y los <b>541 últimos</b> cayeron en una tarde.</p>
+<p><b>656 bytes: el bloque de textos de la segunda parte</b> (0xB720). No hubo que interpretar nada, se lee tal cual: los rótulos de redefinir teclas, el menú, el mensaje de récord y la tabla de récords de fábrica, que empieza por <em>JAVIER 100000</em> y <em>JUAN C 080000</em> —los dos Arévalo, que firman los gráficos—. Y entre los nombres de teclas están GRAPH, CODE y SELECT, que <b>son teclas del MSX y en un ZX Spectrum no existen</b>: ese bloque no vino portado, se escribió aquí.</p>
+<p><b>192 bytes: la tabla de notas del chip de sonido</b> (0xE6E3). Son palabras de 16 bits estrictamente decrecientes, y lo que las delata es que <b>cada una vale el doble que la que está doce posiciones más allá</b>, que es la definición de una octava de doce semitonos. Con el reloj del PSG del MSX, la primera da 32,70 Hz, que es el <b>do1 teórico</b>. Aquí estuvo publicada como 81 notas y 162 bytes, y se quedaba corta: son <b>96, ocho octavas justas</b> —0xE6E3 + 96×2 = 0xE7A3 cierra al byte contra la tabla que empieza ahí—, y lo confirma la propia música del juego, que usa la nota número 84.</p>
+<p><b>1415 bytes: el marco de la pantalla de juego, viajando dentro del bloque.</b> El principio del bloque (0x47A0-0x5A9F) no eran «gráficos» a bulto: los primeros 256 bytes son el <b>logo STARDUST</b>, un bitmap de 128×16 a 16 bytes por fila, y detrás van los <b>patrones</b> (0x48A0) y los <b>colores</b> (0x51A0) del <b>marco</b>: el cuadro decorado, con su HUD, que rodea el área de juego. 0x900 bytes de cada, que la rutina de 0xEF28 copia a la memoria de vídeo. La aritmética cierra sola —0x48A0 + 0x900 = 0x51A0, y 0x51A0 + 0x900 = 0x5AA0— y el contraste con el emulador también: el 97,4 % de esos bytes aparece idéntico en la memoria de vídeo real con el juego en marcha.</p>
+<p><b>490 bytes: el pool de sprites de la fase a pie</b> (0x6555). Dos rangos «sin clasificar» y una «tabla» de 9 bytes eran cortes arbitrarios en mitad de las entradas del pool: sprites de <b>16×16 con máscara, 64 bytes cada uno</b>, el mismo formato que los de la fase de naves. La geometría la fija el código del derrumbe del protagonista, y dibujadas las entradas salen los enemigos andantes limpios, con sus poses.</p>
+<p><b>120 bytes que no eran datos, sino código: los comportamientos de los tiles especiales.</b> Un despachador en 0xC116 asigna a ciertos índices de tile una rutina de comportamiento, guardándola como puntero en el objeto; como a esas rutinas solo se entra por puntero, el trazador no las veía.</p>
+<p><b>252 bytes: los instrumentos del intérprete de sonido</b> (0xE5E2), una tabla de <b>16 instrumentos de 15 bytes</b> que un comando del intérprete copia al estado del canal, y detrás otra de entradas de 6 bytes para los efectos. Cierra al byte por los dos lados.</p>
+<p><b>1141 bytes: el relleno de la grabación del master.</b> El tramo que remata el bloque del juego (0xF972-0xFDE6) es <b>RAM sin inicializar volcada tal cual al grabar la cinta</b>: 00 y FF alternados de dos en dos, con un volteo de fase cada 128 bytes exactos —el aspecto de una DRAM recién encendida—. La prueba la dio el emulador, sobre la partida completa de 38 minutos: las únicas escrituras al tramo en toda la partida son las cuatro del arranque con las que el juego instala sus ganchos de interrupción. <b>Y 37 bytes muertos más en 0xCA5F</b>, con estructura de variables pero sin una sola referencia ni un solo acceso medido: residuo de la misma máquina.</p>
+<p><b>4 bytes: los colores de la fase a pie</b> (0xC46A), entre los que el arranque del nivel elige <b>al azar</b>. Por eso la fase de a pie no siempre se ve del mismo color.</p>
+<p><b>403 bytes que no eran datos, sino código</b>: cuatro rutinas de pre-desplazado de sprites en la segunda parte (0xB2A6), otra de 58 bytes (0xC804) y una de 83 en la parte de naves (0xDA72) repartida en tres rangos. Estaban clasificadas midiendo entropía; desensambladas salen limpias de punta a punta.</p>
+<p><b>Y una raya mal puesta.</b> El bloque de textos de la parte de naves empezaba declarado en 0xDAD9, que es <b>la S de «HAS CONSEGUIDO»</b>: cortaba una cadena por la mitad. Empieza en 0xDAC5, justo después del <code>ret</code> de 0xDAC4.</p>
+<p>De propina, una vía que se cerró y luego tuvo gracia: buena parte de lo que quedaba estaba en 0x4952-0x563F, <b>y ahí el original no podía ayudar</b>, porque en el ZX Spectrum esas direcciones son la memoria de pantalla: no hay juego que mirar, hay imagen. Cuando por fin se identificó el tramo, resultó que <b>aquí también había una imagen</b> —el marco, contado arriba—. En el original, esas direcciones muestran una pantalla; en la conversión, guardan una.</p>
+<h3 id="el-arranque-de-la-fase-a-pie-estaba-mal-y-arrastraba-3618-bytes">El arranque de la fase a pie estaba mal, y arrastraba 3618 bytes</h3>
+<p>Éste es el error más grande que ha tenido el bloque de la segunda parte, y lo destapó una partida jugada hasta el final del juego.</p>
+<p>El fichero de puntos de entrada decía, sin disimulo: <em>«0x61D0 — el primer byte del bloque, a falta de saber el arranque real»</em>. Era <b>una suposición</b>: 0x61D0 es donde el bloque se <em>carga</em>, no donde empieza a ejecutarse. Y de esa suposición colgaba todo lo demás:</p>
+<ul><li>a 38 bytes hay lo que entonces se llamó una <b>tabla de punteros</b> —palabras descendiendo de dos en dos— que el trazador leía como código. <b>Tampoco era eso</b>: hoy se sabe que son las coordenadas de la animación final, y se cuenta en <a href="HALLAZGOS.html">Hallazgos</a>. Lo de «palabras que bajan de dos en dos» era la fila del dibujo subiendo por la pantalla;</li><li>a 57 bytes se topaba con un <code>C2 78 8A</code> leído a caballo entre dos entradas de esa lista, o sea un <code>jp nz,8A78</code>, <b>y se metía dentro del dibujo</b>;</li><li>y desde ahí desensamblaba <b>3542 bytes de gráficos</b> como instrucciones, con el <code>0xE9</code> del final figurando como el último salto ciego del proyecto.</li></ul>
+<p>El arranque de verdad se encuentra siguiendo al cargador. En el bloque de naves, en cuanto la carga de cinta termina bien:</p>
+<pre><code>f7b0: ld a,001h / ld (0a529h),a
+f7b5: jp 0a279h            &lt;- aquí empieza la segunda parte</code></pre>
+<p>Y <b>0xA279 desensambla a un arranque de programa de manual</b>: corta las interrupciones, se monta su propia pila con <code>ld sp,05b32h</code>, programa el chip gráfico y escribe <code>JP 0xC46E</code> en 0xFD9F, que es <b>H.TIMI, el gancho de interrupción del MSX</b>. La dirección que instala ahí, 0xC46E, es la misma que se había identificado por separado mirando la forma de su epílogo: dos caminos independientes que dan lo mismo.</p>
+<p>Consecuencia en las cifras: la cobertura de la fase a pie baja del 51,7 % al 35,0 %, porque desaparecen 3618 bytes que se contaban como código sin serlo. La cifra empeora y el trabajo mejora.</p>
+<p>Y volvió a pasar. Ese 35,0 % <b>también era mentira</b>, y por lo mismo: una semilla puesta en 0xCC3E caía dentro de un guion de música, y con ella el trazador desensambló <b>1.318 de los 1.380 bytes de la banda sonora de la fase</b> como si fueran instrucciones. Quitándola, la cobertura real es del <b>28,6 %</b>. Es el mismo error una tercera vez, y lo que lo caza no es mirar el listado sino tener una segunda vía para leer esos bytes: recorridos con el lenguaje del intérprete de sonido salen 38 bloques, cero bytes fuera del lenguaje, y el recorrido cierra clavado donde empiezan los estados de canal.</p>
+<p>Para que no haya una cuarta vez, el cruce ya no depende de que a alguien se le ocurra mirar: <code>tools/check_datos_como_codigo.py</code> confronta <b>todas las zonas de datos declaradas</b> contra lo que el trazador cree, y va colgado del <code>make sanity</code> y de los tests. El guardián que había, <code>check_trace.py</code>, sólo vigilaba el puñado de zonas del fichero <code>.nocode</code>, y por eso daba verde mientras la banda sonora se leía como código.</p>
+<h3 id="y-367-bytes-mas-que-se-contaban-como-codigo-y-no-lo-son">Y 367 bytes más que se contaban como código y no lo son</h3>
+<p>Buscando código automodificable apareció el error contrario. <b>Tres bloques de variables estaban marcados como código</b>: 175 bytes en 0xED75 de la parte de naves, y 17 en 0xC459 y 175 en 0xD068 de la de a pie. Llegan de la cinta a cero, y 0x00 desensambla a <code>nop</code>, así que al caer el flujo dentro el trazador los recorría uno a uno y los contaba como instrucciones.</p>
+<p>Que son variables lo dice el propio listado, que <b>las lee y las escribe con direccionamiento absoluto desde más de setenta sitios</b>. Una instrucción no se lee byte a byte desde medio programa.</p>
+<p>Uno de esos bytes hacía daño de verdad: el 0x10 de 0xC468 se leía como un <code>djnz</code> y mandaba al trazador a un trozo de código por un camino que no existe. Al declarar las variables como datos ese trozo se quedó huérfano, y resultó ser el <b>epílogo del manejador de interrupción</b> de la segunda parte —21 bytes que acaban en <code>ei / ret</code> y encajan al byte—, al que se entra por puntero y por eso no se alcanza siguiendo el flujo. Ahora está declarado como lo que es.</p>
+<h3 id="veinte-rutinas-que-eran-musica-y-1-386-bytes-que-dejan-de-ser-codigo">Veinte «rutinas» que eran música, y 1.386 bytes que dejan de ser código</h3>
+<p>De los 35 comandos que se publicaron para el intérprete de sonido, <b>veinte no existen</b>. Eran las <b>melodías del juego</b>, escritas en el lenguaje del propio intérprete y desensambladas como si fueran instrucciones.</p>
+<p>Lo destapa el comando 0x8C, que es el <em>call</em> del intérprete: coge un número de frase, guarda la dirección de vuelta en una pila que hay por canal, y salta a la frase leyéndola de <b>una tabla que está en 0xE7C1</b>. Y 0xE7C1 es exactamente 0xE7A3 + 15×2. Es decir: la tabla de comandos tiene <b>quince</b> entradas y muere ahí; lo que sigue es <b>otra tabla</b>, la de las melodías. Al leerlas como una sola de 35, los veinte punteros de música entraron en el disassembler como si apuntaran a código.</p>
+<p>El otro extremo lo cierra el comando 0x8D, que es el <em>return</em>: recupera la dirección de vuelta de esa misma pila. Por eso **todas las frases terminan en <code>8D</code>**. Las canciones no: terminan en <code>8B</code>, que es el comando que limpia el canal. Son dos niveles, canciones que llaman a frases — la misma idea que el diccionario recursivo con el que se comprimen los mapas de nivel.</p>
+<p>Que esos 1.420 bytes son música y no código se comprueba leyéndolos con la gramática del intérprete, y encajan: de todos los bytes altos del tramo, <b>todos son comandos válidos salvo quince</b>, y esos quince son argumentos que se identifican uno a uno. En 1.420 bytes de código Z80 de verdad aparecerían <code>ret</code>, <code>call</code> o los prefijos de IX a cada paso; aquí no hay ni uno. El comando más repetido es precisamente el que llama a las frases, 208 veces.</p>
+<p>La consecuencia en las cifras es directa y va en la dirección incómoda: <b>1.386 bytes dejan de contar como código</b>, la cobertura del bloque de naves baja del 26,0 % al 23,0 %, y las rutinas identificadas quedan en 106. El presupuesto sigue cerrando al 100 %, porque esos bytes no desaparecen: cambian de columna.</p>
+<h3 id="la-cifra-de-rutinas-bajo-de-164-a-106-y-es-la-misma-confusion-de-siempre">La cifra de rutinas bajó de 164 a 106, y es la misma confusión de siempre</h3>
+<p>Esta página ya contaba que la cifra de rutinas estuvo publicada como <b>1956</b>, que era el número de <b>etiquetas</b> del trazador: todo destino de salto, incluidos los saltos internos de una misma rutina. Se corrigió contando sólo lo que alguien había averiguado a mano.</p>
+<p>Pues la misma confusión volvió a colarse, en pequeño. Los ficheros de puntos de entrada recogen dos clases de cosas: las rutinas que se han leído y entendido, y los puntos <b>medidos en el emulador</b> —dónde estuvo el contador de programa, dónde saltó un aviso de escritura—. Los segundos son evidencia muy útil, pero casi nunca son el principio de una rutina: un aviso puesto sobre el puerto de vídeo informa de la dirección del <code>out</code>, y ese <code>out</code> está <b>dentro del bucle</b> de dibujado, no en la cabecera.</p>
+<p>De los puntos declarados, <b>39 eran etiquetas interiores</b>: sitios a los que se llega cayendo desde la instrucción de arriba. Rutinas de verdad hay <b>106</b>, y es la cifra que se publica.</p>
+<p>Lo caza una herramienta nueva, <code>tools/check_interiores.py</code>, con una regla sencilla: si a un punto se puede caer desde la instrucción anterior, no es una cabecera. Y una lección de su propia construcción, porque la primera versión señaló 61 y cinco eran mentira: hay que comprobar que la instrucción de arriba esté <b>pegada</b>. Cuando en medio hay datos no se puede caer desde ninguna parte. Una herramienta de verificación que no se verifica a sí misma sirve de poco.</p>
+<p>Ahora la comprobación corre en el Makefile y el test que vigila la cifra la usa, así que la cifra publicada y la comprobación no pueden separarse.</p>
+<hr>
+<p>Los bytes por identificar se acabaron, y esta página, como estaba prometido, se ha hecho más corta. Lo que queda es de otra clase: el código al que no se llega siguiendo el flujo, y las preguntas abiertas de arriba.</p>
+<footer><p><em>Stardust</em> lo publicó Topo Soft en 1987. Según la pantalla de créditos del propio juego, la conversión es de <b>Carlos Arias</b>, los gráficos de <b>Juan Carlos y Javier Arévalo</b> —además de <b>Julio Martín</b>—, la música de <b>Gominolas</b>, y está basado en una idea original de <b>José Manuel Muñoz</b>; la pantalla de carga va firmada <b>Cano</b>. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>
