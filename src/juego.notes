@@ -116,7 +116,9 @@ D 0x67E4 0x68FF Level 7 Data
 # clasificar con confianza pone "datos sin clasificar", que es lo que hay.
 D 0x5FFD 0x6150 graficos (339 B; racha 4.22, entropia 4.33, 50 valores: rachas mas largas que el azar)
 D 0x68FF 0x69A8 relleno (169 B; 169 de 169 bytes son 0x00)
-D 0xC05C 0xC063 relleno o resto (7 B; 7 bytes)
+# (0xC05C-0xC063 estuvo aqui como "relleno o resto" y son SIETE BYTES DE CODIGO:
+#  la rutina a la que salta el poke de inmortalidad de la revista. Ver la
+#  seccion del poke mas abajo.)
 D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
 D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
 D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
@@ -310,9 +312,13 @@ D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
 # Lo mismo que arriba: al comprobar que varios rangos se ejecutaban se
 # retiraron y entraron como puntos de entrada; estos son los trozos de los
 # lados, a los que ni el trazador llega ni la partida paso.
-D 0xC5BB 0xC5C1 relleno o resto (6 B; 6 bytes)
+# (Aqui hubo un tercero, 0xC5BB-0xC5C1, "relleno o resto". No lo era: son los
+# tres primeros peldanos de la tira de desplazamiento del dibujo de 16 bits.
+# Ver la seccion del pintor de sprites.)
 D 0xD3AD 0xD3CF tabla (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valores para ser un dibujo)
-D 0xE03D 0xE045 tabla (8 B; racha 1.94, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
+# (0xE03D-0xE045 estuvo aqui como "tabla" y son OCHO BYTES DE CODIGO: un
+#  comportamiento de objeto que el bloque instala como puntero desde 0xE033 y
+#  0xE086. Ver obj_E03D en src/juego.entries.)
 
 # --- LA TIPOGRAFIA GRANDE DE LOS RECORDS -------------------------------------
 #
@@ -536,9 +542,29 @@ D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,
 #
 # EL CIRCULO QUE CIERRA: el POKE de inmortalidad del trainer de Input MSX 19
 # (0xC06E/6F: 38 1F -> 18 EC, ya verificado en el emulador) parchea EXACTAMENTE
-# el `jr c` de este despachador: con el parche nunca se entra por el camino de
-# "estado >= 4", o sea, nunca se llega a la explosion. La inmortalidad es,
-# literalmente, saltarse la llamada al sistema de particulas.
+# el `jr c` de este despachador.
+#
+# OJO, QUE AQUI ESTUVO ESCRITO QUE EL POKE "SE SALTA LA COMPROBACION" Y ES
+# FALSO. El desplazamiento nuevo es 0xEC, o sea -20: el salto va HACIA ATRAS, a
+# 0xC070 - 20 = 0xC05C. Y en 0xC05C hay siete bytes que estaban declarados como
+# "relleno o resto":
+#
+#     c05c: ld a,003h / ld (0c188h),a / jr 0c08fh
+#
+# El poke no evita la explosion saltandosela: manda cada cuadro a una rutina que
+# RECARGA EL ESCUDO A 3 y sigue con actualiza_nave como si nada. Por eso la nave
+# aguanta indefinidamente, y por eso el marcador de escudo no se vacia nunca.
+#
+# Y esa rutina no la llama NADIE en el juego tal cual sale de la cinta: el par
+# de bytes 5c c0 no aparece ni una vez en los 46663 del bloque, y ningun salto
+# relativo aterriza ahi. Que sea inalcanzable y que quepa exacta a veinte bytes
+# del `jr` que hay que parchear es lo que hace pensar que la dejaron los propios
+# autores como interruptor de pruebas; eso ultimo es HIPOTESIS, no medida.
+#
+# Lo medido: dump/pcs.txt -la sesion larga, jugada con el trainer puesto- trae
+# C05C:28, C05E:13 y C061:33, que son las tres cabeceras de instruccion, y CERO
+# muestras en siembra_particulas; dump/pantallas_pcs.txt -jugada a mano y sin
+# trainer- no trae ninguna en 0xC05C y si en la explosion (C072:2, C60C:4).
 #
 # EL CAMPO DE ESTRELLAS, de regalo (salio buscando esto): en el arranque del
 # juego (0xBDD1) se rellena la tabla 0xCB09-0xCB38 con 48 valores aleatorios
@@ -550,6 +576,7 @@ D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,
 
 # --- Directivas de las rutinas identificadas en las tandas del 2026-08-06/07 --
 L 0xC066 nave_estado El despachador de 0xC188, que es ESCUDO y agonia en la misma variable: de 0 a 3 son los impactos que aguanta; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
+L 0xC05C recarga_escudo Pone el escudo (0xC188) a 3 y sigue en actualiza_nave. Nadie la llama en el juego original -su direccion no aparece ni una vez en el bloque-: es donde aterriza el POKE de inmortalidad de Input MSX 19, que cambia el `jr c` de 0xC06E por un `jr -20`
 L 0xC5E3 siembra_particulas Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
 L 0xC60C mueve_particulas Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
 L 0xC83F azar El generador de azar: identico al de la segunda parte (lee la ROM del BIOS como tabla de entropia), semilla en 0xCA8F sembrada con ld a,r en el arranque
@@ -599,11 +626,11 @@ C 0xBDD4 Rellena la tabla de las 48 estrellas (0xCB09) con alturas al azar menor
 #     MISMO limite 0x2D. Las dos fases se murieron con el mismo diseno.
 #
 # Ahi encaja ademas una pieza que llevaba sola desde el primer dia: el POKE de
-# inmortalidad de Input MSX 19 parchea el `jr c` de 0xC06E para saltarse un
-# `ld a,(0c188h) / cp 4`. Es la misma puerta de invulnerabilidad que a pie
-# tiene por triplicado (a868, af83, ba18): con el estado ya en 4 o mas, la
-# colision se ignora. El POKE no da vidas infinitas, deja al jugador en el
-# estado en que el juego cree que ya estas muriendote.
+# inmortalidad de Input MSX 19 parchea el `jr c` de 0xC06E. (Aqui estuvo escrito
+# que era "para saltarse un `ld a,(0c188h) / cp 4`" y que dejaba al jugador
+# "en el estado en que el juego cree que ya estas muriendote". Las dos cosas son
+# falsas: el salto parcheado va veinte bytes ATRAS, a la rutina de 0xC05C, que
+# recarga el escudo a 3 cada cuadro. Ver el despachador nave_estado.)
 #
 # La zona (0xE157) arranca en 1 (0xBDF5) y la sube 0xD755 (`inc a`) llamando
 # acto seguido a hud_vidas_zona para repintarla. La lee carga_zona (0xBEED)
@@ -1049,6 +1076,42 @@ L 0xF50E sonido_reset Reabre el sonido reponiendo el `di` (0xF3) que sonido_off 
 L 0xC47B pinta_sprite Estampa el sprite A (64 B en 0xA560 + A*64: 16 filas de mascara+dibujo) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xC4C3 y 0xC4FA
 L 0xC541 buffer_dir La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna, con el *24 hecho a mano (x3 y tres veces x2)
 #
+# LAS TIRAS, PELDANO A PELDANO. Cada peldano es `adc hl,hl / adc a,a`, y los dos
+# juntos no desplazan: ROTAN. A, H y L giran como un solo numero de 24 bits -lo
+# que sale por arriba de HL entra por abajo de A, y lo que sale por arriba de A
+# vuelve a entrar por abajo de HL-, y funciona como desplazamiento porque lo que
+# da la vuelta son los bits del RELLENO, que es lo unico que distingue las dos
+# tiras:
+#
+#     mascara:  ld a,0ffh ... scf     -> entran UNOS  (deja pasar el fondo)
+#     dibujo:   xor a                 -> entran CEROS (no pinta de mas)
+#
+# Simuladas las cuatro tiras contra la colocacion que se espera -el dibujo n
+# pixeles a la derecha dentro de la ventana, rellenando de unos o de ceros-,
+# salen exactas para n de 1 a 7. Y con OCHO pasos el resultado es exactamente el
+# del atajo, asi que la tira tiene siete peldanos y no ocho porque el caso n=0
+# sale mas barato moviendo registros, no porque el octavo estropee nada.
+#
+# Y son el mismo codigo DOS VECES porque cada una desemboca en un sitio distinto
+# -0xC4E1, que estampa con AND, y 0xC518, que estampa con OR- y porque esto es
+# el interior de un bucle de dieciseis filas, donde un `call` y su `ret` se
+# pagarian treinta y dos veces por sprite.
+#
+# EL DESPLAZAMIENTO ES AL REVES DE LO QUE PARECE. Para correr el dibujo n
+# pixeles a la DERECHA dentro de la ventana de tres bytes, se dan 8-n pasos a la
+# izquierda: los bits que se salen de HL por arriba son justo los que tienen que
+# aparecer en el byte de la izquierda. Con n=0 hacen falta los ocho, y esos ocho
+# son un cambio de registros -`ld a,h / ld h,l / ld l,0ffh`- que no cuesta nada:
+# es el atajo de 0xC4C5.
+#
+# Y la cuenta `(n-1)*3 + 7` que parchea el `jr` se lee sola cuando se sabe esto:
+# el 3 es lo que ocupa un peldano y el 7 lo que ocupa el atajo (1+1+2+3 bytes),
+# o sea que el salto aterriza en el peldano n-1 de los siete y quedan 8-n.
+L 0xC4C5 atajo_mascara24 Desplazamiento de ocho de la mascara: A = H, H = L, L = 0xFF. Es el camino cuando la columna cae justa en un byte, y es el unico que no recorre la tira
+L 0xC4CC tira_mascara24 La tira de la mascara: siete `adc hl,hl / adc a,a` seguidos, en la que pinta_sprite entra por el peldano n-1 para dar 8-n pasos. Entra con A=0xFF y acarreo, o sea rellenando de unos
+L 0xC4FC atajo_dibujo24 Lo mismo que atajo_mascara24 para el dibujo: A = H, H = L, L = 0x00, rellenando de ceros
+L 0xC503 tira_dibujo24 La tira del dibujo: la misma de siete peldanos, byte a byte igual que la de la mascara. Se entra con `xor a`, que pone A a cero Y limpia el acarreo, asi que rellena de ceros
+#
 # LAS COLISIONES SON DOS LLAMADAS A LA MISMA RUTINA, UNA POR EJE. solapa_eje
 # compara dos coordenadas con sus dos tamanos y devuelve el carry del `cp`:
 # CON carry no se tocan, sin carry hay contacto. La gracia es que se mira desde
@@ -1058,6 +1121,66 @@ L 0xC541 buffer_dir La direccion en el buffer de pantalla: HL = 0x4000 + fila*24
 #     cd7f:   add a,e / cp h / ret     <- L va delante: llega L+E hasta H?
 #     cd82:   ld a,h / add a,d / cp l  <- H va delante: llega H+D hasta L?
 L 0xCD7A solapa_eje Solapamiento en UN eje: BC corrige las dos coordenadas (H y L), D y E son los dos tamanos, y vuelve con carry si NO se tocan. Se llama dos veces, una por eje
+#
+# ============================================================================
+# EL DISPARO, Y QUIEN LE PREGUNTA A QUIEN
+# ============================================================================
+#
+# Hay DOS tablas de objetos volando y cada una es de un bando:
+#
+#     0xC953  (9 entradas de 4 B, contador 0xC952)  los disparos del JUGADOR
+#     0xC93A  (6 entradas de 4 B, contador 0xC939)  lo que sueltan los ENEMIGOS
+#
+# y se distinguen sin ambiguedad por quien las llena y quien las consulta: la
+# primera la llena `dispara` desde el gatillo y la consultan los enemigos; la
+# segunda la llena alta_enemigo desde el bucle de los enemigos y la consulta la
+# nave. No hay un detector central de colisiones: CADA UNO SE PREGUNTA POR SI
+# MISMO, justo despues de pintarse, y siempre con la misma rutina
+# (choca_con_tabla) cambiando la caja.
+#
+# LAS CAJAS Y LO QUE SE COBRA, leidas de los `ld bc,` y `ld de,` de cada una:
+#
+#     rutina            tabla    BC     DE       digito   B      puntos
+#     disparo_derriba_bandada 0xC953  2x2  4x0x0C  0xDD84  0x0D    130
+#     choca_y_revienta        0xC953  2x2  4x0x14  0xDD84  0x10    160
+#     disparo_derriba_objeto  0xC953  2x2  4x0x0C  0xDD84  0x0E    140
+#     disparo_derriba_tiro    0xC953  2x0  4x8     0xDD85  0x35     53
+#     tiro_alcanza_nave       0xC93A  2x3  4x0x0A    -       -    impacto_simple
+#
+# CUIDADO CON LEER EL PREMIO: `premia` no suma B puntos, suma B al DIGITO que le
+# apunten, y el acarreo va hacia direcciones MENORES (`dec hl` en 0xD3DD). O sea
+# que 0xDD80 es la cifra mas alta de las seis y 0xDD85 la de las unidades. Por
+# eso 0x0D sobre 0xDD84 son 130 y 0x35 sobre 0xDD85 son 53 y no 530: hay que
+# mirar SIEMPRE en que digito cae. Lo confirma la vida extra, que compara 0xDD81
+# antes y despues (0xD3CF/0xD3E9) y sale cada 10.000.
+L 0xE0F8 dispara Mete disparos en la tabla del jugador (0xC953) en la posicion de la nave mas 0x0404, y solo en el FLANCO de subida del gatillo: guarda el estado en 0xE14F y se va si no esta pulsado o si ya lo estaba. Con la mejora de 0xE14E encendida suelta CUATRO, en los rumbos base, +4, +6 y +2
+L 0xD164 arranca_estela Si queda barra (0xD3C1) y la puerta de (iy+000)|(iy+005) esta a cero, gasta un punto, repinta la barra y lanza la estela de 0xD3BD desde la posicion de la nave, con vida 3 y paso 0x03C0 o 0x003C segun la columna. La llama dispara al terminar
+L 0xCFA1 disparo_derriba_bandada Mira si un disparo del jugador ha tocado al enemigo de IX -posicion en (ix+000/001), caja 4x0x0C-: lo pasa a explosion (0xFF/0x1D en (ix+002/003)), marca el disparo con 0x80, suena 0xEA52 y paga 130 puntos
+L 0xD037 disparo_derriba_objeto Lo mismo para los objetos de la tabla 0xC990, con la posicion en (ix+002/003): explosion en (ix+000/001) y 140 puntos
+L 0xD080 disparo_derriba_tiro Lo mismo contra un TIRO enemigo: le mete 0x7C en (ix+000h), marca el disparo del jugador y paga 53 puntos, que son los mismos 53 que cobra su gemela de la fase de a pie
+L 0xD067 tiro_alcanza_nave El contacto al reves: la nave (0xC184) contra la tabla que llena alta_enemigo (0xC93A), caja 4x0x0A. Marca al culpable con 0x80 y se va por impacto_simple. Es la ultima instruccion de actualiza_nave
+L 0xD109 poda_rumbo_nave Quita del rumbo pedido -en el A alternativo- las direcciones que la nave no puede tomar por donde esta: X=0 la izquierda, X=0xB0 la derecha, Y=0x38 arriba y Y=0xB0 abajo
+L 0xD15C recorta_x_objeto Deshace el paso lateral del objeto de IX si se ha salido: con L >= 0xB1 repone L desde (ix+000h). Identica byte a byte a la de la fase de a pie
+#
+# EL DISPARO CUADRUPLE SUENA UNA SOLA VEZ, Y LO CONSIGUE PARCHEANDO EL SONIDO.
+# Cada alta de la tabla arranca su efecto (alta_en_tabla llama a
+# arranca_guion_libre en 0xCCB5), asi que cuatro disparos serian cuatro veces el
+# mismo "pium" a la vez. Lo que hace dispara es meter un `ret` (0xC9) en el
+# SEGUNDO byte de arranca_guion_libre -0xE190, que es su `push af`- antes de los
+# tres extra, y reponerlo despues:
+#
+#     e12a: ld a,0c9h   / ld (0e190h),a    <- enmudece
+#     e142: ld a,(0e1bdh) / ld (0e190h),a  <- repone
+#
+# y lo repone COPIANDOLO DE SU GEMELA: 0xE1BD es el segundo byte de
+# arranca_guion, que tiene el mismo prologo (0xE18F y 0xE1BC son los dos `di`,
+# 0xE190 y 0xE1BD los dos `push af`). No hay ninguna constante 0xF5 escrita en
+# ninguna parte: se toma prestada de la rutina de al lado.
+#
+# Efecto lateral, dicho como lo que es -leido, no medido-: como el byte
+# parcheado es el segundo y no el primero, las tres llamadas silenciadas hacen
+# `di` y vuelven, o sea que dejan las interrupciones apagadas hasta el siguiente
+# `ei`, de los que hay veintiseis en el bloque.
 L 0xD23E choca_con_nave Contacto entre la nave y lo que venga en HL: solapa_eje con la Y de la nave (0xC185, saturada por arriba a 0x20) y luego con su X (0xC184), cajas 4x5 contra 0x18x6. Carry = no hay contacto
 L 0xF394 premia Suma B al marcador por el digito que apunte HL (dentro de los seis de 0xDD80) y lo repinta en 0x12B0: es suma_puntos con IX y DE ya puestos, y salvando IX
 
@@ -1343,6 +1466,39 @@ L 0xD0BD choca_con_nave3 La tercera caja de contacto con la nave, 5x3 contra 0x1
 # (0xC58E y 0xC5B3). Solo que aqui la tira es de 16 bits y no de 24, asi que el
 # paso es de 2 bytes y la cuenta sale `n*2 + 4` en vez de `(n-1)*3 + 7`.
 L 0xC553 pinta_glifo Estampa en el buffer el glifo A de la fuente de 0xCA93 (16 B por glifo, 8 filas de mascara y dibujo) en la posicion HL, con el desplazamiento fino parcheando los `jr` de 0xC58E y 0xC5B3
+#
+# AQUI LA TIRA ES SOLO `adc hl,hl`: como la ventana es de dos bytes y no de
+# tres, no hace falta arrastrar A, y el relleno se pone directamente en H
+# (0xFFxx para la mascara, 0x00xx para el dibujo). El peldano ocupa 2 bytes en
+# vez de 3 y el atajo 6 en vez de 7, y la cuenta es la misma de siempre escrita
+# de otra forma: `n*2 + 4` es `(n-1)*2 + 6`, o sea peldano por n-1 mas atajo.
+#
+# Y ESA CUENTA ES LA QUE DESTAPO SEIS BYTES MAL CLASIFICADOS. La tira del dibujo
+# figuraba empezando en 0xC5C1 y los seis bytes de delante estaban declarados
+# como "relleno o resto". No lo son: con n=1 el `jr` de 0xC5B3 salta a
+# 0xC5B5 + 6 = 0xC5BB, o sea que la tira empieza AHI y 0xC5C1 es su cuarto
+# peldano. Los seis bytes son `ed 6a ed 6a ed 6a`, tres `adc hl,hl` mas, y con
+# ellos la tira tiene los mismos siete peldanos que las otras tres.
+#
+# TRES VIAS INDEPENDIENTES, y conviene contarlas bien:
+#   1. la aritmetica del parche, que es la de arriba;
+#   2. la gemela de la fase de a pie (0xAB47), que si esta declarada entera:
+#      comparadas byte a byte solo se diferencian en el operando del `jp`;
+#   3. LAS PROPIAS MEDIDAS, que es lo que hace este caso distinto: el volcado
+#      del contador de programa (dump/pcs.txt) trae C5BB:40, C5BD:155 y
+#      C5BF:226, o sea los tres peldanos "de relleno", con MAS muestras que
+#      0xC5BB... y aun asi solo se declaro 0xC5C1 (884).
+#
+# Asi que la moraleja no es que el muestreo enganara. El muestreo lo dijo. Lo
+# que fallo es que NADIE CRUZO LAS MEDIDAS CON LAS ZONAS DECLARADAS COMO DATOS:
+# check_datos_como_codigo.py cruza las zonas D contra el TRAZADO, y el trazador
+# tampoco llegaba ahi. Tres de los siete desplazamientos posibles aterrizaban
+# dentro de un rango declarado como relleno y ninguna herramienta lo miraba.
+# (Ver mas abajo 0xC05C y 0xE03D, que salieron del mismo cruce hecho a mano.)
+L 0xC590 atajo_mascara16 Desplazamiento de ocho de la mascara de 16 bits: H = L, L = 0xFF. El gemelo de atajo_mascara24 sin la parte de A
+L 0xC596 tira_mascara16 La tira de la mascara de 16 bits: siete `adc hl,hl`, sin A porque el relleno de unos ya viene en H
+L 0xC5B5 atajo_dibujo16 Desplazamiento de ocho del dibujo de 16 bits: H = L, L = 0x00
+L 0xC5BB tira_dibujo16 La tira del dibujo de 16 bits, los siete peldanos: tres de ellos figuraban como relleno porque el punto medido (0xC5C1) caia en el cuarto
 L 0xCF14 pinta_pareja Pinta el sprite B en HL y el B+1 en la posicion reflejada respecto a 0xD3C5, y avanza la posicion con DE y el paso con C: las dos mitades de una figura simetrica
 L 0xCF36 mueve_perseguidor Con el estado de 0xD3C5 en 1, apunta la posicion de 0xD3C7 hacia la nave con rumbo_hacia y la mueve de dos en dos
 #
@@ -1716,7 +1872,7 @@ L 0xD1AF traza_estela Dibuja la estela del objeto de 0xD3BD restando al puntero 
 # claramente alargada. Y tres de las cuatro empiezan comprobando que la nave
 # siga viva, con el mismo `ld a,(0c188h) / cp 004h`.
 L 0xD9DB choca_con_nave4 La cuarta caja de contacto con la nave, y la unica alargada: 4x2 contra 0x38 x 0x0C en el primer eje y 7 contra 0x12 en el segundo
-L 0xD0DC pinta_escudo Repinta el indicador que va pegado a la nave, alternandolo cuadro a cuadro con el `xor 001h` sobre 0xD3C2: cambia a la vez el color de la marca de 0x2F78 -0x11 o 0x71- y el sprite, 0x39 o 0x3A
+L 0xD0DC pinta_escudo Repinta el indicador que va pegado a la nave eligiendo color de marca -0x11 o 0x71- y sprite -0x39 o 0x3A- segun la bandera 0xD3C2. (Aqui puso que la ALTERNABA "cuadro a cuadro con el `xor 001h`" y no es cierto: el `xor` de 0xD0F5 se queda en E y NO se vuelve a escribir. Quien pone 0xD3C2 a 1 es el bucle principal, cada cuadro, y quien lo pone a 0 son los contactos de 0xD23A y 0xD2B2; el parpadeo existe, pero no lo hace esta rutina)
 L 0xD2E4 borra_celda Escribe el valor 0x11 ocho veces en dos celdas de VRAM separadas 0x40, con el puerto en C para poder usar `out (c),b`
 
 # ============================================================================

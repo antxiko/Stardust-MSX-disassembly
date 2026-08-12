@@ -1592,9 +1592,9 @@ L_A672:
 	ld (0c467h),a		;a685
 	call lee_mando		;a688
 	ld (0c45bh),a		;a68b
-	call L_BA75		;a68e
+	call dispara		;a68e
 	and 00fh		;a691
-	call L_B0A1		;a693
+	call poda_rumbo_jugador		;a693
 	call rumbo_a_mascara2		;a696
 	cp 0ffh			;a699
 	ld hl,(0a6ebh)		;a69b
@@ -1610,7 +1610,7 @@ L_A672:
 	ld (0ad0eh),a		;a6ad
 	ld c,002h		;a6b0
 	call L_A8BA		;a6b2
-	call L_B0B7		;a6b5
+	call recorta_x_jugador		;a6b5
 	ld (0a6ebh),hl		;a6b8
 	ld a,(0c462h)		;a6bb
 	and a			;a6be
@@ -1633,7 +1633,7 @@ L_A6DC:
 	call pinta_sprite		;a6dc
 	call pinta_torre		;a6df
 	ld hl,(0a6ebh)		;a6e2
-	call L_B04B		;a6e5
+	call tiro_alcanza_jugador		;a6e5
 	ret			;a6e8
 
 ; ----------------------------------------------------------------------
@@ -1777,7 +1777,7 @@ L_A7D9:
 	and 007h		;a7df
 	ld bc,00202h		;a7e1
 	call aplica_rumbo		;a7e4
-	call L_B0D8		;a7e7
+	call recorta_x_objeto		;a7e7
 	push hl			;a7ea
 	push ix			;a7eb
 	call consulta_mapa		;a7ed   ; El paso a prueba: aplicado el rumbo se consulta el mapa, y si la celda es vacio el paso se deshace
@@ -1839,7 +1839,7 @@ L_A83C:
 	ld b,a			;a861
 	call L_AE15		;a862
 L_A865:
-	call L_AFC7		;a865
+	call disparo_derriba_andante		;a865
 	ld a,(0a6edh)		;a868
 	cp 004h			;a86b
 	jr nc,L_A88C		;a86d
@@ -2118,12 +2118,12 @@ L_AA45:
 	ex de,hl		;aa4e
 L_AA4F:
 	jr L_AA4F		;aa4f
-L_AA51:
+atajo_mascara24:		; Desplazamiento de ocho de la mascara: A = H, H = L, L = 0xFF, sin recorrer la tira. Gemela de la de naves
 	ld a,h			;aa51
 	ld h,l			;aa52
 	ld l,0ffh		;aa53
 	jp L_AA6D		;aa55
-L_AA58:
+tira_mascara24:		; La tira de la mascara: siete `adc hl,hl / adc a,a` en los que se entra por el peldano n-1 para dar 8-n pasos, rellenando de unos (A=0xFF y `scf` a la entrada)
 	adc hl,hl		;aa58
 	adc a,a			;aa5a
 	adc hl,hl		;aa5b
@@ -2166,12 +2166,12 @@ L_AA6D:
 	ex de,hl		;aa85
 L_AA86:
 	jr L_AA86		;aa86
-L_AA88:
+atajo_dibujo24:		; Desplazamiento de ocho del dibujo: A = H, H = L, L = 0x00
 	ld a,h			;aa88
 	ld h,l			;aa89
 	ld l,000h		;aa8a
 	jp L_AAA4		;aa8c
-L_AA8F:
+tira_dibujo24:		; La misma tira para el dibujo: se entra con `xor a`, que pone A a cero y limpia el acarreo, o sea rellenando de ceros
 	adc hl,hl		;aa8f
 	adc a,a			;aa91
 	adc hl,hl		;aa92
@@ -2279,11 +2279,11 @@ L_AB13:
 	scf			;ab19
 L_AB1A:
 	jr L_AB1A		;ab1a
-L_AB1C:
+atajo_mascara16:		; Desplazamiento de ocho de la mascara de 16 bits: H = L, L = 0xFF. Aqui la ventana es de dos bytes y no hace falta arrastrar A
 	ld h,l			;ab1c
 	ld l,0ffh		;ab1d
 	jp L_AB30		;ab1f
-L_AB22:
+tira_mascara16:		; La tira de 16 bits: siete `adc hl,hl` a secas, con el relleno de unos ya puesto en H
 	adc hl,hl		;ab22
 	adc hl,hl		;ab24
 	adc hl,hl		;ab26
@@ -2309,11 +2309,11 @@ L_AB30:
 	ld l,a			;ab3e
 L_AB3F:
 	jr L_AB3F		;ab3f
-L_AB41:
+atajo_dibujo16:		; Desplazamiento de ocho del dibujo de 16 bits: H = L, L = 0x00
 	ld h,l			;ab41
 	ld l,000h		;ab42
 	jp L_AB55		;ab44
-L_AB47:
+tira_dibujo16:		; La tira de 16 bits del dibujo, siete peldanos, con el relleno de ceros puesto en H
 	adc hl,hl		;ab47
 	adc hl,hl		;ab49
 	adc hl,hl		;ab4b
@@ -2957,7 +2957,7 @@ L_AF69:
 	xor 040h		;af79
 	sub 004h		;af7b
 	ld (ix+001h),a		;af7d
-	call L_B01F		;af80
+	call disparo_derriba_volador		;af80
 	ld a,(0a6edh)		;af83
 	cp 004h			;af86
 	jr nc,L_AF9C		;af88
@@ -3001,7 +3001,7 @@ L_AFA7:
 	pop de			;afc3
 	ldir			;afc4
 	ret			;afc6
-L_AFC7:
+disparo_derriba_andante:		; Mira si un disparo del jugador ha tocado al enemigo andante de IX: lo pasa a explosion (0xFF/0x1D), marca el disparo con 0x80, suena 0xCD6D y paga 440 puntos
 	ld l,(ix+000h)		;afc7
 	ld h,(ix+001h)		;afca
 	ld iy,0acbch		;afcd
@@ -3047,7 +3047,7 @@ L_B014:
 	exx			;b01c
 	scf			;b01d
 	ret			;b01e
-L_B01F:
+disparo_derriba_volador:		; Lo mismo para los voladores de la tabla de 0xACF9, con la posicion en (ix+002/003): en vez de sembrar la explosion escribe 0x34 en (ix+004h), y paga 410
 	ld l,(ix+002h)		;b01f
 	ld h,(ix+003h)		;b022
 	ld iy,0acbch		;b025
@@ -3064,7 +3064,7 @@ L_B01F:
 	ld b,029h		;b045
 	call premia		;b047
 	ret			;b04a
-L_B04B:
+tiro_alcanza_jugador:		; El contacto al reves: el jugador (0xA6EB) contra la tabla de tiros enemigos (0xACA3), y al chocar marca al culpable y se va por impacto_simple
 	ld hl,(0a6ebh)		;b04b
 	ld iy,0aca3h		;b04e
 	ld de,0040ah		;b052
@@ -3072,9 +3072,9 @@ L_B04B:
 	call choca_con_tabla		;b058
 	ret c			;b05b
 	ld (iy+002h),080h	;b05c
-	call L_B0E0		;b060
+	call impacto_simple		;b060
 	ret			;b063
-L_B064:
+disparo_derriba_tiro:		; Lo mismo contra un tiro de torreta: 0x7C en (ix+000h) y 53 puntos. Gemela de la de naves, con las mismas cajas y el mismo premio
 	ld l,(ix+002h)		;b064
 	ld h,(ix+003h)		;b067
 	ld iy,0acbch		;b06a
@@ -3101,7 +3101,7 @@ choca_con_jugador:		; Contacto con el jugador (0xA6EB/0xA6EC): solapa_eje con 2x
 	ld a,(0a6ebh)		;b09a
 	ld l,a			;b09d
 	jp solapa_eje		;b09e
-L_B0A1:
+poda_rumbo_jugador:		; Quita del rumbo pedido las direcciones que el borde no permite. Es la de naves TRUNCADA: solo los dos topes horizontales, porque aqui no se vuela
 	ld hl,(0a6ebh)		;b0a1
 	ex af,af'		;b0a4
 	ld a,l			;b0a5
@@ -3119,7 +3119,7 @@ L_B0AD:
 L_B0B5:
 	ex af,af'		;b0b5
 	ret			;b0b6
-L_B0B7:
+recorta_x_jugador:		; Deshace el paso lateral del jugador si se ha salido: con L >= 0xB1 repone la X desde 0xA6EB. Es la primera mitad de recorta_a_area; la banda vertical 0x38..0xB1 que si vigila la nave aqui no existe
 	ld a,l			;b0b7
 	cp 0b1h			;b0b8
 	ret c			;b0ba
@@ -3144,20 +3144,20 @@ L_B0CE:
 L_B0D6:
 	ex af,af'		;b0d6
 	ret			;b0d7
-L_B0D8:
+recorta_x_objeto:		; Lo mismo para el objeto de IX, reponiendo L desde (ix+000h). Identica byte a byte a la de la fase de naves
 	ld a,l			;b0d8
 	cp 0b1h			;b0d9
 	ret c			;b0db
 	ld l,(ix+000h)		;b0dc
 	ret			;b0df
-L_B0E0:
+impacto_simple:		; Gasta un punto del escudo de 0xA6ED y, si ya estaba a cero, manda a mata_jugador_impacto. Gemela de la de naves cambiando solo la direccion del escudo
 	ld a,(0a6edh)		;b0e0
 	and a			;b0e3
 	jr z,mata_jugador_impacto		;b0e4
 	dec a			;b0e6
 	ld (0a6edh),a		;b0e7
 	jr L_B0F9		;b0ea
-L_B0EC:
+impacto_doble:		; Gasta dos puntos de 0xA6ED, comprobando entre uno y otro si el primero ya bastaba para matar. La usan los tiros de las torretas
 	ld a,(0a6edh)		;b0ec
 	and a			;b0ef
 	jr z,mata_jugador_impacto		;b0f0
@@ -4038,7 +4038,7 @@ L_B9F3:
 	dec (ix+004h)		;ba0e
 	ex de,hl		;ba11
 	call pinta_glifo		;ba12
-	call L_B064		;ba15
+	call disparo_derriba_tiro		;ba15
 	ld a,(0a6edh)		;ba18
 	cp 004h			;ba1b
 	jr nc,L_BA47		;ba1d
@@ -4057,7 +4057,7 @@ L_B9F3:
 	ld l,a			;ba3a
 	call solapa_eje		;ba3b
 	jr c,L_BA47		;ba3e
-	call L_B0EC		;ba40
+	call impacto_doble		;ba40
 	ld (ix+000h),07ch	;ba43
 L_BA47:
 	ld de,00005h		;ba47
@@ -4092,7 +4092,7 @@ L_BA52:
 	pop de			;ba6f
 	ldir			;ba70
 	jp L_BA4C		;ba72
-L_BA75:
+dispara:		; Mete disparos en la tabla del jugador (0xACBC) en su posicion mas 0x0404, con la mejora de 0xC459 cuatro en los rumbos base, +2, +4 y +6. OJO: el filtro del gatillo NO es el de la fase de naves: aqui se guarda el estado en 0xC45A y se sale con `xor c / ret z`, o sea que entra cada vez que el boton CAMBIA -al pulsar y al soltar-, no solo al pulsar
 	bit 4,a			;ba75
 	ld bc,(0c45ah)		;ba77
 	ld b,a			;ba7b

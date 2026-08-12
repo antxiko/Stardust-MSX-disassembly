@@ -112,7 +112,7 @@ sanity: work/juego.trace.json work/topo.trace.json work/parte2.trace.json
 	python3 tools/check_trace.py work/juego.trace.json src/juego.nocode
 	@echo ""
 	@echo "=================================================================="
-	@echo " Y el cruce COMPLETO: las 94 zonas D contra lo que el trazador cree"
+	@echo " Y el cruce COMPLETO: TODAS las zonas D contra lo que el trazador cree"
 	@echo "=================================================================="
 	@echo " (check_trace mira solo el .nocode; esto mira TODAS las zonas de"
 	@echo "  datos declaradas. Una semilla metida dentro de una de ellas hace"

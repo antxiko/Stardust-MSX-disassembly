@@ -1068,6 +1068,32 @@ L 0xD305 espera_bc Espera activa: decrementa BC hasta cero y vuelve
 # 0x4000-0x4EFF; por que uno es mas laxo que el otro no se sabe.
 L 0xAA07 pinta_sprite Estampa el sprite A (64 B en 0x6555 + A*64) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xAA4F y 0xAA86
 #
+# LAS CUATRO TIRAS DE DESPLAZAMIENTO, con su atajo cada una, son gemelas de las
+# de la fase de naves hasta el ultimo byte menos el destino de un `jp`:
+#
+#     atajo+tira mascara 24  0xAA51 / 0xC4C5   26 de 28
+#     atajo+tira dibujo  24  0xAA88 / 0xC4FC   26 de 28
+#     atajo+tira mascara 16  0xAB1C / 0xC590   18 de 20
+#     atajo+tira dibujo  16  0xAB41 / 0xC5B5   18 de 20
+#
+# En las cuatro, las dos diferencias son los dos bytes del `jp` del final del
+# atajo, que apunta a donde la tira desemboca. Nada mas.
+#
+# Y ESTA MITAD SIRVIO PARA ARREGLAR LA OTRA: en la fase de naves la tira del
+# dibujo de 16 bits figuraba empezando tres peldanos mas alla, en 0xC5C1, y los
+# seis bytes de delante estaban declarados como relleno. Aqui esa misma tira
+# (0xAB47) si estaba declarada entera -no por el trazador, que tampoco llega:
+# entro como punto de entrada desde el muestreo-, asi que la comparacion los
+# reclamo.
+L 0xAA51 atajo_mascara24 Desplazamiento de ocho de la mascara: A = H, H = L, L = 0xFF, sin recorrer la tira. Gemela de la de naves
+L 0xAA58 tira_mascara24 La tira de la mascara: siete `adc hl,hl / adc a,a` en los que se entra por el peldano n-1 para dar 8-n pasos, rellenando de unos (A=0xFF y `scf` a la entrada)
+L 0xAA88 atajo_dibujo24 Desplazamiento de ocho del dibujo: A = H, H = L, L = 0x00
+L 0xAA8F tira_dibujo24 La misma tira para el dibujo: se entra con `xor a`, que pone A a cero y limpia el acarreo, o sea rellenando de ceros
+L 0xAB1C atajo_mascara16 Desplazamiento de ocho de la mascara de 16 bits: H = L, L = 0xFF. Aqui la ventana es de dos bytes y no hace falta arrastrar A
+L 0xAB22 tira_mascara16 La tira de 16 bits: siete `adc hl,hl` a secas, con el relleno de unos ya puesto en H
+L 0xAB41 atajo_dibujo16 Desplazamiento de ocho del dibujo de 16 bits: H = L, L = 0x00
+L 0xAB47 tira_dibujo16 La tira de 16 bits del dibujo, siete peldanos, con el relleno de ceros puesto en H
+#
 # LAS ESTRELLAS DEL FONDO SALEN DE LA ROM DEL MSX. La tabla que recorre son 48
 # pares de bytes en 0x07D0, y de cada par saca una direccion del buffer
 # -`and 00fh / add a,040h` para el byte alto, o sea de 0x40xx a 0x4Fxx- donde
@@ -1090,15 +1116,30 @@ L 0xBB18 suma_scroll HL = el scroll de 0xC463 mas DE
 #   hay_tecla        0xF660 / 0xD30B   16 de 16   IDENTICA
 #   rellena_colores  0xF634 / 0xD31C   38 de 44   difiere en tres direcciones
 #   sonido_reset     0xF50E / 0xD238   16 de 26   difiere en cinco direcciones
-#   pinta_sprite     0xC47B / 0xAA07   63 de 74   ver abajo
+#   pinta_sprite     0xC47B / 0xAA07  177 de 198   ver abajo
+#   pinta_glifo      0xC553 / 0xAADF  131 de 144   ver abajo
+#
+# (Aqui estuvo escrito "63 de 74" para pinta_sprite. La cuenta era buena, pero
+# de los 74 PRIMEROS bytes: la rutina son 198, de 0xC47B a 0xC540 -0xAA07 a
+# 0xAACC aqui-, hasta donde empieza buffer_dir. Medida entera da 177 de 198, y
+# la conclusion no solo aguanta sino que sale reforzada, porque los diez bytes
+# que aparecen de mas son cinco operandos mas. La forma del error es la de
+# siempre en este proyecto: la medida estaba bien y la VENTANA en que se hizo,
+# no, y aun asi se hablo de "toda la rutina".)
 #
 # Y LA PRUEBA DE QUE NO ES CASUALIDAD esta en DONDE caen las diferencias: son
 # todas PARES DE BYTES CONSECUTIVOS, que es lo que mide un operando de 16 bits.
-# En pinta_sprite las once diferencias son cinco direcciones -el pozo de
-# sprites, el contador de filas, los dos `jr` que se parchean y la llamada a
-# buffer_dir- mas UN BYTE SUELTO, el 53, que es justo el del recorte por abajo:
+# En pinta_sprite las 21 diferencias son diez direcciones -el pozo de sprites,
+# el contador de filas (que sale TRES veces), los dos `jr` que se parchean, la
+# llamada a buffer_dir, los dos `jp` con que los atajos saltan por encima de las
+# tiras y el `jp` con que se cierra el bucle de filas- mas UN BYTE SUELTO, el
+# 53, que es justo el del recorte por abajo:
 # 0x50 en la fase de naves y 0x4F en esta. O sea que de toda la rutina, lo
 # unico que cambia de verdad es ese limite.
+#
+# En pinta_glifo pasa exactamente lo mismo: 13 diferencias, seis direcciones -la
+# fuente, los dos `jr` parcheados, buffer_dir y los dos `jp` de los atajos- y el
+# mismo byte suelto del recorte, otra vez 0x50 contra 0x4F.
 L 0xAACD buffer_dir La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna. Identica byte a byte a la del bloque de naves
 L 0xAEC2 solapa_eje Solapamiento en UN eje: BC corrige las dos coordenadas (H y L), D y E son los dos tamanos, y vuelve con carry si NO se tocan. Identica byte a byte a la del bloque de naves
 L 0xD238 sonido_reset Reabre el sonido reponiendo el `di` (0xF3) que sonido_off machaco en las dos rutinas de arranque, y deja los tres canales a cero con un guion nulo
@@ -1122,6 +1163,45 @@ L 0xAADF pinta_glifo Estampa en el buffer el glifo A de la fuente con el mismo e
 L 0xAE23 alta_objeto_acbb Mete un objeto en la tabla de 0xACBB (tope 9) con el sonido 0xCD53 al canal 2: los mismos tope y canal que su gemela de la fase de naves
 L 0xAE2E alta_en_tabla El alta comun a las tablas: si el contador no ha llegado al tope, lo incrementa, arranca el sonido DE en el canal H y escribe C, B y A' en la entrada indice*4. Vuelve con carry si ha entrado
 L 0xAFF7 choca_con_tabla Busca contacto entre HL y toda una tabla de objetos: IY apunta a la primera entrada y (iy-1) es el contador, entradas de 4 B, dos solapa_eje por objeto
+#
+# ------------------------------------------- el disparo, pieza por pieza
+#
+# El reparto es el mismo que en la fase de naves, con las tablas cambiadas:
+# 0xACBC son los disparos del JUGADOR y 0xACA3 lo que sueltan los enemigos.
+# Cada uno se pregunta por si mismo justo despues de pintarse.
+#
+#     rutina                    tabla    BC     DE       digito   B    puntos
+#     disparo_derriba_andante   0xACBC   1x1  6x0x0E    0xB883   0x2C   440
+#     disparo_derriba_volador   0xACBC   1x1  6x0x0E    0xB883   0x29   410
+#     disparo_derriba_tiro      0xACBC   2x0  4x8       0xB884   0x35    53
+#     tiro_alcanza_jugador      0xACA3   2x3  4x0x0A      -       -    0xB0E0
+#
+# Las dos ultimas son las mismas cifras que en naves, digito incluido: la caja
+# del jugador contra un tiro (2x3 contra 4x0x0A) y el precio de derribar un tiro
+# (0x35 en las unidades, 53 puntos) estan calcados.
+L 0xBA75 dispara Mete disparos en la tabla del jugador (0xACBC) en su posicion mas 0x0404, con la mejora de 0xC459 cuatro en los rumbos base, +2, +4 y +6. OJO: el filtro del gatillo NO es el de la fase de naves: aqui se guarda el estado en 0xC45A y se sale con `xor c / ret z`, o sea que entra cada vez que el boton CAMBIA -al pulsar y al soltar-, no solo al pulsar
+L 0xAFC7 disparo_derriba_andante Mira si un disparo del jugador ha tocado al enemigo andante de IX: lo pasa a explosion (0xFF/0x1D), marca el disparo con 0x80, suena 0xCD6D y paga 440 puntos
+L 0xB01F disparo_derriba_volador Lo mismo para los voladores de la tabla de 0xACF9, con la posicion en (ix+002/003): en vez de sembrar la explosion escribe 0x34 en (ix+004h), y paga 410
+L 0xB064 disparo_derriba_tiro Lo mismo contra un tiro de torreta: 0x7C en (ix+000h) y 53 puntos. Gemela de la de naves, con las mismas cajas y el mismo premio
+L 0xB04B tiro_alcanza_jugador El contacto al reves: el jugador (0xA6EB) contra la tabla de tiros enemigos (0xACA3), y al chocar marca al culpable y se va por impacto_simple
+L 0xB0A1 poda_rumbo_jugador Quita del rumbo pedido las direcciones que el borde no permite. Es la de naves TRUNCADA: solo los dos topes horizontales, porque aqui no se vuela
+L 0xB0B7 recorta_x_jugador Deshace el paso lateral del jugador si se ha salido: con L >= 0xB1 repone la X desde 0xA6EB. Es la primera mitad de recorta_a_area; la banda vertical 0x38..0xB1 que si vigila la nave aqui no existe
+L 0xB0D8 recorta_x_objeto Lo mismo para el objeto de IX, reponiendo L desde (ix+000h). Identica byte a byte a la de la fase de naves
+L 0xB0E0 impacto_simple Gasta un punto del escudo de 0xA6ED y, si ya estaba a cero, manda a mata_jugador_impacto. Gemela de la de naves cambiando solo la direccion del escudo
+L 0xB0EC impacto_doble Gasta dos puntos de 0xA6ED, comprobando entre uno y otro si el primero ya bastaba para matar. La usan los tiros de las torretas
+#
+# EL DISPARO CUADRUPLE DE ESTA MITAD NO SE ENCIENDE NUNCA. El byte que lo decide
+# es 0xC459 (leido en 0xBA9E), y en todo el bloque hay exactamente DOS sitios que
+# lo nombran: esa lectura y una escritura, la de 0xA44C, que va detras de un
+# `xor a`. O sea que solo se le escribe un cero. Buscado el par de bytes 59 c4 en
+# los 29861 del bloque: aparece dos veces, las dos ahi. Las tres altas de 0xBAA4,
+# 0xBAAC y 0xBAB4 son codigo muerto en la version que sale de la cinta.
+# En la fase de naves su gemela SI se enciende: la pone a 1 el objeto de 0xD95A
+# cuando la barra llega a 10 y el azar da cero.
+#
+# Y no hay parche de silencio, tampoco: los dos segundos bytes de las rutinas de
+# arranque de sonido (0xC4A4 y 0xC4D1) no se escriben desde ninguna parte. Si
+# aqui llegaran a salir los cuatro disparos, sonarian los cuatro.
 L 0xB3AC suma_puntos Suma al marcador de 0xB87F en ASCII con acarreo decimal a mano de derecha a izquierda, repinta, y mira si toca vida extra
 L 0xC8D5 lee_puntero HL = la palabra que hay en HL + A*2; identica byte a byte a la del bloque de naves
 L 0xD136 pinta_marca_hud Pinta la marca del HUD con el color 0x11

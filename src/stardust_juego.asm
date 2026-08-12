@@ -1955,7 +1955,7 @@ lef00h:	equ 0x0ef00
 	defb 004h,004h,004h,000h,000h	; bd80  .....
 
 ; ======================================================================
-; CODIGO 0xbd85..0xc05c  (727 bytes)
+; CODIGO 0xbd85..0xc184  (1023 bytes)
 ; ======================================================================
 
 
@@ -2027,7 +2027,7 @@ L_BDE5:
 	ld (0e156h),a		;be15
 	call hud_vidas_zona		;be18
 	ld hl,0c1bdh		;be1b
-	ld (0c090h),hl		;be1e
+	ld (actualiza_nave+1),hl	;be1e
 	ld a,r			;be21
 	ld l,a			;be23
 	ld a,r			;be24
@@ -2087,8 +2087,8 @@ hud_reset:		; Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y l
 	ld (0e157h),a		;be9c
 	ld hl,0d0dfh		;be9f
 	ld (0d0ddh),hl		;bea2
-	ld hl,0c066h		;bea5
-	ld (0c064h),hl		;bea8
+	ld hl,nave_estado		;bea5
+	ld (va_a_nave_estado+1),hl	;bea8
 	ld hl,0ba20h		;beab
 	ld (0e158h),hl		;beae
 	ld a,00ah		;beb1
@@ -2194,7 +2194,7 @@ L_BF6A:
 	call L_D41A		;bf97
 	call va_a_nave_estado		;bf9a
 	call L_D820		;bf9d
-	ld a,(0c090h)		;bfa0
+	ld a,(actualiza_nave+1)	;bfa0
 	cp 0afh			;bfa3
 	jr nz,L_BFD0		;bfa5
 	call hay_tecla		;bfa7
@@ -2281,18 +2281,10 @@ hud_vidas_zona:		; Repinta los dos indicadores de un digito, vidas (0xE156 -> 0x
 	ld ix,0e154h		;c052
 	ld de,01630h		;c056
 	jp hud_imprime		;c059
-
-; ----------------------------------------------------------------------
-; DATOS relleno: o resto (7 B; 7 bytes)
-;   0xc05c..0xc063  (7 bytes)
-; ----------------------------------------------------------------------
-	defb 03eh,003h,032h,088h,0c1h,018h,02ch	; c05c  >.2...,
-
-; ======================================================================
-; CODIGO 0xc063..0xc184  (289 bytes)
-; ======================================================================
-
-
+recarga_escudo:		; Pone el escudo (0xC188) a 3 y sigue en actualiza_nave. Nadie la llama en el juego original -su direccion no aparece ni una vez en el bloque-: es donde aterriza el POKE de inmortalidad de Input MSX 19, que cambia el `jr c` de 0xC06E por un `jr -20`
+	ld a,003h		;c05c
+	ld (0c188h),a		;c05e
+	jr actualiza_nave		;c061
 va_a_nave_estado:		; Trampolin de tres bytes: `jp nave_estado`
 	jp nave_estado		;c063
 nave_estado:		; El despachador de 0xC188, que es ESCUDO y agonia en la misma variable: de 0 a 3 son los impactos que aguanta; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
@@ -2319,9 +2311,9 @@ L_C07A:
 actualiza_nave:		; La nave, de punta a punta: lee el mando, pasa el rumbo pedido por gira_rumbo, mueve la posicion de 0xC184 con aplica_rumbo y la pinta con pinta_sprite. El fotograma esta en los 5 bits bajos de 0xC9A3 y los 3 altos son el rumbo
 	call lee_mando		;c08f
 	ld (0e150h),a		;c092
-	call L_E0F8		;c095
+	call dispara		;c095
 	and 00fh		;c098
-	call L_D109		;c09a
+	call poda_rumbo_nave		;c09a
 	call rumbo_a_mascara2		;c09d
 	cp 0ffh			;c0a0
 	push af			;c0a2
@@ -2351,7 +2343,7 @@ L_C0D0:
 	ld a,(0c9a3h)		;c0d0
 	and 01fh		;c0d3
 	call pinta_sprite		;c0d5
-	call L_D067		;c0d8
+	call tiro_alcanza_nave		;c0d8
 	ret			;c0db
 L_C0DC:
 	ex af,af'		;c0dc
@@ -2447,7 +2439,7 @@ L_C17D:
 	defb 000h,000h,000h,000h,000h	; c184  .....
 
 ; ======================================================================
-; CODIGO 0xc189..0xc5bb  (1074 bytes)
+; CODIGO 0xc189..0xc8d7  (1870 bytes)
 ; ======================================================================
 
 
@@ -2595,7 +2587,7 @@ L_C291:
 	and 007h		;c297
 	ld bc,00404h		;c299
 	call aplica_rumbo		;c29c
-	call L_D15C		;c29f
+	call recorta_x_objeto		;c29f
 	ld a,(ix+004h)		;c2a2
 	and a			;c2a5
 	jp z,L_C2B4		;c2a6
@@ -2630,7 +2622,7 @@ L_C2B4:
 	ld b,a			;c2e6
 	call alta_enemigo		;c2e7
 L_C2EA:
-	call L_CFA1		;c2ea
+	call disparo_derriba_bandada		;c2ea
 	ld a,(0c188h)		;c2ed
 	cp 004h			;c2f0
 	jr nc,L_C311		;c2f2
@@ -2915,12 +2907,12 @@ L_C4B9:
 	ex de,hl		;c4c2
 L_C4C3:
 	jr L_C4C3		;c4c3
-L_C4C5:
+atajo_mascara24:		; Desplazamiento de ocho de la mascara: A = H, H = L, L = 0xFF. Es el camino cuando la columna cae justa en un byte, y es el unico que no recorre la tira
 	ld a,h			;c4c5
 	ld h,l			;c4c6
 	ld l,0ffh		;c4c7
 	jp L_C4E1		;c4c9
-L_C4CC:
+tira_mascara24:		; La tira de la mascara: siete `adc hl,hl / adc a,a` seguidos, en la que pinta_sprite entra por el peldano n-1 para dar 8-n pasos. Entra con A=0xFF y acarreo, o sea rellenando de unos
 	adc hl,hl		;c4cc
 	adc a,a			;c4ce
 	adc hl,hl		;c4cf
@@ -2963,12 +2955,12 @@ L_C4E1:
 	ex de,hl		;c4f9
 L_C4FA:
 	jr L_C4FA		;c4fa
-L_C4FC:
+atajo_dibujo24:		; Lo mismo que atajo_mascara24 para el dibujo: A = H, H = L, L = 0x00, rellenando de ceros
 	ld a,h			;c4fc
 	ld h,l			;c4fd
 	ld l,000h		;c4fe
 	jp L_C518		;c500
-L_C503:
+tira_dibujo24:		; La tira del dibujo: la misma de siete peldanos, byte a byte igual que la de la mascara. Se entra con `xor a`, que pone A a cero Y limpia el acarreo, asi que rellena de ceros
 	adc hl,hl		;c503
 	adc a,a			;c505
 	adc hl,hl		;c506
@@ -3066,7 +3058,7 @@ L_C57E:
 	jr c,L_C587		;c581
 	inc de			;c583
 	inc de			;c584
-	jr $+77			;c585
+	jr L_C5D2		;c585
 L_C587:
 	push hl			;c587
 	ld a,(de)		;c588
@@ -3076,11 +3068,11 @@ L_C587:
 	scf			;c58d
 L_C58E:
 	jr L_C58E		;c58e
-L_C590:
+atajo_mascara16:		; Desplazamiento de ocho de la mascara de 16 bits: H = L, L = 0xFF. El gemelo de atajo_mascara24 sin la parte de A
 	ld h,l			;c590
 	ld l,0ffh		;c591
 	jp L_C5A4		;c593
-L_C596:
+tira_mascara16:		; La tira de la mascara de 16 bits: siete `adc hl,hl`, sin A porque el relleno de unos ya viene en H
 	adc hl,hl		;c596
 	adc hl,hl		;c598
 	adc hl,hl		;c59a
@@ -3106,23 +3098,14 @@ L_C5A4:
 	ld l,a			;c5b2
 L_C5B3:
 	jr L_C5B3		;c5b3
-L_C5B5:
+atajo_dibujo16:		; Desplazamiento de ocho del dibujo de 16 bits: H = L, L = 0x00
 	ld h,l			;c5b5
 	ld l,000h		;c5b6
 	jp L_C5C9		;c5b8
-
-; ----------------------------------------------------------------------
-; DATOS relleno: o resto (6 B; 6 bytes)
-;   0xc5bb..0xc5c1  (6 bytes)
-; ----------------------------------------------------------------------
-	defb 0edh,06ah,0edh,06ah,0edh,06ah	; c5bb  .j.j.j
-
-; ======================================================================
-; CODIGO 0xc5c1..0xc8d7  (790 bytes)
-; ======================================================================
-
-
-L_C5C1:
+tira_dibujo16:		; La tira del dibujo de 16 bits, los siete peldanos: tres de ellos figuraban como relleno porque el punto medido (0xC5C1) caia en el cuarto
+	adc hl,hl		;c5bb
+	adc hl,hl		;c5bd
+	adc hl,hl		;c5bf
 	adc hl,hl		;c5c1
 	adc hl,hl		;c5c3
 	adc hl,hl		;c5c5
@@ -3148,7 +3131,7 @@ L_C5D2:
 	jr nz,L_C5E0		;c5dc
 	ld h,040h		;c5de
 L_C5E0:
-	djnz $-98		;c5e0
+	djnz L_C57E		;c5e0
 	ret			;c5e2
 siembra_particulas:		; Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
 	ld de,05bb2h		;c5e3
@@ -4176,7 +4159,7 @@ L_CE18:
 	rlca			;ce20
 	add a,04fh		;ce21
 	call pinta_sprite		;ce23
-	call L_D037		;ce26
+	call disparo_derriba_objeto		;ce26
 	ld a,(0c188h)		;ce29
 	cp 004h			;ce2c
 	jr nc,L_CE46		;ce2e
@@ -4371,7 +4354,7 @@ L_CF9C:
 	xor a			;cf9c
 	ld (0d3c5h),a		;cf9d
 	ret			;cfa0
-L_CFA1:
+disparo_derriba_bandada:		; Mira si un disparo del jugador ha tocado al enemigo de IX -posicion en (ix+000/001), caja 4x0x0C-: lo pasa a explosion (0xFF/0x1D en (ix+002/003)), marca el disparo con 0x80, suena 0xEA52 y paga 130 puntos
 	ld l,(ix+000h)		;cfa1
 	ld h,(ix+001h)		;cfa4
 	ld iy,0c953h		;cfa7
@@ -4444,7 +4427,7 @@ choca_y_revienta:		; Contacto del objeto de IX contra la tabla de 0xC953: al cho
 	ld b,010h		;d031
 	call premia		;d033
 	ret			;d036
-L_D037:
+disparo_derriba_objeto:		; Lo mismo para los objetos de la tabla 0xC990, con la posicion en (ix+002/003): explosion en (ix+000/001) y 140 puntos
 	ld l,(ix+002h)		;d037
 	ld h,(ix+003h)		;d03a
 	ld iy,0c953h		;d03d
@@ -4462,7 +4445,7 @@ L_D037:
 	ld b,00eh		;d061
 	call premia		;d063
 	ret			;d066
-L_D067:
+tiro_alcanza_nave:		; El contacto al reves: la nave (0xC184) contra la tabla que llena alta_enemigo (0xC93A), caja 4x0x0A. Marca al culpable con 0x80 y se va por impacto_simple. Es la ultima instruccion de actualiza_nave
 	ld hl,(0c184h)		;d067
 	ld iy,0c93ah		;d06a
 	ld de,0040ah		;d06e
@@ -4472,7 +4455,7 @@ L_D067:
 	ld (iy+002h),080h	;d078
 	call impacto_simple		;d07c
 	ret			;d07f
-L_D080:
+disparo_derriba_tiro:		; Lo mismo contra un TIRO enemigo: le mete 0x7C en (ix+000h), marca el disparo del jugador y paga 53 puntos, que son los mismos 53 que cobra su gemela de la fase de a pie
 	ld l,(ix+002h)		;d080
 	ld h,(ix+003h)		;d083
 	ld iy,0c953h		;d086
@@ -4516,7 +4499,7 @@ choca_con_nave3:		; La tercera caja de contacto con la nave, 5x3 contra 0x16x0A,
 	ld a,(0c184h)		;d0d5
 	ld l,a			;d0d8
 	jp solapa_eje		;d0d9
-pinta_escudo:		; Repinta el indicador que va pegado a la nave, alternandolo cuadro a cuadro con el `xor 001h` sobre 0xD3C2: cambia a la vez el color de la marca de 0x2F78 -0x11 o 0x71- y el sprite, 0x39 o 0x3A
+pinta_escudo:		; Repinta el indicador que va pegado a la nave eligiendo color de marca -0x11 o 0x71- y sprite -0x39 o 0x3A- segun la bandera 0xD3C2. (Aqui puso que la ALTERNABA "cuadro a cuadro con el `xor 001h`" y no es cierto: el `xor` de 0xD0F5 se queda en E y NO se vuelve a escribir. Quien pone 0xD3C2 a 1 es el bucle principal, cada cuadro, y quien lo pone a 0 son los contactos de 0xD23A y 0xD2B2; el parpadeo existe, pero no lo hace esta rutina)
 	jp L_D0DF		;d0dc
 L_D0DF:
 	ld a,(0c188h)		;d0df
@@ -4541,7 +4524,7 @@ L_D0F1:
 	ld a,e			;d103
 	add a,039h		;d104
 	jp pinta_sprite		;d106
-L_D109:
+poda_rumbo_nave:		; Quita del rumbo pedido -en el A alternativo- las direcciones que la nave no puede tomar por donde esta: X=0 la izquierda, X=0xB0 la derecha, Y=0x38 arriba y Y=0xB0 abajo
 	ld hl,(0c184h)		;d109
 	ex af,af'		;d10c
 	ld a,l			;d10d
@@ -4604,13 +4587,13 @@ L_D152:
 L_D15A:
 	ex af,af'		;d15a
 	ret			;d15b
-L_D15C:
+recorta_x_objeto:		; Deshace el paso lateral del objeto de IX si se ha salido: con L >= 0xB1 repone L desde (ix+000h). Identica byte a byte a la de la fase de a pie
 	ld a,l			;d15c
 	cp 0b1h			;d15d
 	ret c			;d15f
 	ld l,(ix+000h)		;d160
 	ret			;d163
-L_D164:
+arranca_estela:		; Si queda barra (0xD3C1) y la puerta de (iy+000)|(iy+005) esta a cero, gasta un punto, repinta la barra y lanza la estela de 0xD3BD desde la posicion de la nave, con vida 3 y paso 0x03C0 o 0x003C segun la columna. La llama dispara al terminar
 	ld iy,0d3bdh		;d164
 	ld a,(iy+004h)		;d168
 	and a			;d16b
@@ -5991,7 +5974,7 @@ L_DABD:
 	defb 018h,02fh,004h,060h,061h,062h,004h,068h,069h,06ah	; df05  ./.`ab.hij
 
 ; ======================================================================
-; CODIGO 0xdf0f..0xe03d  (302 bytes)
+; CODIGO 0xdf0f..0xe14e  (575 bytes)
 ; ======================================================================
 
 
@@ -6043,7 +6026,7 @@ L_DF52:
 	dec (ix+004h)		;df6d
 	ex de,hl		;df70
 	call pinta_glifo		;df71
-	call L_D080		;df74
+	call disparo_derriba_tiro		;df74
 	ld a,(0c188h)		;df77
 	cp 004h			;df7a
 	jr nc,L_DFA6		;df7c
@@ -6144,23 +6127,14 @@ L_E02A:
 	ld a,(ix+000h)		;e02d
 	cp 010h			;e030
 	ret c			;e032
-	ld hl,0e03dh		;e033
+	ld hl,L_E03D		;e033
 	ld (ix+003h),l		;e036
 	ld (ix+004h),h		;e039
 	ret			;e03c
-
-; ----------------------------------------------------------------------
-; DATOS tabla: (8 B; racha 1.94, entropia 3.00, 8 valores: pocos valores para ser un dibujo)
-;   0xe03d..0xe045  (8 bytes)
-; ----------------------------------------------------------------------
-	defb 0cdh,0f5h,0d1h,03ah,08eh,0cah,0e6h,001h	; e03d  ...:....
-
-; ======================================================================
-; CODIGO 0xe045..0xe14e  (265 bytes)
-; ======================================================================
-
-
-L_E045:
+L_E03D:
+	call impacto_objeto		;e03d
+	ld a,(0ca8eh)		;e040
+	and 001h		;e043
 	ret nz			;e045
 	inc (ix+002h)		;e046
 	ld l,(ix+005h)		;e049
@@ -6194,7 +6168,7 @@ L_E05E:
 	ld l,(ix+005h)		;e080
 	ld h,(ix+006h)		;e083
 	ld (hl),a		;e086
-	ld hl,0e03dh		;e087
+	ld hl,L_E03D		;e087
 	ld (ix+003h),l		;e08a
 	ld (ix+004h),h		;e08d
 	ret			;e090
@@ -6249,7 +6223,7 @@ L_E0CF:
 	ld (ix+003h),l		;e0f1
 	ld (ix+004h),h		;e0f4
 	ret			;e0f7
-L_E0F8:
+dispara:		; Mete disparos en la tabla del jugador (0xC953) en la posicion de la nave mas 0x0404, y solo en el FLANCO de subida del gatillo: guarda el estado en 0xE14F y se va si no esta pulsado o si ya lo estaba. Con la mejora de 0xE14E encendida suelta CUATRO, en los rumbos base, +4, +6 y +2
 	bit 4,a			;e0f8
 	ld bc,(0e14fh)		;e0fa
 	ld b,a			;e0fe
@@ -6294,7 +6268,7 @@ L_E105:
 	ld a,(0e1bdh)		;e142
 	ld (0e190h),a		;e145
 L_E148:
-	call L_D164		;e148
+	call arranca_estela		;e148
 	pop hl			;e14b
 	pop af			;e14c
 	ret			;e14d

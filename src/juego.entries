@@ -92,21 +92,29 @@
 # no llega. Del muestreo del PC salieron 1889 direcciones distintas y solo 118
 # bytes caian fuera de lo ya trazado: estos dos tramos, la rutina huerfana de
 # 0xF02C que ya esta arriba, y los hooks del sistema.
-0xC4C5  ejec_C4C5   ejecutado en partida, sin llamador directo localizado
-0xC590  ejec_C590   ejecutado en partida, sin llamador directo localizado
+#
+# Son DOS de los cuatro ATAJOS de las tiras de desplazamiento -los otros dos,
+# 0xC4FC y 0xC5B5, estan mas abajo, en el grupo con el que se midieron-: el
+# camino que toma pinta_sprite (y pinta_glifo) cuando la columna cae justo en un
+# byte y hay que desplazar ocho bits enteros, que se resuelve moviendo registros
+# en vez de recorrer la tira. Ver la seccion del pintor en src/juego.notes.
+0xC4C5  atajo_mascara24   desplazamiento de 8 de la mascara de 24 bits, sin tira
+0xC590  atajo_mascara16   desplazamiento de 8 de la mascara de 16 bits, sin tira
 
-# Tres tiras DESENROLLADAS en las que se entra por la mitad. Es una tecnica de
+# Las tiras DESENROLLADAS en las que se entra por la mitad. Es una tecnica de
 # la epoca para no pagar el bucle: se escriben N copias seguidas de la misma
 # instruccion y se salta a la altura que corresponda para hacer los pasos que
 # hagan falta. El trazador no puede seguirlas porque el salto es calculado, y
 # ademas lee un `jp` que pasa por encima de todas ellas.
-#     0xC4CC  adc hl,hl / adc a,a  x N   desplazamiento de 24 bits
-#     0xC596  adc hl,hl            x N   desplazamiento de 16 bits
+#     0xC4CC  adc hl,hl / adc a,a  x 7   desplazamiento de 24 bits (mascara)
+#     0xC503  adc hl,hl / adc a,a  x 7   desplazamiento de 24 bits (dibujo)
+#     0xC596  adc hl,hl            x 7   desplazamiento de 16 bits (mascara)
+#     0xC5BB  adc hl,hl            x 7   desplazamiento de 16 bits (dibujo)
 #     0xF086  ldi                  x N   copia desenrollada
 # Que se entra dentro esta comprobado: la partida ejecuto 0xC4D5, 0xC598 y
 # 0xF088, que caen a media tira.
-0xC4CC  tira_24bits  entrada por la mitad de una tira de adc hl,hl / adc a,a
-0xC596  tira_16bits  entrada por la mitad de una tira de adc hl,hl
+0xC4CC  tira_mascara24  entrada por la mitad de una tira de adc hl,hl / adc a,a
+0xC596  tira_mascara16  entrada por la mitad de una tira de adc hl,hl
 
 # --- La rutina de carga PROPIA del juego (la multicarga) ---------------------
 #
@@ -216,9 +224,65 @@
 # De las 1489 direcciones distintas que se ejecutaron dentro del bloque, el
 # trazador ya alcanzaba 1444. Estas son las 45 que faltaban.
 0xC1AF  lee_mando_demo  saca un byte de la partida grabada de la demo y avanza el puntero
-0xC4FC  ejec_C4FC    ejecutado en partida (1140 muestras)
-0xC5C1  ejec_C5C1    ejecutado en partida (71 muestras)
+0xC4FC  atajo_dibujo24  desplazamiento de 8 del dibujo de 24 bits (1002 muestras en dump/pcs.txt)
 0xF07B  ejec_F07B    ejecutado en partida (4 muestras)
+
+# La tira del dibujo de 16 bits ESTABA DECLARADA TRES PELDANOS MAS ALLA de donde
+# empieza. Lo dice la cuenta del desplazamiento, que ya estaba escrita en las
+# notas: pinta_glifo parchea el `jr` de 0xC5B3 con `n*2 + 4`, o sea que un
+# desplazamiento de 1 pixel salta a 0xC5B5 + 6 = 0xC5BB. Ahi empieza la tira, y
+# 0xC5C1 -lo unico que se habia declarado- es su cuarto peldano. Los seis bytes
+# de delante figuraban como "relleno o resto" y son tres `adc hl,hl` mas.
+#
+# Y LO MEDIDO YA LO DECIA: dump/pcs.txt trae C5BB:40, C5BD:155 y C5BF:226, los
+# tres peldanos que faltaban. No fallo la medida, fallo que nadie cruzara las
+# medidas con las zonas declaradas como datos. Lo confirma ademas la gemela de
+# la fase de a pie (0xAB47), donde la tira si estaba declarada entera.
+0xC5BB  tira_dibujo16  la tira entera del dibujo de 16 bits (7 x adc hl,hl; C5BB:40 C5BD:155 C5BF:226 en dump/pcs.txt)
+
+# --- Y DOS TRAMOS MAS QUE SALIERON DEL MISMO CRUCE ---------------------------
+#
+# Cruzar los volcados del contador de programa contra TODAS las zonas declaradas
+# como datos -que es lo que nadie habia hecho- destapo otros dos rangos, los dos
+# con muestras de sobra y los dos leibles como codigo coherente.
+#
+# 1) 0xC05C, siete bytes declarados "relleno o resto". Son:
+#
+#        3e 03        ld a,003h
+#        32 88 c1     ld (0c188h),a     <- el ESCUDO
+#        18 2c        jr 0c08fh         <- actualiza_nave
+#
+#    O sea: recarga el escudo a 3 y sigue con la nave como si nada. Y NINGUN
+#    sitio del bloque salta ahi: buscado el par de bytes 5c c0 en los 46663
+#    bytes, cero apariciones, y ningun salto relativo del bloque aterriza en esa
+#    direccion. En el juego tal cual sale de la cinta es inalcanzable.
+#
+#    LO QUE SALTA AHI ES EL POKE DE INMORTALIDAD DE INPUT MSX 19. Su parche
+#    -0xC06E/6F: 38 1F -> 18 EC- convierte el `jr c,0c08fh` de nave_estado en
+#    `jr -20`, y 0xC070 - 20 = 0xC05C exacto. Con el poke puesto, cada cuadro
+#    pasa por ahi y el escudo vuelve a 3.
+#
+#    Y los volcados lo confirman por partida doble: dump/pcs.txt (la sesion
+#    larga, jugada CON el trainer) trae C05C:28, C05E:13 y C061:33 -las tres
+#    cabeceras de instruccion, ninguna otra direccion del rango- y CERO muestras
+#    en siembra_particulas; dump/pantallas_pcs.txt (jugada a mano, sin trainer)
+#    no trae ni una en 0xC05C y si en la explosion (C072:2, C60C:4).
+0xC05C  recarga_escudo  pone el escudo (0xC188) a 3 y sigue en actualiza_nave; INALCANZABLE sin el poke de Input MSX 19, que salta aqui
+#
+# 2) 0xE03D, ocho bytes declarados "tabla" por medida de entropia. Son:
+#
+#        cd f5 d1     call impacto_objeto
+#        3a 8e ca     ld a,(0ca8eh)
+#        e6 01        and 001h          <- y cae en 0xE045, que sigue con `ret nz`
+#
+#    que es exactamente la forma de los demas comportamientos de objeto. Y no
+#    hay que adivinar quien lo usa: el bloque lo INSTALA como puntero de
+#    comportamiento en dos sitios, 0xE033 y 0xE086, los dos con
+#    `ld hl,0e03dh / ld (ix+003h),l / ld (ix+004h),h`. Son las dos unicas
+#    apariciones del par 3d e0 en el binario. Muestras: E03D:1, E040:6 y E043:8.
+#
+#    Al declararlo, 0xE045 deja de ser punto de entrada: se cae en el desde aqui.
+0xE03D  obj_E03D  comportamiento de objeto instalado desde 0xE033 y 0xE086; sigue en 0xE045
 
 # --- LAS PANTALLAS QUE UNA PARTIDA NORMAL NO TOCA ----------------------------
 #
@@ -240,11 +304,12 @@
 #                    guarda; al llegar a 0x2C se va por 0xC678.
 #                    ESTUVO en 0xC193, TRES bytes mas alla, y por eso los
 #                    tres de delante figuraban como "relleno o resto".
-0xC503  ejec_C503    ejecutado a mano (29 muestras)
-0xC5B5  ejec_C5B5    ejecutado a mano (48 muestras)
+0xC503  tira_dibujo24   la tira del dibujo de 24 bits (10 muestras en dump/pcs.txt)
+0xC5B5  atajo_dibujo16  desplazamiento de 8 del dibujo de 16 bits (76 en dump/pcs.txt)
 0xCE73  ejec_CE73    ejecutado a mano (6 muestras)
 0xD9DB  ejec_D9DB    ejecutado a mano (2 muestras)
-0xE045  ejec_E045    ejecutado a mano (1 muestra)
+# (0xE045 estuvo aqui, "ejecutado a mano". Ya no hace falta: es la continuacion
+#  de obj_E03D, y desde que ese esta declarado se cae en el desde arriba.)
 
 # --- RUTINAS QUE ESTABAN DECLARADAS COMO DATOS ------------------------------
 #

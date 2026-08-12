@@ -71,10 +71,39 @@ del binario antes de aplicarlos:
     0xC06E/6F:  38 1F (jr c,+31)  ->  18 EC (jr -20)
     0xF7B1:     01 -> 00
 
-El primero convierte un salto condicional en incondicional, saltándose una
-comprobación que va justo detrás de `ld a,(0c188h) / cp 004h`. El segundo cambia
-el `1` de un `ld a,001h` por un `0`. Aplicados por el propio cargador del juego,
-la nave aguantó dieciséis minutos seguidos sin morir.
+El segundo cambia el `1` de un `ld a,001h` por un `0`. Aplicados por el propio
+cargador del juego, la nave aguantó dieciséis minutos seguidos sin morir.
+
+### Y el primero salta a una rutina que el juego trae de fábrica y no usa
+
+Aquí estuvo escrito que ese parche «convierte un salto condicional en
+incondicional, saltándose una comprobación». Era falso, y el propio renglón de
+arriba lo desmentía: el desplazamiento nuevo es `EC`, o sea **−20**. El salto no
+va hacia delante saltándose nada, **va hacia atrás**, a 0xC070 − 20 = **0xC05C**.
+
+Y en 0xC05C había, hasta ahora, siete bytes declarados como «relleno o resto».
+No lo son:
+
+    c05c:  ld a,003h        ; el escudo
+    c05e:  ld (0c188h),a    ; a tres
+    c061:  jr  0c08fh       ; y a seguir con la nave, como si nada
+
+O sea que la inmortalidad no consiste en esquivar la explosión: consiste en que
+**el escudo se recarga a tres en cada cuadro**, antes de que al juego le dé
+tiempo a gastarlo.
+
+Lo llamativo es de quién es esa rutina. **Está en la cinta, y en el juego tal
+como se vende no la llama nadie**: su dirección no aparece ni una sola vez entre
+los 46.663 bytes del bloque, y ningún salto relativo aterriza en ella. Siete
+bytes que hacen exactamente lo que haría falta para no morir, colocados a veinte
+bytes justos del salto que hay que parchear.
+
+Que la dejaran los propios autores como interruptor de pruebas es lo que parece,
+pero eso es una suposición y así queda dicha. Lo que sí está medido es el
+comportamiento, y por partida doble: en el muestreo de la sesión larga —jugada
+**con** el trainer puesto— esas tres instrucciones aparecen 28, 13 y 33 veces y
+el sembrador de partículas de la explosión **ninguna**; en el muestreo de una
+partida jugada a mano **sin** trainer, 0xC05C no aparece y la explosión sí.
 
 ## Cómo pide el juego la segunda parte
 
@@ -175,11 +204,16 @@ justo la dirección que el código carga para las variables del intérprete.
 Así que ese `jp (hl)` no despachaba entidades: despachaba **comandos de
 música**. Es el mismo intérprete de las dos partes, con sus tres canales.
 
-Lo que sí comparten es el oficio de dibujar. Comparando 40 bytes de la rutina de
-sprites de una parte con la de la otra, **solo difieren seis**, y tres de ellos
-son `and (hl)` contra `or (hl)`. Es la técnica del Spectrum, que no tiene
-sprites por hardware: se desplaza el dibujo bit a bit con una tira desenrollada
-de `adc hl,hl`, se abre hueco con AND y se pinta con OR.
+Lo que sí comparten es el oficio de dibujar. Es la técnica del Spectrum, que no
+tiene sprites por hardware: se desplaza el dibujo bit a bit con una tira
+desenrollada de `adc hl,hl`, se abre hueco con AND y se pinta con OR.
+
+(Aquí estuvo publicado que «comparando 40 bytes de la rutina de sprites de una
+parte con la de la otra solo difieren seis, y tres de ellos son `and (hl)`
+contra `or (hl)`». La medida era buena y el emparejamiento no: comparaba la tira
+del **dibujo** de una mitad con la de la **máscara** de la otra, que no son
+gemelas sino las dos mitades de la misma rutina. Emparejadas como toca salen
+**26 bytes iguales de 28**, y la única diferencia es el operando de un salto.)
 
 ### Y no son solo los sprites: comparten una biblioteca entera
 
@@ -195,12 +229,20 @@ Cinco son idénticas byte a byte:
 
 Y en las demás, lo que convierte el parecido en prueba es **dónde** caen las
 diferencias: en parejas de bytes consecutivos, que es justo lo que mide un
-operando de 16 bits. En el pintor de sprites, de sus 74 bytes difieren once:
-diez son cinco direcciones —el pozo de sprites, el contador de filas, los dos
-`jr` que la rutina se parchea a sí misma y la llamada a `buffer_dir`— y el
-undécimo es **un byte suelto**, el del recorte por abajo, `0x50` en la fase de
-naves y `0x4F` en la de a pie. De toda la rutina, eso es lo único que cambia de
-verdad.
+operando de 16 bits. El pintor de sprites mide 198 bytes y difieren 21: veinte
+son diez direcciones —el pozo de sprites, el contador de filas, los dos `jr` que
+la rutina se parchea a sí misma, la llamada a `buffer_dir`, los dos saltos con
+que los atajos pasan por encima de las tiras y el que cierra el bucle de filas—
+y el veintiuno es **un byte suelto**, el del recorte por abajo, `0x50` en la
+fase de naves y `0x4F` en la de a pie. De toda la rutina, eso es lo único que
+cambia de verdad. El rotulador, 144 bytes, da lo mismo: 13 diferencias, seis
+direcciones y otra vez ese byte.
+
+(Esto estuvo publicado como «de sus 74 bytes difieren once». Los 74 eran los 74
+**primeros**: la rutina son 198. Medida entera, la conclusión no sólo aguanta,
+sale reforzada, porque los diez bytes que aparecen de más son cinco direcciones
+más. Pero la cifra estaba mal y hablaba de «toda la rutina» habiendo mirado un
+tercio.)
 
 En `borra_buffer` las cuatro diferencias son que el `di` está antes del
 `ld hl,0 / add hl,sp` en una parte y después en la otra. En el generador de
@@ -220,6 +262,115 @@ y el protagonista de a pie cambia de dirección al instante**.
 
 Con esto, la frase de arriba se puede afinar: los dos motores de juego son
 distintos, la biblioteca de servicio es la misma.
+
+### Cómo se coloca un dibujo entre dos bytes: cuatro escaleras
+
+La memoria de vídeo va por bytes, de ocho píxeles en ocho. Para poner una nave
+en la columna 173 hay que **correr el dibujo dentro del byte**, y eso, en un
+Z80, se paga. La solución que trae el juego es la de la casa: una tira de
+instrucciones de desplazamiento escritas una detrás de otra, en la que se entra
+a la altura justa. El pintor coge los tres bits bajos de la X y **se escribe él
+mismo el salto**:
+
+    c494:  ld a,l / and 007h / jr z,...              la columna cae justa
+    c499:  dec a / ld c,a / add a,a / add a,c / add a,007h    (n−1)·3 + 7
+    c49f:  ld (0c4c4h),a / ld (0c4fbh),a             se parchea los dos `jr`
+
+El 3 es lo que ocupa un peldaño (`adc hl,hl` son dos bytes y `adc a,a` uno) y el
+7 lo que ocupa el atajo que va delante. Así el salto aterriza en el peldaño que
+toca y quedan exactamente los pasos que hacen falta.
+
+**Y los pasos van al revés de lo que uno diría.** Para correr el dibujo n
+píxeles a la *derecha* se dan 8−n pasos a la *izquierda* sobre una ventana de
+tres bytes: lo que se sale por arriba es justo lo que tiene que aparecer en el
+byte de al lado. Con n=0 harían falta los ocho, y esos ocho salen gratis
+cambiando registros de sitio; eso es el atajo.
+
+Mirado de cerca, la tira no desplaza: **rota**. A, H y L giran como un solo
+número de 24 bits, y funciona como desplazamiento porque lo que da la vuelta son
+los bits del relleno. Y el relleno es lo único que distingue las dos tiras que
+tiene cada pintor:
+
+    máscara   entra con A=0xFF y `scf`   → rellena de UNOS  (deja ver el fondo)
+    dibujo    entra con `xor a`          → rellena de CEROS (no pinta de más)
+
+Por eso son el mismo código dos veces y no una rutina llamada dos veces: cada
+una desemboca en un sitio distinto —la que estampa con AND y la que estampa con
+OR— y esto es el interior de un bucle de dieciséis filas, donde una llamada y su
+retorno se pagarían treinta y dos veces por sprite.
+
+Hay cuatro escaleras, dos por pintor —el de sprites trabaja a 24 bits y el de
+letras a 16—, y las cuatro están en las dos mitades del juego, iguales byte a
+byte salvo el destino de un salto:
+
+    máscara 24 bits   0xC4C5 / 0xAA51   26 de 28 bytes
+    dibujo  24 bits   0xC4FC / 0xAA88   26 de 28
+    máscara 16 bits   0xC590 / 0xAB1C   18 de 20
+    dibujo  16 bits   0xC5B5 / 0xAB41   18 de 20
+
+#### Seis bytes que estaban contados como relleno
+
+En el rotulador la cuenta del parche es `n·2 + 4` en vez de `(n−1)·3 + 7`,
+porque sus peldaños son de dos bytes y su atajo de seis (es la misma fórmula
+escrita de otra manera: `n·2 + 4` es `(n−1)·2 + 6`). Y escrita así dice dónde
+empieza la tira: con n=1 el salto va a 0xC5B5 + 6 = **0xC5BB**.
+
+En 0xC5BB no había una tira: había un rango declarado como «relleno o resto».
+La tira figuraba empezando en 0xC5C1 —su cuarto peldaño— y los seis bytes de
+delante, `ed 6a` tres veces, estaban huérfanos. Con ellos, la escalera tiene los
+mismos siete peldaños que las otras tres.
+
+Lo interesante es **por qué no se había visto**, porque no fue culpa de la
+medición: el volcado del contador de programa traía esos tres peldaños con 40,
+155 y 226 muestras, más que muchas direcciones que sí se habían declarado. El
+dato estaba. Lo que no había era **nadie cruzando las medidas con los rangos
+declarados como datos**: el guardián que existe cruza las zonas de datos contra
+el *trazado*, y el trazador tampoco llegaba ahí.
+
+Hecho ese cruce a mano aparecieron otros dos rangos, y los dos eran código: los
+siete bytes donde aterriza el POKE de la revista —contados arriba— y ocho bytes
+más en 0xE03D que resultaron ser un comportamiento de objeto, instalado como
+puntero desde dos sitios del propio bloque. Quince bytes que estaban en la
+columna equivocada.
+
+## Nadie vigila las colisiones: cada uno se pregunta por sí mismo
+
+En las dos mitades del juego hay dos tablas de cosas volando, y cada una es de
+un bando: una la llena el gatillo del jugador y otra la llenan los enemigos. Lo
+que no hay es un detector central que las cruce. **Cada objeto, justo después de
+pintarse, pregunta si le han dado**, y siempre con la misma rutina, cambiando
+sólo la caja de contacto y lo que se cobra:
+
+    quién pregunta            caja        premio
+    la bandada de enemigos    4 × 0x0C    130 puntos
+    los objetos del enjambre  4 × 0x0C    140
+    un tiro enemigo           4 × 8        53
+    la nave (contra la otra tabla)         un punto de escudo
+
+Cuidado al leer esos precios, porque aquí hay una trampa fácil: la rutina que
+paga no suma puntos, **suma al dígito que le señalen**, y el acarreo va hacia la
+izquierda. Así que el mismo valor son 130 puntos o 13 según en qué cifra del
+marcador caiga. Los 53 puntos de derribar un tiro enemigo son idénticos en las
+dos mitades del juego, con el mismo número y en el mismo dígito.
+
+### El disparo cuádruple suena una sola vez, y lo consigue amordazando el sonido
+
+Con la mejora recogida, el gatillo suelta cuatro disparos en cruz en vez de uno.
+Y como cada alta de la tabla arranca su propio efecto de sonido, sonarían cuatro
+«pium» a la vez. Lo que hace el juego es **meter un `ret` en el segundo byte de
+la rutina que arranca sonidos** antes de los tres disparos extra, y reponerlo
+después.
+
+Lo bonito es cómo lo repone: no hay ninguna constante guardada para eso. **Copia
+el byte de su rutina gemela**, la que arranca guiones sin buscar canal libre,
+que tiene el mismo prólogo. Se toma prestado de la de al lado.
+
+Y hay una asimetría curiosa entre las dos mitades: **la fase de a pie tiene el
+mismo disparo cuádruple y no puede encenderlo nunca**. El byte que lo decide se
+lee en un sitio y se escribe en uno solo, detrás de un `xor a`; o sea que sólo se
+le escribe un cero. Las tres altas extra son código muerto en la versión que
+salió a la calle. Tampoco tiene el parche de silencio: si llegaran a salir los
+cuatro disparos, sonarían los cuatro.
 
 ## La segunda carga trae LD-BYTES del Spectrum otra vez
 

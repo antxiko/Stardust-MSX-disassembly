@@ -95,10 +95,38 @@ applying them:
     0xC06E/6F:  38 1F (jr c,+31)  ->  18 EC (jr -20)
     0xF7B1:     01 -> 00
 
-The first turns a conditional jump into an unconditional one, skipping a check
-that sits right behind `ld a,(0c188h) / cp 004h`. The second changes the `1` of
-an `ld a,001h` into a `0`. Applied by the game's own loader, the ship survived
-sixteen minutes straight.
+The second changes the `1` of an `ld a,001h` into a `0`. Applied by the game's
+own loader, the ship survived sixteen minutes straight.
+
+### And the first one jumps into a routine the game ships and never calls
+
+This page used to say that patch "turns a conditional jump into an
+unconditional one, skipping a check". That was false, and the line right above
+it said so: the new displacement is `EC`, that is **−20**. The jump doesn't go
+forward skipping anything, it goes **backwards**, to 0xC070 − 20 = **0xC05C**.
+
+And at 0xC05C there were, until now, seven bytes declared "filler or
+remainder". They are not:
+
+    c05c:  ld a,003h        ; the shield
+    c05e:  ld (0c188h),a    ; back to three
+    c061:  jr  0c08fh       ; and on with the ship, as if nothing happened
+
+So immortality isn't about dodging the explosion: it is that **the shield is
+refilled to three on every single frame**, faster than the game can spend it.
+
+The striking part is whose routine that is. **It is on the tape, and in the game
+as sold nobody calls it**: its address does not appear even once among the
+46,663 bytes of the block, and no relative jump lands on it. Seven bytes doing
+exactly what you would need in order not to die, sitting exactly twenty bytes
+away from the jump you have to patch.
+
+That the authors left it there as a test switch is what it looks like, but that
+is a guess and it is stated as one. What is measured is the behaviour, and twice
+over: in the PC sampling of the long session —played **with** the trainer on—
+those three instructions show up 28, 13 and 33 times and the explosion's particle
+seeder **not once**; in the sampling of a session played by hand **without** the
+trainer, 0xC05C never appears and the explosion does.
 
 ## How the game asks for the second part
 
@@ -198,11 +226,18 @@ address the code loads for the interpreter's variables.
 So that `jp (hl)` wasn't dispatching entities: it was dispatching **music
 commands**. It is the same interpreter in both halves, with its three channels.
 
-What they do share is the craft of drawing. Comparing 40 bytes of the sprite
-routine of one part against the other, **only six differ**, and three of those
-are `and (hl)` against `or (hl)`. It is the Spectrum technique, from a machine
-with no hardware sprites: the image is shifted bit by bit with an unrolled run
-of `adc hl,hl`, a hole is opened with AND, and it is painted with OR.
+What they do share is the craft of drawing. It is the Spectrum technique, from a
+machine with no hardware sprites: the image is shifted bit by bit with an
+unrolled run of `adc hl,hl`, a hole is opened with AND, and it is painted with
+OR.
+
+(This page used to say that "comparing 40 bytes of the sprite routine of one
+part against the other, only six differ, and three of those are `and (hl)`
+against `or (hl)`". The measurement was right and the pairing was not: it was
+comparing the **pattern** run of one half against the **mask** run of the other,
+which are not twins but the two halves of the same routine. Paired properly the
+result is **26 bytes identical out of 28**, and the only difference is one
+jump's operand.)
 
 ### And it isn't just the sprites: they share a whole library
 
@@ -218,12 +253,20 @@ copied and relocated**. Five are identical byte for byte:
 
 And in the rest, what turns resemblance into proof is **where** the differences
 fall: in pairs of consecutive bytes, which is exactly what a 16-bit operand
-measures. In the sprite painter, eleven of its 74 bytes differ: ten are five
-addresses —the sprite pool, the row counter, the two `jr` instructions the
-routine patches in itself, and the call to `buffer_dir`— and the eleventh is **a
-single loose byte**, the bottom clipping limit, `0x50` in the ship stage and
-`0x4F` in the on-foot one. Out of the whole routine, that is the only thing that
-really changes.
+measures. The sprite painter is 198 bytes long and 21 of them differ: twenty are
+ten addresses —the sprite pool, the row counter, the two `jr` instructions the
+routine patches in itself, the call to `buffer_dir`, the two jumps with which
+the shortcuts step over the runs, and the one that closes the row loop— and the
+twenty-first is **a single loose byte**, the bottom clipping limit, `0x50` in
+the ship stage and `0x4F` in the on-foot one. Out of the whole routine, that is
+the only thing that really changes. The glyph painter, 144 bytes, gives the same
+shape: 13 differences, six addresses and that same byte again.
+
+(This was published as "eleven of its 74 bytes differ". Those 74 were the
+**first** 74: the routine is 198. Measured whole, the conclusion doesn't just
+survive, it gets stronger, because the ten extra bytes are five more addresses.
+But the figure was wrong, and it spoke of "the whole routine" having looked at a
+third of it.)
 
 In `borra_buffer` the four differences are that the `di` sits before the
 `ld hl,0 / add hl,sp` in one part and after it in the other. In the random
@@ -243,6 +286,114 @@ the next and the man on foot changes direction instantly**.
 
 With that, the sentence above can be sharpened: the two game engines are
 different, the service library is the same.
+
+### How to place a drawing between two bytes: four ladders
+
+Video memory is organised in bytes, eight pixels at a time. To put a ship at
+column 173 the drawing has to be **shifted inside the byte**, and on a Z80 that
+costs. The game's answer is the period's answer: a run of shift instructions
+written one after another, entered at exactly the right height. The painter
+takes the low three bits of X and **writes its own jump**:
+
+    c494:  ld a,l / and 007h / jr z,...              the column falls flush
+    c499:  dec a / ld c,a / add a,a / add a,c / add a,007h    (n−1)·3 + 7
+    c49f:  ld (0c4c4h),a / ld (0c4fbh),a             patches its two `jr`s
+
+The 3 is the size of one rung (`adc hl,hl` is two bytes and `adc a,a` one) and
+the 7 is the size of the shortcut sitting in front of it. That way the jump lands
+on the right rung and exactly the needed steps remain.
+
+**And the steps run the opposite way to what you would expect.** To move the
+drawing n pixels *right*, it takes 8−n steps *left* across a three-byte window:
+what falls off the top is precisely what has to show up in the neighbouring byte.
+With n=0 all eight would be needed, and those eight come free by shuffling
+registers around — that is the shortcut.
+
+Looked at closely, the run doesn't shift: it **rotates**. A, H and L turn as a
+single 24-bit number, and it works as a shift because what wraps around is the
+padding. And the padding is the only thing that tells the two runs of each
+painter apart:
+
+    mask     enters with A=0xFF and `scf`   → pads with ONES  (background shows)
+    pattern  enters with `xor a`            → pads with ZEROS (paints nothing extra)
+
+That is why it is the same code twice rather than one routine called twice: each
+lands somewhere different —the one that stamps with AND and the one that stamps
+with OR— and this is the inside of a sixteen-row loop, where a call and its
+return would be paid thirty-two times per sprite.
+
+There are four ladders, two per painter —the sprite one works 24 bits wide, the
+lettering one 16—, and all four exist in both halves of the game, identical byte
+for byte except for one jump's destination:
+
+    mask    24 bits   0xC4C5 / 0xAA51   26 of 28 bytes
+    pattern 24 bits   0xC4FC / 0xAA88   26 of 28
+    mask    16 bits   0xC590 / 0xAB1C   18 of 20
+    pattern 16 bits   0xC5B5 / 0xAB41   18 of 20
+
+#### Six bytes that were counted as filler
+
+In the lettering painter the patch arithmetic is `n·2 + 4` instead of
+`(n−1)·3 + 7`, because its rungs are two bytes and its shortcut six (it is the
+same formula written differently: `n·2 + 4` is `(n−1)·2 + 6`). Written that way
+it says where the run begins: with n=1 the jump goes to 0xC5B5 + 6 = **0xC5BB**.
+
+At 0xC5BB there was no run: there was a range declared "filler or remainder".
+The run was recorded as starting at 0xC5C1 —its fourth rung— and the six bytes
+in front of it, `ed 6a` three times, were orphaned. With them, the ladder has the
+same seven rungs as the other three.
+
+The interesting part is **why it had gone unseen**, because the measurement was
+not at fault: the program-counter dump had those three rungs at 40, 155 and 226
+samples, more than plenty of addresses that had been declared. The data was
+there. What was missing was **anybody crossing the measurements against the
+ranges declared as data**: the guard that exists crosses data zones against the
+*trace*, and the tracer didn't reach there either.
+
+Doing that cross-check by hand turned up two more ranges, and both were code:
+the seven bytes where the magazine's POKE lands —told above— and eight more at
+0xE03D which turned out to be an object behaviour, installed as a pointer from
+two places in the block itself. Fifteen bytes sitting in the wrong column.
+
+## Nobody polices the collisions: each one asks about itself
+
+In both halves of the game there are two tables of things flying about, one per
+side: the player's trigger fills one, the enemies fill the other. What there
+isn't is a central detector crossing them. **Every object, right after painting
+itself, asks whether it has been hit**, always with the same routine, changing
+only the contact box and the price:
+
+    who asks                 box         reward
+    the enemy formation      4 × 0x0C    130 points
+    the swarm objects        4 × 0x0C    140
+    an enemy shot            4 × 8        53
+    the ship (vs the other table)        one point of shield
+
+Careful reading those prices, because there is an easy trap here: the routine
+that pays doesn't add points, it **adds to the digit it is pointed at**, and the
+carry runs leftwards. So the same value is 130 points or 13 depending on which
+figure of the scoreboard it lands on. The 53 points for shooting down an enemy
+shot are identical in both halves of the game, same number and same digit.
+
+### The four-way shot sounds once, and it manages that by gagging the sound
+
+With the power-up collected, the trigger releases four shots in a cross instead
+of one. And since every insertion into the table starts its own sound effect,
+four "pews" would fire at once. What the game does is **poke a `ret` into the
+second byte of the routine that starts sounds** before the three extra shots,
+and put it back afterwards.
+
+The nice part is how it puts it back: there is no constant stored for it
+anywhere. **It copies the byte from its twin routine**, the one that starts
+scripts without hunting for a free channel, which has the same prologue. It
+borrows it from next door.
+
+And there is a curious asymmetry between the halves: **the on-foot stage has the
+same four-way shot and can never switch it on**. The byte that decides is read in
+one place and written in exactly one, right after a `xor a` — so the only thing
+ever written to it is a zero. The three extra insertions are dead code in the
+version that shipped. It has no gag patch either: if the four shots ever did come
+out, all four would sound.
 
 ## The second load brings the Spectrum's LD-BYTES again
 

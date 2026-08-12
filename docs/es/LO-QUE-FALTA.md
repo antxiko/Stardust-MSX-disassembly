@@ -197,9 +197,10 @@ intérprete de sonido salen 38 bloques, cero bytes fuera del lenguaje, y el
 recorrido cierra clavado donde empiezan los estados de canal.
 
 Para que no haya una cuarta vez, el cruce ya no depende de que a alguien se le
-ocurra mirar: `tools/check_datos_como_codigo.py` confronta **las 94 zonas de
+ocurra mirar: `tools/check_datos_como_codigo.py` confronta **todas las zonas de
 datos declaradas** contra lo que el trazador cree, y va colgado del `make sanity`
-y de los tests. El guardián que había, `check_trace.py`, sólo vigilaba el puñado
+y de los tests. (Aquí ponía «las 94 zonas», y esa cifra se queda vieja cada vez
+que se identifica un rango: la herramienta dice cuántas son cada vez que corre.) El guardián que había, `check_trace.py`, sólo vigilaba el puñado
 de zonas del fichero `.nocode`, y por eso daba verde mientras la banda sonora se
 leía como código.
 
@@ -389,12 +390,12 @@ confundirlos:
 
 El tercero es el que cuesta, y va así:
 
-    fase de naves    189 rutinas, 110 comentadas (58 %)
-    fase de a pie    144 rutinas,  78 comentadas (54 %)
+    fase de naves    190 rutinas, 127 comentadas (67 %)
+    fase de a pie    144 rutinas,  96 comentadas (67 %)
     ------------------------------------------------------
-    total            333 rutinas, 188 comentadas (56 %)
+    total            334 rutinas, 223 comentadas (67 %)
 
-O sea que **quedan 145 sin comentar**. La cifra la mide
+O sea que **quedan 111 sin comentar**. La cifra la mide
 `tools/rutinas_comentadas.py` y la vigila un test, para que no pueda quedarse
 vieja aquí mientras el listado avanza; es la misma precaución que se tomó con
 las cifras de la portada, que ya se quedaron desfasadas una vez.
@@ -408,7 +409,7 @@ confusión que llegó a publicar 1956 «rutinas».
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Comentar las 145 rutinas que quedan.** Están acotadas y con nombre; falta
+- **Comentar las 111 rutinas que quedan.** Están acotadas y con nombre; falta
   explicar qué hace cada una.
 - **El comando 0x84 del intérprete de sonido**, que ya se sabe que cuenta una
   duración sin reatacar la nota. Que eso sea una ligadura es la lectura

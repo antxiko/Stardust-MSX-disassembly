@@ -191,9 +191,10 @@ way to read those bytes: walked with the sound interpreter's language they yield
 channel states begin.
 
 So there isn't a fourth time, the cross-check no longer depends on somebody
-thinking to look: `tools/check_datos_como_codigo.py` confronts **all 94 declared
-data zones** with what the tracer believes, and it hangs off `make sanity` and
-the test suite. The guard that existed, `check_trace.py`, only watched the
+thinking to look: `tools/check_datos_como_codigo.py` confronts **every declared
+data zone** with what the tracer believes, and it hangs off `make sanity` and
+the test suite. (This used to say "all 94 zones", and that figure goes stale
+every time a range gets identified: the tool prints how many there are each run.) The guard that existed, `check_trace.py`, only watched the
 handful of zones in the `.nocode` file — which is why it stayed green while the
 soundtrack was being read as code.
 
@@ -386,12 +387,12 @@ keeping apart:
 
 The third one is the expensive one, and it stands here:
 
-    ship stage       189 routines, 110 commented (58 %)
-    on-foot stage    144 routines,  78 commented (54 %)
+    ship stage       190 routines, 127 commented (67 %)
+    on-foot stage    144 routines,  96 commented (67 %)
     ------------------------------------------------------
-    total            333 routines, 188 commented (56 %)
+    total            334 routines, 223 commented (67 %)
 
-So **145 are left**. The figure is measured by `tools/rutinas_comentadas.py`
+So **111 are left**. The figure is measured by `tools/rutinas_comentadas.py`
 and guarded by a test, so it cannot go stale here while the listing moves on —
 the same precaution taken with the front page's figures, which did go stale
 once.
@@ -405,7 +406,7 @@ published 1956 "routines".
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **Commenting the 145 routines that are left.** They are bounded and named;
+- **Commenting the 111 routines that are left.** They are bounded and named;
   what they do is still to be written down.
 - **The sound interpreter's 0x84 command**, which is now known to consume a
   duration without re-attacking the note. Reading that as a tie is the musical
