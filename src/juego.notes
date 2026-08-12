@@ -1657,3 +1657,43 @@ L 0xCBEB recorre_las_dos_tablas Mueve las dos tablas seguidas, parcheando antes 
 L 0xDA55 zona_despejada Vuelve con Z solo si no queda nada en pantalla: 0xCA91 en 0x80 y los cinco contadores de objetos -0xC98F, 0xC97A, 0xC939, 0xC998 y 0xD3C5- todos a cero, juntados con OR
 L 0xDA06 lee_texto Recorre la lista de textos de 0xDE18 hasta el que pide A -en sus siete bits bajos-, saltando de uno a otro por la longitud que cada uno lleva en su primer byte
 L 0xD1AF traza_estela Dibuja la estela del objeto de 0xD3BD restando al puntero del buffer un paso fijo, 24 si le queda poca vida y 25 si le queda mas, o sea recta o en diagonal
+
+# ============================================================================
+# LOS "DESTINOS DE SALTO SIN TRAZAR" NO ERAN DESTINOS DE SALTO
+# ============================================================================
+#
+# El generador del listado llevaba avisando desde el principio, en cada
+# compilacion, de cuatro direcciones "que probablemente son codigo y el
+# trazador no alcanzo": 0xCB9D, 0xCC32, 0xD959 y 0xEF00. Y de tres mas en la
+# fase de a pie. Ninguna de las siete lo era.
+#
+# El fallo estaba en como se buscaban: z80dasm sustituye por una etiqueta
+# CUALQUIER valor que coincida con una direccion, incluidos los inmediatos, y
+# el aviso contaba todas las etiquetas sin mirar si venian de un salto o de un
+# `ld`. Es exactamente el problema del que mkasm.py se protege desde su primera
+# linea con los simbolos de la BIOS, colado con las etiquetas propias.
+#
+# Las cuatro de este bloque, una a una:
+#
+#   0xCC32   `ld ix,lcc32h`. La direccion del `ld bc,00707h` que se parchea
+#            para darle a cada tabla de objetos su velocidad. Es una direccion
+#            de verdad, pero se usa para ESCRIBIR encima, no para saltar.
+#
+#   0xCB9D   `ld hl,lcb9dh / push hl / ld l,(ix+003h) / ld h,(ix+004h) /
+#            jp (hl)`. Es la direccion de RETORNO, empujada a mano antes de
+#            saltar al comportamiento del objeto: un call indirecto hecho a
+#            pelo, porque el Z80 no tiene `call (hl)`. Y esta trazada, con su
+#            etiqueta L_CB9D: la misma direccion figuraba dos veces con dos
+#            nombres.
+#
+#   0xD959   `ld hl,ld959h / ld (ix+003h),l / ld (ix+004h),h`. Instala como
+#            comportamiento de un objeto la direccion de un `ret` que ya
+#            existe en el codigo. O sea: "este objeto no hace nada". Es un
+#            puntero nulo, pero apuntando a algo que vuelve.
+#
+#   0xEF00   `ld de,lef00h / add hl,de`. Ni siquiera es una direccion: es el
+#            NUMERO 0xEF00, que sumado a HL de 16 bits equivale a restarle
+#            0x1100. Coincide con una direccion del bloque por casualidad.
+#
+# El aviso queda corregido para separar las dos cosas, y con eso los dos
+# bloques se quedan en CERO destinos de salto sin trazar.

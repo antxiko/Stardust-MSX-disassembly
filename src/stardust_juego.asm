@@ -16,9 +16,10 @@
 L_F849:	equ 0x0f849
 
 ; ----------------------------------------------------------------------
-; Destinos de salto que z80dasm referencia pero que el trazador no
-; marco como codigo. Cada uno es un sitio a revisar: probablemente
-; hay codigo ahi que falta por trazar.
+; Direcciones que solo aparecen como VALOR -en un `ld`, no en
+; un salto-: son punteros que el codigo se pasa o numeros que
+; casualmente coinciden con una direccion. No hay nada que
+; trazar en ellas; el equ existe para que el listado ensamble.
 ; ----------------------------------------------------------------------
 lcb9dh:	equ 0x0cb9d
 lcc32h:	equ 0x0cc32

@@ -133,6 +133,23 @@ la rutina que la gobierna, y el juego salta ahí con un `jp (hl)`: capturando
 esos saltos con el juego en marcha, los IX van de 8 en 8 (0xCB3A, 0xCB42 ·
 0xC8D8, 0xC8E0…).
 
+Y ese `jp (hl)` es en realidad **una llamada, no un salto**, porque el Z80 no
+tiene `call (hl)`. Lo que hace el juego es empujar la vuelta a mano:
+
+    ld hl,0cb9dh        <- la direccion de retorno
+    push hl             <- a la pila, como haria un CALL
+    ld l,(ix+003h)
+    ld h,(ix+004h)
+    jp (hl)             <- y al comportamiento del objeto
+
+El `ret` con que termine el comportamiento caerá en 0xCB9D, que es la
+instrucción siguiente. Es un `call` indirecto montado con dos instrucciones.
+
+Y hay un detalle más fino todavía: cuando un objeto no tiene que hacer nada,
+en vez de guardar un puntero nulo y comprobarlo, se le instala **la dirección
+de un `ret` que ya existe en el código** (0xD959). Así el bucle no necesita
+preguntar nada: llama siempre, y el que no hace nada vuelve inmediatamente.
+
 La parte de a pie no trata así a sus enemigos: viven en **tablas de 5 bytes por
 objeto** —los andantes en 0xACE4, cuatro como máximo; los voladores en 0xACF9;
 los dos tiros de la torreta en 0xAD04— y no llevan rutina apuntada, los mueven

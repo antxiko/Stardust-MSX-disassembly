@@ -1026,3 +1026,53 @@ class TestLaCifraDeRutinasComentadas(unittest.TestCase):
                 m = re.search(patron, f.read())
             self.assertIsNotNone(m, "%s: no aparece '%s'" % (pagina, patron))
             self.assertEqual(int(m.group(1)), quedan, "%s / %s" % (pagina, patron))
+
+
+class TestLosDestinosSinTrazar(unittest.TestCase):
+    """Ninguna direccion huerfana del listado es un destino de salto de verdad.
+
+    El generador llevaba avisando desde el principio de siete direcciones «que
+    probablemente son codigo sin trazar». Ninguna lo era: cuatro eran punteros
+    que el codigo se pasa -una direccion de retorno empujada a mano, un `ret`
+    instalado como comportamiento nulo, el operando de un `ld bc,` que se
+    parchea- y una ni siquiera era una direccion, era el numero 0xEF00 sumado
+    con `add hl,de`.
+
+    z80dasm pone etiqueta a CUALQUIER valor que coincida con una direccion,
+    incluidos los inmediatos; el aviso las contaba todas. Este test vigila que
+    no vuelva a haber confusion: si alguna huerfana aparece como destino de un
+    `jp`, `jr`, `call`, `djnz` o `rst`, entonces si hay codigo sin trazar y hay
+    que mirarlo.
+    """
+
+    SALTO = re.compile(r"\b(?:jp|jr|call|djnz|rst)\b[^;]*?\b(?:sub_|l)"
+                       r"([0-9a-f]{4})h\b")
+
+    def huerfanas_saltadas(self, asm):
+        with open(os.path.join(SRC, asm), encoding="utf-8") as f:
+            cuerpo = f.read()
+        usadas = {int(m, 16) for m in
+                  re.findall(r"\b(?:sub_|l)([0-9a-f]{4})h\b", cuerpo)}
+        definidas = {int(m, 16) for m in
+                     re.findall(r"(?m)^(?:sub_|l)([0-9a-f]{4})h:", cuerpo)}
+        saltadas = {int(m, 16) for m in self.SALTO.findall(cuerpo)}
+        return sorted((usadas - definidas) & saltadas)
+
+    def test_ninguna_huerfana_es_destino_de_salto(self):
+        for asm in ("stardust_juego.asm", "stardust_parte2.asm",
+                    "stardust_pre.asm", "stardust_loader.asm",
+                    "stardust_topo.asm"):
+            malas = self.huerfanas_saltadas(asm)
+            self.assertEqual(
+                malas, [],
+                "%s: %s se salta ahi y no esta trazado" %
+                (asm, ", ".join("0x%04X" % a for a in malas)))
+
+    def test_el_detector_distingue_un_salto_de_un_valor(self):
+        """Que el regex no se coma los `ld`, que es de lo que iba todo esto."""
+        self.assertEqual(self.SALTO.findall("\tjp lcc32h\t\t;1234"), ["cc32"])
+        self.assertEqual(self.SALTO.findall("\tjr nz,lcc32h\t\t;1234"), ["cc32"])
+        self.assertEqual(self.SALTO.findall("\tcall lcc32h\t\t;1234"), ["cc32"])
+        self.assertEqual(self.SALTO.findall("\tld ix,lcc32h\t\t;1234"), [])
+        self.assertEqual(self.SALTO.findall("\tld de,lef00h\t\t;1234"), [])
+        self.assertEqual(self.SALTO.findall("\tld hl,ld959h\t\t;1234"), [])

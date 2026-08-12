@@ -16,9 +16,10 @@
 L_C794:	equ 0x0c794
 
 ; ----------------------------------------------------------------------
-; Destinos de salto que z80dasm referencia pero que el trazador no
-; marco como codigo. Cada uno es un sitio a revisar: probablemente
-; hay codigo ahi que falta por trazar.
+; Direcciones que solo aparecen como VALOR -en un `ld`, no en
+; un salto-: son punteros que el codigo se pasa o numeros que
+; casualmente coinciden con una direccion. No hay nada que
+; trazar en ellas; el equ existe para que el listado ensamble.
 ; ----------------------------------------------------------------------
 ladc4h:	equ 0x0adc4
 lafa1h:	equ 0x0afa1

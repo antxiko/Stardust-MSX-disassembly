@@ -1249,3 +1249,14 @@ L 0xD19F lee_tecla_pulsada Barre las nueve filas de la matriz y devuelve en E el
 L 0xD1B6 redefine_tecla Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001)
 L 0xAE4C vaga_o_persigue El rumbo de un enemigo cuadro a cuadro: tres de cada cuatro veces sigue recto, y la cuarta -cuando el azar and 3 da cero- gira un paso hacia donde este el jugador, con la suma modular de ocho direcciones del `add a,004h / cp / adc`
 L 0xBE06 repinta_todo Rehace la pantalla entera: el fondo desde el mapa, el jugador encima y el volcado del buffer a la VRAM
+
+# ---------------------------------------- los tres avisos de este bloque
+#
+# Lo mismo que se cuenta en las notas de la fase de naves: las tres direcciones
+# de las que avisaba el generador no son destinos de salto, son valores.
+#
+#   0xADC4   la direccion del `ld bc,00707h` que se parchea con la velocidad,
+#            gemela exacta de la 0xCC32 de la otra fase. Aqui las velocidades
+#            que se le meten son 4 y 10, alli 6 y 9.
+#   0xAFA1   el epilogo de un bucle, pasado en DE como direccion de vuelta.
+#   0xB262   lo mismo, en el bucle de al lado.

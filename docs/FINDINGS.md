@@ -157,6 +157,23 @@ routine inside its 8-byte structure, and the game jumps there with a `jp (hl)`:
 capturing those jumps with the game running, the IX values go up in 8s (0xCB3A,
 0xCB42 · 0xC8D8, 0xC8E0…).
 
+And that `jp (hl)` is really **a call, not a jump**, because the Z80 has no
+`call (hl)`. What the game does is push the return address by hand:
+
+    ld hl,0cb9dh        <- the return address
+    push hl             <- onto the stack, as a CALL would
+    ld l,(ix+003h)
+    ld h,(ix+004h)
+    jp (hl)             <- and off to the object's behaviour
+
+Whatever `ret` ends that behaviour will land on 0xCB9D, the next instruction.
+It is an indirect `call` built out of two instructions.
+
+And there is a finer touch still: when an object has nothing to do, instead of
+storing a null pointer and testing for it, the game installs **the address of a
+`ret` that already exists in the code** (0xD959). That way the loop never has
+to ask: it always calls, and the one with nothing to do returns immediately.
+
 The foot part doesn't treat its enemies that way: they live in tables of
 **5 bytes per object** —the walkers at 0xACE4, four at most; the flyers at 0xACF9; the
 turret's two shots at 0xAD04— and carry no routine pointer: fixed loops move

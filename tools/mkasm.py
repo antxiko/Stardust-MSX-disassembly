@@ -135,21 +135,54 @@ def main():
     # trazador marco como datos- emite la referencia pero no la definicion. Se
     # resuelven aqui con un equ, y se avisa: cada una senala una direccion que
     # probablemente es codigo y el trazador no alcanzo.
+    # OJO CON LLAMARLAS "DESTINOS DE SALTO": la mayoria no lo son. z80dasm
+    # sustituye por una etiqueta CUALQUIER valor que coincida con una direccion,
+    # incluidos los inmediatos -es el mismo problema del que se protege arriba
+    # con los simbolos de BIOS, y aqui se colo con las etiquetas propias-. En
+    # este juego las siete que salian eran, todas, valores:
+    #
+    #   ld ix,lcc32h   la direccion del `ld bc,` que se parchea para dar a cada
+    #                  tabla de objetos su velocidad (y su gemela ladc4h)
+    #   ld hl,lcb9dh   una direccion de RETORNO empujada a mano antes de un
+    #                  `jp (hl)`, que es un call indirecto hecho a pelo
+    #   ld hl,ld959h   un `ret` que se instala como comportamiento de un objeto,
+    #                  o sea "este no hace nada"
+    #   ld de,lef00h   ni siquiera es una direccion: es el numero 0xEF00 que se
+    #                  suma con `add hl,de`, o sea restar 0x1100
+    #
+    # Por eso se separan: solo alarma lo que aparece como destino de un salto o
+    # una llamada de verdad. Lo demas se declara igual -hace falta para que el
+    # listado reensamble- pero sin decir que hay codigo por trazar, que era
+    # mentira y llevaba en cada compilacion desde el principio.
+    SALTO = re.compile(r"\b(?:jp|jr|call|djnz|rst)\b[^;]*?\b(?:sub_|l)"
+                       r"([0-9a-f]{4})h\b")
     cuerpo = "\n".join(out)
     usadas = {int(m, 16) for m in re.findall(r"\b(?:sub_|l)([0-9a-f]{4})h\b", cuerpo)}
     definidas = {int(m, 16) for m in
                  re.findall(r"(?m)^(?:sub_|l)([0-9a-f]{4})h:", cuerpo)}
+    saltadas = {int(m, 16) for m in SALTO.findall(cuerpo)}
     huerfanas = sorted(usadas - definidas)
+    sin_trazar = [a for a in huerfanas if a in saltadas]
+    valores = [a for a in huerfanas if a not in saltadas]
     if huerfanas:
-        hf = ["", "; " + "-" * 70,
-              "; Destinos de salto que z80dasm referencia pero que el trazador no",
-              "; marco como codigo. Cada uno es un sitio a revisar: probablemente",
-              "; hay codigo ahi que falta por trazar.",
-              "; " + "-" * 70]
+        hf = ["", "; " + "-" * 70]
+        if sin_trazar:
+            hf += ["; Destinos de salto que z80dasm referencia y el trazador no",
+                   "; marco como codigo. Cada uno es un sitio a revisar."]
+        if valores:
+            hf += ["; Direcciones que solo aparecen como VALOR -en un `ld`, no en",
+                   "; un salto-: son punteros que el codigo se pasa o numeros que",
+                   "; casualmente coinciden con una direccion. No hay nada que",
+                   "; trazar en ellas; el equ existe para que el listado ensamble."]
+        hf += ["; " + "-" * 70]
         hf += [f"l{a:04x}h:\tequ {a:#07x}" for a in huerfanas]
         out = out[:HDR] + hf + out[HDR:]
-        print(f"  aviso: {len(huerfanas)} destinos de salto sin trazar: "
-              + " ".join(f"{a:#06x}" for a in huerfanas[:12]))
+        if sin_trazar:
+            print(f"  aviso: {len(sin_trazar)} destinos de salto sin trazar: "
+                  + " ".join(f"{a:#06x}" for a in sin_trazar[:12]))
+        if valores:
+            print(f"  {len(valores)} direcciones usadas solo como valor: "
+                  + " ".join(f"{a:#06x}" for a in valores[:12]))
 
     # Red de seguridad: cualquier etiqueta referenciada que no haya quedado
     # definida (p.ej. apunta fuera del binario) se declara con un equ, para que
