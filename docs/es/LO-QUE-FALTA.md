@@ -381,12 +381,12 @@ confundirlos:
 
 El tercero es el que cuesta, y va así:
 
-    fase de naves    189 rutinas,  92 comentadas (49 %)
-    fase de a pie    144 rutinas,  61 comentadas (42 %)
+    fase de naves    189 rutinas,  97 comentadas (51 %)
+    fase de a pie    144 rutinas,  64 comentadas (44 %)
     ------------------------------------------------------
-    total            333 rutinas, 153 comentadas (46 %)
+    total            333 rutinas, 161 comentadas (48 %)
 
-O sea que **quedan 180 sin comentar**. La cifra la mide
+O sea que **quedan 172 sin comentar**. La cifra la mide
 `tools/rutinas_comentadas.py` y la vigila un test, para que no pueda quedarse
 vieja aquí mientras el listado avanza; es la misma precaución que se tomó con
 las cifras de la portada, que ya se quedaron desfasadas una vez.
@@ -400,7 +400,7 @@ confusión que llegó a publicar 1956 «rutinas».
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Comentar las 180 rutinas que quedan.** Están acotadas y con nombre; falta
+- **Comentar las 172 rutinas que quedan.** Están acotadas y con nombre; falta
   explicar qué hace cada una.
 - **El comando 0x84 del intérprete de sonido**, que ya se sabe que cuenta una
   duración sin reatacar la nota. Que eso sea una ligadura es la lectura

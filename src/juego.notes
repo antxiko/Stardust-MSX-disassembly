@@ -100,7 +100,7 @@ D 0x47A0 0x48A0 el logo STARDUST del menu/atraccion: bitmap de 128x16 px, 16 B p
 D 0x48A0 0x51A0 patrones del MARCO de la pantalla de juego -el cuadro decorado con el HUD que rodea el area de juego- (0x900 B): L_EF28 los copia a la VRAM 0x0000 (fuente ld de,048a0h en 0xEF10) en dos filas de caracter por tercio mas 24 tiras de 8 B y 24 de 0x18 B. Quien recoloca esos 288 caracteres en el borde es la tabla de NOMBRES del SCREEN 2, y el juego NO la monta: LA HEREDA de la pantalla de carga (la rutina 0x9BDB del bloque [09] la rellena sumando ocho; la carga del bloque [10] machaca esa rutina en RAM pero la VRAM sobrevive). Contrastado contra la VRAM real en marcha: 768/768 nombres identicos al patron del 9BDB, 97,4% de los 4608 bytes de patrones/colores identicos (el resto es lo que el juego pinta encima), y dibujado desde la cinta con ese mapeo sale el marco entero (tools/render_marco.py -> docs/imagenes/marco.png). Doble papel: en marcha 0x47A0-0x4B3F es el final de la banda B del buffer y 0x4B40-0x4EFF la banda C entera
 D 0x51A0 0x5AA0 colores del MARCO de la pantalla de juego (los mismos 0x900 B, segunda llamada a L_EF28 con destino VRAM 0x2000). Aqui vivian los rangos "colores de tiles" medidos por su firma de nibble: la firma era verdad, pero son los colores del marco, no de los tiles del juego
 D 0x5AA0 0x5C31 tabla (401 B; racha 7.98, entropia 1.05, 4 valores: pocos valores para ser un dibujo)
-D 0x5C31 0x5FFD relleno: 972 bytes
+D 0x5C31 0x5FFD area de trabajo, que en la cinta llega a ceros y por eso parecia relleno (972 B): los 510 primeros bytes son la tabla de 85 entradas de 6 que indexa 0xC464, y el arranque los limpia con el `ldir` de 0xBDC2 (ver el bloque de abajo)
 D 0x61D8 0x62D7 Level 1 Data
 D 0x62D7 0x63D4 Level 2 Data
 D 0x63D4 0x64D4 Level 3 Data
@@ -1548,3 +1548,74 @@ L 0xE25C arranca_duracion Guarda el puntero del guion en (ix+002/003) y recarga 
 # estaba.
 L 0xE3A3 carga_envolvente_1 Copia dos parejas de la plantilla del instrumento a las variables vivas: (ix+020) a (ix+00C) y (ix+016) a (ix+00E)
 L 0xE3BB carga_envolvente_2 Lo mismo con tres: (ix+022) a (ix+010) y (ix+018) a (ix+013)
+
+# ============================================================================
+# EL "RELLENO" DE 0x5C31 NO ES RELLENO: ES EL AREA DE TRABAJO
+# ============================================================================
+#
+# Los 972 bytes de 0x5C31-0x5FFD estan declarados como relleno a ceros, y en la
+# CINTA lo son -comprobado, 0x5C32 a 0x5E2F son todo 0x00-. Pero en MARCHA no:
+# son una tabla, y hay dos sitios que lo dicen.
+#
+# El arranque la limpia a mano, con el truco de propagar el primer byte:
+#
+#     bdc2: ld hl,05c32h / ld de,05c33h / ld bc,001fdh / ldir
+#
+# que son 510 bytes, de 0x5C32 a 0x5E2F. Y la rutina que la indexa dice de
+# cuanto son las entradas:
+#
+#     c464: ld ix,05c32h
+#     c468: ld l,(iy+000h) / ld h,000h / ld d,h / ld e,l
+#     c46f: add hl,hl / add hl,de / add hl,hl    <- x2, x3, x6
+#     c473: add ix,de
+#
+# o sea IX = 0x5C32 + indice*6. Y 510 / 6 = 85 ENTRADAS EXACTAS. La cuenta del
+# arranque y el tamano de entrada encajan sin sobrar ni faltar un byte.
+#
+# Que llegue de la cinta a ceros es justamente por eso: no hay nada que
+# grabar, la tabla se llena jugando. Es el mismo caso que los 1141 bytes del
+# final del bloque, pero al reves: aquellos son memoria muerta que se colo en
+# el master y estos son memoria viva que aun no se ha usado.
+L 0xC464 entrada_tabla_5c32 IX = 0x5C32 + (iy+000)*6: la entrada de la tabla de 85 huecos de 6 bytes que el arranque limpia con el ldir de 0xBDC2
+L 0xC214 mueve_bandada Recorre la tabla de 0xC97B (contador en 0xC97A): a los vivos les mira el contador de (ix+004) -y al agotarse suena 0xEB42- y a los marcados con 0xFF en (ix+002) les pinta la explosion, fotograma a fotograma hasta el 0x21
+L 0xC063 va_a_nave_estado Trampolin de tres bytes: `jp nave_estado`
+
+# ============================================================================
+# REDEFINIR TECLAS, Y LA CONFIRMACION QUE VIENE DE VUELTA
+# ============================================================================
+#
+# La tabla de teclas de 0xDCB1 y la de nombres de 0xDC09 estaban leidas desde
+# el lado del que las CONSULTA. Esta es la que las ESCRIBE, y confirma las dos
+# desde el otro lado.
+#
+# lee_tecla_pulsada barre la matriz entera contando:
+#
+#     f475: ld de,0f000h
+#     f478: ld a,d / out (0aah),a / in a,(0a9h)
+#     f47d: ld b,008h
+#     f47f:   rrca / ret nc / inc e / djnz
+#     f484: inc d / ld a,0f9h / cp d
+#
+# o sea que D va de 0xF0 a 0xF8 -las nueve filas- y E cuenta de uno en uno
+# TODAS las teclas por las que pasa, sin reiniciarse al cambiar de fila. Al
+# encontrar la pulsada, E vale fila*8 + bit: exactamente el indice con que se
+# entra en la tabla de nombres. Eso ya se habia deducido leyendo la tabla; aqui
+# esta el codigo que lo produce.
+#
+# Y lo que hace con el hallazgo es montar la entrada de la tabla de teclas:
+#
+#     f48f: xor a / scf / rra / djnz     <- la mascara del bit, a base de rotar
+#     f494: ld (iy+000h),a               <- primer byte: la MASCARA
+#     f499: ld (iy+000h),d               <- segundo: el valor del puerto
+#     f4a0: ld hl,0dc09h / add hl,de     <- y busca el nombre para ensenarlo
+#
+# que es el formato (mascara, puerto) de las siete entradas de 0xDCB1, escrito
+# por quien lo escribe.
+L 0xF475 lee_tecla_pulsada Barre las nueve filas de la matriz y devuelve en E el indice fila*8 + bit de la primera tecla pulsada, que es justo el indice de la tabla de nombres de 0xDC09
+L 0xF48C redefine_tecla Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001), y saca su nombre de 0xDC09
+#
+# Y EL BORDE DEL PISO ES EL MISMO EN LAS DOS FASES. Los disparos de la nave se
+# retiran con `ld a,c / add a,00ah / cp 07ch`, que es la Y mas 10 contra la
+# fila 124, la misma comprobacion con los mismos dos numeros que hace la fase
+# de a pie con los tiros de las torretas.
+L 0xDF0F mueve_disparos Recorre los disparos de 0xC999 (contador en 0xC998, dos como maximo): los mueve, y al cruzar el borde del piso -Y+10 contra 0x7C- los pinta ya como impacto, con el sprite base 0x69

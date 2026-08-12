@@ -3443,16 +3443,16 @@ L_B2A6:
 	add hl,de		;b2b2
 	ld de,00004h		;b2b3
 	ld iy,07d55h		;b2b6
-	call L_B2D2		;b2ba
+	call predesplaza_sprite		;b2ba
 	inc hl			;b2bd
 	ld iy,07d75h		;b2be
-	call L_B2D2		;b2c2
+	call predesplaza_sprite		;b2c2
 	inc hl			;b2c5
 	ld iy,07d57h		;b2c6
-	call L_B2D2		;b2ca
+	call predesplaza_sprite		;b2ca
 	inc hl			;b2cd
 	ld iy,07d77h		;b2ce
-L_B2D2:
+predesplaza_sprite:		; Construye de una pasada las cinco versiones desplazadas de un sprite: por cada bit que saca del original con `rlca` lo mete con `rr` en una copia distinta, separadas 4 bytes en (iy+001), (iy+005), (iy+009), (iy+00D) y (iy+011)
 	push hl			;b2d2
 	ld c,002h		;b2d3
 L_B2D5:
@@ -4768,7 +4768,7 @@ L_BED4:
 	push bc			;bee4
 	call arranca_guion		;bee5
 	pop bc			;bee8
-	call L_C3DC		;bee9
+	call posicion_al_azar		;bee9
 	ld a,h			;beec
 	sub 008h		;beed
 	ld h,a			;beef
@@ -4870,7 +4870,7 @@ siembra_metralla:		; Siembra las 200 particulas de la nave insignia explotando: 
 	ld ix,0bfebh		;bfb6
 	ld b,0c8h		;bfba
 L_BFBC:
-	call L_C3DC		;bfbc
+	call posicion_al_azar		;bfbc
 L_BFBF:
 	call azar		;bfbf
 	and 00fh		;bfc2
@@ -4970,10 +4970,10 @@ L_BFCB:
 ; ======================================================================
 
 
-L_C3DC:
+posicion_al_azar:		; Saca una posicion al azar dentro del area de juego, repitiendo la tirada hasta que cae dentro: la columna entre 0x18 y 0xA7 (azar por debajo de 0x90) y la fila entre 0x98 y 0xBF (azar and 0x3F por debajo de 0x28)
 	call azar		;c3dc
 	cp 090h			;c3df
-	jr nc,L_C3DC		;c3e1
+	jr nc,posicion_al_azar		;c3e1
 	add a,018h		;c3e3
 	ld l,a			;c3e5
 L_C3E6:
@@ -4994,7 +4994,7 @@ L_C3E6:
 	ld a,(hl)		;c400
 	and 0e7h		;c401
 	pop hl			;c403
-	jr z,L_C3DC		;c404
+	jr z,posicion_al_azar		;c404
 	ret			;c406
 L_C407:
 	ld a,099h		;c407
@@ -6288,18 +6288,18 @@ vuelca_pantalla:		; Vuelca el buffer a la VRAM en TRES bandas: 0x4000/56 filas a
 	ld de,04000h		;d383
 	ld hl,00108h		;d386
 	ld b,038h		;d389
-	call L_D3A6		;d38b
+	call vuelca_columnas		;d38b
 	ld de,04540h		;d38e
 	ld hl,00900h		;d391
 	ld b,040h		;d394
-	call L_D3A6		;d396
+	call vuelca_columnas		;d396
 	ld de,04b40h		;d399
 	ld hl,01100h		;d39c
 	ld b,028h		;d39f
-	call L_D3A6		;d3a1
+	call vuelca_columnas		;d3a1
 	ei			;d3a4
 	ret			;d3a5
-L_D3A6:
+vuelca_columnas:		; El nucleo del volcado, identico al de la fase de naves: 24 vueltas por banda recogiendo el buffer a saltos de 24 -por columnas- y avanzando 0x40 en la VRAM entre una y otra
 	ld c,018h		;d3a6
 L_D3A8:
 	push bc			;d3a8

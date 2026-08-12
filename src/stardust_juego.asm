@@ -34,7 +34,7 @@ lef00h:	equ 0x0ef00
 ;   0x51a0..0x5aa0  (2304 bytes)
 ; DATOS tabla: (401 B; racha 7.98, entropia 1.05, 4 valores: pocos valores para ser un dibujo)
 ;   0x5aa0..0x5c31  (401 bytes)
-; DATOS relleno:: 972 bytes
+; DATOS area: de trabajo, que en la cinta llega a ceros y por eso parecia relleno (972 B): los 510 primeros bytes son la tabla de 85 entradas de 6 que indexa 0xC464, y el arranque los limpia con el `ldir` de 0xBDC2 (ver el bloque de abajo)
 ;   0x5c31..0x5ffd  (972 bytes)
 ; DATOS graficos: (339 B; racha 4.22, entropia 4.33, 50 valores: rachas mas largas que el azar)
 ;   0x5ffd..0x6150  (339 bytes)
@@ -2187,11 +2187,11 @@ L_BF6A:
 	call L_CEBC		;bf85
 	call L_D1AF		;bf88
 	call L_CBEB		;bf8b
-	call L_DF0F		;bf8e
-	call L_C214		;bf91
+	call mueve_disparos		;bf8e
+	call mueve_bandada		;bf91
 	call mueve_objetos		;bf94
 	call L_D41A		;bf97
-	call L_C063		;bf9a
+	call va_a_nave_estado		;bf9a
 	call L_D820		;bf9d
 	ld a,(0c090h)		;bfa0
 	cp 0afh			;bfa3
@@ -2292,7 +2292,7 @@ hud_vidas_zona:		; Repinta los dos indicadores de un digito, vidas (0xE156 -> 0x
 ; ======================================================================
 
 
-L_C063:
+va_a_nave_estado:		; Trampolin de tres bytes: `jp nave_estado`
 	jp nave_estado		;c063
 nave_estado:		; El despachador del estado de la nave (0xC188): menos de 4 juego normal; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
 	ld hl,(0c184h)		;c066
@@ -2533,7 +2533,7 @@ L_C207:
 	rrca			;c211
 	rrca			;c212
 	ret			;c213
-L_C214:
+mueve_bandada:		; Recorre la tabla de 0xC97B (contador en 0xC97A): a los vivos les mira el contador de (ix+004) -y al agotarse suena 0xEB42- y a los marcados con 0xFF en (ix+002) les pinta la explosion, fotograma a fotograma hasta el 0x21
 	ld ix,0c97bh		;c214
 	ld a,(0c97ah)		;c218
 	and a			;c21b
@@ -2732,7 +2732,7 @@ L_C385:
 L_C38A:
 	ld iy,0cb03h		;c38a
 	ld (iy+003h),000h	;c38e
-	call L_C464		;c392
+	call entrada_tabla_5c32		;c392
 	ld de,04000h		;c395
 L_C398:
 	ld a,(iy+002h)		;c398
@@ -2826,7 +2826,7 @@ L_C43C:
 	jp z,L_C476		;c440
 	ld (iy+002h),002h	;c443
 	dec (iy+000h)		;c447
-	call L_C464		;c44a
+	call entrada_tabla_5c32		;c44a
 	push ix			;c44d
 	pop hl			;c44f
 	ld b,006h		;c450
@@ -2843,7 +2843,7 @@ L_C460:
 	inc hl			;c460
 	djnz L_C452		;c461
 	ret			;c463
-L_C464:
+entrada_tabla_5c32:		; IX = 0x5C32 + (iy+000)*6: la entrada de la tabla de 85 huecos de 6 bytes que el arranque limpia con el ldir de 0xBDC2
 	ld ix,05c32h		;c464
 	ld l,(iy+000h)		;c468
 	ld h,000h		;c46b
@@ -5469,14 +5469,14 @@ L_D75B:
 	call mueve_estrellas		;d773
 	call mueve_perseguidor		;d776
 	call L_CBEB		;d779
-	call L_DF0F		;d77c
-	call L_C214		;d77f
+	call mueve_disparos		;d77c
+	call mueve_bandada		;d77f
 	call L_D1AF		;d782
 	call mueve_objetos		;d785
 	call pausa		;d788
 	ld a,(0c188h)		;d78b
 	cp 02dh			;d78e
-	call c,L_C063		;d790
+	call c,va_a_nave_estado		;d790
 	ld a,(0ca91h)		;d793
 	cp 080h			;d796
 	call nz,L_D83A	;d798
@@ -5994,7 +5994,7 @@ L_DABD:
 ; ======================================================================
 
 
-L_DF0F:
+mueve_disparos:		; Recorre los disparos de 0xC999 (contador en 0xC998, dos como maximo): los mueve, y al cruzar el borde del piso -Y+10 contra 0x7C- los pinta ya como impacto, con el sprite base 0x69
 	ld ix,0c999h		;df0f
 	ld a,(0c998h)		;df13
 	and a			;df16
@@ -7886,7 +7886,7 @@ L_F466:
 	call rotula_secuencia		;f467
 	pop bc			;f46a
 	dec c			;f46b
-	jr nz,L_F48C		;f46c
+	jr nz,redefine_tecla		;f46c
 	ld b,c			;f46e
 L_F46F:
 	dec bc			;f46f
@@ -7894,7 +7894,7 @@ L_F46F:
 	or c			;f471
 	jr nz,L_F46F		;f472
 	ret			;f474
-L_F475:
+lee_tecla_pulsada:		; Barre las nueve filas de la matriz y devuelve en E el indice fila*8 + bit de la primera tecla pulsada, que es justo el indice de la tabla de nombres de 0xDC09
 	ld de,0f000h		;f475
 L_F478:
 	ld a,d			;f478
@@ -7909,10 +7909,10 @@ L_F47F:
 	inc d			;f484
 	ld a,0f9h		;f485
 	cp d			;f487
-	jr z,L_F475		;f488
+	jr z,lee_tecla_pulsada		;f488
 	jr L_F478		;f48a
-L_F48C:
-	call L_F475		;f48c
+redefine_tecla:		; Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001), y saca su nombre de 0xDC09
+	call lee_tecla_pulsada		;f48c
 	xor a			;f48f
 	scf			;f490
 L_F491:
@@ -7932,7 +7932,7 @@ L_F491:
 	dec iy			;f4a9
 	dec iy			;f4ab
 	pop hl			;f4ad
-	jr L_F48C		;f4ae
+	jr redefine_tecla		;f4ae
 L_F4B0:
 	set 7,(hl)		;f4b0
 	push ix			;f4b2
@@ -8262,7 +8262,7 @@ L_F699:
 	jr nz,L_F699		;f69c
 	ld bc,007d0h		;f69e
 	call espera_bc		;f6a1
-	call L_F475		;f6a4
+	call lee_tecla_pulsada		;f6a4
 	ld d,000h		;f6a7
 	push hl			;f6a9
 	ld hl,0dc09h		;f6aa

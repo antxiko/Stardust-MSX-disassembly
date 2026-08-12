@@ -1215,3 +1215,26 @@ L 0xD20E rotula_secuencia Recorre la cadena de (IX) hasta el 0 pasandole cada by
 # justo cuando BC se agota. O sea que el final del bucle no se comprueba: se
 # cae por el propio contador del `ldi`.
 L 0xC421 copia_al_buffer Copia 720 bytes de 0x6285 al buffer en 0x4B43, en tiras de 18 con un salto de 6: 18 + 6 = 24, el ancho del buffer, o sea 40 filas de 18 bytes centradas en la banda C
+
+# ---------------------------------------------- el pre-desplazado, y dos mas
+#
+# El pre-desplazado de sprites ya estaba identificado como codigo -son las
+# cuatro rutinas de 0xB2A6 que en su dia figuraban como datos por su entropia-,
+# pero no estaba escrito COMO lo hace. Es un bucle de 8 filas por 2 columnas
+# que va sacando bits por arriba y metiendolos por abajo en cinco copias a la
+# vez:
+#
+#     b2d7: ld a,(hl)
+#     b2d8: rlca / rr (iy+001h)     <- copia desplazada 1
+#     b2dd: rlca / rr (iy+005h)     <- copia desplazada 2
+#     b2e2: rlca / rr (iy+009h)     <- 3
+#     b2e7: rlca / rr (iy+00dh)     <- 4
+#     b2ec: rlca / rr (iy+011h)     <- 5
+#
+# Cada `rlca` saca el bit siguiente del original y cada `rr` lo empuja dentro de
+# una copia distinta, o sea que las cinco versiones desplazadas del sprite se
+# construyen EN UNA SOLA PASADA sobre el dibujo. Los destinos caen en 0x7D57 y
+# 0x7D77, al lado del hueco de trabajo de 0x7D55.
+L 0xB2D2 predesplaza_sprite Construye de una pasada las cinco versiones desplazadas de un sprite: por cada bit que saca del original con `rlca` lo mete con `rr` en una copia distinta, separadas 4 bytes en (iy+001), (iy+005), (iy+009), (iy+00D) y (iy+011)
+L 0xD3A6 vuelca_columnas El nucleo del volcado, identico al de la fase de naves: 24 vueltas por banda recogiendo el buffer a saltos de 24 -por columnas- y avanzando 0x40 en la VRAM entre una y otra
+L 0xC3DC posicion_al_azar Saca una posicion al azar dentro del area de juego, repitiendo la tirada hasta que cae dentro: la columna entre 0x18 y 0xA7 (azar por debajo de 0x90) y la fila entre 0x98 y 0xBF (azar and 0x3F por debajo de 0x28)
