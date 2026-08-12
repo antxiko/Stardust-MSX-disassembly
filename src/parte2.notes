@@ -999,3 +999,219 @@ D 0xD48C 0xD675 489 bytes al final del bloque que NO son codigo, y estuvieron pu
 # partida no se tomo nunca. No se retira: desensambla a Z80 perfectamente
 # sensato (`pop de / and a / jr z / ld c,(ix+000h)...`), al contrario que las
 # dos semillas que si se han retirado hoy.
+
+# ============================================================================
+# LAS DOS MITADES DEL JUEGO COMPARTEN UNA BIBLIOTECA
+# ============================================================================
+#
+# No es que "se parezcan": son LAS MISMAS RUTINAS, copiadas y reubicadas, con
+# los operandos de direccion cambiados y nada mas. Medido byte a byte contra el
+# bloque de naves:
+#
+#   mul_a_de       0xE591 / 0xC8A6   21 de 21 bytes iguales   IDENTICA
+#   vram_pon_dir   0xEE24 / 0xD117   16 de 16                 IDENTICA
+#   azar           0xC83F / 0xAC06   21 de 25, y las 4 diferencias son la
+#                                    direccion de la semilla, 0xCA8F contra
+#                                    0xAD28, que sale dos veces
+#   arranca_guion  0xE1BC / 0xC4D0   34 de 40, y las 6 diferencias son TRES
+#                                    direcciones: la llamada a mul_a_de, la
+#                                    base del estado de canal (0xED75 contra
+#                                    0xD068) y una variable (0xEE1A / 0xD10D)
+#   borra_buffer   0xC858 / 0xAC1F   38 de 42, y las 4 diferencias son que el
+#                                    `di` esta antes del `ld hl,0 / add hl,sp`
+#                                    en una parte y despues en la otra
+#
+# Y en conjunto: buscando los tramos identicos de 32 bytes o mas entre los dos
+# bloques salen 58 tramos y 5867 bytes, de los cuales 1200 caen en zona de
+# CODIGO del bloque de naves. Esa cifra se queda corta a proposito, porque cada
+# direccion absoluta distinta parte el tramo en dos: el codigo realmente
+# compartido es mas.
+#
+# El tramo comun mas largo son 102 bytes en 0xE254 / 0xC568, dentro del
+# interprete de guiones. Que las dos partes comparten el interprete de sonido
+# ya se sabia por como suenan; aqui esta medido.
+#
+# TODO ESTO EXPLICA EL 46. Los "tres objetos de 46 bytes" que tanto costaron en
+# esta parte y el estado de canal del bloque de naves son la misma estructura,
+# porque son la misma rutina: 0xD068 + canal*0x2E aqui, 0xED75 + canal*0x2E
+# alli. Y los dos bloques de variables miden lo mismo, 175 bytes.
+#
+# Se usan los mismos nombres que en el bloque de naves a proposito, para que se
+# vea de un vistazo lo que es comun.
+L 0xC4D0 arranca_guion Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei`): borra los 46 bytes de su estado en 0xD068+canal*46 y siembra el puntero de ejecucion y el de inicio
+L 0xC4A3 arranca_guion_libre arranca_guion, pero si el canal pedido esta ocupado recorre los TRES buscando uno libre, y solo pisa el pedido si no queda ninguno
+L 0xC49A sonido_off Cierra el sonido metiendo un `ret` (0xC9) en la cabecera de arranca_guion y arranca_guion_libre, igual que el 0xE186 del bloque de naves
+L 0xC8A6 mul_a_de HL = A * DE por desplazamiento y suma; identica byte a byte a la del bloque de naves
+L 0xD117 vram_pon_dir Fija la direccion de ESCRITURA del VDP por el puerto 0x99; identica byte a byte a la del bloque de naves
+L 0xAC1F borra_buffer Borra los 3840 bytes del buffer con la PILA: SP al final (0x4F00) y 80 vueltas de 24 `push de`, que son 3840 bytes justos
+L 0xD127 premia Suma B al marcador por el digito que apunta HL (dentro de 0xB87F) y lo repinta en 0x12B0, que es la misma posicion de pantalla que usa el marcador de la fase de naves
+L 0xAC49 alta_enemigo Mete un enemigo andante en la tabla de 0xACE4 (contador 0xACE3, tope 4, entradas de 5 B) con el rumbo sacado del azar, y suena 0xCE35 en el canal 0
+
+# ---------------------------------------------------------------- mas comunes
+#
+# Estas tres son otra vez la misma rutina que en el bloque de naves, con las
+# mismas constantes: las tres bandas de 56, 64 y 40 filas para los colores, y
+# el barrido de las NUEVE filas de la matriz (0xF0 a 0xF8) para saber si hay
+# alguna tecla pulsada.
+L 0xD31C rellena_colores Pone el color A en la tabla de colores, tercio a tercio: 0x2108 x 56 filas, 0x2900 x 64 y 0x3100 x 40
+L 0xD30B hay_tecla Vuelve con NZ si hay alguna tecla pulsada, barriendo las nueve filas de la matriz por los puertos 0xAA y 0xA9
+L 0xD305 espera_bc Espera activa: decrementa BC hasta cero y vuelve
+#
+# Y el pintor de sprites es el mismo de la fase de naves con su pozo y sus
+# constantes cambiados: sprites de 64 bytes desde 0x6555 -el pozo de a pie-,
+# contador de filas en 0xB13E, y el desplazamiento fino otra vez parcheando dos
+# `jr` (0xAA4F y 0xAA86) para entrar por la mitad de la tira de `adc hl,hl`.
+#
+# CON UNA DIFERENCIA QUE CONVIENE DEJAR ESCRITA: el recorte por abajo aqui es
+# `cp 04fh` y en la fase de naves `cp 050h`. O sea que alli se deja pintar 256
+# bytes mas alla del final del buffer y aqui no. Los dos buffers son el mismo,
+# 0x4000-0x4EFF; por que uno es mas laxo que el otro no se sabe.
+L 0xAA07 pinta_sprite Estampa el sprite A (64 B en 0x6555 + A*64) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xAA4F y 0xAA86
+#
+# LAS ESTRELLAS DEL FONDO SALEN DE LA ROM DEL MSX. La tabla que recorre son 48
+# pares de bytes en 0x07D0, y de cada par saca una direccion del buffer
+# -`and 00fh / add a,040h` para el byte alto, o sea de 0x40xx a 0x4Fxx- donde
+# estampa el patron 0x18, que son dos pixeles: exactamente el mismo patron y
+# exactamente las mismas 48 estrellas que la fase de naves.
+#
+# Y 0x07D0 esta en la pagina 0, que el cargador NO mapea a RAM -solo mapea la 1
+# y la 2-, asi que esos 96 bytes son ROM del BIOS leida como si fuera una tabla
+# de posiciones. Es la misma idea con que funciona el generador de azar de aqui
+# al lado, que lee la ROM por la ventana 0x2000-0x3FFF.
+L 0xBB1D pinta_estrellas Estampa el patron 0x18 -dos pixeles- en 48 posiciones del buffer sacadas de 96 bytes de la ROM del BIOS en 0x07D0, leidos como pares (byte alto enmascarado a 0x4x, byte bajo)
+L 0xBB18 suma_scroll HL = el scroll de 0xC463 mas DE
+
+# ---------------------------------------------------------------- y mas aun
+#
+# El recuento de gemelas, medido byte a byte contra el bloque de naves:
+#
+#   buffer_dir       0xC541 / 0xAACD   18 de 18   IDENTICA
+#   solapa_eje       0xCD7A / 0xAEC2   12 de 12   IDENTICA
+#   hay_tecla        0xF660 / 0xD30B   16 de 16   IDENTICA
+#   rellena_colores  0xF634 / 0xD31C   38 de 44   difiere en tres direcciones
+#   sonido_reset     0xF50E / 0xD238   16 de 26   difiere en cinco direcciones
+#   pinta_sprite     0xC47B / 0xAA07   63 de 74   ver abajo
+#
+# Y LA PRUEBA DE QUE NO ES CASUALIDAD esta en DONDE caen las diferencias: son
+# todas PARES DE BYTES CONSECUTIVOS, que es lo que mide un operando de 16 bits.
+# En pinta_sprite las once diferencias son cinco direcciones -el pozo de
+# sprites, el contador de filas, los dos `jr` que se parchean y la llamada a
+# buffer_dir- mas UN BYTE SUELTO, el 53, que es justo el del recorte por abajo:
+# 0x50 en la fase de naves y 0x4F en esta. O sea que de toda la rutina, lo
+# unico que cambia de verdad es ese limite.
+L 0xAACD buffer_dir La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna. Identica byte a byte a la del bloque de naves
+L 0xAEC2 solapa_eje Solapamiento en UN eje: BC corrige las dos coordenadas (H y L), D y E son los dos tamanos, y vuelve con carry si NO se tocan. Identica byte a byte a la del bloque de naves
+L 0xD238 sonido_reset Reabre el sonido reponiendo el `di` (0xF3) que sonido_off machaco en las dos rutinas de arranque, y deja los tres canales a cero con un guion nulo
+L 0xAB92 rumbo_a_mascara Traduce el rumbo A a su mascara de movimiento por la tabla de 0xAD0F
+L 0xAB98 rumbo_a_mascara2 Lo mismo por la tabla de 0xAD17, la otra de las dos que hay
+
+# ============================================================================
+# LA OTRA MITAD DE LA BIBLIOTECA, VERIFICADA UNA A UNA
+# ============================================================================
+#
+# Estas salieron de buscar en este bloque la firma de las rutinas ya comentadas
+# en el de naves, admitiendo que difieran pares de bytes consecutivos (que es
+# lo que mide un operando de 16 bits). El buscador propone; lo que vale es
+# haberlas leido despues, porque tambien propuso una que NO lo era: daba 0xD342
+# como la espera de 0xF5DB y resulto ser la cola de rellena_colores, bytes que
+# coinciden de casualidad. Las de aqui abajo estan leidas.
+L 0xA539 pausa Si la tecla PARAR (la sexta de 0xB86A) esta pulsada, espera a que se suelten todas las teclas y luego a que se pulse cualquiera
+L 0xA6FC lee_mando Los cinco controles en un byte: por el registro 14 del PSG si 0xB87C dice joystick, o preguntando las teclas de 0xB86A si dice teclado. Los bits del joystick se reordenan a mano igual que en la fase de naves
+L 0xA6EE lee_mando_demo Saca el siguiente byte de la partida grabada de la demo (puntero en 0xC460) y avanza
+L 0xAADF pinta_glifo Estampa en el buffer el glifo A de la fuente con el mismo esquema que pinta_sprite, con el desplazamiento fino parcheado
+L 0xAE23 alta_objeto_acbb Mete un objeto en la tabla de 0xACBB (tope 9) con el sonido 0xCD53 al canal 2: los mismos tope y canal que su gemela de la fase de naves
+L 0xAE2E alta_en_tabla El alta comun a las tablas: si el contador no ha llegado al tope, lo incrementa, arranca el sonido DE en el canal H y escribe C, B y A' en la entrada indice*4. Vuelve con carry si ha entrado
+L 0xAFF7 choca_con_tabla Busca contacto entre HL y toda una tabla de objetos: IY apunta a la primera entrada y (iy-1) es el contador, entradas de 4 B, dos solapa_eje por objeto
+L 0xB3AC suma_puntos Suma al marcador de 0xB87F en ASCII con acarreo decimal a mano de derecha a izquierda, repinta, y mira si toca vida extra
+L 0xC8D5 lee_puntero HL = la palabra que hay en HL + A*2; identica byte a byte a la del bloque de naves
+L 0xD136 pinta_marca_hud Pinta la marca del HUD con el color 0x11
+L 0xD35B hud_imprime Recorre la cadena de indices de glifo de (IX) hasta el 0 estampando cada uno en la VRAM: 8 bytes desde la fuente de 0x5F00 y 0x40 de avance por caracter
+
+# ---------------------------------------------- las mismas teclas, y el mismo premio
+#
+# LA TABLA DE TECLAS DE ESTA PARTE ESTA EN 0xB86A Y ES LA MISMA, byte a byte:
+#
+#     40 f2 40 f4 20 f4 10 f4 01 f8 20 f3 10 f3
+#
+# o sea A, Q, P, O, ESPACIO, H y G, con el mismo orden -ABAJO, ARRIBA, DERECHA,
+# IZQUIERDA, DISPARO, PARAR, ABANDONAR- que la de 0xDCB1 de la fase de naves.
+# El QAOP del Spectrum vale para las dos mitades.
+#
+# Y LA VIDA EXTRA DE LOS 10.000 PUNTOS TAMBIEN ESTA AQUI, calcada:
+#
+#     b3c6: ld a,(0b880h) / cp d / ret z      <- el digito de las decenas de millar
+#     b3cb: tres guiones, 0xCDB1 / 0xCDD0 / 0xCDEC, uno por canal
+#     b3e1: call sonido_off                   <- y cierra la puerta del sonido
+#     b3e4: ld a,(0a6edh) / cp 002h
+#     b3ec: ld hl,0c45fh / cp 009h / ret nc   <- el mismo tope de NUEVE
+#     b3f3: inc (hl)
+#
+# Instruccion por instruccion es la misma secuencia que la de 0xD3EE en la fase
+# de naves, con sus tres direcciones cambiadas.
+#
+# LAS PUNTUACIONES DE ESTA PARTE. El marcador son seis digitos desde 0xB87F, o
+# sea que 0xB882 son las centenas, 0xB883 las decenas y 0xB884 las unidades:
+#
+#     0xAFF3   0xB883  B=0x2C    440 puntos
+#     0xB047   0xB883  B=0x29    410
+#     0xB085   0xB884  B=0x35     53
+#
+# Y LA CUARTA LLAMADA ES UNA INSTRUCCION MUERTA. En 0xBB93, al destruir una
+# torreta, el juego hace esto:
+#
+#     bb8e: ld hl,0b882h      <- el digito de las CENTENAS
+#     bb91: ld a,00fh         <- 15... en A
+#     bb93: call premia
+#
+# pero premia cuenta con B, no con A: el bucle de suma_puntos es un `djnz`, y
+# lo primero que hace la rutina es `ld a,(0b880h)`, o sea que el A de entrada
+# se pierde antes de mirarlo siquiera. Ese `ld a,00fh` NO HACE NADA.
+#
+# Lo que suma de verdad se sigue hacia atras hasta el ultimo sitio que toca B,
+# que es la preparacion de la colision, doce instrucciones mas arriba:
+#
+#     bb6f: ld bc,00200h      <- B = 2
+#     bb72: call choca_con_tabla
+#
+# y choca_con_tabla devuelve BC intacto: usa el banco alternativo para su
+# contador, con los `exx` emparejados por los dos caminos de salida. Asi que al
+# llegar a premia B vale 2 y la torreta paga 200 PUNTOS, en el digito de las
+# centenas.
+#
+# SI LA INTENCION ERA 1500 no se puede saber, y por eso no se escribe como
+# hecho: lo que esta medido es que la instruccion sobra y que se cobran 200. Un
+# `ld b,00fh` ahi habria dado 1500, y la diferencia entre las dos es una letra.
+#
+# Con eso, la cuarta puntuacion:
+#
+#     0xBB93   0xB882  B=0x02    200 puntos (heredado, no escrito ahi)
+L 0xBB32 dispara_torretas Recorre las SEIS torretas de 0xBC24 (solo con el scroll parado, 0xAD2A a cero): cada una viva dispara con lanza_tiro_torreta, y si le toca turno se dibuja y se mira si algo la ha alcanzado. Al caer paga 200 puntos y arranca la cuenta atras de 0xBC31
+
+# ---------------------------------------------------------------- y estas
+L 0xB458 pinta_celda_color Rellena dos celdas de color consecutivas de la VRAM (8 bytes cada una, separadas 0x40) con el valor C. Es la misma que la 0xD480 de la fase de naves salvo por UNA instruccion: alli hay un `ei` dentro del bucle (0xD48E) que aqui no esta, y por eso las dos se desalinean a partir del byte 14 aunque hagan lo mismo
+L 0xA56B hud_vidas Pasa las vidas de 0xC45F a ASCII con `add a,030h` y las estampa con hud_imprime en la tabla de patrones 0x07A0, la misma posicion que usa el indicador de vidas de la fase de naves
+L 0xC89B estado_canal_actual HL = 0xD114 + el numero que haya en 0xD10C: la entrada del canal que el interprete esta atendiendo
+L 0xBC35 pinta_torre Dibuja la torre, y solo cuando el scroll ha llegado: `ld a,(ix+000h) / sub 044h / ret c` sobre la fila de 0xAD2A, o sea que por debajo de la fila 0x44 no pinta nada
+
+# ---------------------------------------------- el giro, que aqui NO tiene inercia
+#
+# gira_rumbo es la gemela de la 0xC794 de la fase de naves y hace lo mismo:
+# rumbo actual en los bits 0-2, pedido en los 5-7, la diferencia en octavos y
+# un paso por el lado corto (`cp 005h`). PERO LE FALTA UN TROZO, y es el que da
+# el tacto. La de la nave, antes de aplicar el giro, pasa por un contador de
+# espera metido en los bits 3-4:
+#
+#     naves   c7ad: ld a,b / and 018h / jr z,... / ld a,b / sub 008h / ret
+#     a pie   ab88: ld a,e / add a,c / and 007h        <- directo, sin espera
+#
+# O sea que la nave tarda unos cuadros en tumbarse de una inclinacion a la
+# siguiente y el de a pie cambia de direccion al instante. Es una diferencia de
+# diseno entre las dos mitades, no una reubicacion.
+L 0xAB6F gira_rumbo Acerca el rumbo actual (bits 0-2) al pedido (bits 5-7) un octavo por vez y por el lado corto, y lo aplica en el acto: aqui no hay el contador de espera que si tiene la nave
+L 0xD20E rotula_secuencia Recorre la cadena de (IX) hasta el 0 pasandole cada byte a imprime_marco, con el sonido puesto a cero antes y despues
+#
+# Y esta copia una imagen al buffer con un truco de los buenos: dieciocho `ldi`
+# desenrollados y un `ret po`, que aprovecha que `ldi` deja el flag P/V a cero
+# justo cuando BC se agota. O sea que el final del bucle no se comprueba: se
+# cae por el propio contador del `ldi`.
+L 0xC421 copia_al_buffer Copia 720 bytes de 0x6285 al buffer en 0x4B43, en tiras de 18 con un salto de 6: 18 + 6 = 24, el ancho del buffer, o sea 40 filas de 18 bytes centradas en la banda C

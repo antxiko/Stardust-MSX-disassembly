@@ -1128,7 +1128,7 @@ L_A279:
 	ld c,002h		;a2b8
 L_A2BA:
 	ld b,010h		;a2ba
-	call L_D117		;a2bc
+	call vram_pon_dir		;a2bc
 	push de			;a2bf
 L_A2C0:
 	ld a,(de)		;a2c0
@@ -1163,13 +1163,13 @@ L_A2D5:
 	ld a,040h		;a2f8
 	ld (0c465h),a		;a2fa
 	ld hl,02f78h		;a2fd
-	call L_D136		;a300
+	call pinta_marca_hud		;a300
 	ld a,0f1h		;a303
-	call L_D31C		;a305
+	call rellena_colores		;a305
 	call L_B436		;a308
 	ld a,003h		;a30b
 	ld (0c45fh),a		;a30d
-	call L_A56B		;a310
+	call hud_vidas		;a310
 	ld hl,0a6fch		;a313
 	ld (0a689h),hl		;a316
 	ld a,r			;a319
@@ -1182,10 +1182,10 @@ L_A325:
 	ld a,0a0h		;a325
 	ld (0ad27h),a		;a327
 L_A32A:
-	call L_AC1F		;a32a
+	call borra_buffer		;a32a
 	ld a,001h		;a32d
 	ld (0ad2ah),a		;a32f
-	call L_BB1D		;a332
+	call pinta_estrellas		;a332
 	call L_A672		;a335
 	call L_B4CA		;a338
 	ld a,(0c462h)		;a33b
@@ -1255,11 +1255,11 @@ L_A3B4:
 	ldir			;a3bf
 	ld ix,0b87fh		;a3c1
 	ld de,012b0h		;a3c5
-	call L_D35B		;a3c8
+	call hud_imprime		;a3c8
 	ld a,002h		;a3cb
 	ld (0c45fh),a		;a3cd
-	call L_A56B		;a3d0
-	call L_AC1F		;a3d3
+	call hud_vidas		;a3d0
+	call borra_buffer		;a3d3
 	call vuelca_pantalla		;a3d6
 	call L_BBE2		;a3d9
 	ld hl,0d750h		;a3dc
@@ -1272,7 +1272,7 @@ L_A3B4:
 L_A3EE:
 	ld ix,0b87fh		;a3ee
 	ld de,012b0h		;a3f2
-	call L_D35B		;a3f5
+	call hud_imprime		;a3f5
 	xor a			;a3f8
 	ld (0bc34h),a		;a3f9
 	ld (0c468h),a		;a3fc
@@ -1331,9 +1331,9 @@ respawn:		; Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) co
 	ld (0c45ah),a		;a47a
 	ld (0c45ch),a		;a47d
 	ld (0b720h),a		;a480
-	call L_D238		;a483
+	call sonido_reset		;a483
 	call L_A930		;a486
-	call L_A56B		;a489
+	call hud_vidas		;a489
 	call azar		;a48c
 	and 003h		;a48f
 	ld l,a			;a491
@@ -1341,7 +1341,7 @@ respawn:		; Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) co
 	ld de,0c46ah		;a494
 	add hl,de		;a497
 	ld a,(hl)		;a498
-	call L_D31C		;a499
+	call rellena_colores		;a499
 	ld a,001h		;a49c
 	ld (0ad30h),a		;a49e
 L_A4A1:
@@ -1355,7 +1355,7 @@ L_A4A1:
 	ld (0a98eh),a		;a4b2
 	call redibuja_fondo		;a4b5
 	call L_AD76		;a4b8
-	call L_BB32		;a4bb
+	call dispara_torretas		;a4bb
 	call mueve_enemigos		;a4be
 	call tic_cuenta_atras		;a4c1
 	call mueve_tiros_torreta		;a4c4
@@ -1366,7 +1366,7 @@ L_A4A1:
 	ld a,(0a689h)		;a4d1
 	cp 0eeh			;a4d4
 	jr nz,L_A501		;a4d6
-	call L_D30B		;a4d8
+	call hay_tecla		;a4d8
 	jp nz,L_A2D5		;a4db
 	ld a,(0ad27h)		;a4de
 	and 008h		;a4e1
@@ -1390,7 +1390,7 @@ L_A501:
 	in a,(0a9h)		;a510
 	and (ix+00ch)		;a512
 	jp z,L_A2D2		;a515
-	call L_A539		;a518
+	call pausa		;a518
 	ld a,(0a6edh)		;a51b
 	cp 02dh			;a51e
 	jr nc,L_A525		;a520
@@ -1403,7 +1403,7 @@ L_A525:
 	ld (L_A57D+1),hl	;a530
 	jp c,L_A2D2		;a533
 	jp respawn		;a536
-L_A539:
+pausa:		; Si la tecla PARAR (la sexta de 0xB86A) esta pulsada, espera a que se suelten todas las teclas y luego a que se pulse cualquiera
 	ld ix,0b86ah		;a539
 	ld a,(ix+00bh)		;a53d
 	out (0aah),a		;a540
@@ -1437,13 +1437,13 @@ L_A55C:
 	cp 0f9h			;a565
 	jr nz,L_A55C		;a567
 	jr L_A559		;a569
-L_A56B:
+hud_vidas:		; Pasa las vidas de 0xC45F a ASCII con `add a,030h` y las estampa con hud_imprime en la tabla de patrones 0x07A0, la misma posicion que usa el indicador de vidas de la fase de naves
 	ld a,(0c45fh)		;a56b
 	add a,030h		;a56e
 	ld (0c45dh),a		;a570
 	ld ix,0c45dh		;a573
 	ld de,007a0h		;a577
-	jp L_D35B		;a57a
+	jp hud_imprime		;a57a
 L_A57D:
 	jp L_A580		;a57d
 L_A580:
@@ -1456,7 +1456,7 @@ L_A583:
 	jr z,$+99		;a58e
 	inc a			;a590
 	ld (0a6edh),a		;a591
-	call L_BC35		;a594
+	call pinta_torre		;a594
 	ld a,(0a6edh)		;a597
 	cp 01fh			;a59a
 	ret nc			;a59c
@@ -1464,11 +1464,11 @@ L_A583:
 	jr c,L_A5D0		;a59f
 	push af			;a5a1
 	jr nz,L_A5B3		;a5a2
-	call L_D238		;a5a4
+	call sonido_reset		;a5a4
 	ld a,002h		;a5a7
 	ld de,0cda5h		;a5a9
-	call L_C4D0		;a5ac
-	call L_C49A		;a5af
+	call arranca_guion		;a5ac
+	call sonido_off		;a5af
 	xor a			;a5b2
 L_A5B3:
 	cp 014h			;a5b3
@@ -1485,7 +1485,7 @@ L_A5C1:
 	call 00000h		;a5c5   ; BIOS CHKRAM - Tests RAM and sets RAM slot for the system  [alias: STARTUP, RESET, BOOT]
 	ld hl,(0a6ebh)		;a5c8
 	ld a,060h		;a5cb
-	jp L_AA07		;a5cd
+	jp pinta_sprite		;a5cd
 L_A5D0:
 	ld a,(0ad0eh)		;a5d0
 	ld hl,(0a6ebh)		;a5d3
@@ -1493,11 +1493,11 @@ L_A5D0:
 	call aplica_rumbo		;a5d9
 	ld (0a6ebh),hl		;a5dc
 	ld a,(0c469h)		;a5df
-	call L_AB6F		;a5e2
+	call gira_rumbo		;a5e2
 	ld (0c469h),a		;a5e5
 	and 007h		;a5e8
 	ld hl,(0a6ebh)		;a5ea
-	jp L_AA07		;a5ed
+	jp pinta_sprite		;a5ed
 
 ; ----------------------------------------------------------------------
 ; DATOS relleno: o resto (1 B; 1 bytes)
@@ -1572,7 +1572,7 @@ L_A64D:
 	rrca			;a65a
 	or c			;a65b
 	ld (0c469h),a		;a65c
-	call L_BC35		;a65f
+	call pinta_torre		;a65f
 	jp L_A5D0		;a662
 L_A665:
 	call consulta_mapa		;a665   ; La consulta del suelo del JUGADOR: celda vacia bajo los pies = 0xA6ED=4, muerte sentenciada (la unica escritura de la via de caida)
@@ -1589,12 +1589,12 @@ L_A672:
 	ld (0c466h),a		;a67f
 	ld a,(0ad2ch)		;a682
 	ld (0c467h),a		;a685
-	call L_A6FC		;a688
+	call lee_mando		;a688
 	ld (0c45bh),a		;a68b
 	call L_BA75		;a68e
 	and 00fh		;a691
 	call L_B0A1		;a693
-	call L_AB98		;a696
+	call rumbo_a_mascara2		;a696
 	cp 0ffh			;a699
 	ld hl,(0a6ebh)		;a69b
 	jr z,L_A6D1		;a69e
@@ -1605,7 +1605,7 @@ L_A672:
 	ld a,(0ad0eh)		;a6a4
 	and 01fh		;a6a7
 	or c			;a6a9
-	call L_AB6F		;a6aa
+	call gira_rumbo		;a6aa
 	ld (0ad0eh),a		;a6ad
 	ld c,002h		;a6b0
 	call L_A8BA		;a6b2
@@ -1629,8 +1629,8 @@ L_A6D1:
 	jr z,L_A6DC		;a6d8
 	res 4,a			;a6da
 L_A6DC:
-	call L_AA07		;a6dc
-	call L_BC35		;a6df
+	call pinta_sprite		;a6dc
+	call pinta_torre		;a6df
 	ld hl,(0a6ebh)		;a6e2
 	call L_B04B		;a6e5
 	ret			;a6e8
@@ -1646,13 +1646,13 @@ L_A6DC:
 ; ======================================================================
 
 
-L_A6EE:
+lee_mando_demo:		; Saca el siguiente byte de la partida grabada de la demo (puntero en 0xC460) y avanza
 	ld ix,(0c460h)		;a6ee
 	ld a,(ix+000h)		;a6f2
 	inc ix			;a6f5
 	ld (0c460h),ix		;a6f7
 	ret			;a6fb
-L_A6FC:
+lee_mando:		; Los cinco controles en un byte: por el registro 14 del PSG si 0xB87C dice joystick, o preguntando las teclas de 0xB86A si dice teclado. Los bits del joystick se reordenan a mano igual que en la fase de naves
 	ld a,(0b87ch)		;a6fc
 	and a			;a6ff
 	ld c,000h		;a700
@@ -1726,7 +1726,7 @@ L_A75D:
 	ld l,(ix+000h)		;a76e
 	ld h,(ix+001h)		;a771
 	add a,03fh		;a774
-	call L_AA07		;a776
+	call pinta_sprite		;a776
 	inc (ix+003h)		;a779
 	ld a,(ix+003h)		;a77c
 	cp 021h			;a77f
@@ -1739,14 +1739,14 @@ L_A787:
 	bit 4,a			;a790
 	jr z,L_A79B		;a792
 	and 007h		;a794
-	call L_AB92		;a796
+	call rumbo_a_mascara		;a796
 	jr L_A7A2		;a799
 L_A79B:
 	ld de,(0a6ebh)		;a79b
 	call rumbo_al_jugador		;a79f
 L_A7A2:
 	call borde_pantalla		;a7a2
-	call L_AB98		;a7a5
+	call rumbo_a_mascara2		;a7a5
 	ld (0b13fh),a		;a7a8
 	ld l,(ix+000h)		;a7ab
 	ld h,(ix+001h)		;a7ae
@@ -1763,7 +1763,7 @@ L_A7A2:
 	ld (ix+003h),000h	;a7c3
 	and 01fh		;a7c7
 	or c			;a7c9
-	call L_AB6F		;a7ca
+	call gira_rumbo		;a7ca
 	and 01fh		;a7cd
 	ld c,a			;a7cf
 	ld a,(ix+002h)		;a7d0
@@ -1819,7 +1819,7 @@ L_A832:
 	jr z,L_A83C		;a838
 	add a,018h		;a83a
 L_A83C:
-	call L_AA07		;a83c
+	call pinta_sprite		;a83c
 	ld a,(0b13fh)		;a83f
 	xor (ix+002h)		;a842
 	and 007h		;a845
@@ -1850,7 +1850,7 @@ L_A865:
 	ld (ix+003h),01dh	;a87e
 	xor a			;a882
 	ld de,0cd6dh		;a883
-	call L_C4D0		;a886
+	call arranca_guion		;a886
 	call mata_jugador_impacto		;a889
 L_A88C:
 	ld de,00005h		;a88c
@@ -1888,19 +1888,19 @@ L_A897:
 L_A8BA:
 	push af			;a8ba
 	and 007h		;a8bb
-	call L_AB92		;a8bd
+	call rumbo_a_mascara		;a8bd
 	ld h,a			;a8c0
 	pop af			;a8c1
 	rlca			;a8c2
 	rlca			;a8c3
 	rlca			;a8c4
 	and 007h		;a8c5
-	call L_AB92		;a8c7
+	call rumbo_a_mascara		;a8c7
 	and h			;a8ca
 	ld h,068h		;a8cb
 	ret z			;a8cd
 	ld b,002h		;a8ce
-	call L_AB98		;a8d0
+	call rumbo_a_mascara2		;a8d0
 	call aplica_rumbo		;a8d3
 	ld a,h			;a8d6
 	ld h,068h		;a8d7
@@ -2062,7 +2062,7 @@ base_mapa:		; IX = 0x840B + fila*6: la base del mapa de colision de la fase
 	ex de,hl		;aa03
 	add ix,de		;aa04
 	ret			;aa06
-L_AA07:
+pinta_sprite:		; Estampa el sprite A (64 B en 0x6555 + A*64) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xAA4F y 0xAA86
 	push hl			;aa07
 	ld h,000h		;aa08
 	ld l,a			;aa0a
@@ -2095,7 +2095,7 @@ L_AA2B:
 	srl l			;aa31
 	srl l			;aa33
 	srl l			;aa35
-	call L_AACD		;aa37
+	call buffer_dir		;aa37
 L_AA3A:
 	ld a,h			;aa3a
 	cp 04fh			;aa3b
@@ -2217,7 +2217,7 @@ L_AABF:
 	ret z			;aac6
 	ld (0b13eh),a		;aac7
 	jp L_AA3A		;aaca
-L_AACD:
+buffer_dir:		; La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna. Identica byte a byte a la del bloque de naves
 	push de			;aacd
 	ld a,l			;aace
 	ld l,h			;aacf
@@ -2234,7 +2234,7 @@ L_AACD:
 	add hl,de		;aadc
 	pop de			;aadd
 	ret			;aade
-L_AADF:
+pinta_glifo:		; Estampa en el buffer el glifo A de la fuente con el mismo esquema que pinta_sprite, con el desplazamiento fino parcheado
 	push hl			;aadf
 	ld h,000h		;aae0
 	ld l,a			;aae2
@@ -2261,7 +2261,7 @@ L_AAFB:
 	srl l			;ab01
 	srl l			;ab03
 	srl l			;ab05
-	call L_AACD		;ab07
+	call buffer_dir		;ab07
 L_AB0A:
 	ld a,h			;ab0a
 	cp 04fh			;ab0b
@@ -2343,7 +2343,7 @@ L_AB5E:
 L_AB6C:
 	djnz L_AB0A		;ab6c
 	ret			;ab6e
-L_AB6F:
+gira_rumbo:		; Acerca el rumbo actual (bits 0-2) al pedido (bits 5-7) un octavo por vez y por el lado corto, y lo aplica en el acto: aqui no hay el contador de espera que si tiene la nave
 	ld b,a			;ab6f
 	and 007h		;ab70
 	ld e,a			;ab72
@@ -2371,10 +2371,10 @@ L_AB88:
 	and 0f8h		;ab8e
 	or e			;ab90
 	ret			;ab91
-L_AB92:
+rumbo_a_mascara:		; Traduce el rumbo A a su mascara de movimiento por la tabla de 0xAD0F
 	ld de,0ad0fh		;ab92
 	jp L_AB9B		;ab95
-L_AB98:
+rumbo_a_mascara2:		; Lo mismo por la tabla de 0xAD17, la otra de las dos que hay
 	ld de,0ad17h		;ab98
 L_AB9B:
 	push hl			;ab9b
@@ -2386,7 +2386,7 @@ L_AB9B:
 	ret			;aba2
 aplica_rumbo:		; Aplica la mascara de rumbo: bits 0/1 mueven la vertical, 2/3 la horizontal; sin recorte
 	push hl			;aba3
-	call L_AB92		;aba4
+	call rumbo_a_mascara		;aba4
 	ld de,00000h		;aba7
 	pop hl			;abaa
 	rrca			;abab
@@ -2485,7 +2485,7 @@ azar:		; El generador de azar: lee tres bytes de la ROM del BIOS (ventana 0x2000
 	ld (0ad28h),hl		;ac1a
 	pop hl			;ac1d
 	ret			;ac1e
-L_AC1F:
+borra_buffer:		; Borra los 3840 bytes del buffer con la PILA: SP al final (0x4F00) y 80 vueltas de 24 `push de`, que son 3840 bytes justos
 	ld hl,00000h		;ac1f
 	add hl,sp		;ac22
 	di			;ac23
@@ -2521,7 +2521,7 @@ L_AC2C:
 	ld sp,hl		;ac46
 	ei			;ac47
 	ret			;ac48
-L_AC49:
+alta_enemigo:		; Mete un enemigo andante en la tabla de 0xACE4 (contador 0xACE3, tope 4, entradas de 5 B) con el rumbo sacado del azar, y suena 0xCE35 en el canal 0
 	ld hl,0ace3h		;ac49
 	ld a,(hl)		;ac4c
 	cp 004h			;ac4d
@@ -2551,7 +2551,7 @@ L_AC49:
 	ld (hl),a		;ac6e
 	xor a			;ac6f
 	ld de,0ce35h		;ac70
-	call L_C4A3		;ac73
+	call arranca_guion_libre		;ac73
 	scf			;ac76
 	ret			;ac77
 lanza_tiro_torreta:		; Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (max 2), con su sonido
@@ -2581,7 +2581,7 @@ lanza_tiro_torreta:		; Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (
 	ld (hl),000h		;ac96
 	ld a,001h		;ac98
 	ld de,0cd91h		;ac9a
-	call L_C4A3		;ac9d
+	call arranca_guion_libre		;ac9d
 	scf			;aca0
 	ret			;aca1
 
@@ -2694,7 +2694,7 @@ L_ADC4:
 	ld (ix+000h),l		;add4
 	ld (ix+001h),h		;add7
 	ld a,002h		;adda
-	call L_AADF		;addc
+	call pinta_glifo		;addc
 	ld de,00004h		;addf
 	add ix,de		;ade2
 L_ADE4:
@@ -2736,14 +2736,14 @@ L_AE15:
 	exx			;ae1a
 	ld h,001h		;ae1b
 	ld de,0cd5fh		;ae1d
-	jp L_AE2E		;ae20
-L_AE23:
+	jp alta_en_tabla		;ae20
+alta_objeto_acbb:		; Mete un objeto en la tabla de 0xACBB (tope 9) con el sonido 0xCD53 al canal 2: los mismos tope y canal que su gemela de la fase de naves
 	ld hl,0acbbh		;ae23
 	ld e,009h		;ae26
 	exx			;ae28
 	ld h,002h		;ae29
 	ld de,0cd53h		;ae2b
-L_AE2E:
+alta_en_tabla:		; El alta comun a las tablas: si el contador no ha llegado al tope, lo incrementa, arranca el sonido DE en el canal H y escribe C, B y A' en la entrada indice*4. Vuelve con carry si ha entrado
 	exx			;ae2e
 	ld a,(hl)		;ae2f
 	cp e			;ae30
@@ -2751,7 +2751,7 @@ L_AE2E:
 	exx			;ae32
 	push af			;ae33
 	ld a,h			;ae34
-	call L_C4A3		;ae35
+	call arranca_guion_libre		;ae35
 	pop af			;ae38
 	exx			;ae39
 	inc (hl)		;ae3a
@@ -2854,7 +2854,7 @@ L_AE95:
 	ld (hl),000h		;aebe
 	scf			;aec0
 	ret			;aec1
-L_AEC2:
+solapa_eje:		; Solapamiento en UN eje: BC corrige las dos coordenadas (H y L), D y E son los dos tamanos, y vuelve con carry si NO se tocan. Identica byte a byte a la del bloque de naves
 	add hl,bc		;aec2
 	ld a,l			;aec3
 	cp h			;aec4
@@ -2886,7 +2886,7 @@ L_AED8:
 	cp 034h			;aeef
 	jr c,L_AF09		;aef1
 	add a,028h		;aef3
-	call L_AA07		;aef5
+	call pinta_sprite		;aef5
 	inc (ix+004h)		;aef8
 	ld a,(ix+004h)		;aefb
 	cp 038h			;aefe
@@ -2938,7 +2938,7 @@ L_AF21:
 	ld c,l			;af5b
 	push bc			;af5c
 	call rumbo_al_jugador		;af5d
-	call L_AB98		;af60
+	call rumbo_a_mascara2		;af60
 	ex af,af'		;af63
 	pop bc			;af64
 	call L_AE15		;af65
@@ -2951,7 +2951,7 @@ L_AF69:
 	rlca			;af71
 	rlca			;af72
 	add a,048h		;af73
-	call L_AA07		;af75
+	call pinta_sprite		;af75
 	pop af			;af78
 	xor 040h		;af79
 	sub 004h		;af7b
@@ -3006,19 +3006,19 @@ L_AFC7:
 	ld iy,0acbch		;afcd
 	ld de,0060eh		;afd1
 	ld bc,00101h		;afd4
-	call L_AFF7		;afd7
+	call choca_con_tabla		;afd7
 	ret c			;afda
 	xor a			;afdb
 	ld de,0cd6dh		;afdc
-	call L_C4D0		;afdf
+	call arranca_guion		;afdf
 	ld (ix+002h),0ffh	;afe2
 	ld (ix+003h),01dh	;afe6
 	ld (iy+002h),080h	;afea
 	ld hl,0b883h		;afee
 	ld b,02ch		;aff1
-	call L_D127		;aff3
+	call premia		;aff3
 	ret			;aff6
-L_AFF7:
+choca_con_tabla:		; Busca contacto entre HL y toda una tabla de objetos: IY apunta a la primera entrada y (iy-1) es el contador, entradas de 4 B, dos solapa_eje por objeto
 	exx			;aff7
 	ld a,(iy-001h)		;aff8
 	and a			;affb
@@ -3029,13 +3029,13 @@ L_AFFF:
 	exx			;afff
 	push hl			;b000
 	ld h,(iy+000h)		;b001
-	call L_AEC2		;b004
+	call solapa_eje		;b004
 	pop hl			;b007
 	jr c,L_B014		;b008
 	push hl			;b00a
 	ld l,h			;b00b
 	ld h,(iy+001h)		;b00c
-	call L_AEC2		;b00f
+	call solapa_eje		;b00f
 	pop hl			;b012
 	ret nc			;b013
 L_B014:
@@ -3052,23 +3052,23 @@ L_B01F:
 	ld iy,0acbch		;b025
 	ld de,0060eh		;b029
 	ld bc,00101h		;b02c
-	call L_AFF7		;b02f
+	call choca_con_tabla		;b02f
 	ret c			;b032
 	xor a			;b033
 	ld de,0cd6dh		;b034
-	call L_C4D0		;b037
+	call arranca_guion		;b037
 	ld (ix+004h),034h	;b03a
 	ld (iy+002h),080h	;b03e
 	ld hl,0b883h		;b042
 	ld b,029h		;b045
-	call L_D127		;b047
+	call premia		;b047
 	ret			;b04a
 L_B04B:
 	ld hl,(0a6ebh)		;b04b
 	ld iy,0aca3h		;b04e
 	ld de,0040ah		;b052
 	ld bc,00203h		;b055
-	call L_AFF7		;b058
+	call choca_con_tabla		;b058
 	ret c			;b05b
 	ld (iy+002h),080h	;b05c
 	call L_B0E0		;b060
@@ -3079,13 +3079,13 @@ L_B064:
 	ld iy,0acbch		;b06a
 	ld de,00408h		;b06e
 	ld bc,00200h		;b071
-	call L_AFF7		;b074
+	call choca_con_tabla		;b074
 	ret c			;b077
 	ld (ix+000h),07ch	;b078
 	ld (iy+002h),080h	;b07c
 	ld hl,0b884h		;b080
 	ld b,035h		;b083
-	call L_D127		;b085
+	call premia		;b085
 	ret			;b088
 L_B089:
 	push hl			;b089
@@ -3093,13 +3093,13 @@ L_B089:
 	ld l,a			;b08d
 	ld bc,00203h		;b08e
 	ld de,00c0ah		;b091
-	call L_AEC2		;b094
+	call solapa_eje		;b094
 	pop hl			;b097
 	ret c			;b098
 	ld h,l			;b099
 	ld a,(0a6ebh)		;b09a
 	ld l,a			;b09d
-	jp L_AEC2		;b09e
+	jp solapa_eje		;b09e
 L_B0A1:
 	ld hl,(0a6ebh)		;b0a1
 	ex af,af'		;b0a4
@@ -3169,34 +3169,34 @@ L_B0F9:
 	xor 003h		;b0fc
 	ld c,011h		;b0fe
 	push af			;b100
-	call L_B458		;b101
+	call pinta_celda_color		;b101
 	pop af			;b104
 	dec a			;b105
 	ret z			;b106
 	ld hl,02f48h		;b107
 	ld c,011h		;b10a
 	push af			;b10c
-	call L_B458		;b10d
+	call pinta_celda_color		;b10d
 	pop af			;b110
 	dec a			;b111
 	ret z			;b112
 	ld hl,02f40h		;b113
 	ld c,011h		;b116
-	jp L_B458		;b118
+	jp pinta_celda_color		;b118
 mata_jugador_impacto:		; Escudo agotado: 0xA6ED=4, sonido, y el update del jugador (operando 0xA57E) parcheado al cadaver de 0xB268
 	ld hl,02778h		;b11b
-	call L_D136		;b11e
+	call pinta_marca_hud		;b11e
 	ld a,004h		;b121
 	ld (0a6edh),a		;b123
 	ld a,05bh		;b126
 	ld (0ad0eh),a		;b128
 	xor a			;b12b
 	ld de,0cd6dh		;b12c
-	call L_C4D0		;b12f
+	call arranca_guion		;b12f
 	ld hl,0b268h		;b132
 	ld (0a57eh),hl		;b135
 	ld hl,02f48h		;b138
-	jp L_D136		;b13b
+	jp pinta_marca_hud		;b13b
 
 ; ----------------------------------------------------------------------
 ; DATOS relleno: o resto (2 B; 2 bytes)
@@ -3384,7 +3384,7 @@ L_B21D:
 	rlca			;b24e
 	rlca			;b24f
 	add a,048h		;b250
-	call L_AA07		;b252
+	call pinta_sprite		;b252
 	pop af			;b255
 	xor 040h		;b256
 	sub 004h		;b258
@@ -3406,7 +3406,7 @@ cadaver_parabola:		; El cuerpo tras el impacto: sube y cae acelerando (h += esta
 	add a,h			;b274
 	push af			;b275
 	push hl			;b276
-	call nc,L_BC35		;b277
+	call nc,pinta_torre		;b277
 	pop hl			;b27a
 	pop af			;b27b
 	push af			;b27c
@@ -3416,16 +3416,16 @@ cadaver_parabola:		; El cuerpo tras el impacto: sube y cae acelerando (h += esta
 	ld (0a6ebh),hl		;b283
 	ld a,(0ad0eh)		;b286
 	and 007h		;b289
-	call L_AA07		;b28b
+	call pinta_sprite		;b28b
 	ld hl,(0a6ebh)		;b28e
 	ld h,068h		;b291
 	ld a,(0ad0eh)		;b293
 	inc a			;b296
 	ld (0ad0eh),a		;b297
 	cp 060h			;b29a
-	call c,L_AA07		;b29c
+	call c,pinta_sprite		;b29c
 	pop af			;b29f
-	call c,L_BC35		;b2a0
+	call c,pinta_torre		;b2a0
 	ret			;b2a3
 L_B2A4:
 	pop af			;b2a4
@@ -3579,7 +3579,7 @@ L_B396:
 	ld bc,00040h		;b3a6
 	ldir			;b3a9
 	ret			;b3ab
-L_B3AC:
+suma_puntos:		; Suma al marcador de 0xB87F en ASCII con acarreo decimal a mano de derecha a izquierda, repinta, y mira si toca vida extra
 	ld a,(0b880h)		;b3ac
 	push af			;b3af
 L_B3B0:
@@ -3597,21 +3597,21 @@ L_B3BE:
 	ld (hl),a		;b3be
 	pop hl			;b3bf
 	djnz L_B3B0		;b3c0
-	call L_D35B		;b3c2
+	call hud_imprime		;b3c2
 	pop de			;b3c5
 	ld a,(0b880h)		;b3c6
 	cp d			;b3c9
 	ret z			;b3ca
 	ld a,080h		;b3cb
 	ld de,0cdb1h		;b3cd
-	call L_C4D0		;b3d0
+	call arranca_guion		;b3d0
 	inc a			;b3d3
 	ld de,0cdd0h		;b3d4
-	call L_C4D0		;b3d7
+	call arranca_guion		;b3d7
 	inc a			;b3da
 	ld de,0cdech		;b3db
-	call L_C4D0		;b3de
-	call L_C49A		;b3e1
+	call arranca_guion		;b3de
+	call sonido_off		;b3e1
 	ld a,(0a6edh)		;b3e4
 	cp 002h			;b3e7
 	jp c,L_B436		;b3e9
@@ -3620,7 +3620,7 @@ L_B3BE:
 	cp 009h			;b3f0
 	ret nc			;b3f2
 	inc (hl)		;b3f3
-	jp L_A56B		;b3f4
+	jp hud_vidas		;b3f4
 L_B3F7:
 	call azar		;b3f7
 	and 003h		;b3fa
@@ -3661,23 +3661,23 @@ L_B424:
 	xor a			;b431
 L_B432:
 	ex af,af'		;b432
-	jp L_AC49		;b433
+	jp alta_enemigo		;b433
 L_B436:
 	ld a,003h		;b436
 	ld (0a6edh),a		;b438
 	ld hl,02778h		;b43b
 	ld c,0f9h		;b43e
-	call L_B458		;b440
+	call pinta_celda_color		;b440
 	ld hl,02f40h		;b443
 	ld c,0f5h		;b446
-	call L_B458		;b448
+	call pinta_celda_color		;b448
 	ld hl,02f48h		;b44b
 	ld c,0f5h		;b44e
-	call L_B458		;b450
+	call pinta_celda_color		;b450
 	ld hl,02f50h		;b453
 	ld c,0f1h		;b456
-L_B458:
-	call L_D117		;b458
+pinta_celda_color:		; Rellena dos celdas de color consecutivas de la VRAM (8 bytes cada una, separadas 0x40) con el valor C. Es la misma que la 0xD480 de la fase de naves salvo por UNA instruccion: alli hay un `ei` dentro del bucle (0xD48E) que aqui no esta, y por eso las dos se desalinean a partir del byte 14 aunque hagan lo mismo
+	call vram_pon_dir		;b458
 	ld a,c			;b45b
 	ld c,002h		;b45c
 L_B45E:
@@ -3689,7 +3689,7 @@ L_B460:
 	jr nz,L_B460		;b464
 	ld de,00040h		;b466
 	add hl,de		;b469
-	call L_D117		;b46a
+	call vram_pon_dir		;b46a
 	dec c			;b46d
 	jr nz,L_B45E		;b46e
 	ei			;b470
@@ -3767,31 +3767,31 @@ rotula_cadena:		; Imprime la cadena de (IX) hasta el 0 con rotula_glifo: el rotu
 L_B4CA:
 	ld ix,0b886h		;b4ca
 	ld de,000c8h		;b4ce
-	call L_BB18		;b4d1
+	call suma_scroll		;b4d1
 	call L_BB0A		;b4d4
 	ld de,003c2h		;b4d7
-	call L_BB18		;b4da
+	call suma_scroll		;b4da
 	call L_BB0A		;b4dd
 	ld de,006c2h		;b4e0
-	call L_BB18		;b4e3
+	call suma_scroll		;b4e3
 	call rotula_cadena		;b4e6
 	ld de,009c2h		;b4e9
-	call L_BB18		;b4ec
+	call suma_scroll		;b4ec
 	call rotula_cadena		;b4ef
 	ld de,00cc2h		;b4f2
-	call L_BB18		;b4f5
+	call suma_scroll		;b4f5
 	call rotula_cadena		;b4f8
 	ld a,(0b87ch)		;b4fb
 	and a			;b4fe
 	jr z,L_B50E		;b4ff
 	ld ix,0b8b7h		;b501
 	ld de,009c2h		;b505
-	call L_BB18		;b508
+	call suma_scroll		;b508
 	jp rotula_cadena		;b50b
 L_B50E:
 	ld ix,0b8c0h		;b50e
 	ld de,00cc2h		;b512
-	call L_BB18		;b515
+	call suma_scroll		;b515
 	jp rotula_cadena		;b518
 
 ; ----------------------------------------------------------------------
@@ -3853,11 +3853,11 @@ L_B68C:
 	ld hl,04f08h		;b68c
 	ld (0b87dh),hl		;b68f
 L_B692:
-	call L_AC1F		;b692
-	call L_BB1D		;b695
+	call borra_buffer		;b692
+	call pinta_estrellas		;b695
 	call L_B65B		;b698
 	call vuelca_pantalla		;b69b
-	call L_D30B		;b69e
+	call hay_tecla		;b69e
 	jp nz,L_A2D5		;b6a1
 	jp L_B692		;b6a4
 L_B6A7:
@@ -3869,7 +3869,7 @@ L_B6A7:
 	xor a			;b6ae
 	ld (0d10dh),a		;b6af
 L_B6B2:
-	call L_D30B		;b6b2
+	call hay_tecla		;b6b2
 	jr nz,L_B6C4		;b6b5
 	ld bc,003e8h		;b6b7
 	call espera		;b6ba
@@ -4010,7 +4010,7 @@ L_B9BA:
 	ld bc,00404h		;b9d2
 	sbc hl,bc		;b9d5
 	sub 03ah		;b9d7
-	call L_AA07		;b9d9
+	call pinta_sprite		;b9d9
 	inc (ix+000h)		;b9dc
 	ld a,(ix+000h)		;b9df
 	cp 080h			;b9e2
@@ -4036,7 +4036,7 @@ L_B9F3:
 	and 001h		;ba0c
 	dec (ix+004h)		;ba0e
 	ex de,hl		;ba11
-	call L_AADF		;ba12
+	call pinta_glifo		;ba12
 	call L_B064		;ba15
 	ld a,(0a6edh)		;ba18
 	cp 004h			;ba1b
@@ -4048,13 +4048,13 @@ L_B9F3:
 	ld l,a			;ba29
 	ld de,0040ah		;ba2a
 	ld bc,00203h		;ba2d
-	call L_AEC2		;ba30
+	call solapa_eje		;ba30
 	pop hl			;ba33
 	jr c,L_BA47		;ba34
 	ld h,l			;ba36
 	ld a,(0a6ebh)		;ba37
 	ld l,a			;ba3a
-	call L_AEC2		;ba3b
+	call solapa_eje		;ba3b
 	jr c,L_BA47		;ba3e
 	call L_B0EC		;ba40
 	ld (ix+000h),07ch	;ba43
@@ -4112,22 +4112,22 @@ L_BA82:
 	ld b,h			;ba93
 	ld c,l			;ba94
 	ex af,af'		;ba95
-	call L_AE23		;ba96
+	call alta_objeto_acbb		;ba96
 	add a,002h		;ba99
 	and 007h		;ba9b
 	ex af,af'		;ba9d
 	ld a,(0c459h)		;ba9e
 	and a			;baa1
 	jr z,L_BAB7		;baa2
-	call L_AE23		;baa4
+	call alta_objeto_acbb		;baa4
 	add a,002h		;baa7
 	and 007h		;baa9
 	ex af,af'		;baab
-	call L_AE23		;baac
+	call alta_objeto_acbb		;baac
 	add a,002h		;baaf
 	and 007h		;bab1
 	ex af,af'		;bab3
-	call L_AE23		;bab4
+	call alta_objeto_acbb		;bab4
 L_BAB7:
 	pop hl			;bab7
 	pop af			;bab8
@@ -4207,11 +4207,11 @@ L_BB0A:
 	call L_BABA		;bb11
 	inc hl			;bb14
 	jp L_BB0A		;bb15
-L_BB18:
+suma_scroll:		; HL = el scroll de 0xC463 mas DE
 	ld hl,(0c463h)		;bb18
 	add hl,de		;bb1b
 	ret			;bb1c
-L_BB1D:
+pinta_estrellas:		; Estampa el patron 0x18 -dos pixeles- en 48 posiciones del buffer sacadas de 96 bytes de la ROM del BIOS en 0x07D0, leidos como pares (byte alto enmascarado a 0x4x, byte bajo)
 	ld hl,007d0h		;bb1d
 	ld b,030h		;bb20
 L_BB22:
@@ -4227,7 +4227,7 @@ L_BB22:
 	ld (de),a		;bb2e
 	djnz L_BB22		;bb2f
 	ret			;bb31
-L_BB32:
+dispara_torretas:		; Recorre las SEIS torretas de 0xBC24 (solo con el scroll parado, 0xAD2A a cero): cada una viva dispara con lanza_tiro_torreta, y si le toca turno se dibuja y se mira si algo la ha alcanzado. Al caer paga 200 puntos y arranca la cuenta atras de 0xBC31
 	ld a,(0ad2ah)		;bb32
 	and a			;bb35
 	ret nz			;bb36
@@ -4255,12 +4255,12 @@ L_BB3D:
 	jr z,L_BB9A		;bb5f
 	push hl			;bb61
 	ld a,003h		;bb62
-	call L_AADF		;bb64
+	call pinta_glifo		;bb64
 	pop hl			;bb67
 	ld iy,0acbch		;bb68
 	ld de,00408h		;bb6c
 	ld bc,00200h		;bb6f
-	call L_AFF7		;bb72
+	call choca_con_tabla		;bb72
 	jr c,L_BB9A		;bb75
 	ld (iy+002h),080h	;bb77
 	ld a,014h		;bb7b
@@ -4272,7 +4272,7 @@ L_BB3D:
 	ld (0bc31h),hl		;bb8b
 	ld hl,0b882h		;bb8e
 	ld a,00fh		;bb91
-	call L_D127		;bb93
+	call premia		;bb93
 	ld hl,0bc33h		;bb96
 	dec (hl)		;bb99
 L_BB9A:
@@ -4295,9 +4295,9 @@ tic_cuenta_atras:		; El tic de la torre: solo con los 6 objetivos muertos (0xBC3
 	jp z,tiempo_agotado		;bbb6
 	xor a			;bbb9
 	ld de,0cd9ch		;bbba
-	call L_C4A3		;bbbd
+	call arranca_guion_libre		;bbbd
 	ld hl,(0bc31h)		;bbc0
-	call L_D117		;bbc3
+	call vram_pon_dir		;bbc3
 	ld a,07eh		;bbc6
 	out (098h),a		;bbc8   ; La fila que crece de la torre blanca de la cuenta atras
 	ei			;bbca
@@ -4328,7 +4328,7 @@ L_BBE2:
 	ld b,030h		;bbf3
 	ld hl,01040h		;bbf5
 L_BBF8:
-	call L_D117		;bbf8
+	call vram_pon_dir		;bbf8
 L_BBFB:
 	ld a,000h		;bbfb
 	out (c),a		;bbfd
@@ -4343,7 +4343,7 @@ L_BBFB:
 	ld b,030h		;bc13
 	ld hl,03040h		;bc15
 L_BC18:
-	call L_D117		;bc18
+	call vram_pon_dir		;bc18
 L_BC1B:
 	ld a,0f1h		;bc1b
 	out (c),a		;bc1d
@@ -4364,7 +4364,7 @@ L_BC1B:
 ; ======================================================================
 
 
-L_BC35:
+pinta_torre:		; Dibuja la torre, y solo cuando el scroll ha llegado: `ld a,(ix+000h) / sub 044h / ret c` sobre la fila de 0xAD2A, o sea que por debajo de la fila 0x44 no pinta nada
 	ld ix,0ad2ah		;bc35
 	ld a,(ix+000h)		;bc39
 	sub 044h		;bc3c
@@ -4385,7 +4385,7 @@ L_BC35:
 	ld c,a			;bc54
 	ld h,a			;bc55
 	ld l,008h		;bc56
-	call L_AACD		;bc58
+	call buffer_dir		;bc58
 	ld a,c			;bc5b
 	sub 0a0h		;bc5c
 	neg			;bc5e
@@ -4510,7 +4510,7 @@ tiempo_agotado:		; Se acabo el tiempo: flash de dameros, decaimiento de pixeles 
 	ld (hl),07eh		;bcf4
 	ld a,002h		;bcf6
 	ld de,0ce07h		;bcf8
-	call L_C4D0		;bcfb
+	call arranca_guion		;bcfb
 	ld b,014h		;bcfe
 L_BD00:
 	push bc			;bd00
@@ -4526,7 +4526,7 @@ L_BD00:
 	ld (hl),07eh		;bd16
 	ld a,002h		;bd18
 	ld de,0ce11h		;bd1a
-	call L_C4D0		;bd1d
+	call arranca_guion		;bd1d
 	ld bc,0005ah		;bd20
 L_BD23:
 	call azar		;bd23
@@ -4564,7 +4564,7 @@ L_BD3E:
 	call azar		;bd54
 	and e			;bd57
 	ld e,a			;bd58
-	call L_D117		;bd59
+	call vram_pon_dir		;bd59
 	ld a,e			;bd5c
 	out (098h),a		;bd5d
 	ei			;bd5f
@@ -4602,7 +4602,7 @@ flash_dameros:		; XOR de los tres tercios de la pantalla con el patron DE (0x2A5
 	ld b,018h		;bd97
 	ld hl,01040h		;bd99
 L_BD9C:
-	call L_D117		;bd9c
+	call vram_pon_dir		;bd9c
 	ld a,d			;bd9f
 	out (098h),a		;bda0
 	ld a,e			;bda2
@@ -4630,7 +4630,7 @@ L_BDAC:
 	ld (0a98eh),a		;bdb4
 	xor a			;bdb7
 	ld de,0cd80h		;bdb8
-	call L_C4D0		;bdbb
+	call arranca_guion		;bdbb
 	ld b,010h		;bdbe
 L_BDC0:
 	push bc			;bdc0
@@ -4682,12 +4682,12 @@ L_BE06:
 L_BE15:
 	ld iy,01388h		;be15
 	ld ix,061d8h		;be19
-	call L_D238		;be1d
+	call sonido_reset		;be1d
 	ld a,0f1h		;be20
-	call L_D31C		;be22
-	call L_AC1F		;be25
-	call L_BB1D		;be28
-	call L_C421		;be2b
+	call rellena_colores		;be22
+	call borra_buffer		;be25
+	call pinta_estrellas		;be28
+	call copia_al_buffer		;be2b
 	call vuelca_pantalla		;be2e
 	ld bc,00000h		;be31
 	call espera		;be34
@@ -4696,11 +4696,11 @@ L_BE15:
 	call espera		;be3d
 	xor a			;be40
 	ld de,0cd8fh		;be41
-	call L_C4D0		;be44
+	call arranca_guion		;be44
 L_BE47:
-	call L_AC1F		;be47
-	call L_BB1D		;be4a
-	call L_C421		;be4d
+	call borra_buffer		;be47
+	call pinta_estrellas		;be4a
+	call copia_al_buffer		;be4d
 	ld a,(ix+000h)		;be50
 	cp 0c0h			;be53
 	jr z,L_BE76		;be55
@@ -4715,7 +4715,7 @@ L_BE63:
 	inc ix			;be67
 	inc ix			;be69
 	ld a,000h		;be6b
-	call L_AADF		;be6d
+	call pinta_glifo		;be6d
 	call vuelca_pantalla		;be70
 	jp L_BE47		;be73
 L_BE76:
@@ -4726,7 +4726,7 @@ L_BE76:
 	call espera		;be82
 	ld hl,001d0h		;be85
 	ld ix,0c33bh		;be88
-	call L_D20E		;be8c
+	call rotula_secuencia		;be8c
 	ld e,00fh		;be8f
 L_BE91:
 	ld bc,00000h		;be91
@@ -4747,9 +4747,9 @@ L_BEAF:
 	ld b,046h		;beb7
 L_BEB9:
 	push bc			;beb9
-	call L_AC1F		;beba
-	call L_BB1D		;bebd
-	call L_C421		;bec0
+	call borra_buffer		;beba
+	call pinta_estrellas		;bebd
+	call copia_al_buffer		;bec0
 	ld ix,0c30bh		;bec3
 	ld b,008h		;bec7
 	ld a,(iy+000h)		;bec9
@@ -4766,7 +4766,7 @@ L_BED4:
 	xor a			;bee0
 	ld de,0cd6dh		;bee1
 	push bc			;bee4
-	call L_C4D0		;bee5
+	call arranca_guion		;bee5
 	pop bc			;bee8
 	call L_C3DC		;bee9
 	ld a,h			;beec
@@ -4788,7 +4788,7 @@ L_BF07:
 	ld h,(ix+001h)		;bf08
 	ld a,(ix+002h)		;bf0b
 	push bc			;bf0e
-	call L_AA07		;bf0f
+	call pinta_sprite		;bf0f
 	pop bc			;bf12
 	inc (ix+002h)		;bf13
 	ld a,(ix+002h)		;bf16
@@ -4810,19 +4810,19 @@ L_BF25:
 	jp nz,L_BEB9		;bf37
 	ld a,002h		;bf3a
 	ld de,0ce11h		;bf3c
-	call L_C4D0		;bf3f
+	call arranca_guion		;bf3f
 	call L_C407		;bf42
 	ld b,06eh		;bf45
 L_BF47:
 	push bc			;bf47
-	call L_AC1F		;bf48
-	call L_BB1D		;bf4b
+	call borra_buffer		;bf48
+	call pinta_estrellas		;bf4b
 	call mueve_metralla		;bf4e
 	call vuelca_pantalla		;bf51
 	pop bc			;bf54
 	djnz L_BF47		;bf55
-	call L_AC1F		;bf57
-	call L_BB1D		;bf5a
+	call borra_buffer		;bf57
+	call pinta_estrellas		;bf5a
 	call vuelca_pantalla		;bf5d
 	ld bc,00000h		;bf60
 	call espera		;bf63
@@ -4849,7 +4849,7 @@ L_BF75:
 	srl l			;bf92
 	srl l			;bf94
 	srl l			;bf96
-	call L_AACD		;bf98
+	call buffer_dir		;bf98
 	ld de,00018h		;bf9b
 	ld b,004h		;bf9e
 L_BFA0:
@@ -4990,7 +4990,7 @@ L_C3E6:
 	srl l			;c3f7
 	srl l			;c3f9
 	srl l			;c3fb
-	call L_AACD		;c3fd
+	call buffer_dir		;c3fd
 	ld a,(hl)		;c400
 	and 0e7h		;c401
 	pop hl			;c403
@@ -4999,16 +4999,16 @@ L_C3E6:
 L_C407:
 	ld a,099h		;c407
 	ld iy,00bb8h		;c409
-	call L_D31C		;c40d
+	call rellena_colores		;c40d
 	ld a,0aah		;c410
-	call L_D31C		;c412
+	call rellena_colores		;c412
 	ld a,0ffh		;c415
-	call L_D31C		;c417
+	call rellena_colores		;c417
 	xor a			;c41a
 	ld a,0f1h		;c41b
-	call L_D31C		;c41d
+	call rellena_colores		;c41d
 	ret			;c420
-L_C421:
+copia_al_buffer:		; Copia 720 bytes de 0x6285 al buffer en 0x4B43, en tiras de 18 con un salto de 6: 18 + 6 = 24, el ancho del buffer, o sea 40 filas de 18 bytes centradas en la banda C
 	ld hl,06285h		;c421
 	ld bc,002d0h		;c424
 	ld de,04b43h		;c427
@@ -5074,25 +5074,25 @@ L_C46E:
 L_C483:
 	ld a,080h		;c483
 	ld de,0ce45h		;c485
-	call L_C4D0		;c488
+	call arranca_guion		;c488
 	inc a			;c48b
 	ld de,0cf3dh		;c48c
-	call L_C4D0		;c48f
+	call arranca_guion		;c48f
 	ld a,002h		;c492
 	ld de,0cfbeh		;c494
-	call L_C4D0		;c497
-L_C49A:
+	call arranca_guion		;c497
+sonido_off:		; Cierra el sonido metiendo un `ret` (0xC9) en la cabecera de arranca_guion y arranca_guion_libre, igual que el 0xE186 del bloque de naves
 	ld a,0c9h		;c49a
-	ld (L_C4D0),a	;c49c
-	ld (L_C4A3),a		;c49f
+	ld (arranca_guion),a	;c49c
+	ld (arranca_guion_libre),a		;c49f
 	ret			;c4a2
-L_C4A3:
+arranca_guion_libre:		; arranca_guion, pero si el canal pedido esta ocupado recorre los TRES buscando uno libre, y solo pisa el pedido si no queda ninguno
 	di			;c4a3
 	push af			;c4a4
 	push de			;c4a5
 	and 07fh		;c4a6
 	ld de,0002eh		;c4a8
-	call L_C8A6		;c4ab
+	call mul_a_de		;c4ab
 	ld de,0d068h		;c4ae
 	add hl,de		;c4b1
 	push hl			;c4b2
@@ -5118,14 +5118,14 @@ L_C4CA:
 L_C4CD:
 	pop de			;c4cd
 	jr L_C4DF		;c4ce
-L_C4D0:
+arranca_guion:		; Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei`): borra los 46 bytes de su estado en 0xD068+canal*46 y siembra el puntero de ejecucion y el de inicio
 	di			;c4d0
 L_C4D1:
 	push af			;c4d1
 	push de			;c4d2
 	and 07fh		;c4d3
 	ld de,0002eh		;c4d5
-	call L_C8A6		;c4d8
+	call mul_a_de		;c4d8
 	ld de,0d068h		;c4db
 	add hl,de		;c4de
 L_C4DF:
@@ -5191,15 +5191,15 @@ L_C536:
 	jp c,L_C545		;c539
 	sub 080h		;c53c
 	ld hl,0cabeh		;c53e
-	call L_C8D5		;c541
+	call lee_puntero		;c541
 	jp (hl)			;c544
 L_C545:
 	push af			;c545
-	call L_C89B		;c546
+	call estado_canal_actual		;c546
 	pop af			;c549
 	add a,(hl)		;c54a
 	ld hl,0c9feh		;c54b
-	call L_C8D5		;c54e
+	call lee_puntero		;c54e
 	ld (ix+00ah),l		;c551
 	ld (ix+00bh),h		;c554
 	inc bc			;c557
@@ -5436,7 +5436,7 @@ L_C70C:
 	ld a,(bc)		;c70d
 	ld de,(0d10bh)		;c70e
 	ld d,000h		;c712
-	call L_C8A6		;c714
+	call mul_a_de		;c714
 	ld (ix+006h),l		;c717
 	ld (ix+007h),h		;c71a
 	inc bc			;c71d
@@ -5458,9 +5458,9 @@ L_C732:
 	inc hl			;c733
 	djnz L_C732		;c734
 	ld a,0f3h		;c736
-	ld (L_C4A3),a		;c738
-	ld (L_C4D0),a	;c73b
-	call L_C89B		;c73e
+	ld (arranca_guion_libre),a		;c738
+	ld (arranca_guion),a	;c73b
+	call estado_canal_actual		;c73e
 	ld (hl),b		;c741
 	ld hl,0d0ffh		;c742
 	xor (hl)		;c745
@@ -5478,7 +5478,7 @@ L_C75A:
 	ld a,(bc)		;c75b
 	push bc			;c75c
 	ld de,00008h		;c75d
-	call L_C8A6		;c760
+	call mul_a_de		;c760
 	ld bc,01770h		;c763
 	push hl			;c766
 	pop de			;c767
@@ -5533,7 +5533,7 @@ L_C7BB:
 	res 1,(ix+02dh)		;c7c0
 	ld a,(bc)		;c7c4
 	ld de,0000fh		;c7c5
-	call L_C8A6		;c7c8
+	call mul_a_de		;c7c8
 	ld de,0c8f7h		;c7cb
 	add hl,de		;c7ce
 	push ix			;c7cf
@@ -5563,7 +5563,7 @@ L_C804:
 	ld (0d0fch),a		;c80a
 	ld a,(bc)		;c80d
 	ld de,00006h		;c80e
-	call L_C8A6		;c811
+	call mul_a_de		;c811
 	ld de,0c9e7h		;c814
 	add hl,de		;c817
 	ld iy,0d0f2h		;c818
@@ -5622,7 +5622,7 @@ L_C864:
 	inc hl			;c873
 	ld (hl),b		;c874
 	ld hl,0cadch		;c875
-	call L_C8D5		;c878
+	call lee_puntero		;c878
 	ld b,h			;c87b
 	ld c,l			;c87c
 	jp L_C536		;c87d
@@ -5639,19 +5639,19 @@ L_C880:
 	jp L_C536		;c88e
 L_C891:
 	inc bc			;c891
-	call L_C89B		;c892
+	call estado_canal_actual		;c892
 	ld a,(bc)		;c895
 	inc bc			;c896
 	ld (hl),a		;c897
 	jp L_C536		;c898
-L_C89B:
+estado_canal_actual:		; HL = 0xD114 + el numero que haya en 0xD10C: la entrada del canal que el interprete esta atendiendo
 	ld a,(0d10ch)		;c89b
 	ld l,a			;c89e
 	ld h,000h		;c89f
 	ld de,0d114h		;c8a1
 	add hl,de		;c8a4
 	ret			;c8a5
-L_C8A6:
+mul_a_de:		; HL = A * DE por desplazamiento y suma; identica byte a byte a la del bloque de naves
 	ld hl,00000h		;c8a6
 	and a			;c8a9
 	ret z			;c8aa
@@ -5687,7 +5687,7 @@ L_C8CC:
 	ld b,a			;c8d2
 	pop af			;c8d3
 	ret			;c8d4
-L_C8D5:
+lee_puntero:		; HL = la palabra que hay en HL + A*2; identica byte a byte a la del bloque de naves
 	push af			;c8d5
 	add a,a			;c8d6
 	add a,l			;c8d7
@@ -5868,7 +5868,7 @@ L_C8E9:
 ; ======================================================================
 
 
-L_D117:
+vram_pon_dir:		; Fija la direccion de ESCRITURA del VDP por el puerto 0x99; identica byte a byte a la del bloque de naves
 	di			;d117
 	push af			;d118
 	in a,(099h)		;d119
@@ -5880,14 +5880,14 @@ L_D117:
 	out (099h),a		;d123
 	pop af			;d125
 	ret			;d126
-L_D127:
+premia:		; Suma B al marcador por el digito que apunta HL (dentro de 0xB87F) y lo repinta en 0x12B0, que es la misma posicion de pantalla que usa el marcador de la fase de naves
 	push ix			;d127
 	ld ix,0b87fh		;d129
 	ld de,012b0h		;d12d
-	call L_B3AC		;d130
+	call suma_puntos		;d130
 	pop ix			;d133
 	ret			;d135
-L_D136:
+pinta_marca_hud:		; Pinta la marca del HUD con el color 0x11
 	ld a,011h		;d136
 	jr $+4			;d138
 
@@ -5908,7 +5908,7 @@ L_D13E:
 	push bc			;d13e
 	push hl			;d13f
 	ld c,002h		;d140
-	call L_D117		;d142
+	call vram_pon_dir		;d142
 L_D145:
 	ld b,008h		;d145
 L_D147:
@@ -5928,7 +5928,7 @@ L_D147:
 	ld a,h			;d15a
 	add a,008h		;d15b
 	ld h,a			;d15d
-	call L_D117		;d15e
+	call vram_pon_dir		;d15e
 L_D161:
 	pop af			;d161
 	dec c			;d162
@@ -5941,7 +5941,7 @@ L_D161:
 	ei			;d16d
 	ret			;d16e
 L_D16F:
-	call L_AC1F		;d16f
+	call borra_buffer		;d16f
 	call vuelca_pantalla		;d172
 	xor a			;d175
 	ld (0b87ch),a		;d176
@@ -5957,7 +5957,7 @@ L_D17E:
 	ld hl,00120h		;d18d
 L_D190:
 	push bc			;d190
-	call L_D20E		;d191
+	call rotula_secuencia		;d191
 	pop bc			;d194
 	dec c			;d195
 	jr nz,L_D1B6		;d196
@@ -6045,50 +6045,50 @@ L_D201:
 L_D20B:
 	pop hl			;d20b
 	jr L_D190		;d20c
-L_D20E:
-	call L_D238		;d20e
+rotula_secuencia:		; Recorre la cadena de (IX) hasta el 0 pasandole cada byte a imprime_marco, con el sonido puesto a cero antes y despues
+	call sonido_reset		;d20e
 L_D211:
 	ld a,(ix+000h)		;d211
 	inc ix			;d214
 	and a			;d216
-	jr z,L_D238		;d217
+	jr z,sonido_reset		;d217
 	call imprime_marco		;d219
 	jr L_D211		;d21c
 L_D21E:
 	ld a,080h		;d21e
 	ld de,0ce2bh		;d220
 	push hl			;d223
-	call L_C4D0		;d224
+	call arranca_guion		;d224
 	inc a			;d227
 	ld de,0d054h		;d228
-	call L_C4D0		;d22b
+	call arranca_guion		;d22b
 	ld a,002h		;d22e
 	ld de,0d05eh		;d230
-	call L_C4D0		;d233
+	call arranca_guion		;d233
 	pop hl			;d236
 	ret			;d237
-L_D238:
+sonido_reset:		; Reabre el sonido reponiendo el `di` (0xF3) que sonido_off machaco en las dos rutinas de arranque, y deja los tres canales a cero con un guion nulo
 	ld a,0f3h		;d238
 	ld (0c4d0h),a		;d23a
 	ld (0c4a3h),a		;d23d
 	xor a			;d240
 	ld de,00000h		;d241
 	push hl			;d244
-	call L_C4D0		;d245
+	call arranca_guion		;d245
 	inc a			;d248
-	call L_C4D0		;d249
+	call arranca_guion		;d249
 	inc a			;d24c
-	call L_C4D0		;d24d
+	call arranca_guion		;d24d
 	pop hl			;d250
 	ret			;d251
 imprime_marco:		; El impresor del marco: DIRECTO a la VRAM con la fuente de 0x5F00; A<0x20 es control (0 borra la celda, 1 posiciona con el parametro de (IX))
 	ld bc,00bb8h		;d252
 	push af			;d255
-	call L_D305		;d256
+	call espera_bc		;d256
 	pop af			;d259
 	cp 020h			;d25a
 	jr nc,L_D2D3		;d25c
-	call L_D117		;d25e
+	call vram_pon_dir		;d25e
 	ld b,008h		;d261
 	push af			;d263
 L_D264:
@@ -6122,10 +6122,10 @@ L_D284:
 L_D28B:
 	cp 014h			;d28b
 	jr nz,L_D29E		;d28d
-	call L_D238		;d28f
+	call sonido_reset		;d28f
 	ld bc,00000h		;d292
-	call L_D305		;d295
-	call L_D305		;d298
+	call espera_bc		;d295
+	call espera_bc		;d298
 	jp L_D21E		;d29b
 L_D29E:
 	ld a,h			;d29e
@@ -6146,7 +6146,7 @@ L_D2B2:
 	add hl,bc		;d2b5
 L_D2B6:
 	ld b,007h		;d2b6
-	call L_D117		;d2b8
+	call vram_pon_dir		;d2b8
 L_D2BB:
 	ld a,07fh		;d2bb
 	out (098h),a		;d2bd
@@ -6155,9 +6155,9 @@ L_D2BB:
 	djnz L_D2BB		;d2c1
 	ei			;d2c3
 	push hl			;d2c4
-	call L_D238		;d2c5
+	call sonido_reset		;d2c5
 	ld bc,00fa0h		;d2c8
-	call L_D305		;d2cb
+	call espera_bc		;d2cb
 	call L_D21E		;d2ce
 	pop hl			;d2d1
 	ret			;d2d2
@@ -6172,7 +6172,7 @@ L_D2D3:
 	add hl,de		;d2dd
 	ex de,hl		;d2de
 	pop hl			;d2df
-	call L_D117		;d2e0
+	call vram_pon_dir		;d2e0
 	ld b,008h		;d2e3
 L_D2E5:
 	ld a,(de)		;d2e5
@@ -6185,7 +6185,7 @@ L_D2E5:
 	ld bc,00040h		;d2ee
 	add hl,bc		;d2f1
 L_D2F2:
-	call L_D117		;d2f2
+	call vram_pon_dir		;d2f2
 	ld b,007h		;d2f5
 L_D2F7:
 	ld a,07fh		;d2f7
@@ -6198,13 +6198,13 @@ L_D2F7:
 L_D302:
 	djnz L_D302		;d302
 	ret			;d304
-L_D305:
+espera_bc:		; Espera activa: decrementa BC hasta cero y vuelve
 	dec bc			;d305
 	ld a,b			;d306
 	or c			;d307
-	jr nz,L_D305		;d308
+	jr nz,espera_bc		;d308
 	ret			;d30a
-L_D30B:
+hay_tecla:		; Vuelve con NZ si hay alguna tecla pulsada, barriendo las nueve filas de la matriz por los puertos 0xAA y 0xA9
 	ld d,0f0h		;d30b
 L_D30D:
 	ld a,d			;d30d
@@ -6217,7 +6217,7 @@ L_D30D:
 	cp d			;d318
 	ret z			;d319
 	jr L_D30D		;d31a
-L_D31C:
+rellena_colores:		; Pone el color A en la tabla de colores, tercio a tercio: 0x2108 x 56 filas, 0x2900 x 64 y 0x3100 x 40
 	ld hl,02108h		;d31c
 	ld c,038h		;d31f
 	call L_D331		;d321
@@ -6229,7 +6229,7 @@ L_D31C:
 L_D331:
 	ld b,018h		;d331
 L_D333:
-	call L_D117		;d333
+	call vram_pon_dir		;d333
 	push bc			;d336
 	push hl			;d337
 L_D338:
@@ -6257,7 +6257,7 @@ L_D338:
 ; ======================================================================
 
 
-L_D35B:
+hud_imprime:		; Recorre la cadena de indices de glifo de (IX) hasta el 0 estampando cada uno en la VRAM: 8 bytes desde la fuente de 0x5F00 y 0x40 de avance por caracter
 	ld a,(ix+000h)		;d35b
 	and a			;d35e
 	ret z			;d35f
@@ -6269,7 +6269,7 @@ L_D35B:
 	ld bc,05f00h		;d366
 	add hl,bc		;d369
 	ex de,hl		;d36a
-	call L_D117		;d36b
+	call vram_pon_dir		;d36b
 	ld b,008h		;d36e
 L_D370:
 	ld a,(de)		;d370
@@ -6283,7 +6283,7 @@ L_D370:
 	add hl,de		;d37c
 	ex de,hl		;d37d
 	inc ix			;d37e
-	jp L_D35B		;d380
+	jp hud_imprime		;d380
 vuelca_pantalla:		; Vuelca el buffer a la VRAM en TRES bandas: 0x4000/56 filas a 0x0108, 0x4540/64 a 0x0900, 0x4B40/40 a 0x1100
 	ld de,04000h		;d383
 	ld hl,00108h		;d386
@@ -6303,7 +6303,7 @@ L_D3A6:
 	ld c,018h		;d3a6
 L_D3A8:
 	push bc			;d3a8
-	call L_D117		;d3a9
+	call vram_pon_dir		;d3a9
 	push de			;d3ac
 	push hl			;d3ad
 	ex de,hl		;d3ae
@@ -6323,11 +6323,11 @@ L_D3B2:
 	jr nz,L_D3A8		;d3c1
 	ret			;d3c3
 L_D3C4:
-	call L_AC1F		;d3c4
+	call borra_buffer		;d3c4
 	call vuelca_pantalla		;d3c7
 	ld ix,0b940h		;d3ca
 	ld hl,00118h		;d3ce
-	call L_D20E		;d3d1
+	call rotula_secuencia		;d3d1
 	pop de			;d3d4
 	push hl			;d3d5
 	ld h,d			;d3d6
@@ -6346,7 +6346,7 @@ L_D3EA:
 	push bc			;d3ea
 	push de			;d3eb
 L_D3EC:
-	call L_D30B		;d3ec
+	call hay_tecla		;d3ec
 	jr nz,L_D3EC		;d3ef
 	ld bc,007d0h		;d3f1
 	call espera		;d3f4
@@ -6385,7 +6385,7 @@ L_D41B:
 L_D428:
 	ld a,00dh		;d428
 	call imprime_marco		;d42a
-	call L_D238		;d42d
+	call sonido_reset		;d42d
 	ld bc,00000h		;d430
 L_D433:
 	dec bc			;d433
@@ -6402,7 +6402,7 @@ L_D43C:
 	push de			;d440
 	cp 006h			;d441
 	jp z,L_D3EC		;d443
-	call L_D117		;d446
+	call vram_pon_dir		;d446
 	ld b,008h		;d449
 L_D44B:
 	ld a,000h		;d44b
@@ -6413,7 +6413,7 @@ L_D44B:
 	ld de,00040h		;d453
 	and a			;d456
 	sbc hl,de		;d457
-	call L_D117		;d459
+	call vram_pon_dir		;d459
 	ld b,007h		;d45c
 L_D45E:
 	ld a,07fh		;d45e

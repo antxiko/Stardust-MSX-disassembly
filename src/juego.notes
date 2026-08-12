@@ -217,10 +217,31 @@ D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
 #   la conversion se trajo tal cual: en un juego pensado para MSX no habria
 #   ninguna razon para elegir justo esas.
 #
-#   Y explica la cadena de teclado que hay unas lineas mas arriba en el bloque de
-#   textos: sus 48 caracteres son 6 filas de 8, o sea la matriz del MSX puesta en
-#   fila, y con ella se traduce (fila, bit) al caracter que se muestra en
-#   pantalla al redefinir.
+#   Y explica la cadena de teclado que hay unas lineas mas arriba en el bloque
+#   de textos: es la matriz del MSX puesta en fila, y con ella se traduce
+#   (fila, bit) al nombre que se muestra en pantalla al redefinir, con el
+#   indice fila*8 + bit.
+#
+#   ESO SE PUBLICO COMO "48 CARACTERES, 6 FILAS DE 8" Y SE QUEDABA CORTO. La
+#   tabla empieza en 0xDC09 y cubre las NUEVE filas, o sea las 72 teclas, en
+#   dos tramos:
+#       0xDC09 + 0..47   los 48 primeros son el caracter tal cual, de '0' a 'Z'
+#       0xDC09 + 48..67  veinte codigos 0x01-0x14, que son el numero de cadena
+#                        dentro de la lista que arranca en 0xDC4D: SHIFT, CTRL,
+#                        GRAPH, CAPS, CODE, F 1..F 5, ESC, TAB, STOP, BS,
+#                        SELECT, ENTER, SPACE, HOME, INS, DEL
+#       0xDC09 + 68..71  cuatro espacios: las cuatro flechas del cursor son las
+#                        unicas teclas que se quedan sin nombre
+#
+#   Cierra al byte por los dos lados: la ultima cadena, "DEL", acaba en 0xDCB0,
+#   y 0xDCB1 es ya el primer byte de la tabla de teclas.
+#
+#   Y con eso el ESPACIO del disparo se verifica sin salir del binario, que es
+#   mejor que fiarse de una tabla de la matriz copiada de fuera: la entrada de
+#   DISPARO es (0x01, 0xF8), o sea fila 8 y bit 0, indice 64; el byte que hay
+#   ahi es 0x11, que es la cadena numero 17; y la decimoseptima cadena de la
+#   lista es, contando desde SHIFT, "SPACE". Igual salen 'A' en el indice 22,
+#   'Q' en el 38, 'P' en el 37 y 'O' en el 36.
 
 D 0xDAC5 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
 #   (1098 B, 63 % imprimible).
@@ -942,3 +963,588 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 #     t=1047,56   canal 0 <- 0xEB52 · canal 1 <- 0xEC4A · canal 2 <- 0xECCB
 #
 # que es, medido en el hardware, exactamente lo que dice el listado de 0xE16F.
+
+# ============================================================================
+# EL SUBSISTEMA DE SONIDO POR DENTRO: COMO SE ARRANCA UN GUION
+# ============================================================================
+#
+# El interprete de guiones ya estaba leido -sus quince comandos, sus frases,
+# su tabla de notas-, pero faltaba la puerta por la que se entra a el: quien
+# pone un guion a sonar y donde vive el estado de cada canal. Son estas.
+#
+# EL ESTADO DE CANAL MIDE 46 BYTES, Y HAY TRES. Lo dicen las dos rutinas de
+# arranque, que calculan su destino igual:
+#
+#     e1bf: and 07fh                <- A = numero de canal
+#     e1c1: ld de,0002eh            <- 46
+#     e1c4: call L_E591             <- HL = A * DE
+#     e1c7: ld de,0ed75h / add hl,de
+#
+# o sea HL = 0xED75 + canal*46, y lo primero que hace es borrar 46 bytes desde
+# ahi (`xor a / ld b,02eh` en 0xE1CD). Tres canales de 46 son 138 bytes, y
+# 0xED75 + 138 = 0xEDFF: EXACTAMENTE donde el arranque del juego empieza a
+# borrar lo siguiente (`ld hl,0edffh / ld de,0ee00h / ld bc,0000dh` en 0xBDAC).
+# La frontera la fija el propio codigo, no una estimacion.
+#
+# Y COINCIDE CON LA SEGUNDA PARTE: los "tres objetos de 46 bytes" que tanto
+# costaron alli son esto mismo. Las dos mitades del juego comparten el
+# interprete entero.
+#
+# EL BIT 7 DEL NUMERO DE CANAL NO ES EL CANAL: ES SI SE PUEDEN REACTIVAR LAS
+# INTERRUPCIONES. Ambas rutinas entran con `di`, hacen `and 07fh` para quedarse
+# con el canal, y al salir consultan el A original:
+#
+#     e1f0: pop af / or a / ret m    <- bit 7 puesto -> vuelve SIN ei
+#     e1f3: ei / ret                 <- bit 7 limpio -> reactiva
+#
+# Por eso arranca_musica pide los canales como 0x80, 0x81 y 0x02: las dos
+# primeras llamadas dejan las interrupciones cortadas -no queremos que el tic
+# de sonido entre con la voz a medio montar- y la tercera, ya con todo puesto,
+# las devuelve.
+L 0xE1BC arranca_guion Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei`): borra los 46 bytes de su estado en 0xED75+canal*46 y siembra el puntero de ejecucion y el de inicio
+L 0xE18F arranca_guion_libre arranca_guion, pero respetando lo que suena: si el canal pedido esta ocupado -sus dos primeros bytes no son cero- recorre los TRES buscando uno libre, y solo pisa el pedido si no queda ninguno
+L 0xE591 mul_a_de HL = A * DE por desplazamiento y suma, ocho vueltas; con A=0 devuelve 0 sin entrar al bucle
+L 0xE16F arranca_musica Instala la musica de la partida de golpe: canal 0 <- 0xEB52, canal 1 <- 0xEC4A, canal 2 <- 0xECCB. Medido en el emulador, es exactamente lo que se ve arrancar (ver el bloque de la partitura)
+#
+# EL SILENCIADOR ES CODIGO AUTOMODIFICANTE, y las dos mitades del truco estan
+# a 780 bytes una de otra:
+#
+#     e186: ld a,0c9h / ld (0e1bch),a / ld (0e18fh),a   <- 0xC9 es `ret`
+#     f50e: ld a,0f3h / ld (0e1bch),a / ld (0e18fh),a   <- 0xF3 es `di`
+#
+# 0xF3 es justo el primer byte con que empiezan ambas rutinas. Es decir: para
+# callar el juego no se toca el chip ni se recorre ningun canal, se le mete un
+# `ret` en la cabecera a la unica puerta de entrada del sonido, y para
+# devolverlo se le repone el `di` que tenia. Lo de 0xF50E remata vaciando los
+# tres canales con un guion nulo (DE=0).
+L 0xE186 sonido_off Cierra el sonido metiendo un `ret` (0xC9) en la cabecera de arranca_guion y arranca_guion_libre: no se puede arrancar nada mas
+L 0xF50E sonido_reset Reabre el sonido reponiendo el `di` (0xF3) que sonido_off machaco, y deja los tres canales a cero con un guion nulo
+
+# ============================================================================
+# EL PINTOR DE SPRITES Y LAS COLISIONES
+# ============================================================================
+#
+# EL DESPLAZAMIENTO FINO SE HACE PARCHEANDO DOS `jr`. Es la pieza que explica
+# las tiras desenrolladas de `adc hl,hl / adc a,a` que ya estaban anotadas.
+# pinta_sprite coge los tres bits bajos de la X y los convierte en un salto:
+#
+#     c494: ld a,l / and 007h / jr z,L_C49F   <- desplazamiento 0: no toca nada
+#     c499: dec a / ld c,a / add a,a / add a,c / add a,007h   <- (n-1)*3 + 7
+#     c49f: ld (L_C4C3+1),a / ld (L_C4FA+1),a
+#
+# El 3 es el tamano de cada paso de la tira (`adc hl,hl` son 2 bytes y
+# `adc a,a` uno) y el 7 la distancia del `jr` a la cabeza de la tira. O sea que
+# el `jr` cae DENTRO de la cadena, a la altura justa para que queden n
+# desplazamientos por hacer. Con n=0 el `jr` salta cero, cae en 0xC4C5 y el
+# desplazamiento de ocho se resuelve moviendo registros, gratis.
+#
+# EL SPRITE MIDE 64 BYTES: 16 filas de 4. Por fila lee dos palabras del pozo de
+# 0xA560 -primero la mascara, con A=0xFF y `scf`, luego el dibujo, con `xor a`-
+# y las estampa a 24 bits para que quepa el desplazamiento. El contador de
+# filas es 0xD3CD (`ld a,010h` = 16 en 0xC48B, gastado en 0xC536).
+#
+# Y EL RECORTE POR ABAJO SALE SOLO: tras buffer_dir, HL es una direccion del
+# buffer, asi que `ld a,h / cp 050h` (0xC4AE) es preguntar si se ha pasado de
+# 0x5000, el final del buffer. Se salta la fila y sigue.
+L 0xC47B pinta_sprite Estampa el sprite A (64 B en 0xA560 + A*64: 16 filas de mascara+dibujo) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xC4C3 y 0xC4FA
+L 0xC541 buffer_dir La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna, con el *24 hecho a mano (x3 y tres veces x2)
+#
+# LAS COLISIONES SON DOS LLAMADAS A LA MISMA RUTINA, UNA POR EJE. solapa_eje
+# compara dos coordenadas con sus dos tamanos y devuelve el carry del `cp`:
+# CON carry no se tocan, sin carry hay contacto. La gracia es que se mira desde
+# el que va detras, para no tener que ordenar nada:
+#
+#     cd7b: ld a,l / cp h / jr nc,L_CD82
+#     cd7f:   add a,e / cp h / ret     <- L va delante: llega L+E hasta H?
+#     cd82:   ld a,h / add a,d / cp l  <- H va delante: llega H+D hasta L?
+L 0xCD7A solapa_eje Solapamiento en UN eje: BC corrige las dos coordenadas (H y L), D y E son los dos tamanos, y vuelve con carry si NO se tocan. Se llama dos veces, una por eje
+L 0xD23E choca_con_nave Contacto entre la nave y lo que venga en HL: solapa_eje con la Y de la nave (0xC185, saturada por arriba a 0x20) y luego con su X (0xC184), cajas 4x5 contra 0x18x6. Carry = no hay contacto
+L 0xF394 premia Suma B al marcador por el digito que apunte HL (dentro de los seis de 0xDD80) y lo repinta en 0x12B0: es suma_puntos con IX y DE ya puestos, y salvando IX
+
+# ============================================================================
+# EL BUCLE DE PANTALLA, PIEZA A PIEZA
+# ============================================================================
+#
+# El arranque acaba en un bucle de cinco llamadas (0xBE2F) que es el esqueleto
+# de todo lo que se ve:
+#
+#     be2f: call L_C858      <- borra el buffer
+#     be32: call L_C33F      <- mueve y pinta las estrellas
+#     be35: call L_C08F      <- la nave: mando, giro y dibujo
+#     be38: call L_D4F3      <- los rotulos del menu encima
+#     be3b: call vuelca_pantalla
+#
+# y sale de el cuando el mando devuelve algo (0xE150) o cuando se agotan los
+# 0xA0 = 160 cuadros del contador de 0xCA8E que puso 0xBE2A. O sea que es el
+# menu con su fondo animado, no la partida.
+#
+# EL BUFFER SE BORRA CON LA PILA, que es la unica forma de escribir dos bytes
+# por instruccion en un Z80:
+#
+#     c858: di / ld hl,0 / add hl,sp / ld sp,04f00h    <- SP al final del buffer
+#     c860: ld b,050h / ld de,0
+#     c865:   push de x24 / djnz                       <- 80 vueltas de 24 push
+#     c87f: ld sp,hl / ei / ret                        <- devuelve la pila
+#
+# La cuenta cierra con el buffer al byte: 80 x 24 push x 2 bytes = 3840, que es
+# exactamente 0x4000-0x4EFF. Y por eso el `di`: durante esas 80 vueltas la pila
+# del sistema no existe.
+L 0xC858 borra_buffer Borra los 3840 bytes del buffer con la PILA: SP al final (0x4F00) y 80 vueltas de 24 `push de` con DE=0, que son 3840 bytes justos. Salva SP en HL y va con las interrupciones cortadas, porque mientras tanto no hay pila
+L 0xC33F mueve_estrellas Las 48 estrellas de 0xCB09: baja una fila cada cuadro con vuelta en 0xA0 (la altura del buffer) y, si la celda esta ocupada, busca hasta 8 posiciones arriba o abajo -a saltos de 24, o sea en la misma columna- antes de rendirse. Por eso no se pintan encima del decorado
+L 0xC08F actualiza_nave La nave, de punta a punta: lee el mando, pasa el rumbo pedido por gira_rumbo, mueve la posicion de 0xC184 con aplica_rumbo y la pinta con pinta_sprite. El fotograma esta en los 5 bits bajos de 0xC9A3 y los 3 altos son el rumbo
+L 0xD4F3 pinta_menu Estampa las cinco lineas del menu -STARDUST, JOYSTICK, TECLADO, REDEFINIR TECLAS, JUGAR, en 0xDCC6- sobre el buffer en 0x40C8, 0x43C2, 0x46C2, 0x49C2 y 0x4CCA, y con 0xDCC3 puesto anade el selector "<>>>>>>>" de 0xDCF7 en la opcion elegida
+L 0xD4E5 rotula_cadena Recorre la cadena de (IX) hasta el 0 estampando cada caracter con 0xD49B y avanzando el destino HL
+
+# ---------------------------------------------------------------- el mando
+#
+# lee_mando devuelve los cinco botones en un solo byte, y tiene dos caminos
+# segun 0xDCC3 -la misma variable con que el menu decide donde poner el
+# selector, o sea la eleccion JOYSTICK/TECLADO-:
+#
+#   JOYSTICK: registro 14 del PSG, que es donde el MSX pone el puerto de mandos
+#       c1cb: ld a,007h / out (0a0h),a / ld a,0ffh / out (0a1h),a
+#       c1d3: ld a,00eh / out (0a0h),a / in a,(0a2h)
+#     y luego cinco `rra` que reparten los bits UNO A UNO a mano (set 1, set 0,
+#     set 3, set 2, set 4): no es un and, es una PERMUTACION, porque el orden
+#     del joystick del MSX no es el del codigo de rumbo del juego.
+#
+#   TECLADO: las cinco primeras entradas de la tabla de teclas de 0xDCB1,
+#     seleccionando fila por el puerto 0xAA y leyendo el 0xA9, y metiendo cada
+#     resultado en C con `rr c`. Las otras dos entradas -PARAR y ABANDONAR- no
+#     se leen aqui: este bucle es `ld b,005h`.
+L 0xC1BD lee_mando Los cinco controles en un byte: por el registro 14 del PSG si 0xDCC3 dice joystick, o preguntando las cinco primeras teclas de 0xDCB1 si dice teclado. En el joystick los bits se reordenan a mano al codigo de rumbo del juego
+L 0xC1AF lee_mando_demo Saca el siguiente byte de la partida grabada de la demo (puntero en 0xE158) y avanza: la demo entra por el mismo sitio que el jugador
+#
+# EL GIRO NO ES INMEDIATO, Y AHI ESTA EL TACTO DE LA NAVE. gira_rumbo recibe un
+# byte con el rumbo actual en los bits 0-2 y el pedido en los bits 5-7, y en vez
+# de asignar uno al otro gira UN OCTAVO por vez, por el lado corto:
+#
+#     c79e: sub e / and 007h        <- la diferencia, en octavos
+#     c7a1: jr nz / ld a,e / or 008h   <- ya coincide: nada que hacer
+#     c7a7: cp 005h                 <- mas de media vuelta? gira al reves
+#
+# y los bits 3-4 son una espera: hasta que no llegan al tope el giro no se
+# aplica, solo se les suma o resta 8. Por eso la nave se tumba con retardo en
+# vez de saltar de golpe de una inclinacion a la siguiente.
+L 0xC794 gira_rumbo Acerca el rumbo actual (bits 0-2) al pedido (bits 5-7) un octavo por vez y por el lado corto, con los bits 3-4 haciendo de espera para que el giro no sea instantaneo
+L 0xC7DC aplica_rumbo Mueve la posicion HL segun la mascara de rumbo que saca de la tabla 0xC9A4: bit 0 suma B a la fila y bit 1 la resta, bits 2 y 3 hacen lo mismo con la columna y C. Es el mismo esquema que el aplica_rumbo de la fase de a pie
+L 0xC7CD rumbo_a_mascara Traduce el rumbo A a su mascara de movimiento por la tabla de 0xC9A4
+L 0xC7D3 rumbo_a_mascara2 Lo mismo por la tabla de 0xC9AC, la otra de las dos que hay
+
+# ============================================================================
+# LAS TABLAS DE OBJETOS, Y POR QUE APARECEN MAS ENEMIGOS SEGUN AVANZAS
+# ============================================================================
+#
+# Hay tres tablas con la misma forma exacta -un byte de contador y detras las
+# entradas de CUATRO bytes-, y las tres se dan de alta por la misma rutina:
+#
+#     0xC98F / 0xC990   las que mueve y pinta 0xCD86
+#     0xC939            tope 6, sonido 0xEA44 al canal 1   (alta en 0xCC83)
+#     0xC952            tope 9, sonido 0xEA38 al canal 2   (alta en 0xCCA3)
+#
+# La forma la fija el alta: `ld e,l / ld d,h / inc de` toma el byte siguiente
+# al contador como base, y `add hl,hl / add hl,hl` multiplica el indice por 4.
+#
+# LA PROBABILIDAD DE QUE SALGA UN ENEMIGO ES LA ZONA. Es lo primero que hace
+# 0xCC83, antes de mirar siquiera si queda hueco:
+#
+#     cc86: ld a,(0e157h) / ld e,a      <- la zona, 1 a 7
+#     cc8a: ld a,007h / sub e
+#     cc8d: add a,a / add a,a / add a,a / add a,a    <- x16
+#     cc92: call azar / cp e / ccf / ret nc
+#
+# o sea que el umbral es (7 - zona) * 16: en la zona 1 hay que sacar 96 o mas
+# de 256 -tres de cada ocho intentos-, y en la SEPTIMA el umbral es cero y
+# entra siempre. La dificultad no esta en tablas: es esta multiplicacion.
+L 0xCD86 mueve_objetos Recorre la tabla de 0xC990 (contador en 0xC98F, entradas de 4 B): mueve cada objeto hacia la nave, lo pinta, y al chocar lo pasa al estado 0x80 -la explosion, sprites 0x1D a 0x20- tras el cual lo borra compactando la tabla con un ldir
+L 0xCC83 alta_enemigo Intenta meter un objeto en la tabla de 0xC939 (tope 6): solo lo hace si el azar supera (7 - zona)*16, que es como sube la dificultad, y suena 0xEA44 al nacer
+L 0xCCA3 alta_objeto_c952 Mete un objeto en la tabla de 0xC952 (tope 9) con el sonido 0xEA38, sin tirada de azar previa
+L 0xCCAE alta_en_tabla El alta comun a las tres tablas: si el contador no ha llegado al tope, lo incrementa, arranca el sonido DE en el canal H y escribe C, B y A' en la entrada indice*4. Vuelve con carry si ha entrado
+
+# ---------------------------------------------------- esperas y pulsaciones
+#
+# hay_tecla barre la matriz ENTERA -de la fila 0xF0 a la 0xF8, y para en la
+# 0xF9- preguntando si alguna fila trae algun cero. Es "pulsa una tecla", y de
+# paso deja escrito en el propio codigo que la matriz del MSX tiene NUEVE
+# filas, que es lo que hace falta para leer la tabla de nombres de tecla de
+# 0xDC09 hasta el final.
+L 0xF660 hay_tecla Vuelve con NZ si hay alguna tecla pulsada, barriendo las nueve filas de la matriz (0xF0 a 0xF8) por los puertos 0xAA y 0xA9
+L 0xD81A espera_bc Espera activa: decrementa BC hasta cero y vuelve
+L 0xD817 espera_1000 espera_bc con BC = 1000
+#
+# Y esta, que espera a que la musica termine sola, sirve ademas de tercera
+# confirmacion de que el estado de canal mide 46 bytes: mira 0xEDA3, que es
+# 0xED75 + 46, o sea el primer byte del estado del canal 1, y espera a que se
+# quede a cero -que es como arranca_guion deja un canal vacio-.
+L 0xD57B espera_fin_musica Da vueltas hasta que el canal 1 se queda sin guion (0xEDA3 a cero) o hasta que se pulsa una tecla, con una espera de 1000 entre vuelta y vuelta
+
+# ============================================================================
+# LO QUE HABLA CON LA VRAM DIRECTAMENTE
+# ============================================================================
+#
+# Casi todo el juego pinta sobre el buffer y lo vuelca de una vez, pero hay
+# cosas -el marco, los colores, el dibujo de la nave del HUD, los carteles- que
+# van derechas a la VRAM. Estas son.
+#
+# rellena_colores lo hace en TRES TRAMOS de 56, 64 y 40 filas (0x38, 0x40,
+# 0x28), que son las tres bandas de siempre: las mismas que el volcado de
+# pantalla y las mismas que la fase de a pie. Ahi se ve que el reparto en tres
+# bandas no es cosa del volcado, es la geometria de la pantalla del juego.
+L 0xF634 rellena_colores Pone el color A en la tabla de colores de la pantalla, tercio a tercio: 0x2108 x 56 filas, 0x2900 x 64 y 0x3100 x 40, las tres bandas de siempre, 24 caracteres de ancho
+L 0xEF28 copia_marco Vuelca el marco de la pantalla de juego a la VRAM: dos filas de caracter por tercio (0x100 B x3, saltando 0x800) mas 24 tiras de 8 B y otras 24 de 0x18. Se llama dos veces, con los patrones de 0x48A0 y con los colores de 0x51A0
+L 0xF5F4 dibuja_sprite_vram Estampa un sprite de 0xA560 derecho en la VRAM (0x1758), 16 filas por 2 columnas leyendo un byte de cada cuatro. El bit 0 de A elige que mitad de la entrada se pinta -par la mascara, impar el dibujo- y el resto es el numero de sprite
+L 0xF5E1 vram_avanza_fila Avanza la direccion de VRAM una fila de pixel y, al agotar el bloque de 0x40, salta al tercio siguiente (l and 0xC0, h + 8) reprogramando el puerto 0x99
+L 0xF5DB espera_bc2 Espera activa de BC vueltas; es la gemela de espera_bc, en la otra punta del bloque
+
+# ---------------------------------------------------- el rotulador de carteles
+#
+# Los carteles no son cadenas sueltas sino un PROGRAMITA: rotula_secuencia
+# recorre los bytes de (IX) y le pasa cada uno a rotulador_cmd, que trata los
+# menores de 0x20 como ordenes -0x01 recoloca leyendo el byte siguiente, 0x14
+# corta el sonido y espera- y el resto como caracteres. Es el mismo esquema que
+# el impresor del marco de la fase de a pie.
+L 0xF4E4 rotula_secuencia Recorre la cadena de (IX) hasta el 0 pasandole cada byte a rotulador_cmd, tras dejar el sonido en su sitio
+L 0xF528 rotulador_cmd Estampa un caracter en la VRAM, o lo ejecuta como orden si es menor de 0x20: 0x01 recoloca el cursor con el byte siguiente de (IX) y 0x14 llama a sonido_reset y espera
+
+# ============================================================================
+# EL DISPARO, LOS TOPES DEL AREA Y EL RUMBO HACIA UN OBJETIVO
+# ============================================================================
+#
+# LA NAVE NO PUEDE TENER MAS DE DOS DISPAROS EN EL AIRE. Lo dice la primera
+# linea de alta_disparo, que es tambien lo que fija donde acaba la tabla de
+# 0xC990 -en 0xC998, que es ya el contador de esta-:
+#
+#     c8ad: ld hl,0c998h / ld a,(hl) / cp 002h / ret nc
+#
+# Sus entradas son de CINCO bytes, una mas que las de las otras tres tablas:
+# `add hl,hl / add hl,hl / add hl,de` es indice*5, no *4.
+L 0xC8AD alta_disparo Mete un disparo en la tabla de 0xC999 (contador en 0xC998, entradas de 5 B) si no hay ya dos en el aire, y arranca el sonido 0xEA81 en el canal 1. Vuelve con carry si ha salido
+#
+# EL AREA DE JUEGO ES X < 0xB1 E Y ENTRE 0x38 Y 0xB1. Los dos topes salen de la
+# misma rutina, y la forma de aplicarlos es la mas barata que hay: en vez de
+# recortar, DESHACE el movimiento reponiendo la posicion anterior desde 0xC184.
+L 0xD130 recorta_a_area Deshace el movimiento si se sale: con L >= 0xB1 repone la X de 0xC184, y con la Y fuera de la banda 0x38..0xB1 repone la de 0xC185
+L 0xD0A5 choca_con_nave2 El otro contacto con la nave, con la caja pequena: solapa_eje con 2x3 contra 0x0C x 0x0A, frente al 4x5 contra 0x18x6 de choca_con_nave
+#
+# Y ASI SE APUNTA A LA NAVE. rumbo_hacia compara las dos posiciones y monta la
+# mascara de rumbo por octantes, pero con una finura: la componente solo entra
+# si la otra diferencia no la aplasta, y el umbral es DOS VECES Y MEDIA, hecho
+# a mano con `ld b,a / srl b / add a,a / add a,b` (a*2 + a/2). Por eso los
+# enemigos no van en escalera: prefieren las diagonales limpias.
+L 0xC803 rumbo_hacia La mascara de rumbo de (B,C) hacia (D,E): bit 1 arriba y bit 2 abajo, bit 3 izquierda y bit 4 derecha, y cada componente solo cuenta si dos veces y media ella misma llega a la otra
+L 0xF114 vram_pon_dir_lee Fija la direccion de LECTURA del VDP por el puerto 0x99, sin el bit 0x40: es la gemela de vram_pon_dir
+
+# ============================================================================
+# LO QUE VALE CADA COSA, Y LA VIDA EXTRA
+# ============================================================================
+#
+# premia recibe HL apuntando a un DIGITO del marcador y B, y B es literalmente
+# cuantas veces incrementa ese digito: el bucle de suma_puntos es `djnz` sobre
+# el incremento con acarreo, no una suma. Asi que el valor en puntos sale de
+# multiplicar B por el peso de la posicion. El marcador son seis digitos ASCII
+# desde 0xDD80, o sea que 0xDD83 son las centenas, 0xDD84 las decenas y 0xDD85
+# las unidades.
+#
+# LAS OCHO PUNTUACIONES DEL JUEGO, sacadas de las ocho llamadas que hay:
+#
+#     0xD7C4   0xDD83  B=0x01    100 puntos
+#     0xD21B   0xDD83  B=0x02    200
+#     0xCFCD   0xDD84  B=0x0D    130
+#     0xD063   0xDD84  B=0x0E    140
+#     0xD29C   0xDD84  B=0x0F    150
+#     0xD033   0xDD84  B=0x10    160
+#     0xD9C4   0xDD85  B=0x1B     27
+#     0xD0A1   0xDD85  B=0x35     53
+#
+# Los dos ultimos no son numeros redondos, y no es un error de lectura: el
+# marcador se incrementa 27 y 53 veces de una unidad.
+#
+# Y CADA 10.000 PUNTOS TE DAN UNA VIDA. suma_puntos se guarda el digito 0xDD81
+# -el de las decenas de millar- ANTES de sumar, y al terminar lo compara:
+#
+#     d3e9: ld a,(0dd81h) / cp d / ret z    <- no ha cambiado: nada que hacer
+#     d3ee: tres guiones, 0xEAAA / 0xEAC9 / 0xEAE5, uno por canal
+#     d404: call sonido_off                 <- y cierra la puerta del sonido
+#     d407: ld a,(0c188h) / cp 002h / jp c,L_D45E
+#     d40f: ld hl,0e156h / ld a,(hl) / cp 009h / ret nc   <- tope de NUEVE
+#     d416: inc (hl) / jp hud_vidas_zona
+#
+# La fanfarria es a tres voces y se instala con el bit 7 puesto en las tres
+# llamadas, o sea sin devolver las interrupciones entre voz y voz. Y el
+# `call sonido_off` de despues no es un descuido: deja el sonido cerrado para
+# que ningun efecto del juego pise la fanfarria mientras suena.
+L 0xD45E hud_vidas_sin_premio La salida de suma_puntos cuando el premio de los 10.000 no toca porque la nave no esta en juego (0xC188 por debajo de 2)
+
+# ---------------------------------------------------- colisiones y volcado
+L 0xF3DC vuelca_pantalla El volcado del buffer a la VRAM en las tres bandas de siempre: 0x4000 -> 0x0108 (56 filas), 0x4540 -> 0x0900 (64) y 0x4B40 -> 0x1100 (40)
+L 0xCFD1 choca_con_tabla Busca contacto entre HL y toda una tabla de objetos: IY apunta a la primera entrada y (iy-1) es el contador, entradas de 4 B, dos solapa_eje por objeto. Vuelve con carry si no choco con ninguno, y si choco deja IY en el culpable
+L 0xCFF9 choca_y_revienta Contacto del objeto de IX contra la tabla de 0xC953: al chocar marca al otro con el 0x80 de la explosion, suena 0xEA52, mete al de IX en el estado 0xD933, escribe 0x0C por el puntero de (ix+005/006), se salta la vuelta con `pop hl` y premia 160 puntos
+L 0xD1F5 impacto_objeto Si el objeto de IX esta marcado y 0xD3BD lo permite, lo pasa al estado 0xC190, le pone 0x28 en (ix+002), suena 0xEA52, descarta la vuelta con `pop hl` y premia 200 puntos. Si no, comprueba el contacto con la nave -y solo si la nave esta viva, 0xC188 por debajo de 4-
+L 0xE5C0 lee_puntero HL = la palabra que hay en HL + A*2: el acceso a las tablas de punteros del interprete de guiones
+
+# ============================================================================
+# LA CARGA DE LA SEGUNDA PARTE HACE RAYAS EN EL BORDE, COMO EL SPECTRUM
+# ============================================================================
+#
+# La rutina de carga propia del juego -la de 0xF7F6, la que dispara la
+# multicarga- lee los bits con esta, y al cazar cada flanco hace ademas esto:
+#
+#     f893: ld a,r / and 00fh / out (099h),a
+#     f899: ld a,087h / out (099h),a        <- registro 7 del VDP: el BORDE
+#
+# o sea que le mete al color del borde el registro de refresco enmascarado,
+# que es un numero que no para de moverse. Es el equivalente exacto de las
+# rayas de colores que hace el ZX Spectrum al cargar de cinta, montado sobre
+# el unico sitio donde el MSX tiene un color de borde. Otro fosil, y de los
+# vistosos: la conversion se trajo hasta el espectaculo de la carga.
+L 0xF87C lee_bit_cinta Espera el siguiente flanco en el bit 7 del puerto 0xA2 contando vueltas en B, y de paso remueve el color del borde (registro 7 del VDP) con `ld a,r`, que es como el Spectrum hace rayas mientras carga
+L 0xF878 lee_bit_cinta2 Dos flancos seguidos con lee_bit_cinta, y vuelve en cuanto el primero falla
+
+# ---------------------------------------------------------------- el HUD
+L 0xF2D1 pinta_energia Pinta la barra de 0x6050 con el valor de 0xD3C1 recortado a 20, y con el resto hasta 20 apagado. Por debajo de 4 lee lo que ya hay en la VRAM y le da la vuelta al nibble, que es como parpadea cuando queda poco
+L 0xD480 pinta_celda_color Rellena dos celdas de color consecutivas de la VRAM (8 bytes cada una, separadas 0x40) con el valor C
+L 0xF3A3 pinta_marca_hud Pinta la marca del HUD en HL con el color 0x11; la entrada de 0xF3A7 hace lo mismo con el 0x71, que es como se enciende y se apaga
+
+# ============================================================================
+# QUIEN LEE CADA UNA DE LAS SIETE TECLAS
+# ============================================================================
+#
+# La tabla de 0xDCB1 tiene siete entradas y estaba documentada entera, pero
+# solo se sabia quien leia las cinco primeras -lee_mando, con su `ld b,005h`-.
+# Las otras dos las lee cada una su sitio, y las dos con la tabla en IX:
+#
+#   PARAR     (ix+00ah)/(ix+00bh)  = 0xDCB1 + 10, la sexta entrada,
+#                                    en 0xC006, que es la PAUSA
+#   ABANDONAR (ix+00ch)/(ix+00dh)  = 0xDCB1 + 12, la septima,
+#                                    en 0xBFDE, dentro del bucle de partida
+#
+# Con eso las siete tienen lector y la tabla queda cerrada.
+#
+# LA PAUSA ES DE LAS DE ANTES: si PARAR esta pulsada, espera primero a que se
+# suelte TODO -barriendo las nueve filas hasta que ninguna acuse nada- y se
+# queda luego dando vueltas hasta que se pulsa cualquier cosa. Sin reloj y sin
+# interrupciones de por medio.
+L 0xC006 pausa Si la tecla PARAR (la sexta de 0xDCB1) esta pulsada, espera a que se suelten todas las teclas y luego a que se pulse cualquiera
+#
+# Y EL BUCLE DE LA PARTIDA se ve entero en 0xBFD0: vuelca la pantalla, mira si
+# la zona ha terminado (0xCB39), mira ABANDONAR, pasa por la pausa, y comprueba
+# si la nave ha llegado al final de su agonia -0xC188 en 0x2D- para restar una
+# vida de 0xE156 y volver al menu cuando no quedan.
+L 0xCD20 alta_objeto_c990 Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope 2, entradas de 4 B) con el rumbo sacado del azar, y solo suena 0xEB42 si el A' de entrada era cero
+L 0xD0BD choca_con_nave3 La tercera caja de contacto con la nave, 5x3 contra 0x16x0A, y la unica que ademas se asegura antes de que la nave siga viva (0xC188 por debajo de 4)
+
+# ============================================================================
+# EL ROTULADOR SOBRE EL BUFFER, Y EL MEZCLADOR DEL PSG
+# ============================================================================
+#
+# pinta_glifo es pinta_sprite en pequeno, y con el mismo truco: ocho filas en
+# vez de dieciseis, glifos de 16 bytes -ocho de mascara y ocho de dibujo- desde
+# 0xCA93, y el desplazamiento fino resuelto otra vez parcheando dos `jr`
+# (0xC58E y 0xC5B3). Solo que aqui la tira es de 16 bits y no de 24, asi que el
+# paso es de 2 bytes y la cuenta sale `n*2 + 4` en vez de `(n-1)*3 + 7`.
+L 0xC553 pinta_glifo Estampa en el buffer el glifo A de la fuente de 0xCA93 (16 B por glifo, 8 filas de mascara y dibujo) en la posicion HL, con el desplazamiento fino parcheando los `jr` de 0xC58E y 0xC5B3
+L 0xCF14 pinta_pareja Pinta el sprite B en HL y el B+1 en la posicion reflejada respecto a 0xD3C5, y avanza la posicion con DE y el paso con C: las dos mitades de una figura simetrica
+L 0xCF36 mueve_perseguidor Con el estado de 0xD3C5 en 1, apunta la posicion de 0xD3C7 hacia la nave con rumbo_hacia y la mueve de dos en dos
+#
+# EL MEZCLADOR DEL PSG SE MONTA A MANO Y POR CANAL. El registro 7 del chip
+# tiene el tono en los bits 0-2 y el ruido en los 3-5, o sea que el par de un
+# canal son los bits n y n+3. La rutina parte de D = 0x09 -que son justo esos
+# dos bits para el canal 0- y lo desplaza tantas veces como diga el canal:
+#
+#     e52c: ld d,009h / ld a,(0ee19h)     <- 0x09 = bit 0 y bit 3
+#     e531: dec a / jp m / scf / rl e / sla d / jr
+#     e53c: ld a,(0ee14h) / or d / and e / ld (0ee14h),a
+#
+# El `or d` enciende y el `and e` -que viene del complemento de A- apaga, en la
+# misma pasada. 0xEE14 es la copia en RAM de ese registro 7.
+L 0xE529 mezclador_canal Enciende o apaga el tono y el ruido del canal 0xEE19 en la copia del registro 7 del PSG (0xEE14), desplazando la pareja de bits 0x09 tantas posiciones como el numero de canal
+
+# ---------------------------------------------- gemelas de la fase de a pie
+#
+# La busqueda de gemelas hecha al reves -partiendo de lo ya comentado en la
+# fase de a pie- da estas dos, las dos identicas byte a byte en sus 28 primeros
+# bytes, y las dos leidas para confirmarlo:
+#
+#   borde_pantalla  0xB0C0 / 0xD144   28 de 28, y hasta los topes son los
+#                   mismos: el `add a,010h / cp 013h` es X < 3 y el `cp 0beh`
+#                   es X >= 174
+#   rotula_glifo    0xB472 / 0xD49B   28 de 28: glifo de 0x5F00 + A*8, paso 24
+#                   del buffer, tramado con rlca/cpl/and y recorte en 0x4F00
+#
+# Y DOS QUE PROPUSO Y NO LO SON, que conviene dejar escritas porque miden lo
+# que vale el metodo: 0xDB61 cae DENTRO del bloque de textos -son letras que
+# coinciden con el arranque de una espera-, y 0xC38A no comparte mas que el
+# principio, porque su gemela supuesta pinta desde el mapa de la fase de a pie
+# y esta trabaja sobre la tabla de 0xCB03. El buscador propone; lo que decide
+# es leerlas.
+L 0xD144 borde_pantalla Poda el rumbo en los bordes laterales: con X < 3 quita el bit de izquierda y con X >= 174 el de derecha, sobre el A alternativo
+L 0xD49B rotula_glifo Estampa el glifo 0x5F00 + A*8 en el buffer a doble altura y con tramado en damero -borra con rlca/cpl/and y pinta con and 0x55/0xAA-, recortando al llegar a 0x4F00
+
+# ============================================================================
+# LOS QUINCE COMANDOS DEL INTERPRETE, UNO A UNO
+# ============================================================================
+#
+# Que son quince y cuales son ya estaba establecido, y tools/lee_musica.py los
+# usa para sacar la partitura. Lo que no estaba es en el LISTADO: las quince
+# rutinas tenian nombre -op_80, op_81...- y ni una linea diciendo que hacen.
+# Esto es leerlas una a una, y de paso salen cosas que la herramienta no dice.
+#
+# EL MAPA DEL ESTADO DE CANAL que se va cayendo de ellas. De los 46 bytes:
+#
+#     (ix+000/001)  el puntero de INICIO del guion (lo repone el bucle)
+#     (ix+002/003)  el puntero de EJECUCION
+#     (ix+006/007)  la duracion que queda
+#     (ix+008)      tono/ruido, ya enmascarado con 0x09
+#     (ix+009)      lo que la lectura de la partitura toma por volumen
+#     (ix+00C)      lo pone a cero el cambio de instrumento
+#     (ix+016..024) los QUINCE bytes del instrumento, copiados tal cual
+#     (ix+02D)      las banderas, y es el ULTIMO byte de los 46 (0x2D = 45)
+#
+# LA DURACION SE MULTIPLICA POR EL TEMPO Y EL TEMPO ES UNA DIVISION. Son los
+# dos comandos que hacen aritmetica de verdad:
+#
+#     op_83  (ix+006/007) = argumento * (0xEE18)
+#     op_85  0xEE18 = 6000 / (argumento * 8)     <- `ld bc,01770h` = 6000
+#
+# y la division la hace 0xE5A6, de 16 bits, por restas y desplazamientos.
+L 0xE5A6 div_bc_de BC = BC / DE por restas y desplazamientos, dieciseis vueltas de `adc hl,hl / sbc hl,de`
+L 0xE3EF op_volumen 0x80 n: mete el argumento en (ix+009), el byte que la lectura de la partitura toma por volumen
+L 0xE40D op_tono_ruido 0x81 n: (ix+008) = argumento and 0x09, que es justo la pareja de bits -tono y ruido- que el mezclador desplaza por canal
+L 0xE3F8 op_duracion 0x83 n: (ix+006/007) = argumento por el tempo de 0xEE18. La duracion no esta en cuadros, esta en unidades de tempo
+L 0xE445 op_tempo 0x85 n: 0xEE18 = 6000 / (argumento * 8), con la division de div_bc_de
+L 0xE546 op_tempo1 0x86: el tempo a 1, sin argumento
+L 0xE4A6 op_instrumento 0x87 n: copia los QUINCE bytes del instrumento n -que vive en 0xE5E2 + n*15- a (ix+016) y siguientes, y de paso limpia los bits 0 y 1 de las banderas
+L 0xE45F op_ruido 0x88 n: 0xEE0A = argumento and 0x1F, los cinco bits del registro de ruido del PSG. El bit 7 del argumento decide por donde sigue el interprete
+L 0xE492 op_banderas 0x8A n: enciende bits, con OR y sin apagar nada, en las banderas del canal (ix+02D) y en las globales de 0xEE09
+L 0xE57C op_transporte 0x8E n: escribe el argumento en 0xEE21 + canal, y eso es la TRANSPOSICION de la voz: el lector de notas lo suma al numero de nota antes de buscar el periodo (`call L_E586 / add a,(hl)` en 0xE232)
+#
+# EL 0x84 ERA EL UNICO QUE SE RESISTIA, y se resuelve mirando a donde vuelve.
+# Los otros catorce vuelven por 0xE222, la cabeza del bucle de comandos; este
+# salta a 0xE25C. Y entre las dos hay un tramo que es exactamente el ATAQUE de
+# una nota:
+#
+#     e244: ld a,(ix+008h) / call mezclador_canal   <- abre tono y ruido
+#     e24a: call L_E3A3                             <- monta la envolvente
+#     e24d: ld (ix+02ah),000h
+#     e251: call L_E3BB
+#     e254: ld (ix+02bh),000h / ld (ix+02ch),000h   <- la reinicia a cero
+#     e25c: ld (ix+002h),c / ld (ix+003h),b         <- guarda el puntero
+#     e262: (ix+004/005) = (ix+006/007)             <- y arranca la duracion
+#
+# O sea que entrar por 0xE25C es consumir una duracion SIN reatacar: sin tocar
+# el mezclador, sin remontar el instrumento y sin poner la envolvente a cero.
+# Lo que suene sigue sonando y solo se cuenta el tiempo.
+#
+# En terminos musicales eso es una ligadura -prolongar la nota anterior en vez
+# de repetirla-, y esa lectura es una interpretacion; lo que esta medido es por
+# donde entra y que se salta.
+L 0xE473 op_liga 0x84: sin argumento. Cuenta una duracion mas SIN reatacar, porque vuelve por 0xE25C y se salta el tramo del ataque: ni mezclador, ni instrumento, ni envolvente a cero. Lo que estuviera sonando sigue igual
+#
+# EL BUCLE NO ES UN FINAL, Y AHORA SE SABE CUANDO SI LO ES. El comando 0x82
+# recarga el puntero de ejecucion con el de inicio, o sea que vuelve a empezar;
+# solo cae en el fin cuando se dan LAS DOS condiciones de su cabecera:
+#
+#     e477: ld a,(0ee19h) / dec a / jr nz,L_E483    <- solo el canal 1
+#     e47d: ld a,(0ee1ah) / and a / jr z,L_E418     <- y con 0xEE1A a cero
+#
+# Es lo que avisa lee_musica.py -tomarlo por terminador parte las canciones y
+# da cifras infladas-, con la condicion exacta delante.
+L 0xE477 op_bucle 0x82: vuelve al principio del guion recargando (ix+002/003) con (ix+000/001). NO es un terminador: solo acaba si va por el canal 1 y ademas 0xEE1A esta a cero
+#
+# Y EL FIN CIERRA EL CIRCULO DEL SILENCIADOR: borra los 46 bytes del estado -su
+# `ld b,02eh` es la tercera vez que aparece esa constante- y repone el `di` en
+# la cabecera de las dos rutinas de arranque, deshaciendo lo que hizo
+# sonido_off. Si ademas era la ultima voz, limpia las variables de 0xEDFF.
+L 0xE418 op_fin 0x8B: cierra la voz borrando los 46 bytes de su estado y reponiendo el `di` en arranca_guion y arranca_guion_libre; si era la ultima que sonaba, limpia tambien las variables de 0xEDFF
+
+# ============================================================================
+# LA CARGA DE LA SEGUNDA PARTE ES LD-BYTES DEL SPECTRUM, OTRA VEZ
+# ============================================================================
+#
+# Ya estaba establecido que el CARGADOR turbo de la cinta es una
+# reimplementacion de LD-BYTES, la rutina de carga de la ROM del ZX Spectrum, y
+# tambien que la rutina con que el juego se carga a si mismo la segunda parte
+# NO es copia de aquella: se busco su firma byte a byte en los tres bloques y
+# no aparece. Son dos.
+#
+# Pues las dos vienen del mismo sitio, y esta lo lleva escrito en las
+# constantes. Tres numeros, en el mismo orden y en la misma estructura que en
+# la ROM del Spectrum:
+#
+#   f87c: ld a,016h / dec a / jr nz / and a
+#         -> el retardo de LD-EDGE-1, con su 0x16
+#
+#   f811: ld hl,00415h / djnz $ / dec hl / ld a,h / or l / jr nz
+#         -> la espera de LD-START, con su 0x0415
+#
+#   f820: ld b,09ch / call lee_bit_cinta2 / jr nc
+#         ld a,0c6h / cp b / jr nc / inc h / jr nz
+#         -> LD-LEADER entero, con sus 0x9C y 0xC6, que son los umbrales con
+#            que se reconoce el tono guia por la duracion del pulso
+#
+# Y el reparto en dos rutinas es el mismo: lee_bit_cinta2 llama a
+# lee_bit_cinta y vuelve si falla, que es exactamente lo que hace LD-EDGE-2 con
+# LD-EDGE-1. Lo unico portado de verdad es la lectura del bit, porque el
+# Spectrum la hace con `in a,(0feh)` y aqui hay que ir por el registro 14 del
+# PSG; hasta el `xor c` con que se compara contra el ultimo flanco esta igual.
+#
+# LO QUE NO SE HA HECHO: cotejarlo contra la ROM del Spectrum de verdad. En el
+# repositorio no hay ninguna ROM ni ningun binario del original -por eso
+# tools/coteja_spectrum.py necesita que se le den de fuera-, asi que esto es
+# una identificacion por estructura y por constantes, no un diff. Con tres
+# numeros tan concretos cayendo cada uno en su sitio es dificil que sea otra
+# cosa, pero se deja dicho de que clase es la prueba.
+L 0xF7F6 carga_cinta La carga de la segunda parte: empuja a mano la vuelta a 0xF89F, arranca el motor (0xAB) y el registro 14 del PSG, y engancha el tono guia midiendo pulsos contra 0x9C y 0xC6. Es LD-BYTES de la ROM del Spectrum, con la lectura del bit adaptada al PSG del MSX
+L 0xF3FF vuelca_columnas El nucleo del volcado: 24 vueltas por banda, cada una recogiendo B bytes del buffer A SALTOS DE 24 -o sea una columna- y soltandolos por el puerto 0x98, avanzando 0x40 en la VRAM entre columna y columna
+L 0xE3D3 refresca_globales_sonido Copia (iy+008) a (iy+000) y (iy+004) a (iy+002) dos veces desde 0xEDFF: las variables globales del sonido que el fin de voz limpia
+
+# ---------------------------------------- el mapa del estado, ya mas completo
+#
+# Con el lector de notas y el tramo del ataque leidos, el estado de canal queda
+# asi. Sigue sin estar entero, pero de los 46 bytes ya hay nombre para estos:
+#
+#     (ix+000/001)  puntero de INICIO del guion
+#     (ix+002/003)  puntero de EJECUCION
+#     (ix+004/005)  lo que QUEDA de la duracion, que va bajando
+#     (ix+006/007)  la duracion COMPLETA, de donde se recarga la anterior
+#     (ix+008)      tono/ruido, enmascarado con 0x09
+#     (ix+009)      volumen
+#     (ix+00A/00B)  el PERIODO de la nota, ya buscado en la tabla de 0xE6E3
+#     (ix+00C)      cuenta de la envolvente
+#     (ix+016..024) los quince bytes del instrumento
+#     (ix+02A..02C) estado de la envolvente, que el ataque pone a cero
+#     (ix+02D)      banderas, y ultimo byte de los 46
+L 0xE231 lee_nota Un byte por debajo de 0x80 es una nota: le suma la transposicion de 0xEE21+canal, busca el periodo en la tabla de 0xE6E3 y lo deja en (ix+00A/00B)
+L 0xE244 ataca_nota El ataque: abre tono y ruido en el mezclador, monta la envolvente del instrumento y la pone a cero. Es justo lo que se salta el comando 0x84
+L 0xE25C arranca_duracion Guarda el puntero del guion en (ix+002/003) y recarga la cuenta atras de la duracion (ix+004/005) desde (ix+006/007)
+
+# ---------------------------------------- y la partitura respalda lo del 0x84
+#
+# Recorriendo el bloque de canciones y frases (0xE7E9-0xED75) con la gramatica
+# del interprete -no contando bytes sueltos, que confundiria los argumentos-
+# salen DIECINUEVE comandos 0x84, y lo que llevan delante es esto:
+#
+#     tras una NOTA        9
+#     tras otro 0x84       5
+#     tras 0x83 duracion   4
+#     tras 0x88 ruido      1
+#
+# Ni uno abre bloque ni cae en un sitio donde no haya nada sonando. Y cinco
+# encadenados detras de otro 0x84 es justo lo que se espera de algo que
+# prolonga: se apilan para alargar mas. Encaja con lo que hace la rutina.
+#
+# Y el instrumento se DESPLIEGA al atacar. Los quince bytes que op_instrumento
+# dejo en (ix+016) no se usan donde estan: el ataque los reparte en las
+# variables de trabajo de (ix+00C) en adelante, dos con una rutina y tres con
+# la otra, avanzando IX de uno en uno para tocar los tres canales... no, para
+# recorrer los tres pares de la propia entrada:
+#
+#     e3a7: (ix+020) -> (ix+00C)   y  (ix+016) -> (ix+00E)   x2
+#     e3bf: (ix+022) -> (ix+010)   y  (ix+018) -> (ix+013)   x3
+#
+# O sea que 0x16-0x24 es la PLANTILLA del instrumento y 0x0C-0x15 la copia
+# viva que la envolvente va gastando. Por eso el ataque tiene que rehacerla
+# cada nota, y por eso el 0x84, que no pasa por ahi, deja la envolvente donde
+# estaba.
+L 0xE3A3 carga_envolvente_1 Copia dos parejas de la plantilla del instrumento a las variables vivas: (ix+020) a (ix+00C) y (ix+016) a (ix+00E)
+L 0xE3BB carga_envolvente_2 Lo mismo con tres: (ix+022) a (ix+010) y (ix+018) a (ix+013)

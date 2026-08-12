@@ -1974,7 +1974,7 @@ L_BD85:
 	ld hl,0e15ah		;bda0
 	ld (0fda0h),hl		;bda3
 	call L_EE34		;bda6
-	call L_F50E		;bda9
+	call sonido_reset		;bda9
 	ld hl,0edffh		;bdac
 	ld de,0ee00h		;bdaf
 	ld bc,0000dh		;bdb2
@@ -2013,15 +2013,15 @@ L_BDE5:
 	ld a,001h		;bdf3
 	ld (0e157h),a		;bdf5
 	ld hl,02f78h		;bdf8
-	call L_F3A3		;bdfb
+	call pinta_marca_hud		;bdfb
 	ld a,073h		;bdfe
-	call L_F5F4		;be00
+	call dibuja_sprite_vram		;be00
 	ld a,0f1h		;be03
-	call L_F634		;be05
+	call rellena_colores		;be05
 	ld a,00ah		;be08
 	ld (0d3c1h),a		;be0a
-	call L_F2D1		;be0d
-	call L_D45E		;be10
+	call pinta_energia		;be0d
+	call hud_vidas_sin_premio		;be10
 	ld a,003h		;be13
 	ld (0e156h),a		;be15
 	call hud_vidas_zona		;be18
@@ -2036,11 +2036,11 @@ L_BE2A:
 	ld a,0a0h		;be2a
 	ld (0ca8eh),a		;be2c
 L_BE2F:
-	call L_C858		;be2f
-	call L_C33F		;be32
-	call L_C08F		;be35
-	call L_D4F3		;be38
-	call L_F3DC		;be3b
+	call borra_buffer		;be2f
+	call mueve_estrellas		;be32
+	call actualiza_nave		;be35
+	call pinta_menu		;be38
+	call vuelca_pantalla		;be3b
 	ld a,(0ca8eh)		;be3e
 	dec a			;be41
 	jp z,L_D560		;be42
@@ -2092,9 +2092,9 @@ hud_reset:		; Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y l
 	ld (0e158h),hl		;beae
 	ld a,00ah		;beb1
 	ld (0d3c1h),a		;beb3
-	call L_F2D1		;beb6
+	call pinta_energia		;beb6
 L_BEB9:
-	call L_D45E		;beb9
+	call hud_vidas_sin_premio		;beb9
 	xor a			;bebc
 	ld (0c952h),a		;bebd
 	ld (0c9a3h),a		;bec0
@@ -2157,7 +2157,7 @@ L_BEED:
 	ld (0e14fh),a		;bf38
 	ld (0e151h),a		;bf3b
 	ld (0dac5h),a		;bf3e
-	call L_F50E		;bf41
+	call sonido_reset		;bf41
 	ld hl,0edffh		;bf44
 	ld de,0ee00h		;bf47
 	ld bc,0000dh		;bf4a
@@ -2165,9 +2165,9 @@ L_BEED:
 	ldir			;bf4f
 	call hud_vidas_zona		;bf51
 	ld a,073h		;bf54
-	call L_F5F4		;bf56
+	call dibuja_sprite_vram		;bf56
 	pop af			;bf59
-	call L_F634		;bf5a
+	call rellena_colores		;bf5a
 	ld a,080h		;bf5d
 	ld (0ca91h),a		;bf5f
 	ld a,001h		;bf62
@@ -2179,24 +2179,24 @@ L_BF6A:
 	call L_C38A		;bf6e
 	call L_D0DC		;bf71
 	call L_F363		;bf74
-	call L_C33F		;bf77
+	call mueve_estrellas		;bf77
 	ld a,001h		;bf7a
 	ld (0d3c2h),a		;bf7c
 	call L_CB7A		;bf7f
-	call L_CF36		;bf82
+	call mueve_perseguidor		;bf82
 	call L_CEBC		;bf85
 	call L_D1AF		;bf88
 	call L_CBEB		;bf8b
 	call L_DF0F		;bf8e
 	call L_C214		;bf91
-	call L_CD86		;bf94
+	call mueve_objetos		;bf94
 	call L_D41A		;bf97
 	call L_C063		;bf9a
 	call L_D820		;bf9d
 	ld a,(0c090h)		;bfa0
 	cp 0afh			;bfa3
 	jr nz,L_BFD0		;bfa5
-	call L_F660		;bfa7
+	call hay_tecla		;bfa7
 	jp nz,L_BDE5		;bfaa
 	ld a,(0ca8eh)		;bfad
 	and 008h		;bfb0
@@ -2206,13 +2206,13 @@ L_BF6A:
 	ld (0d4d9h),a		;bfb9
 	ld ix,0ddf2h		;bfbc
 	ld hl,04d94h		;bfc0
-	call L_D4E5		;bfc3
+	call rotula_cadena		;bfc3
 	ld a,055h		;bfc6
 	ld (0d4d3h),a		;bfc8
 	ld a,0aah		;bfcb
 	ld (0d4d9h),a		;bfcd
 L_BFD0:
-	call L_F3DC		;bfd0
+	call vuelca_pantalla		;bfd0
 	ld a,(0cb39h)		;bfd3
 	and a			;bfd6
 	jp z,L_D740		;bfd7
@@ -2222,7 +2222,7 @@ L_BFD0:
 	in a,(0a9h)		;bfe3
 	and (ix+00ch)		;bfe5
 	jp z,L_BDE2		;bfe8
-	call L_C006		;bfeb
+	call pausa		;bfeb
 	ld a,(0c188h)		;bfee
 	cp 02dh			;bff1
 	jr nc,L_BFF8		;bff3
@@ -2233,7 +2233,7 @@ L_BFF8:
 	ld (0e156h),a		;bffd
 	jp c,L_BDE2		;c000
 	jp L_BEB9		;c003
-L_C006:
+pausa:		; Si la tecla PARAR (la sexta de 0xDCB1) esta pulsada, espera a que se suelten todas las teclas y luego a que se pulse cualquiera
 	ld ix,0dcb1h		;c006
 	ld a,(ix+00bh)		;c00a
 	out (0aah),a		;c00d
@@ -2298,7 +2298,7 @@ nave_estado:		; El despachador del estado de la nave (0xC188): menos de 4 juego 
 	ld hl,(0c184h)		;c066
 	ld a,(0c188h)		;c069
 	cp 004h			;c06c
-	jr c,L_C08F		;c06e
+	jr c,actualiza_nave		;c06e
 	jr z,L_C07A		;c070
 	inc a			;c072
 	ld (0c188h),a		;c073
@@ -2315,13 +2315,13 @@ L_C07A:
 	ld hl,0ff58h		;c088
 	ld (0c184h),hl		;c08b
 	ret			;c08e
-L_C08F:
-	call L_C1BD		;c08f
+actualiza_nave:		; La nave, de punta a punta: lee el mando, pasa el rumbo pedido por gira_rumbo, mueve la posicion de 0xC184 con aplica_rumbo y la pinta con pinta_sprite. El fotograma esta en los 5 bits bajos de 0xC9A3 y los 3 altos son el rumbo
+	call lee_mando		;c08f
 	ld (0e150h),a		;c092
 	call L_E0F8		;c095
 	and 00fh		;c098
 	call L_D109		;c09a
-	call L_C7D3		;c09d
+	call rumbo_a_mascara2		;c09d
 	cp 0ffh			;c0a0
 	push af			;c0a2
 	jr nz,L_C0A6		;c0a3
@@ -2334,7 +2334,7 @@ L_C0A6:
 	ld a,(0c9a3h)		;c0aa
 	and 01fh		;c0ad
 	or c			;c0af
-	call L_C794		;c0b0
+	call gira_rumbo		;c0b0
 	ld (0c9a3h),a		;c0b3
 	pop af			;c0b6
 	ld hl,(0c184h)		;c0b7
@@ -2343,13 +2343,13 @@ L_C0A6:
 	and 007h		;c0bf
 	ld hl,(0c184h)		;c0c1
 	ld bc,00404h		;c0c4
-	call L_C7DC		;c0c7
-	call L_D130		;c0ca
+	call aplica_rumbo		;c0c7
+	call recorta_a_area		;c0ca
 	ld (0c184h),hl		;c0cd
 L_C0D0:
 	ld a,(0c9a3h)		;c0d0
 	and 01fh		;c0d3
-	call L_C47B		;c0d5
+	call pinta_sprite		;c0d5
 	call L_D067		;c0d8
 	ret			;c0db
 L_C0DC:
@@ -2451,7 +2451,7 @@ L_C17D:
 
 
 L_C189:
-	call L_D1F5		;c189
+	call impacto_objeto		;c189
 	call L_D6EA		;c18c
 	ret			;c18f
 L_C190:
@@ -2470,13 +2470,13 @@ L_C190:
 	add a,e			;c1aa
 	ld (ix+002h),a		;c1ab
 	ret			;c1ae
-L_C1AF:
+lee_mando_demo:		; Saca el siguiente byte de la partida grabada de la demo (puntero en 0xE158) y avanza: la demo entra por el mismo sitio que el jugador
 	ld ix,(0e158h)		;c1af
 	ld a,(ix+000h)		;c1b3
 	inc ix			;c1b6
 	ld (0e158h),ix		;c1b8
 	ret			;c1bc
-L_C1BD:
+lee_mando:		; Los cinco controles en un byte: por el registro 14 del PSG si 0xDCC3 dice joystick, o preguntando las cinco primeras teclas de 0xDCB1 si dice teclado. En el joystick los bits se reordenan a mano al codigo de rumbo del juego
 	ld a,(0dcc3h)		;c1bd
 	and a			;c1c0
 	ld c,000h		;c1c1
@@ -2547,7 +2547,7 @@ L_C21E:
 	ld a,(ix+003h)		;c225
 	ld l,(ix+000h)		;c228
 	ld h,(ix+001h)		;c22b
-	call L_C47B		;c22e
+	call pinta_sprite		;c22e
 	inc (ix+003h)		;c231
 	ld a,(ix+003h)		;c234
 	cp 021h			;c237
@@ -2559,7 +2559,7 @@ L_C23F:
 	jr nz,L_C251		;c245
 	xor a			;c247
 	ld de,0eb42h		;c248
-	call L_E18F		;c24b
+	call arranca_guion_libre		;c24b
 	jp L_C311		;c24e
 L_C251:
 	cp 010h			;c251
@@ -2568,9 +2568,9 @@ L_C251:
 	ld b,(ix+001h)		;c259
 	ld c,(ix+000h)		;c25c
 	ld de,(0c184h)		;c25f
-	call L_C803		;c263
-	call L_D144		;c266
-	call L_C7D3		;c269
+	call rumbo_hacia		;c263
+	call borde_pantalla		;c266
+	call rumbo_a_mascara2		;c269
 	ld l,(ix+000h)		;c26c
 	ld h,(ix+001h)		;c26f
 	rrca			;c272
@@ -2586,14 +2586,14 @@ L_C251:
 	ld (ix+003h),000h	;c284
 	and 01fh		;c288
 	or c			;c28a
-	call L_C794		;c28b
+	call gira_rumbo		;c28b
 	ld (ix+002h),a		;c28e
 L_C291:
 	ld l,(ix+000h)		;c291
 	ld h,(ix+001h)		;c294
 	and 007h		;c297
 	ld bc,00404h		;c299
-	call L_C7DC		;c29c
+	call aplica_rumbo		;c29c
 	call L_D15C		;c29f
 	ld a,(ix+004h)		;c2a2
 	and a			;c2a5
@@ -2612,7 +2612,7 @@ L_C2B4:
 	ld a,(ix+002h)		;c2c0
 	and 01fh		;c2c3
 	add a,021h		;c2c5
-	call L_C47B		;c2c7
+	call pinta_sprite		;c2c7
 	ld a,(ix+002h)		;c2ca
 	bit 3,a			;c2cd
 	jr z,L_C2EA		;c2cf
@@ -2627,7 +2627,7 @@ L_C2B4:
 	ld a,(ix+001h)		;c2e1
 	add a,004h		;c2e4
 	ld b,a			;c2e6
-	call L_CC83		;c2e7
+	call alta_enemigo		;c2e7
 L_C2EA:
 	call L_CFA1		;c2ea
 	ld a,(0c188h)		;c2ed
@@ -2635,13 +2635,13 @@ L_C2EA:
 	jr nc,L_C311		;c2f2
 	ld l,(ix+000h)		;c2f4
 	ld h,(ix+001h)		;c2f7
-	call L_D0A5		;c2fa
+	call choca_con_nave2		;c2fa
 	jr c,L_C311		;c2fd
 	ld (ix+002h),0ffh	;c2ff
 	ld (ix+003h),01dh	;c303
 	xor a			;c307
 	ld de,0ea52h		;c308
-	call L_E18F		;c30b
+	call arranca_guion_libre		;c30b
 	call L_D303		;c30e
 L_C311:
 	ld de,00005h		;c311
@@ -2676,7 +2676,7 @@ L_C31C:
 	pop de			;c339
 	ldir			;c33a
 	jp L_C316		;c33c
-L_C33F:
+mueve_estrellas:		; Las 48 estrellas de 0xCB09: baja una fila cada cuadro con vuelta en 0xA0 (la altura del buffer) y, si la celda esta ocupada, busca hasta 8 posiciones arriba o abajo -a saltos de 24, o sea en la misma columna- antes de rendirse. Por eso no se pintan encima del decorado
 	ld de,0cb09h		;c33f
 	ld c,030h		;c342
 L_C344:
@@ -2689,7 +2689,7 @@ L_C34C:
 	ld (de),a		;c34c
 	ld h,a			;c34d
 	ld l,c			;c34e
-	call L_C541		;c34f
+	call buffer_dir		;c34f
 	ld (0d3cdh),hl		;c352
 	ld b,008h		;c355
 L_C357:
@@ -2859,7 +2859,7 @@ L_C476:
 	xor a			;c476
 	ld (0cb39h),a		;c477
 	ret			;c47a
-L_C47B:
+pinta_sprite:		; Estampa el sprite A (64 B en 0xA560 + A*64: 16 filas de mascara+dibujo) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xC4C3 y 0xC4FA
 	push hl			;c47b
 	ld h,000h		;c47c
 	ld l,a			;c47e
@@ -2892,7 +2892,7 @@ L_C49F:
 	srl l			;c4a5
 	srl l			;c4a7
 	srl l			;c4a9
-	call L_C541		;c4ab
+	call buffer_dir		;c4ab
 L_C4AE:
 	ld a,h			;c4ae
 	cp 050h			;c4af
@@ -3014,7 +3014,7 @@ L_C533:
 	ret z			;c53a
 	ld (0d3cdh),a		;c53b
 	jp L_C4AE		;c53e
-L_C541:
+buffer_dir:		; La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna, con el *24 hecho a mano (x3 y tres veces x2)
 	push de			;c541
 	ld a,l			;c542
 	ld l,h			;c543
@@ -3031,7 +3031,7 @@ L_C541:
 	add hl,de		;c550
 	pop de			;c551
 	ret			;c552
-L_C553:
+pinta_glifo:		; Estampa en el buffer el glifo A de la fuente de 0xCA93 (16 B por glifo, 8 filas de mascara y dibujo) en la posicion HL, con el desplazamiento fino parcheando los `jr` de 0xC58E y 0xC5B3
 	push hl			;c553
 	ld h,000h		;c554
 	ld l,a			;c556
@@ -3058,7 +3058,7 @@ L_C56F:
 	srl l			;c575
 	srl l			;c577
 	srl l			;c579
-	call L_C541		;c57b
+	call buffer_dir		;c57b
 L_C57E:
 	ld a,h			;c57e
 	cp 050h			;c57f
@@ -3159,17 +3159,17 @@ L_C5E9:
 	ld (hl),d		;c5eb
 	inc hl			;c5ec
 	djnz L_C5E9		;c5ed
-	call L_F50E		;c5ef
+	call sonido_reset		;c5ef
 	ld a,080h		;c5f2
 	ld de,0eb00h		;c5f4
-	call L_E1BC		;c5f7
+	call arranca_guion		;c5f7
 	inc a			;c5fa
 	ld de,0eb12h		;c5fb
-	call L_E1BC		;c5fe
+	call arranca_guion		;c5fe
 	ld a,002h		;c601
 	ld de,0eb21h		;c603
-	call L_E1BC		;c606
-	jp L_E186		;c609
+	call arranca_guion		;c606
+	jp sonido_off		;c609
 mueve_particulas:		; Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
 	ld hl,05bb2h		;c60c
 	ld iy,003e8h		;c60f
@@ -3216,7 +3216,7 @@ L_C63D:
 	and 007h		;c64c
 	ld b,a			;c64e
 	inc b			;c64f
-	call L_C541		;c650
+	call buffer_dir		;c650
 	xor a			;c653
 	scf			;c654
 L_C655:
@@ -3277,7 +3277,7 @@ L_C69F:
 	ld a,000h		;c6a3
 	adc a,d			;c6a5
 	ld d,a			;c6a6
-	call L_C541		;c6a7
+	call buffer_dir		;c6a7
 	ld a,d			;c6aa
 	and a			;c6ab
 	jr z,L_C6B2		;c6ac
@@ -3447,7 +3447,7 @@ L_C78E:
 	djnz L_C76E		;c78e
 	pop hl			;c790
 	jp L_C705		;c791
-L_C794:
+gira_rumbo:		; Acerca el rumbo actual (bits 0-2) al pedido (bits 5-7) un octavo por vez y por el lado corto, con los bits 3-4 haciendo de espera para que el giro no sea instantaneo
 	ld b,a			;c794
 	and 007h		;c795
 	ld e,a			;c797
@@ -3490,10 +3490,10 @@ L_C7C3:
 	and 0f8h		;c7c9
 	or e			;c7cb
 	ret			;c7cc
-L_C7CD:
+rumbo_a_mascara:		; Traduce el rumbo A a su mascara de movimiento por la tabla de 0xC9A4
 	ld de,0c9a4h		;c7cd
 	jp L_C7D6		;c7d0
-L_C7D3:
+rumbo_a_mascara2:		; Lo mismo por la tabla de 0xC9AC, la otra de las dos que hay
 	ld de,0c9ach		;c7d3
 L_C7D6:
 	ld l,a			;c7d6
@@ -3501,9 +3501,9 @@ L_C7D6:
 	add hl,de		;c7d9
 	ld a,(hl)		;c7da
 	ret			;c7db
-L_C7DC:
+aplica_rumbo:		; Mueve la posicion HL segun la mascara de rumbo que saca de la tabla 0xC9A4: bit 0 suma B a la fila y bit 1 la resta, bits 2 y 3 hacen lo mismo con la columna y C. Es el mismo esquema que el aplica_rumbo de la fase de a pie
 	push hl			;c7dc
-	call L_C7CD		;c7dd
+	call rumbo_a_mascara		;c7dd
 	ld de,00000h		;c7e0
 	pop hl			;c7e3
 	rrca			;c7e4
@@ -3535,7 +3535,7 @@ L_C7FC:
 	add a,e			;c800
 	ld l,a			;c801
 	ret			;c802
-L_C803:
+rumbo_hacia:		; La mascara de rumbo de (B,C) hacia (D,E): bit 1 arriba y bit 2 abajo, bit 3 izquierda y bit 4 derecha, y cada componente solo cuenta si dos veces y media ella misma llega a la otra
 	ld a,b			;c803
 	sub d			;c804
 	jr c,L_C80C		;c805
@@ -3602,7 +3602,7 @@ azar:		; El generador de azar: identico al de la segunda parte (lee la ROM del B
 	ld (0ca8fh),hl		;c853
 	pop hl			;c856
 	ret			;c857
-L_C858:
+borra_buffer:		; Borra los 3840 bytes del buffer con la PILA: SP al final (0x4F00) y 80 vueltas de 24 `push de` con DE=0, que son 3840 bytes justos. Salva SP en HL y va con las interrupciones cortadas, porque mientras tanto no hay pila
 	di			;c858
 	ld hl,00000h		;c859
 	add hl,sp		;c85c
@@ -3667,10 +3667,10 @@ L_C882:
 	scf			;c8a3
 	ret nz			;c8a4
 	ld de,0eb42h		;c8a5
-	call L_E18F		;c8a8
+	call arranca_guion_libre		;c8a8
 	scf			;c8ab
 	ret			;c8ac
-L_C8AD:
+alta_disparo:		; Mete un disparo en la tabla de 0xC999 (contador en 0xC998, entradas de 5 B) si no hay ya dos en el aire, y arranca el sonido 0xEA81 en el canal 1. Vuelve con carry si ha salido
 	ld hl,0c998h		;c8ad
 	ld a,(hl)		;c8b0
 	cp 002h			;c8b1
@@ -3697,7 +3697,7 @@ L_C8AD:
 	ld (hl),000h		;c8cb
 	ld a,001h		;c8cd
 	ld de,0ea81h		;c8cf
-	call L_E18F		;c8d2
+	call arranca_guion_libre		;c8d2
 	scf			;c8d5
 	ret			;c8d6
 
@@ -3862,7 +3862,7 @@ L_CC24:
 	jr z,L_CC56		;cc30
 L_CC32:
 	ld bc,00707h		;cc32
-	call L_C7DC		;cc35
+	call aplica_rumbo		;cc35
 	ld a,h			;cc38
 	cp 0c0h			;cc39
 	jr nc,L_CC56		;cc3b
@@ -3872,7 +3872,7 @@ L_CC32:
 	ld (ix+000h),l		;cc42
 	ld (ix+001h),h		;cc45
 	ld a,002h		;cc48
-	call L_C553		;cc4a
+	call pinta_glifo		;cc4a
 	ld de,00004h		;cc4d
 	add ix,de		;cc50
 L_CC52:
@@ -3908,7 +3908,7 @@ L_CC63:
 	pop de			;cc7d
 	ldir			;cc7e
 	jp L_CC52		;cc80
-L_CC83:
+alta_enemigo:		; Intenta meter un objeto en la tabla de 0xC939 (tope 6): solo lo hace si el azar supera (7 - zona)*16, que es como sube la dificultad, y suena 0xEA44 al nacer
 	ld hl,0c939h		;cc83
 	ld a,(0e157h)		;cc86
 	ld e,a			;cc89
@@ -3927,14 +3927,14 @@ L_CC83:
 	exx			;cc9a
 	ld h,001h		;cc9b
 	ld de,0ea44h		;cc9d
-	jp L_CCAE		;cca0
-L_CCA3:
+	jp alta_en_tabla		;cca0
+alta_objeto_c952:		; Mete un objeto en la tabla de 0xC952 (tope 9) con el sonido 0xEA38, sin tirada de azar previa
 	ld hl,0c952h		;cca3
 	ld e,009h		;cca6
 	exx			;cca8
 	ld h,002h		;cca9
 	ld de,0ea38h		;ccab
-L_CCAE:
+alta_en_tabla:		; El alta comun a las tres tablas: si el contador no ha llegado al tope, lo incrementa, arranca el sonido DE en el canal H y escribe C, B y A' en la entrada indice*4. Vuelve con carry si ha entrado
 	exx			;ccae
 	ld a,(hl)		;ccaf
 	cp e			;ccb0
@@ -3942,7 +3942,7 @@ L_CCAE:
 	exx			;ccb2
 	push af			;ccb3
 	ld a,h			;ccb4
-	call L_E18F		;ccb5
+	call arranca_guion_libre		;ccb5
 	pop af			;ccb8
 	exx			;ccb9
 	inc (hl)		;ccba
@@ -4018,7 +4018,7 @@ L_CD12:
 	add hl,bc		;cd1e
 L_CD1F:
 	ret			;cd1f
-L_CD20:
+alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope 2, entradas de 4 B) con el rumbo sacado del azar, y solo suena 0xEB42 si el A' de entrada era cero
 	ld hl,0c98fh		;cd20
 	ld a,(hl)		;cd23
 	cp 002h			;cd24
@@ -4050,13 +4050,13 @@ L_CD20:
 	scf			;cd48
 	ret nz			;cd49
 	ld de,0eb42h		;cd4a
-	call L_E18F		;cd4d
+	call arranca_guion_libre		;cd4d
 	scf			;cd50
 	ret			;cd51
 L_CD52:
 	push hl			;cd52
 	push af			;cd53
-	call L_C47B		;cd54
+	call pinta_sprite		;cd54
 	ld bc,00010h		;cd57
 	pop af			;cd5a
 	inc a			;cd5b
@@ -4064,7 +4064,7 @@ L_CD52:
 	push hl			;cd5d
 	add hl,bc		;cd5e
 	push af			;cd5f
-	call L_C47B		;cd60
+	call pinta_sprite		;cd60
 	ld bc,01000h		;cd63
 	pop af			;cd66
 	inc a			;cd67
@@ -4072,15 +4072,15 @@ L_CD52:
 	push hl			;cd69
 	add hl,bc		;cd6a
 	push af			;cd6b
-	call L_C47B		;cd6c
+	call pinta_sprite		;cd6c
 	ld bc,01010h		;cd6f
 	pop af			;cd72
 	inc a			;cd73
 	pop hl			;cd74
 	add hl,bc		;cd75
-	call L_C47B		;cd76
+	call pinta_sprite		;cd76
 	ret			;cd79
-L_CD7A:
+solapa_eje:		; Solapamiento en UN eje: BC corrige las dos coordenadas (H y L), D y E son los dos tamanos, y vuelve con carry si NO se tocan. Se llama dos veces, una por eje
 	add hl,bc		;cd7a
 	ld a,l			;cd7b
 	cp h			;cd7c
@@ -4093,7 +4093,7 @@ L_CD82:
 	add a,d			;cd83
 	cp l			;cd84
 	ret			;cd85
-L_CD86:
+mueve_objetos:		; Recorre la tabla de 0xC990 (contador en 0xC98F, entradas de 4 B): mueve cada objeto hacia la nave, lo pinta, y al chocar lo pasa al estado 0x80 -la explosion, sprites 0x1D a 0x20- tras el cual lo borra compactando la tabla con un ldir
 	ld ix,0c990h		;cd86
 	ld a,(0c98fh)		;cd8a
 	and a			;cd8d
@@ -4109,7 +4109,7 @@ L_CD90:
 	cp 080h			;cd9e
 	jr nz,L_CDB6		;cda0
 	ld a,(ix+001h)		;cda2
-	call L_C47B		;cda5
+	call pinta_sprite		;cda5
 	inc (ix+001h)		;cda8
 	ld a,(ix+001h)		;cdab
 	cp 021h			;cdae
@@ -4125,7 +4125,7 @@ L_CDB6:
 	jr nz,L_CDCC		;cdc3
 	xor a			;cdc5
 	ld de,0eb42h		;cdc6
-	call L_E18F		;cdc9
+	call arranca_guion_libre		;cdc9
 L_CDCC:
 	dec (ix+001h)		;cdcc
 	jp L_CE46		;cdcf
@@ -4161,11 +4161,11 @@ L_CDD8:
 	ld b,h			;ce09
 	ld c,l			;ce0a
 	push bc			;ce0b
-	call L_C803		;ce0c
-	call L_C7D3		;ce0f
+	call rumbo_hacia		;ce0c
+	call rumbo_a_mascara2		;ce0f
 	ex af,af'		;ce12
 	pop bc			;ce13
-	call L_CC83		;ce14
+	call alta_enemigo		;ce14
 	pop hl			;ce17
 L_CE18:
 	ld a,(ix+001h)		;ce18
@@ -4174,14 +4174,14 @@ L_CE18:
 	rlca			;ce1f
 	rlca			;ce20
 	add a,04fh		;ce21
-	call L_C47B		;ce23
+	call pinta_sprite		;ce23
 	call L_D037		;ce26
 	ld a,(0c188h)		;ce29
 	cp 004h			;ce2c
 	jr nc,L_CE46		;ce2e
 	ld l,(ix+002h)		;ce30
 	ld h,(ix+003h)		;ce33
-	call L_D0A5		;ce36
+	call choca_con_nave2		;ce36
 	jr c,L_CE46		;ce39
 	ld (ix+000h),080h	;ce3b
 	ld (ix+001h),01dh	;ce3f
@@ -4219,7 +4219,7 @@ L_CE51:
 	ldir			;ce6e
 	jp L_CE4B		;ce70
 L_CE73:
-	call L_D1F5		;ce73
+	call impacto_objeto		;ce73
 	ld a,(ix+000h)		;ce76
 	cp 02dh			;ce79
 	ret c			;ce7b
@@ -4249,7 +4249,7 @@ L_CE73:
 	ld (0d3c6h),a		;ceb2
 	xor a			;ceb5
 	ld de,0ed55h		;ceb6
-	jp L_E18F		;ceb9
+	jp arranca_guion_libre		;ceb9
 L_CEBC:
 	ld a,(0d3c5h)		;cebc
 	cp 00ah			;cebf
@@ -4260,7 +4260,7 @@ L_CEBC:
 	ld bc,01901h		;cecc
 	ld d,0fch		;cecf
 	ld e,(iy+002h)		;ced1
-	call L_CF14		;ced4
+	call pinta_pareja		;ced4
 	ld (iy+000h),l		;ced7
 	ld (iy+001h),h		;ceda
 	ld (iy+002h),e		;cedd
@@ -4269,7 +4269,7 @@ L_CEBC:
 	ld bc,01b02h		;cee6
 	ld d,0fdh		;cee9
 	ld e,(iy+005h)		;ceeb
-	call L_CF14		;ceee
+	call pinta_pareja		;ceee
 	ld (iy+003h),l		;cef1
 	ld (iy+004h),h		;cef4
 	ld (iy+005h),e		;cef7
@@ -4284,13 +4284,13 @@ L_CEBC:
 	ld (0d3cah),a		;cf0a
 	xor a			;cf0d
 	ld de,0ea98h		;cf0e
-	jp L_E18F		;cf11
-L_CF14:
+	jp arranca_guion_libre		;cf11
+pinta_pareja:		; Pinta el sprite B en HL y el B+1 en la posicion reflejada respecto a 0xD3C5, y avanza la posicion con DE y el paso con C: las dos mitades de una figura simetrica
 	push de			;cf14
 	push hl			;cf15
 	push bc			;cf16
 	ld a,b			;cf17
-	call L_C47B		;cf18
+	call pinta_sprite		;cf18
 	pop bc			;cf1b
 	pop hl			;cf1c
 	push hl			;cf1d
@@ -4300,7 +4300,7 @@ L_CF14:
 	ld l,a			;cf23
 	ld a,b			;cf24
 	inc a			;cf25
-	call L_C47B		;cf26
+	call pinta_sprite		;cf26
 	pop bc			;cf29
 	pop hl			;cf2a
 	pop de			;cf2b
@@ -4314,7 +4314,7 @@ L_CF14:
 	add a,c			;cf33
 	ld e,a			;cf34
 	ret			;cf35
-L_CF36:
+mueve_perseguidor:		; Con el estado de 0xD3C5 en 1, apunta la posicion de 0xD3C7 hacia la nave con rumbo_hacia y la mueve de dos en dos
 	ld a,(0d3c5h)		;cf36
 	cp 005h			;cf39
 	jr nc,L_CF85		;cf3b
@@ -4326,11 +4326,11 @@ L_CF36:
 	ld b,h			;cf47
 	ld c,l			;cf48
 	ld de,(0c184h)		;cf49
-	call L_C803		;cf4d
-	call L_C7D3		;cf50
+	call rumbo_hacia		;cf4d
+	call rumbo_a_mascara2		;cf50
 	ld hl,(0d3c7h)		;cf53
 	ld bc,00202h		;cf56
-	call L_C7DC		;cf59
+	call aplica_rumbo		;cf59
 	ld a,l			;cf5c
 	cp 0a0h			;cf5d
 	jr c,L_CF65		;cf5f
@@ -4347,7 +4347,7 @@ L_CF65:
 	ld c,l			;cf74
 	xor a			;cf75
 	ex af,af'		;cf76
-	call L_C8AD		;cf77
+	call alta_disparo		;cf77
 	ld hl,(0d3c7h)		;cf7a
 L_CF7D:
 	ld a,019h		;cf7d
@@ -4376,19 +4376,19 @@ L_CFA1:
 	ld iy,0c953h		;cfa7
 	ld de,0040ch		;cfab
 	ld bc,00202h		;cfae
-	call L_CFD1		;cfb1
+	call choca_con_tabla		;cfb1
 	ret c			;cfb4
 	xor a			;cfb5
 	ld de,0ea52h		;cfb6
-	call L_E18F		;cfb9
+	call arranca_guion_libre		;cfb9
 	ld (ix+002h),0ffh	;cfbc
 	ld (ix+003h),01dh	;cfc0
 	ld (iy+002h),080h	;cfc4
 	ld hl,0dd84h		;cfc8
 	ld b,00dh		;cfcb
-	call L_F394		;cfcd
+	call premia		;cfcd
 	ret			;cfd0
-L_CFD1:
+choca_con_tabla:		; Busca contacto entre HL y toda una tabla de objetos: IY apunta a la primera entrada y (iy-1) es el contador, entradas de 4 B, dos solapa_eje por objeto. Vuelve con carry si no choco con ninguno, y si choco deja IY en el culpable
 	exx			;cfd1
 	ld a,(iy-001h)		;cfd2
 	and a			;cfd5
@@ -4399,13 +4399,13 @@ L_CFD9:
 	exx			;cfd9
 	push hl			;cfda
 	ld h,(iy+000h)		;cfdb
-	call L_CD7A		;cfde
+	call solapa_eje		;cfde
 	pop hl			;cfe1
 	jr c,L_CFEE		;cfe2
 	push hl			;cfe4
 	ld l,h			;cfe5
 	ld h,(iy+001h)		;cfe6
-	call L_CD7A		;cfe9
+	call solapa_eje		;cfe9
 	pop hl			;cfec
 	ret nc			;cfed
 L_CFEE:
@@ -4416,7 +4416,7 @@ L_CFEE:
 	exx			;cff6
 	scf			;cff7
 	ret			;cff8
-L_CFF9:
+choca_y_revienta:		; Contacto del objeto de IX contra la tabla de 0xC953: al chocar marca al otro con el 0x80 de la explosion, suena 0xEA52, mete al de IX en el estado 0xD933, escribe 0x0C por el puntero de (ix+005/006), se salta la vuelta con `pop hl` y premia 160 puntos
 	ld a,(ix+000h)		;cff9
 	add a,a			;cffc
 	add a,a			;cffd
@@ -4426,12 +4426,12 @@ L_CFF9:
 	ld de,00414h		;d003
 	ld bc,00202h		;d006
 	ld iy,0c953h		;d009
-	call L_CFD1		;d00d
+	call choca_con_tabla		;d00d
 	ret c			;d010
 	ld (iy+002h),080h	;d011
 	xor a			;d015
 	ld de,0ea52h		;d016
-	call L_E18F		;d019
+	call arranca_guion_libre		;d019
 	ld hl,0d933h		;d01c
 	ld (ix+003h),l		;d01f
 	ld (ix+004h),h		;d022
@@ -4441,7 +4441,7 @@ L_CFF9:
 	pop hl			;d02d
 	ld hl,0dd84h		;d02e
 	ld b,010h		;d031
-	call L_F394		;d033
+	call premia		;d033
 	ret			;d036
 L_D037:
 	ld l,(ix+002h)		;d037
@@ -4449,24 +4449,24 @@ L_D037:
 	ld iy,0c953h		;d03d
 	ld de,0040ch		;d041
 	ld bc,00202h		;d044
-	call L_CFD1		;d047
+	call choca_con_tabla		;d047
 	ret c			;d04a
 	xor a			;d04b
 	ld de,0ea52h		;d04c
-	call L_E18F		;d04f
+	call arranca_guion_libre		;d04f
 	ld (ix+000h),080h	;d052
 	ld (ix+001h),01dh	;d056
 	ld (iy+002h),080h	;d05a
 	ld hl,0dd84h		;d05e
 	ld b,00eh		;d061
-	call L_F394		;d063
+	call premia		;d063
 	ret			;d066
 L_D067:
 	ld hl,(0c184h)		;d067
 	ld iy,0c93ah		;d06a
 	ld de,0040ah		;d06e
 	ld bc,00203h		;d071
-	call L_CFD1		;d074
+	call choca_con_tabla		;d074
 	ret c			;d077
 	ld (iy+002h),080h	;d078
 	call L_D2B6		;d07c
@@ -4477,28 +4477,28 @@ L_D080:
 	ld iy,0c953h		;d086
 	ld de,00408h		;d08a
 	ld bc,00200h		;d08d
-	call L_CFD1		;d090
+	call choca_con_tabla		;d090
 	ret c			;d093
 	ld (ix+000h),07ch	;d094
 	ld (iy+002h),080h	;d098
 	ld hl,0dd85h		;d09c
 	ld b,035h		;d09f
-	call L_F394		;d0a1
+	call premia		;d0a1
 	ret			;d0a4
-L_D0A5:
+choca_con_nave2:		; El otro contacto con la nave, con la caja pequena: solapa_eje con 2x3 contra 0x0C x 0x0A, frente al 4x5 contra 0x18x6 de choca_con_nave
 	push hl			;d0a5
 	ld a,(0c185h)		;d0a6
 	ld l,a			;d0a9
 	ld bc,00203h		;d0aa
 	ld de,00c0ah		;d0ad
-	call L_CD7A		;d0b0
+	call solapa_eje		;d0b0
 	pop hl			;d0b3
 	ret c			;d0b4
 	ld h,l			;d0b5
 	ld a,(0c184h)		;d0b6
 	ld l,a			;d0b9
-	jp L_CD7A		;d0ba
-L_D0BD:
+	jp solapa_eje		;d0ba
+choca_con_nave3:		; La tercera caja de contacto con la nave, 5x3 contra 0x16x0A, y la unica que ademas se asegura antes de que la nave siga viva (0xC188 por debajo de 4)
 	ld a,(0c188h)		;d0bd
 	cp 004h			;d0c0
 	ccf			;d0c2
@@ -4508,13 +4508,13 @@ L_D0BD:
 	ld l,a			;d0c8
 	ld bc,00503h		;d0c9
 	ld de,0160ah		;d0cc
-	call L_CD7A		;d0cf
+	call solapa_eje		;d0cf
 	pop hl			;d0d2
 	ret c			;d0d3
 	ld h,l			;d0d4
 	ld a,(0c184h)		;d0d5
 	ld l,a			;d0d8
-	jp L_CD7A		;d0d9
+	jp solapa_eje		;d0d9
 L_D0DC:
 	jp L_D0DF		;d0dc
 L_D0DF:
@@ -4534,12 +4534,12 @@ L_D0F1:
 	ld e,a			;d0f7
 	push hl			;d0f8
 	ld hl,02f78h		;d0f9
-	call z,L_F3A3		;d0fc
+	call z,pinta_marca_hud		;d0fc
 	call nz,L_F3A7		;d0ff
 	pop hl			;d102
 	ld a,e			;d103
 	add a,039h		;d104
-	jp L_C47B		;d106
+	jp pinta_sprite		;d106
 L_D109:
 	ld hl,(0c184h)		;d109
 	ex af,af'		;d10c
@@ -4571,7 +4571,7 @@ L_D126:
 L_D12E:
 	ex af,af'		;d12e
 	ret			;d12f
-L_D130:
+recorta_a_area:		; Deshace el movimiento si se sale: con L >= 0xB1 repone la X de 0xC184, y con la Y fuera de la banda 0x38..0xB1 repone la de 0xC185
 	ld a,l			;d130
 	cp 0b1h			;d131
 	jr c,L_D139		;d133
@@ -4585,7 +4585,7 @@ L_D139:
 	ld a,(0c185h)		;d13f
 	ld h,a			;d142
 	ret			;d143
-L_D144:
+borde_pantalla:		; Poda el rumbo en los bordes laterales: con X < 3 quita el bit de izquierda y con X >= 174 el de derecha, sobre el A alternativo
 	ex af,af'		;d144
 	ld a,(ix+000h)		;d145
 	add a,010h		;d148
@@ -4618,7 +4618,7 @@ L_D164:
 	or (iy+000h)		;d170
 	ret nz			;d173
 	dec (iy+004h)		;d174
-	call L_F2D1		;d177
+	call pinta_energia		;d177
 	ld (iy+000h),003h	;d17a
 	ld hl,(0c184h)		;d17e
 	ld a,h			;d181
@@ -4654,7 +4654,7 @@ L_D1AF:
 	ret z			;d1b7
 	ld l,(iy+001h)		;d1b8
 	ld h,(iy+002h)		;d1bb
-	call L_C541		;d1be
+	call buffer_dir		;d1be
 	ld de,00019h		;d1c1
 	ld a,(iy+000h)		;d1c4
 	dec (iy+000h)		;d1c7
@@ -4688,7 +4688,7 @@ L_D1E5:
 	sbc hl,de		;d1f0
 	djnz L_D1E5		;d1f2
 	ret			;d1f4
-L_D1F5:
+impacto_objeto:		; Si el objeto de IX esta marcado y 0xD3BD lo permite, lo pasa al estado 0xC190, le pone 0x28 en (ix+002), suena 0xEA52, descarta la vuelta con `pop hl` y premia 200 puntos. Si no, comprueba el contacto con la nave -y solo si la nave esta viva, 0xC188 por debajo de 4-
 	bit 2,(ix+007h)		;d1f5
 	jr z,L_D21F		;d1f9
 	ld a,(0d3bdh)		;d1fb
@@ -4700,11 +4700,11 @@ L_D1F5:
 	ld (ix+002h),028h	;d20a
 	xor a			;d20e
 	ld de,0ea52h		;d20f
-	call L_E18F		;d212
+	call arranca_guion_libre		;d212
 	pop hl			;d215
 	ld hl,0dd83h		;d216
 	ld b,002h		;d219
-	call L_F394		;d21b
+	call premia		;d21b
 	ret			;d21e
 L_D21F:
 	ld a,(0c188h)		;d21f
@@ -4714,13 +4714,13 @@ L_D21F:
 	ld l,(ix+001h)		;d229
 	ld h,(ix+000h)		;d22c
 	sla h			;d22f
-	call L_D23E		;d231
+	call choca_con_nave		;d231
 	ret c			;d234
 	set 0,(ix+007h)		;d235
 	xor a			;d239
 	ld (0d3c2h),a		;d23a
 	ret			;d23d
-L_D23E:
+choca_con_nave:		; Contacto entre la nave y lo que venga en HL: solapa_eje con la Y de la nave (0xC185, saturada por arriba a 0x20) y luego con su X (0xC184), cajas 4x5 contra 0x18x6. Carry = no hay contacto
 	push hl			;d23e
 	ld a,(0c185h)		;d23f
 	sub 038h		;d242
@@ -4731,22 +4731,22 @@ L_D24A:
 	ld l,a			;d24a
 	ld bc,00405h		;d24b
 	ld de,01806h		;d24e
-	call L_CD7A		;d251
+	call solapa_eje		;d251
 	pop hl			;d254
 	ret c			;d255
 	ld h,l			;d256
 	ld a,(0c184h)		;d257
 	ld l,a			;d25a
-	jp L_CD7A		;d25b
+	jp solapa_eje		;d25b
 L_D25E:
 	ld hl,(0d3c7h)		;d25e
-	call L_D0BD		;d261
+	call choca_con_nave3		;d261
 	jr c,L_D275		;d264
 	ld a,005h		;d266
 	ld (0d3c5h),a		;d268
 	xor a			;d26b
 	ld de,0ea52h		;d26c
-	call L_E18F		;d26f
+	call arranca_guion_libre		;d26f
 	jp L_D303		;d272
 L_D275:
 	ld a,(0d3c9h)		;d275
@@ -4763,14 +4763,14 @@ L_D275:
 	ld (0d3c5h),a		;d28d
 	xor a			;d290
 	ld de,0ea52h		;d291
-	call L_E18F		;d294
+	call arranca_guion_libre		;d294
 	ld hl,0dd84h		;d297
 	ld b,00fh		;d29a
-	call L_F394		;d29c
+	call premia		;d29c
 	ret			;d29f
 L_D2A0:
 	ld hl,(0d3c7h)		;d2a0
-	call L_D23E		;d2a3
+	call choca_con_nave		;d2a3
 	push af			;d2a6
 	ld a,(0d3c9h)		;d2a7
 	ccf			;d2aa
@@ -4832,13 +4832,13 @@ L_D2F4:
 	ret			;d302
 L_D303:
 	ld hl,02778h		;d303
-	call L_F3A3		;d306
+	call pinta_marca_hud		;d306
 	ld hl,02f48h		;d309
 	ld a,004h		;d30c
 	ld (0c188h),a		;d30e
-	jp L_F3A3		;d311
+	jp pinta_marca_hud		;d311
 L_D314:
-	call L_D1F5		;d314
+	call impacto_objeto		;d314
 	ld a,(ix+002h)		;d317
 	cp 046h			;d31a
 	jr nz,L_D320		;d31c
@@ -4862,7 +4862,7 @@ L_D328:
 	srl l			;d337
 	srl l			;d339
 	srl l			;d33b
-	call L_C541		;d33d
+	call buffer_dir		;d33d
 	ld a,(ix+002h)		;d340
 	add a,a			;d343
 	add a,004h		;d344
@@ -4870,7 +4870,7 @@ L_D328:
 	call L_D383		;d347
 	ld a,001h		;d34a
 	ld de,0eaa1h		;d34c
-	call L_E18F		;d34f
+	call arranca_guion_libre		;d34f
 	pop hl			;d352
 	ld a,(0c188h)		;d353
 	cp 004h			;d356
@@ -4883,7 +4883,7 @@ L_D328:
 	ld l,a			;d361
 	ld de,0060ch		;d362
 	ld bc,00102h		;d365
-	call L_CD7A		;d368
+	call solapa_eje		;d368
 	pop hl			;d36b
 	ret c			;d36c
 	ld a,(ix+002h)		;d36d
@@ -4896,7 +4896,7 @@ L_D328:
 	ld h,l			;d377
 	ld a,(0c184h)		;d378
 	ld l,a			;d37b
-	call L_CD7A		;d37c
+	call solapa_eje		;d37c
 	ret c			;d37f
 	jp L_D303		;d380
 L_D383:
@@ -4970,17 +4970,17 @@ L_D3E1:
 	ret z			;d3ed
 	ld a,080h		;d3ee
 	ld de,0eaaah		;d3f0
-	call L_E1BC		;d3f3
+	call arranca_guion		;d3f3
 	inc a			;d3f6
 	ld de,0eac9h		;d3f7
-	call L_E1BC		;d3fa
+	call arranca_guion		;d3fa
 	inc a			;d3fd
 	ld de,0eae5h		;d3fe
-	call L_E1BC		;d401
-	call L_E186		;d404
+	call arranca_guion		;d401
+	call sonido_off		;d404
 	ld a,(0c188h)		;d407
 	cp 002h			;d40a
-	jp c,L_D45E		;d40c
+	jp c,hud_vidas_sin_premio		;d40c
 	ld hl,0e156h		;d40f
 	ld a,(hl)		;d412
 	cp 009h			;d413
@@ -5026,27 +5026,27 @@ L_D445:
 	jr z,L_D459		;d451
 	xor a			;d453
 	ex af,af'		;d454
-	call L_CD20		;d455
+	call alta_objeto_c990		;d455
 	ret c			;d458
 L_D459:
 	xor a			;d459
 	ex af,af'		;d45a
 	jp L_C882		;d45b
-L_D45E:
+hud_vidas_sin_premio:		; La salida de suma_puntos cuando el premio de los 10.000 no toca porque la nave no esta en juego (0xC188 por debajo de 2)
 	ld a,003h		;d45e
 	ld (0c188h),a		;d460
 	ld hl,02778h		;d463
 	ld c,0f9h		;d466
-	call L_D480		;d468
+	call pinta_celda_color		;d468
 	ld hl,02f40h		;d46b
 	ld c,0f5h		;d46e
-	call L_D480		;d470
+	call pinta_celda_color		;d470
 	ld hl,02f48h		;d473
 	ld c,0f5h		;d476
-	call L_D480		;d478
+	call pinta_celda_color		;d478
 	ld hl,02f50h		;d47b
 	ld c,0f1h		;d47e
-L_D480:
+pinta_celda_color:		; Rellena dos celdas de color consecutivas de la VRAM (8 bytes cada una, separadas 0x40) con el valor C
 	call vram_pon_dir		;d480
 	ld a,c			;d483
 	ld c,002h		;d484
@@ -5065,7 +5065,7 @@ L_D488:
 	jr nz,L_D486		;d497
 	ei			;d499
 	ret			;d49a
-L_D49B:
+rotula_glifo:		; Estampa el glifo 0x5F00 + A*8 en el buffer a doble altura y con tramado en damero -borra con rlca/cpl/and y pinta con and 0x55/0xAA-, recortando al llegar a 0x4F00
 	ld e,a			;d49b
 	ld a,h			;d49c
 	cp 04fh			;d49d
@@ -5127,36 +5127,36 @@ L_D4D0:
 	jp nz,L_D4D0		;d4e0
 	pop hl			;d4e3
 	ret			;d4e4
-L_D4E5:
+rotula_cadena:		; Recorre la cadena de (IX) hasta el 0 estampando cada caracter con 0xD49B y avanzando el destino HL
 	ld a,(ix+000h)		;d4e5
 	inc ix			;d4e8
 	and a			;d4ea
 	ret z			;d4eb
-	call L_D49B		;d4ec
+	call rotula_glifo		;d4ec
 	inc hl			;d4ef
-	jp L_D4E5		;d4f0
-L_D4F3:
+	jp rotula_cadena		;d4f0
+pinta_menu:		; Estampa las cinco lineas del menu -STARDUST, JOYSTICK, TECLADO, REDEFINIR TECLAS, JUGAR, en 0xDCC6- sobre el buffer en 0x40C8, 0x43C2, 0x46C2, 0x49C2 y 0x4CCA, y con 0xDCC3 puesto anade el selector "<>>>>>>>" de 0xDCF7 en la opcion elegida
 	ld ix,0dcc6h		;d4f3
 	ld hl,040c8h		;d4f7
-	call L_D4E5		;d4fa
+	call rotula_cadena		;d4fa
 	ld hl,043c2h		;d4fd
-	call L_D4E5		;d500
+	call rotula_cadena		;d500
 	ld hl,046c2h		;d503
-	call L_D4E5		;d506
+	call rotula_cadena		;d506
 	ld hl,049c2h		;d509
-	call L_D4E5		;d50c
+	call rotula_cadena		;d50c
 	ld hl,04ccah		;d50f
-	call L_D4E5		;d512
+	call rotula_cadena		;d512
 	ld a,(0dcc3h)		;d515
 	and a			;d518
 	jr z,L_D525		;d519
 	ld ix,0dcf7h		;d51b
 	ld hl,043c2h		;d51f
-	jp L_D4E5		;d522
+	jp rotula_cadena		;d522
 L_D525:
 	ld ix,0dd00h		;d525
 	ld hl,046c2h		;d529
-	jp L_D4E5		;d52c
+	jp rotula_cadena		;d52c
 L_D52F:
 	ld hl,(0dcc4h)		;d52f
 	ld de,00018h		;d532
@@ -5167,7 +5167,7 @@ L_D52F:
 	jp c,L_D591		;d53b
 	ld (0dcc4h),hl		;d53e
 	ld ix,0dcc6h		;d541
-	call L_D4E5		;d545
+	call rotula_cadena		;d545
 	ld de,00235h		;d548
 	add hl,de		;d54b
 	ld ix,0dd08h		;d54c
@@ -5176,7 +5176,7 @@ L_D52F:
 L_D555:
 	push bc			;d555
 	push de			;d556
-	call L_D4E5		;d557
+	call rotula_cadena		;d557
 	pop de			;d55a
 	add hl,de		;d55b
 	pop bc			;d55c
@@ -5186,21 +5186,21 @@ L_D560:
 	ld hl,04f08h		;d560
 	ld (0dcc4h),hl		;d563
 L_D566:
-	call L_C858		;d566
-	call L_C33F		;d569
+	call borra_buffer		;d566
+	call mueve_estrellas		;d569
 	call L_D52F		;d56c
-	call L_F3DC		;d56f
-	call L_F660		;d572
+	call vuelca_pantalla		;d56f
+	call hay_tecla		;d572
 	jp nz,L_BDE5		;d575
 	jp L_D566		;d578
-L_D57B:
+espera_fin_musica:		; Da vueltas hasta que el canal 1 se queda sin guion (0xEDA3 a cero) o hasta que se pulsa una tecla, con una espera de 1000 entre vuelta y vuelta
 	xor a			;d57b
 	ld (0ee1ah),a		;d57c
 L_D57F:
-	call L_F660		;d57f
+	call hay_tecla		;d57f
 	ret nz			;d582
 	ld bc,003e8h		;d583
-	call L_D81A		;d586
+	call espera_bc		;d586
 	ld hl,(0eda3h)		;d589
 	ld a,h			;d58c
 	or l			;d58d
@@ -5211,8 +5211,8 @@ L_D591:
 	nop			;d592
 	nop			;d593
 	nop			;d594
-	call L_E16F		;d595
-	call L_D57B		;d598
+	call arranca_musica		;d595
+	call espera_fin_musica		;d598
 	ld hl,0a710h		;d59b
 	ld (0ca8fh),hl		;d59e
 	ld hl,0c1afh		;d5a1
@@ -5245,7 +5245,7 @@ L_D5CE:
 L_D5D7:
 	push af			;d5d7
 	add a,096h		;d5d8
-	call L_F5F4		;d5da
+	call dibuja_sprite_vram		;d5da
 	pop af			;d5dd
 	ld h,000h		;d5de
 	ld l,a			;d5e0
@@ -5332,7 +5332,7 @@ L_D665:
 	djnz L_D615		;d673
 	xor a			;d675
 	ld de,0ea73h		;d676
-	jp L_E18F		;d679
+	jp arranca_guion_libre		;d679
 L_D67C:
 	ld a,(0c8d7h)		;d67c
 	and a			;d67f
@@ -5393,7 +5393,7 @@ L_D6EA:
 	ld h,(ix+000h)		;d6ea
 	ld l,(ix+001h)		;d6ed
 	sla h			;d6f0
-	call L_D0BD		;d6f2
+	call choca_con_nave3		;d6f2
 	ret c			;d6f5
 	jp L_D303		;d6f6
 L_D6F9:
@@ -5460,20 +5460,20 @@ L_D75B:
 	ld a,(0ca8eh)		;d75b
 	inc a			;d75e
 	ld (0ca8eh),a		;d75f
-	call L_C858		;d762
+	call borra_buffer		;d762
 	ld bc,005dch		;d765
-	call L_D81A		;d768
+	call espera_bc		;d768
 	call L_D0DC		;d76b
 	ld a,001h		;d76e
 	ld (0d3c2h),a		;d770
-	call L_C33F		;d773
-	call L_CF36		;d776
+	call mueve_estrellas		;d773
+	call mueve_perseguidor		;d776
 	call L_CBEB		;d779
 	call L_DF0F		;d77c
 	call L_C214		;d77f
 	call L_D1AF		;d782
-	call L_CD86		;d785
-	call L_C006		;d788
+	call mueve_objetos		;d785
+	call pausa		;d788
 	ld a,(0c188h)		;d78b
 	cp 02dh			;d78e
 	call c,L_C063		;d790
@@ -5481,16 +5481,16 @@ L_D75B:
 	cp 080h			;d796
 	call nz,L_D83A	;d798
 	call L_D7A4		;d79b
-	call L_F3DC		;d79e
+	call vuelca_pantalla		;d79e
 	jp L_D75B		;d7a1
 L_D7A4:
 	call L_DA55		;d7a4
-	jp nz,L_D817		;d7a7
+	jp nz,espera_1000		;d7a7
 	ld a,(0ddf7h)		;d7aa
 	inc a			;d7ad
 	ld (0ddf7h),a		;d7ae
 	cp 014h			;d7b1
-	jr c,L_D817		;d7b3
+	jr c,espera_1000		;d7b3
 	cp 028h			;d7b5
 	jr c,L_D7F9		;d7b7
 	jr nz,L_D803		;d7b9
@@ -5498,7 +5498,7 @@ L_D7A4:
 	ld (0ddf7h),a		;d7bc
 	ld hl,0dd83h		;d7bf
 	ld b,001h		;d7c2
-	call L_F394		;d7c4
+	call premia		;d7c4
 	ld a,(0ddffh)		;d7c7
 	dec a			;d7ca
 	ld (0ddffh),a		;d7cb
@@ -5521,28 +5521,28 @@ L_D7E1:
 L_D7F1:
 	ld a,000h		;d7f1
 	ld de,0eb2ch		;d7f3
-	call L_E1BC		;d7f6
+	call arranca_guion		;d7f6
 L_D7F9:
 	ld ix,0ddf8h		;d7f9
 	ld hl,040c7h		;d7fd
-	jp L_D4E5		;d800
+	jp rotula_cadena		;d800
 L_D803:
 	cp 03ch			;d803
 	jr c,L_D7F9		;d805
 	cp 050h			;d807
-	jr c,L_D817		;d809
+	jr c,espera_1000		;d809
 	pop hl			;d80b
 	ld a,(0e157h)		;d80c
 	cp 008h			;d80f
 	jp z,L_F71C		;d811
 	jp L_BEED		;d814
-L_D817:
+espera_1000:		; espera_bc con BC = 1000
 	ld bc,003e8h		;d817
-L_D81A:
+espera_bc:		; Espera activa: decrementa BC hasta cero y vuelve
 	dec bc			;d81a
 	ld a,b			;d81b
 	or c			;d81c
-	jr nz,L_D81A		;d81d
+	jr nz,espera_bc		;d81d
 	ret			;d81f
 L_D820:
 	ld a,(0ca91h)		;d820
@@ -5607,7 +5607,7 @@ L_D87B:
 	ld (0ca91h),a		;d88a
 	push hl			;d88d
 	ld a,073h		;d88e
-	call L_F5F4		;d890
+	call dibuja_sprite_vram		;d890
 	pop hl			;d893
 L_D894:
 	ex af,af'		;d894
@@ -5620,7 +5620,7 @@ L_D894:
 	ld ix,0c920h		;d89c
 	jp L_C69F		;d8a0
 L_D8A3:
-	call L_CFF9		;d8a3
+	call choca_y_revienta		;d8a3
 	call azar		;d8a6
 	and 01fh		;d8a9
 	ret nz			;d8ab
@@ -5636,14 +5636,14 @@ L_D8A3:
 	ld c,l			;d8bb
 	ld a,008h		;d8bc
 	ex af,af'		;d8be
-	call L_C8AD		;d8bf
+	call alta_disparo		;d8bf
 	ret nc			;d8c2
 	ld hl,L_D8CD		;d8c3
 	ld (ix+003h),l		;d8c6
 	ld (ix+004h),h		;d8c9
 	ret			;d8cc
 L_D8CD:
-	call L_CFF9		;d8cd
+	call choca_y_revienta		;d8cd
 	ld a,(0ca8eh)		;d8d0
 	and 001h		;d8d3
 	ret z			;d8d5
@@ -5662,10 +5662,10 @@ L_D8CD:
 	ld (ix+004h),h		;d8f0
 	ret			;d8f3
 L_D8F4:
-	call L_CFF9		;d8f4
+	call choca_y_revienta		;d8f4
 	ret			;d8f7
 L_D8F8:
-	call L_CFF9		;d8f8
+	call choca_y_revienta		;d8f8
 	ld l,(ix+005h)		;d8fb
 	ld h,(ix+006h)		;d8fe
 	ld (hl),00ah		;d901
@@ -5684,11 +5684,11 @@ L_D8F8:
 	ld c,l			;d918
 	push bc			;d919
 	ld de,(0c184h)		;d91a
-	call L_C803		;d91e
-	call L_C7D3		;d921
+	call rumbo_hacia		;d91e
+	call rumbo_a_mascara2		;d921
 	pop bc			;d924
 	ex af,af'		;d925
-	call L_CC83		;d926
+	call alta_enemigo		;d926
 	ret nc			;d929
 	ld l,(ix+005h)		;d92a
 	ld h,(ix+006h)		;d92d
@@ -5723,7 +5723,7 @@ L_D95A:
 	ld l,(ix+007h)		;d966
 	ld de,00c10h		;d969
 	ld bc,00204h		;d96c
-	call L_CD7A		;d96f
+	call solapa_eje		;d96f
 	pop hl			;d972
 	jr c,L_D9CA		;d973
 	ld h,l			;d975
@@ -5732,7 +5732,7 @@ L_D95A:
 	add a,a			;d97a
 	add a,a			;d97b
 	ld l,a			;d97c
-	call L_CD7A		;d97d
+	call solapa_eje		;d97d
 	jr c,L_D9CA		;d980
 	ld l,(ix+005h)		;d982
 	ld h,(ix+006h)		;d985
@@ -5750,20 +5750,20 @@ L_D95A:
 	ld (0e14eh),a		;d99f
 	ld a,001h		;d9a2
 	ld de,0ea8ch		;d9a4
-	call L_E18F		;d9a7
+	call arranca_guion_libre		;d9a7
 	jr L_D9BF		;d9aa
 L_D9AC:
 	ld a,(0d3c1h)		;d9ac
 	add a,00ah		;d9af
 	ld (0d3c1h),a		;d9b1
-	call L_F2D1		;d9b4
+	call pinta_energia		;d9b4
 	ld a,001h		;d9b7
 	ld de,0eaa1h		;d9b9
-	call L_E18F		;d9bc
+	call arranca_guion_libre		;d9bc
 L_D9BF:
 	ld hl,0dd85h		;d9bf
 	ld b,01bh		;d9c2
-	call L_F394		;d9c4
+	call premia		;d9c4
 	jp L_D950		;d9c7
 L_D9CA:
 	ld a,(0ca8eh)		;d9ca
@@ -5785,14 +5785,14 @@ L_D9DB:
 	ld l,a			;d9e9
 	ld de,0380ch		;d9ea
 	ld bc,00402h		;d9ed
-	call L_CD7A		;d9f0
+	call solapa_eje		;d9f0
 	ret c			;d9f3
 	ld h,(ix+001h)		;d9f4
 	ld a,(0c184h)		;d9f7
 	ld l,a			;d9fa
 	ld d,012h		;d9fb
 	ld b,007h		;d9fd
-	call L_CD7A		;d9ff
+	call solapa_eje		;d9ff
 	ret c			;da02
 	jp L_D303		;da03
 L_DA06:
@@ -5886,14 +5886,14 @@ L_DA9D:
 	ld hl,(0c184h)		;da9d
 	push hl			;daa0
 	ld a,008h		;daa1
-	call L_C47B		;daa3
+	call pinta_sprite		;daa3
 	pop hl			;daa6
 	ld a,(0c9a3h)		;daa7
 	push hl			;daaa
 	push af			;daab
 	ld h,a			;daac
 	ld a,018h		;daad
-	call L_C47B		;daaf
+	call pinta_sprite		;daaf
 	pop af			;dab2
 	pop hl			;dab3
 	cp 0c8h			;dab4
@@ -6015,7 +6015,7 @@ L_DF19:
 	ld bc,00404h		;df31
 	sbc hl,bc		;df34
 	sub 069h		;df36
-	call L_C47B		;df38
+	call pinta_sprite		;df38
 	inc (ix+000h)		;df3b
 	ld a,(ix+000h)		;df3e
 	cp 080h			;df41
@@ -6041,7 +6041,7 @@ L_DF52:
 	and 001h		;df6b
 	dec (ix+004h)		;df6d
 	ex de,hl		;df70
-	call L_C553		;df71
+	call pinta_glifo		;df71
 	call L_D080		;df74
 	ld a,(0c188h)		;df77
 	cp 004h			;df7a
@@ -6053,13 +6053,13 @@ L_DF52:
 	ld l,a			;df88
 	ld de,0040ah		;df89
 	ld bc,00203h		;df8c
-	call L_CD7A		;df8f
+	call solapa_eje		;df8f
 	pop hl			;df92
 	jr c,L_DFA6		;df93
 	ld h,l			;df95
 	ld a,(0c184h)		;df96
 	ld l,a			;df99
-	call L_CD7A		;df9a
+	call solapa_eje		;df9a
 	jr c,L_DFA6		;df9d
 	call L_D2C2		;df9f
 	ld (ix+000h),07ch	;dfa2
@@ -6097,7 +6097,7 @@ L_DFB1:
 	ldir			;dfcf
 	jp L_DFAB		;dfd1
 L_DFD4:
-	call L_D1F5		;dfd4
+	call impacto_objeto		;dfd4
 	call azar		;dfd7
 	and 01fh		;dfda
 	ret nz			;dfdc
@@ -6107,7 +6107,7 @@ L_DFD4:
 	ret			;dfe6
 L_DFE7:
 	inc (ix+002h)		;dfe7
-	call L_D1F5		;dfea
+	call impacto_objeto		;dfea
 	ld l,(ix+005h)		;dfed
 	ld h,(ix+006h)		;dff0
 	inc (hl)		;dff3
@@ -6119,7 +6119,7 @@ L_DFE7:
 	ld (ix+004h),h		;dffe
 	ret			;e001
 L_E002:
-	call L_D1F5		;e002
+	call impacto_objeto		;e002
 	call azar		;e005
 	and 01fh		;e008
 	ret nz			;e00a
@@ -6132,14 +6132,14 @@ L_E002:
 	ld c,l			;e018
 	push bc			;e019
 	ld de,(0c184h)		;e01a
-	call L_C803		;e01e
-	call L_C7D3		;e021
+	call rumbo_hacia		;e01e
+	call rumbo_a_mascara2		;e021
 	ex af,af'		;e024
 	pop bc			;e025
-	call L_CC83		;e026
+	call alta_enemigo		;e026
 	ret			;e029
 L_E02A:
-	call L_D1F5		;e02a
+	call impacto_objeto		;e02a
 	ld a,(ix+000h)		;e02d
 	cp 010h			;e030
 	ret c			;e032
@@ -6173,7 +6173,7 @@ L_E045:
 	ld (ix+004h),h		;e05a
 	ret			;e05d
 L_E05E:
-	call L_D1F5		;e05e
+	call impacto_objeto		;e05e
 	call azar		;e061
 	and 01fh		;e064
 	ret nz			;e066
@@ -6186,7 +6186,7 @@ L_E05E:
 	ld c,l			;e074
 	xor a			;e075
 	ex af,af'		;e076
-	call L_C8AD		;e077
+	call alta_disparo		;e077
 	ret nc			;e07a
 	ld a,03fh		;e07b
 	ld (ix+002h),a		;e07d
@@ -6217,7 +6217,7 @@ L_E091:
 	jr z,L_E0BE		;e0b3
 	ld a,01eh		;e0b5
 	ex af,af'		;e0b7
-	call L_CD20		;e0b8
+	call alta_objeto_c990		;e0b8
 	jp L_E0C4		;e0bb
 L_E0BE:
 	ld a,01bh		;e0be
@@ -6234,7 +6234,7 @@ L_E0CF:
 	inc (ix+002h)		;e0d2
 	ld a,001h		;e0d5
 	ld de,0ea98h		;e0d7
-	call L_E18F		;e0da
+	call arranca_guion_libre		;e0da
 	ld l,(ix+005h)		;e0dd
 	ld h,(ix+006h)		;e0e0
 	inc (hl)		;e0e3
@@ -6272,7 +6272,7 @@ L_E105:
 	ld b,h			;e119
 	ld c,l			;e11a
 	ex af,af'		;e11b
-	call L_CCA3		;e11c
+	call alta_objeto_c952		;e11c
 	add a,004h		;e11f
 	and 007h		;e121
 	ex af,af'		;e123
@@ -6281,15 +6281,15 @@ L_E105:
 	jr z,L_E148		;e128
 	ld a,0c9h		;e12a
 	ld (0e190h),a		;e12c
-	call L_CCA3		;e12f
+	call alta_objeto_c952		;e12f
 	add a,002h		;e132
 	and 007h		;e134
 	ex af,af'		;e136
-	call L_CCA3		;e137
+	call alta_objeto_c952		;e137
 	add a,004h		;e13a
 	and 007h		;e13c
 	ex af,af'		;e13e
-	call L_CCA3		;e13f
+	call alta_objeto_c952		;e13f
 	ld a,(0e1bdh)		;e142
 	ld (0e190h),a		;e145
 L_E148:
@@ -6327,28 +6327,28 @@ L_E15A:
 	pop hl			;e16c
 	ei			;e16d
 	ret			;e16e
-L_E16F:
+arranca_musica:		; Instala la musica de la partida de golpe: canal 0 <- 0xEB52, canal 1 <- 0xEC4A, canal 2 <- 0xECCB. Medido en el emulador, es exactamente lo que se ve arrancar (ver el bloque de la partitura)
 	ld a,080h		;e16f
 	ld de,0eb52h		;e171
-	call L_E1BC		;e174
+	call arranca_guion		;e174
 	inc a			;e177
 	ld de,0ec4ah		;e178
-	call L_E1BC		;e17b
+	call arranca_guion		;e17b
 	ld a,002h		;e17e
 	ld de,0eccbh		;e180
-	call L_E1BC		;e183
-L_E186:
+	call arranca_guion		;e183
+sonido_off:		; Cierra el sonido metiendo un `ret` (0xC9) en la cabecera de arranca_guion y arranca_guion_libre: no se puede arrancar nada mas
 	ld a,0c9h		;e186
-	ld (L_E1BC),a	;e188
-	ld (L_E18F),a		;e18b
+	ld (arranca_guion),a	;e188
+	ld (arranca_guion_libre),a		;e18b
 	ret			;e18e
-L_E18F:
+arranca_guion_libre:		; arranca_guion, pero respetando lo que suena: si el canal pedido esta ocupado -sus dos primeros bytes no son cero- recorre los TRES buscando uno libre, y solo pisa el pedido si no queda ninguno
 	di			;e18f
 	push af			;e190
 	push de			;e191
 	and 07fh		;e192
 	ld de,0002eh		;e194
-	call L_E591		;e197
+	call mul_a_de		;e197
 	ld de,0ed75h		;e19a
 	add hl,de		;e19d
 	push hl			;e19e
@@ -6374,13 +6374,13 @@ L_E1B6:
 L_E1B9:
 	pop de			;e1b9
 	jr L_E1CB		;e1ba
-L_E1BC:
+arranca_guion:		; Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei`): borra los 46 bytes de su estado en 0xED75+canal*46 y siembra el puntero de ejecucion y el de inicio
 	di			;e1bc
 	push af			;e1bd
 	push de			;e1be
 	and 07fh		;e1bf
 	ld de,0002eh		;e1c1
-	call L_E591		;e1c4
+	call mul_a_de		;e1c4
 	ld de,0ed75h		;e1c7
 	add hl,de		;e1ca
 L_E1CB:
@@ -6434,7 +6434,7 @@ L_E203:
 	or (ix+005h)		;e20d
 	jp nz,L_E26E		;e210
 	xor a			;e213
-	call L_E529		;e214
+	call mezclador_canal		;e214
 	ld c,(ix+002h)		;e217
 	ld b,(ix+003h)		;e21a
 	ld a,b			;e21d
@@ -6443,30 +6443,30 @@ L_E203:
 L_E222:
 	ld a,(bc)		;e222
 	cp 080h			;e223
-	jp c,L_E231		;e225
+	jp c,lee_nota		;e225
 	sub 080h		;e228
 	ld hl,0e7a3h		;e22a
-	call L_E5C0		;e22d
+	call lee_puntero		;e22d
 	jp (hl)			;e230
-L_E231:
+lee_nota:		; Un byte por debajo de 0x80 es una nota: le suma la transposicion de 0xEE21+canal, busca el periodo en la tabla de 0xE6E3 y lo deja en (ix+00A/00B)
 	push af			;e231
 	call L_E586		;e232
 	pop af			;e235
 	add a,(hl)		;e236
 	ld hl,0e6e3h		;e237
-	call L_E5C0		;e23a
+	call lee_puntero		;e23a
 	ld (ix+00ah),l		;e23d
 	ld (ix+00bh),h		;e240
 	inc bc			;e243
-L_E244:
+ataca_nota:		; El ataque: abre tono y ruido en el mezclador, monta la envolvente del instrumento y la pone a cero. Es justo lo que se salta el comando 0x84
 	ld a,(ix+008h)		;e244
-	call L_E529		;e247
-	call L_E3A3		;e24a
+	call mezclador_canal		;e247
+	call carga_envolvente_1		;e24a
 	ld (ix+02ah),000h	;e24d
-	call L_E3BB		;e251
+	call carga_envolvente_2		;e251
 	ld (ix+02bh),000h	;e254
 	ld (ix+02ch),000h	;e258
-L_E25C:
+arranca_duracion:		; Guarda el puntero del guion en (ix+002/003) y recarga la cuenta atras de la duracion (ix+004/005) desde (ix+006/007)
 	ld (ix+002h),c		;e25c
 	ld (ix+003h),b		;e25f
 	ld l,(ix+006h)		;e262
@@ -6513,7 +6513,7 @@ L_E2B1:
 	or a			;e2b2
 	jr nz,L_E2BC		;e2b3
 	bit 0,(ix+02dh)		;e2b5
-	call nz,L_E3A3	;e2b9
+	call nz,carga_envolvente_1	;e2b9
 L_E2BC:
 	push ix			;e2bc
 	pop iy			;e2be
@@ -6570,7 +6570,7 @@ L_E31C:
 	or a			;e31d
 	jr nz,L_E327		;e31e
 	bit 1,(ix+02dh)		;e320
-	call nz,L_E3BB	;e324
+	call nz,carga_envolvente_2	;e324
 L_E327:
 	pop bc			;e327
 	pop de			;e328
@@ -6630,7 +6630,7 @@ L_E387:
 	jr nz,L_E393		;e389
 	ld a,(0ee09h)		;e38b
 	bit 2,a			;e38e
-	call nz,L_E3D3	;e390
+	call nz,refresca_globales_sonido	;e390
 L_E393:
 	ld a,(0ee0ah)		;e393
 	ld e,a			;e396
@@ -6640,7 +6640,7 @@ L_E393:
 	call L_E5CD		;e39e
 	pop af			;e3a1
 	ret			;e3a2
-L_E3A3:
+carga_envolvente_1:		; Copia dos parejas de la plantilla del instrumento a las variables vivas: (ix+020) a (ix+00C) y (ix+016) a (ix+00E)
 	push ix			;e3a3
 	ld d,002h		;e3a5
 L_E3A7:
@@ -6653,7 +6653,7 @@ L_E3A7:
 	jr nz,L_E3A7		;e3b6
 	pop ix			;e3b8
 	ret			;e3ba
-L_E3BB:
+carga_envolvente_2:		; Lo mismo con tres: (ix+022) a (ix+010) y (ix+018) a (ix+013)
 	ld d,003h		;e3bb
 	push ix			;e3bd
 L_E3BF:
@@ -6666,7 +6666,7 @@ L_E3BF:
 	jr nz,L_E3BF		;e3ce
 	pop ix			;e3d0
 	ret			;e3d2
-L_E3D3:
+refresca_globales_sonido:		; Copia (iy+008) a (iy+000) y (iy+004) a (iy+002) dos veces desde 0xEDFF: las variables globales del sonido que el fin de voz limpia
 	ld d,002h		;e3d3
 	push iy			;e3d5
 	ld iy,0edffh		;e3d7
@@ -6680,30 +6680,30 @@ L_E3DB:
 	jr nz,L_E3DB		;e3ea
 	pop iy			;e3ec
 	ret			;e3ee
-L_E3EF:
+op_volumen:		; 0x80 n: mete el argumento en (ix+009), el byte que la lectura de la partitura toma por volumen
 	inc bc			;e3ef
 	ld a,(bc)		;e3f0
 	ld (ix+009h),a		;e3f1
 	inc bc			;e3f4
 	jp L_E222		;e3f5
-L_E3F8:
+op_duracion:		; 0x83 n: (ix+006/007) = argumento por el tempo de 0xEE18. La duracion no esta en cuadros, esta en unidades de tempo
 	inc bc			;e3f8
 	ld a,(bc)		;e3f9
 	ld de,(0ee18h)		;e3fa
 	ld d,000h		;e3fe
-	call L_E591		;e400
+	call mul_a_de		;e400
 	ld (ix+006h),l		;e403
 	ld (ix+007h),h		;e406
 	inc bc			;e409
 	jp L_E222		;e40a
-L_E40D:
+op_tono_ruido:		; 0x81 n: (ix+008) = argumento and 0x09, que es justo la pareja de bits -tono y ruido- que el mezclador desplaza por canal
 	inc bc			;e40d
 	ld a,(bc)		;e40e
 	and 009h		;e40f
 	ld (ix+008h),a		;e411
 	inc bc			;e414
 	jp L_E222		;e415
-L_E418:
+op_fin:		; 0x8B: cierra la voz borrando los 46 bytes de su estado y reponiendo el `di` en arranca_guion y arranca_guion_libre; si era la ultima que sonaba, limpia tambien las variables de 0xEDFF
 	push ix			;e418
 	pop hl			;e41a
 	xor a			;e41b
@@ -6713,8 +6713,8 @@ L_E41E:
 	inc hl			;e41f
 	djnz L_E41E		;e420
 	ld a,0f3h		;e422
-	ld (L_E18F),a		;e424
-	ld (L_E1BC),a	;e427
+	ld (arranca_guion_libre),a		;e424
+	ld (arranca_guion),a	;e427
 	ld a,(0ee19h)		;e42a
 	ld hl,0ee0ch		;e42d
 	xor (hl)		;e430
@@ -6727,50 +6727,50 @@ L_E41E:
 	inc de			;e440
 	ld (de),a		;e441
 	jp L_E327		;e442
-L_E445:
+op_tempo:		; 0x85 n: 0xEE18 = 6000 / (argumento * 8), con la division de div_bc_de
 	inc bc			;e445
 	ld a,(bc)		;e446
 	push bc			;e447
 	ld de,00008h		;e448
-	call L_E591		;e44b
+	call mul_a_de		;e44b
 	ld bc,01770h		;e44e
 	push hl			;e451
 	pop de			;e452
-	call L_E5A6		;e453
+	call div_bc_de		;e453
 	ld a,c			;e456
 	ld (0ee18h),a		;e457
 	pop bc			;e45a
 	inc bc			;e45b
 	jp L_E222		;e45c
-L_E45F:
+op_ruido:		; 0x88 n: 0xEE0A = argumento and 0x1F, los cinco bits del registro de ruido del PSG. El bit 7 del argumento decide por donde sigue el interprete
 	inc bc			;e45f
 	ld a,(bc)		;e460
 	push af			;e461
 	and 01fh		;e462
 	ld (0ee0ah),a		;e464
-	call L_E3D3		;e467
+	call refresca_globales_sonido		;e467
 	pop af			;e46a
 	inc bc			;e46b
 	or a			;e46c
 	jp m,L_E222		;e46d
-	jp L_E244		;e470
-L_E473:
+	jp ataca_nota		;e470
+op_liga:		; 0x84: sin argumento. Cuenta una duracion mas SIN reatacar, porque vuelve por 0xE25C y se salta el tramo del ataque: ni mezclador, ni instrumento, ni envolvente a cero. Lo que estuviera sonando sigue igual
 	inc bc			;e473
-	jp L_E25C		;e474
-L_E477:
+	jp arranca_duracion		;e474
+op_bucle:		; 0x82: vuelve al principio del guion recargando (ix+002/003) con (ix+000/001). NO es un terminador: solo acaba si va por el canal 1 y ademas 0xEE1A esta a cero
 	ld a,(0ee19h)		;e477
 	dec a			;e47a
 	jr nz,L_E483		;e47b
 	ld a,(0ee1ah)		;e47d
 	and a			;e480
-	jr z,L_E418		;e481
+	jr z,op_fin		;e481
 L_E483:
 	ld c,(ix+000h)		;e483
 	ld b,(ix+001h)		;e486
 	ld (ix+002h),c		;e489
 	ld (ix+003h),b		;e48c
 	jp L_E222		;e48f
-L_E492:
+op_banderas:		; 0x8A n: enciende bits, con OR y sin apagar nada, en las banderas del canal (ix+02D) y en las globales de 0xEE09
 	inc bc			;e492
 	ld a,(bc)		;e493
 	ld e,a			;e494
@@ -6781,13 +6781,13 @@ L_E492:
 	ld (0ee09h),a		;e49f
 	inc bc			;e4a2
 	jp L_E222		;e4a3
-L_E4A6:
+op_instrumento:		; 0x87 n: copia los QUINCE bytes del instrumento n -que vive en 0xE5E2 + n*15- a (ix+016) y siguientes, y de paso limpia los bits 0 y 1 de las banderas
 	inc bc			;e4a6
 	res 0,(ix+02dh)		;e4a7
 	res 1,(ix+02dh)		;e4ab
 	ld a,(bc)		;e4af
 	ld de,0000fh		;e4b0
-	call L_E591		;e4b3
+	call mul_a_de		;e4b3
 	ld de,0e5e2h		;e4b6
 	add hl,de		;e4b9
 	push ix			;e4ba
@@ -6817,7 +6817,7 @@ L_E4EF:
 	ld (0ee09h),a		;e4f5
 	ld a,(bc)		;e4f8
 	ld de,00006h		;e4f9
-	call L_E591		;e4fc
+	call mul_a_de		;e4fc
 	ld de,0e6d2h		;e4ff
 	add hl,de		;e502
 	ld iy,0edffh		;e503
@@ -6837,7 +6837,7 @@ L_E511:
 	ld a,(0ee19h)		;e520
 	ld (0ee0ch),a		;e523
 	jp L_E222		;e526
-L_E529:
+mezclador_canal:		; Enciende o apaga el tono y el ruido del canal 0xEE19 en la copia del registro 7 del PSG (0xEE14), desplazando la pareja de bits 0x09 tantas posiciones como el numero de canal
 	push de			;e529
 	cpl			;e52a
 	ld e,a			;e52b
@@ -6857,7 +6857,7 @@ L_E53C:
 	ld (0ee14h),a		;e541
 	pop de			;e544
 	ret			;e545
-L_E546:
+op_tempo1:		; 0x86: el tempo a 1, sin argumento
 	ld a,001h		;e546
 	ld (0ee18h),a		;e548
 	inc bc			;e54b
@@ -6876,7 +6876,7 @@ L_E54F:
 	inc hl			;e55e
 	ld (hl),b		;e55f
 	ld hl,0e7c1h		;e560
-	call L_E5C0		;e563
+	call lee_puntero		;e563
 	ld b,h			;e566
 	ld c,l			;e567
 	jp L_E222		;e568
@@ -6891,7 +6891,7 @@ L_E56B:
 	inc hl			;e577
 	ld b,(hl)		;e578
 	jp L_E222		;e579
-L_E57C:
+op_transporte:		; 0x8E n: escribe el argumento en 0xEE21 + canal, y eso es la TRANSPOSICION de la voz: el lector de notas lo suma al numero de nota antes de buscar el periodo (`call L_E586 / add a,(hl)` en 0xE232)
 	inc bc			;e57c
 	call L_E586		;e57d
 	ld a,(bc)		;e580
@@ -6905,7 +6905,7 @@ L_E586:
 	ld de,0ee21h		;e58c
 	add hl,de		;e58f
 	ret			;e590
-L_E591:
+mul_a_de:		; HL = A * DE por desplazamiento y suma, ocho vueltas; con A=0 devuelve 0 sin entrar al bucle
 	ld hl,00000h		;e591
 	and a			;e594
 	ret z			;e595
@@ -6921,7 +6921,7 @@ L_E59E:
 	djnz L_E599		;e5a2
 	pop bc			;e5a4
 	ret			;e5a5
-L_E5A6:
+div_bc_de:		; BC = BC / DE por restas y desplazamientos, dieciseis vueltas de `adc hl,hl / sbc hl,de`
 	push af			;e5a6
 	ld hl,00000h		;e5a7
 	ld a,b			;e5aa
@@ -6941,7 +6941,7 @@ L_E5B7:
 	ld b,a			;e5bd
 	pop af			;e5be
 	ret			;e5bf
-L_E5C0:
+lee_puntero:		; HL = la palabra que hay en HL + A*2: el acceso a las tablas de punteros del interprete de guiones
 	push af			;e5c0
 	add a,a			;e5c1
 	add a,l			;e5c2
@@ -7186,7 +7186,7 @@ creditos:		; La secuencia de creditos: cinco carteles en el tercio central (bucl
 L_EE92:
 	push bc			;ee92
 	ld hl,00900h		;ee93
-	call L_F4E4		;ee96
+	call rotula_secuencia		;ee96
 	ld b,0c8h		;ee99
 	call retardo		;ee9b
 	ld b,0c8h		;ee9e
@@ -7195,14 +7195,14 @@ L_EE92:
 	pop bc			;eea6
 	djnz L_EE92		;eea7
 	ld hl,00a98h		;eea9
-	call L_F4E4		;eeac
+	call rotula_secuencia		;eeac
 	ld h,d			;eeaf
 	ld l,e			;eeb0
 	ld bc,00000h		;eeb1
 	nop			;eeb4
 	nop			;eeb5
-	call L_E16F		;eeb6
-	call L_D57B		;eeb9
+	call arranca_musica		;eeb6
+	call espera_fin_musica		;eeb9
 	di			;eebc
 	ld a,0a2h		;eebd
 	out (099h),a		;eebf
@@ -7250,9 +7250,9 @@ L_EF00:
 	jr nz,L_EEFE		;ef0b
 	ld hl,00000h		;ef0d
 	ld de,048a0h		;ef10
-	call L_EF28		;ef13
+	call copia_marco		;ef13
 	ld hl,02000h		;ef16
-	call L_EF28		;ef19
+	call copia_marco		;ef19
 	di			;ef1c
 	ld a,0e2h		;ef1d
 	out (099h),a		;ef1f
@@ -7261,7 +7261,7 @@ L_EF00:
 	and a			;ef24
 	out (099h),a		;ef25
 	ret			;ef27
-L_EF28:
+copia_marco:		; Vuelca el marco de la pantalla de juego a la VRAM: dos filas de caracter por tercio (0x100 B x3, saltando 0x800) mas 24 tiras de 8 B y otras 24 de 0x18. Se llama dos veces, con los patrones de 0x48A0 y con los colores de 0x51A0
 	push hl			;ef28
 	ld c,002h		;ef29
 L_EF2B:
@@ -7503,7 +7503,7 @@ L_F0CB:
 	ld a,d			;f0d2
 	adc a,000h		;f0d3
 	ld d,a			;f0d5
-	call L_F5E1		;f0d6
+	call vram_avanza_fila		;f0d6
 	djnz L_F0CB		;f0d9
 	pop hl			;f0db
 	ld de,00040h		;f0dc
@@ -7541,7 +7541,7 @@ L_F0FA:
 	ei			;f103
 	ret			;f104
 vram_lee:		; Copia BC bytes de VRAM (HL) a RAM (DE) leyendo del puerto 0x98
-	call L_F114		;f105
+	call vram_pon_dir_lee		;f105
 	and a			;f108
 L_F109:
 	in a,(098h)		;f109
@@ -7553,7 +7553,7 @@ L_F109:
 	jr nz,L_F109		;f110
 	ei			;f112
 	ret			;f113
-L_F114:
+vram_pon_dir_lee:		; Fija la direccion de LECTURA del VDP por el puerto 0x99, sin el bit 0x40: es la gemela de vram_pon_dir
 	di			;f114
 	in a,(099h)		;f115
 	ld a,l			;f117
@@ -7603,7 +7603,7 @@ L_F114:
 ; ======================================================================
 
 
-L_F2D1:
+pinta_energia:		; Pinta la barra de 0x6050 con el valor de 0xD3C1 recortado a 20, y con el resto hasta 20 apagado. Por debajo de 4 lee lo que ya hay en la VRAM y le da la vuelta al nibble, que es como parpadea cuando queda poco
 	ld a,(0d3c1h)		;f2d1
 	ld hl,06050h		;f2d4
 	cp 014h			;f2d7
@@ -7619,7 +7619,7 @@ L_F2DD:
 	jr z,L_F33A		;f2e4
 	cp 004h			;f2e6
 	jr nc,L_F301		;f2e8
-	call L_F114		;f2ea
+	call vram_pon_dir_lee		;f2ea
 	in a,(098h)		;f2ed
 	ei			;f2ef
 	ld c,a			;f2f0
@@ -7722,7 +7722,7 @@ L_F363:
 	ld (0f393h),a		;f375
 	ret nz			;f378
 	ld hl,06050h		;f379
-	call L_F114		;f37c
+	call vram_pon_dir_lee		;f37c
 	in a,(098h)		;f37f
 	ei			;f381
 	rrca			;f382
@@ -7751,14 +7751,14 @@ L_F38B:
 ; ======================================================================
 
 
-L_F394:
+premia:		; Suma B al marcador por el digito que apunte HL (dentro de los seis de 0xDD80) y lo repinta en 0x12B0: es suma_puntos con IX y DE ya puestos, y salvando IX
 	push ix			;f394
 	ld ix,0dd80h		;f396
 	ld de,012b0h		;f39a
 	call suma_puntos		;f39d
 	pop ix			;f3a0
 	ret			;f3a2
-L_F3A3:
+pinta_marca_hud:		; Pinta la marca del HUD en HL con el color 0x11; la entrada de 0xF3A7 hace lo mismo con el 0x71, que es como se enciende y se apaga
 	ld a,011h		;f3a3
 	jr L_F3A9		;f3a5
 L_F3A7:
@@ -7801,22 +7801,22 @@ L_F3CE:
 	djnz L_F3AB		;f3d8
 	ei			;f3da
 	ret			;f3db
-L_F3DC:
+vuelca_pantalla:		; El volcado del buffer a la VRAM en las tres bandas de siempre: 0x4000 -> 0x0108 (56 filas), 0x4540 -> 0x0900 (64) y 0x4B40 -> 0x1100 (40)
 	ld de,04000h		;f3dc
 	ld hl,00108h		;f3df
 	ld b,038h		;f3e2
-	call L_F3FF		;f3e4
+	call vuelca_columnas		;f3e4
 	ld de,04540h		;f3e7
 	ld hl,00900h		;f3ea
 	ld b,040h		;f3ed
-	call L_F3FF		;f3ef
+	call vuelca_columnas		;f3ef
 	ld de,04b40h		;f3f2
 	ld hl,01100h		;f3f5
 	ld b,028h		;f3f8
-	call L_F3FF		;f3fa
+	call vuelca_columnas		;f3fa
 	ei			;f3fd
 	ret			;f3fe
-L_F3FF:
+vuelca_columnas:		; El nucleo del volcado: 24 vueltas por banda, cada una recogiendo B bytes del buffer A SALTOS DE 24 -o sea una columna- y soltandolos por el puerto 0x98, avanzando 0x40 en la VRAM entre columna y columna
 	ld c,018h		;f3ff
 L_F401:
 	push bc			;f401
@@ -7867,8 +7867,8 @@ L_F432:
 	inc ix			;f440
 	jp hud_imprime		;f442
 L_F445:
-	call L_C858		;f445
-	call L_F3DC		;f448
+	call borra_buffer		;f445
+	call vuelca_pantalla		;f448
 	xor a			;f44b
 	ld (0dcc3h),a		;f44c
 	ld hl,0dc09h		;f44f
@@ -7883,7 +7883,7 @@ L_F454:
 	ld hl,00120h		;f463
 L_F466:
 	push bc			;f466
-	call L_F4E4		;f467
+	call rotula_secuencia		;f467
 	pop bc			;f46a
 	dec c			;f46b
 	jr nz,L_F48C		;f46c
@@ -7971,46 +7971,46 @@ L_F4D7:
 L_F4E1:
 	pop hl			;f4e1
 	jr L_F466		;f4e2
-L_F4E4:
-	call L_F50E		;f4e4
+rotula_secuencia:		; Recorre la cadena de (IX) hasta el 0 pasandole cada byte a rotulador_cmd, tras dejar el sonido en su sitio
+	call sonido_reset		;f4e4
 L_F4E7:
 	ld a,(ix+000h)		;f4e7
 	inc ix			;f4ea
 	and a			;f4ec
-	jr z,L_F50E		;f4ed
-	call L_F528		;f4ef
+	jr z,sonido_reset		;f4ed
+	call rotulador_cmd		;f4ef
 	jr L_F4E7		;f4f2
 L_F4F4:
 	ld a,080h		;f4f4
 	ld de,0eb38h		;f4f6
 	push hl			;f4f9
-	call L_E1BC		;f4fa
+	call arranca_guion		;f4fa
 	inc a			;f4fd
 	ld de,0ed61h		;f4fe
-	call L_E1BC		;f501
+	call arranca_guion		;f501
 	ld a,002h		;f504
 	ld de,0ed6bh		;f506
-	call L_E1BC		;f509
+	call arranca_guion		;f509
 	pop hl			;f50c
 	ret			;f50d
-L_F50E:
+sonido_reset:		; Reabre el sonido reponiendo el `di` (0xF3) que sonido_off machaco, y deja los tres canales a cero con un guion nulo
 	ld a,0f3h		;f50e
 	ld (0e1bch),a		;f510
 	ld (0e18fh),a		;f513
 	xor a			;f516
 	ld de,00000h		;f517
 	push hl			;f51a
-	call L_E1BC		;f51b
+	call arranca_guion		;f51b
 	inc a			;f51e
-	call L_E1BC		;f51f
+	call arranca_guion		;f51f
 	inc a			;f522
-	call L_E1BC		;f523
+	call arranca_guion		;f523
 	pop hl			;f526
 	ret			;f527
-L_F528:
+rotulador_cmd:		; Estampa un caracter en la VRAM, o lo ejecuta como orden si es menor de 0x20: 0x01 recoloca el cursor con el byte siguiente de (IX) y 0x14 llama a sonido_reset y espera
 	ld bc,00bb8h		;f528
 	push af			;f52b
-	call L_F5DB		;f52c
+	call espera_bc2		;f52c
 	pop af			;f52f
 	cp 020h			;f530
 	jr nc,L_F5A9		;f532
@@ -8048,10 +8048,10 @@ L_F55A:
 L_F561:
 	cp 014h			;f561
 	jr nz,L_F574		;f563
-	call L_F50E		;f565
+	call sonido_reset		;f565
 	ld bc,00000h		;f568
-	call L_F5DB		;f56b
-	call L_F5DB		;f56e
+	call espera_bc2		;f56b
+	call espera_bc2		;f56e
 	jp L_F4F4		;f571
 L_F574:
 	ld a,h			;f574
@@ -8081,9 +8081,9 @@ L_F591:
 	djnz L_F591		;f597
 	ei			;f599
 	push hl			;f59a
-	call L_F50E		;f59b
+	call sonido_reset		;f59b
 	ld bc,00fa0h		;f59e
-	call L_F5DB		;f5a1
+	call espera_bc2		;f5a1
 	call L_F4F4		;f5a4
 	pop hl			;f5a7
 	ret			;f5a8
@@ -8124,13 +8124,13 @@ L_F5CD:
 L_F5D8:
 	djnz L_F5D8		;f5d8
 	ret			;f5da
-L_F5DB:
+espera_bc2:		; Espera activa de BC vueltas; es la gemela de espera_bc, en la otra punta del bloque
 	dec bc			;f5db
 	ld a,b			;f5dc
 	or c			;f5dd
-	jr nz,L_F5DB		;f5de
+	jr nz,espera_bc2		;f5de
 	ret			;f5e0
-L_F5E1:
+vram_avanza_fila:		; Avanza la direccion de VRAM una fila de pixel y, al agotar el bloque de 0x40, salta al tercio siguiente (l and 0xC0, h + 8) reprogramando el puerto 0x99
 	inc hl			;f5e1
 	ld a,l			;f5e2
 	and 03fh		;f5e3
@@ -8145,7 +8145,7 @@ L_F5E1:
 	ld h,a			;f5f0
 	out (099h),a		;f5f1
 	ret			;f5f3
-L_F5F4:
+dibuja_sprite_vram:		; Estampa un sprite de 0xA560 derecho en la VRAM (0x1758), 16 filas por 2 columnas leyendo un byte de cada cuatro. El bit 0 de A elige que mitad de la entrada se pinta -par la mascara, impar el dibujo- y el resto es el numero de sprite
 	and a			;f5f4
 	rra			;f5f5
 	push af			;f5f6
@@ -8178,7 +8178,7 @@ L_F615:
 	inc de			;f619
 	inc de			;f61a
 	inc de			;f61b
-	call L_F5E1		;f61c
+	call vram_avanza_fila		;f61c
 	djnz L_F615		;f61f
 	ei			;f621
 	ld hl,0ffc1h		;f622
@@ -8194,7 +8194,7 @@ L_F615:
 	dec c			;f630
 	jr nz,L_F60F		;f631
 	ret			;f633
-L_F634:
+rellena_colores:		; Pone el color A en la tabla de colores de la pantalla, tercio a tercio: 0x2108 x 56 filas, 0x2900 x 64 y 0x3100 x 40, las tres bandas de siempre, 24 caracteres de ancho
 	ld hl,02108h		;f634
 	ld c,038h		;f637
 	call L_F649		;f639
@@ -8221,7 +8221,7 @@ L_F650:
 	djnz L_F64B		;f65c
 	ei			;f65e
 	ret			;f65f
-L_F660:
+hay_tecla:		; Vuelve con NZ si hay alguna tecla pulsada, barriendo las nueve filas de la matriz (0xF0 a 0xF8) por los puertos 0xAA y 0xA9
 	ld d,0f0h		;f660
 L_F662:
 	ld a,d			;f662
@@ -8235,11 +8235,11 @@ L_F662:
 	ret z			;f66e
 	jr L_F662		;f66f
 L_F671:
-	call L_C858		;f671
-	call L_F3DC		;f674
+	call borra_buffer		;f671
+	call vuelca_pantalla		;f674
 	ld ix,0dd87h		;f677
 	ld hl,00118h		;f67b
-	call L_F4E4		;f67e
+	call rotula_secuencia		;f67e
 	pop de			;f681
 	push hl			;f682
 	ld h,d			;f683
@@ -8258,10 +8258,10 @@ L_F697:
 	push bc			;f697
 	push de			;f698
 L_F699:
-	call L_F660		;f699
+	call hay_tecla		;f699
 	jr nz,L_F699		;f69c
 	ld bc,007d0h		;f69e
-	call L_D81A		;f6a1
+	call espera_bc		;f6a1
 	call L_F475		;f6a4
 	ld d,000h		;f6a7
 	push hl			;f6a9
@@ -8289,14 +8289,14 @@ L_F6C8:
 	push bc			;f6ca
 	ld (de),a		;f6cb
 	push de			;f6cc
-	call L_F528		;f6cd
+	call rotulador_cmd		;f6cd
 	pop de			;f6d0
 	inc de			;f6d1
 	pop bc			;f6d2
 	djnz L_F697		;f6d3
 L_F6D5:
 	ld a,00dh		;f6d5
-	call L_F528		;f6d7
+	call rotulador_cmd		;f6d7
 	ld bc,00000h		;f6da
 L_F6DD:
 	dec bc			;f6dd
@@ -8347,19 +8347,19 @@ L_F71C:
 	and a			;f721
 	ld a,081h		;f722
 	out (099h),a		;f724
-	call L_C858		;f726
-	call L_F3DC		;f729
+	call borra_buffer		;f726
+	call vuelca_pantalla		;f729
 	ld ix,0dac6h		;f72c
 	ld hl,00108h		;f730
-	call L_F4E4		;f733
+	call rotula_secuencia		;f733
 L_F736:
-	call L_F660		;f736
+	call hay_tecla		;f736
 	jr z,L_F736		;f739
 L_F73B:
-	call L_F3DC		;f73b
+	call vuelca_pantalla		;f73b
 	ld ix,0f7d6h		;f73e
 	ld hl,001f0h		;f742
-	call L_F4E4		;f745
+	call rotula_secuencia		;f745
 	ld hl,0dd08h		;f748
 	ld de,0d6d8h		;f74b
 	ld bc,0007fh		;f74e
@@ -8374,14 +8374,14 @@ L_F756:
 	ld de,00008h		;f75f
 	ld a,000h		;f762
 	scf			;f764
-	call L_F7F6		;f765
+	call carga_cinta		;f765
 	jr nc,L_F756		;f768
 	ld a,(0f77dh)		;f76a
 	cp 002h			;f76d
 	jr nz,L_F756		;f76f
 	ld ix,0f7e6h		;f771
 	ld hl,009d0h		;f775
-	call L_F4E4		;f778
+	call rotula_secuencia		;f778
 	jr $+3			;f77b
 
 ; ----------------------------------------------------------------------
@@ -8402,7 +8402,7 @@ L_F77E:
 	ld (0f81ah),a		;f786
 	ld a,0ffh		;f789
 	scf			;f78b
-	call L_F7F6		;f78c
+	call carga_cinta		;f78c
 	jr nc,L_F79D		;f78f
 	dec ix			;f791
 	ld b,(ix+000h)		;f793
@@ -8410,10 +8410,10 @@ L_F77E:
 	cp b			;f799
 	jp z,L_F7B0		;f79a
 L_F79D:
-	call L_F3DC		;f79d
+	call vuelca_pantalla		;f79d
 	ld ix,0f7c7h		;f7a0
 	ld hl,001f8h		;f7a4
-	call L_F4E4		;f7a7
+	call rotula_secuencia		;f7a7
 	call L_F7B8		;f7aa
 	jp L_F73B		;f7ad
 L_F7B0:
@@ -8447,7 +8447,7 @@ L_F7BE:
 ; ======================================================================
 
 
-L_F7F6:
+carga_cinta:		; La carga de la segunda parte: empuja a mano la vuelta a 0xF89F, arranca el motor (0xAB) y el registro 14 del PSG, y engancha el tono guia midiendo pulsos contra 0x9C y 0xC6. Es LD-BYTES de la ROM del Spectrum, con la lectura del bit adaptada al PSG del MSX
 	ld hl,L_F89F		;f7f6
 	push hl			;f7f9
 	push af			;f7fa
@@ -8464,7 +8464,7 @@ L_F7F6:
 	ld c,a			;f80a
 	cp a			;f80b
 L_F80C:
-	call L_F87C		;f80c
+	call lee_bit_cinta		;f80c
 	jr nc,L_F80C		;f80f
 	ld hl,00415h		;f811
 L_F814:
@@ -8473,11 +8473,11 @@ L_F814:
 	ld a,h			;f817
 	or l			;f818
 	jr nz,L_F814		;f819
-	call L_F878		;f81b
+	call lee_bit_cinta2		;f81b
 	jr nc,L_F80C		;f81e
 L_F820:
 	ld b,09ch		;f820
-	call L_F878		;f822
+	call lee_bit_cinta2		;f822
 	jr nc,L_F80C		;f825
 	ld a,0c6h		;f827
 	cp b			;f829
@@ -8486,12 +8486,12 @@ L_F820:
 	jr nz,L_F820		;f82d
 L_F82F:
 	ld b,0c9h		;f82f
-	call L_F87C		;f831
+	call lee_bit_cinta		;f831
 	jr nc,L_F80C		;f834
 	ld a,b			;f836
 	cp 0d4h			;f837
 	jr nc,L_F82F		;f839
-	call L_F87C		;f83b
+	call lee_bit_cinta		;f83b
 	ret nc			;f83e
 	ld h,000h		;f83f
 	ld b,0b0h		;f841
@@ -8519,7 +8519,7 @@ L_F859:
 L_F85D:
 	ld l,001h		;f85d
 L_F85F:
-	call L_F878		;f85f
+	call lee_bit_cinta2		;f85f
 	ret nc			;f862
 	ld a,0cbh		;f863
 	cp b			;f865
@@ -8535,10 +8535,10 @@ L_F85F:
 	ld a,h			;f874
 	cp 001h			;f875
 	ret			;f877
-L_F878:
-	call L_F87C		;f878
+lee_bit_cinta2:		; Dos flancos seguidos con lee_bit_cinta, y vuelve en cuanto el primero falla
+	call lee_bit_cinta		;f878
 	ret nc			;f87b
-L_F87C:
+lee_bit_cinta:		; Espera el siguiente flanco en el bit 7 del puerto 0xA2 contando vueltas en B, y de paso remueve el color del borde (registro 7 del VDP) con `ld a,r`, que es como el Spectrum hace rayas mientras carga
 	ld a,016h		;f87c
 L_F87E:
 	dec a			;f87e
