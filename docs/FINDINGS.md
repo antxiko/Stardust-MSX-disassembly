@@ -187,6 +187,78 @@ are `and (hl)` against `or (hl)`. It is the Spectrum technique, from a machine
 with no hardware sprites: the image is shifted bit by bit with an unrolled run
 of `adc hl,hl`, a hole is opened with AND, and it is painted with OR.
 
+### And it isn't just the sprites: they share a whole library
+
+That last paragraph fell short. Looking at the rest of the service routines, it
+turns out **they don't merely resemble each other: they are the same routines,
+copied and relocated**. Five are identical byte for byte:
+
+    buffer_dir      0xC541 / 0xAACD   18 of 18 bytes
+    solapa_eje      0xCD7A / 0xAEC2   12 of 12
+    hay_tecla       0xF660 / 0xD30B   16 of 16
+    mul_a_de        0xE591 / 0xC8A6   21 of 21
+    vram_pon_dir    0xEE24 / 0xD117   16 of 16
+
+And in the rest, what turns resemblance into proof is **where** the differences
+fall: in pairs of consecutive bytes, which is exactly what a 16-bit operand
+measures. In the sprite painter, eleven of its 74 bytes differ: ten are five
+addresses —the sprite pool, the row counter, the two `jr` instructions the
+routine patches in itself, and the call to `buffer_dir`— and the eleventh is **a
+single loose byte**, the bottom clipping limit, `0x50` in the ship stage and
+`0x4F` in the on-foot one. Out of the whole routine, that is the only thing that
+really changes.
+
+In `borra_buffer` the four differences are that the `di` sits before the
+`ld hl,0 / add hl,sp` in one part and after it in the other. In the random
+generator, the four are the address of the seed, which appears twice.
+
+Counted in bulk: searching for identical runs of 32 bytes or more between the
+two blocks yields 58 runs and 5867 bytes, of which 1200 fall in code. That
+figure is deliberately low, because **every differing address splits a run in
+two**.
+
+There are also differences that aren't relocation but decision. `gira_rumbo`
+exists in both and does the same thing —bring the current heading one eighth
+closer to the requested one, the short way round— but the on-foot one is missing
+the part that consults a wait counter held in bits 3 and 4 before applying the
+turn. That is why **the ship takes a few frames to tilt from one inclination to
+the next and the man on foot changes direction instantly**.
+
+With that, the sentence above can be sharpened: the two game engines are
+different, the service library is the same.
+
+## The second load brings the Spectrum's LD-BYTES again
+
+The tape chapter already told how the loader is a reimplementation of LD-BYTES,
+the routine the ZX Spectrum ROM uses to read from tape. And also that the
+routine with which the game loads its own second part is **not** a copy of that
+one: its signature was searched for byte by byte across the three blocks and it
+isn't there.
+
+They are two different routines, but they come from the same place, and this one
+carries it written in its constants. Three numbers, each in its place and in the
+same order as in the original:
+
+    0x16     the delay in LD-EDGE-1
+    0x0415   the wait in LD-START
+    0x9C and 0xC6   the thresholds with which LD-LEADER recognises the pilot
+                    tone by measuring how long the pulse lasts
+
+Even the split into two routines is the same: one calls the other and returns if
+it fails, which is what LD-EDGE-2 does with LD-EDGE-1. The only thing genuinely
+ported is reading the bit, because the Spectrum goes through `in a,(0feh)` and
+here it has to go through the PSG's register 14.
+
+And as a bonus, the show: on every edge read, the routine feeds the border
+colour the masked refresh register (`ld a,r / and 00fh`), which is exactly **the
+colour stripes the Spectrum makes while loading**, mounted on the only place
+where an MSX has a border colour.
+
+This is an identification by structure and by constants, **not a diff**: there
+is no Spectrum ROM in this repository to compare against. With three such
+specific numbers each landing in its place it is hard for it to be anything
+else, but it is worth knowing what kind of proof this is.
+
 ## What the MSX forced them to change
 
 There is a difference of substance between the two machines that the conversion
@@ -578,11 +650,53 @@ order, below is a note— and each one can be read off its routine:
     0x81  tone/noise       0x88  noise
     0x82  loop             0x89  effect
     0x83  duration         0x8A  flags
-    0x85  tempo            0x8B  end
-    0x86  tempo to 1       0x8C  call phrase
-                           0x8D  return
+    0x84  tie              0x8B  end
+    0x85  tempo            0x8C  call phrase
+    0x86  tempo to 1       0x8D  return
+                           0x8E  transpose
 
-Two of them give away the MSX sound chip without needing to look anywhere else:
+**Thirteen used to be listed here.** The missing ones were 0x84 and 0x8E,
+which were precisely the two nobody knew what they did: the count said fifteen
+and the table showed thirteen. Both have been settled by reading their
+routines.
+
+The **0x8E** wasn't storing "a byte" anywhere: it is the voice's **transpose**.
+It writes its argument into a three-byte table, one per channel, and the note
+reader adds it to the note number before going to look up the period:
+
+    call ...            <- HL = this channel's entry
+    add a,(hl)          <- add it to the note
+    ld hl,0e6e3h        <- and look up the period with that
+
+And the **0x84** is settled by looking at **where it returns to**. The other
+fourteen return to the head of the command loop; this one jumps further down,
+and what sits in between is exactly a note's attack: open the mixer, set up the
+instrument's envelope and zero it. That is, 0x84 **counts a duration without
+re-attacking**: whatever is sounding carries on unchanged and only time passes.
+In music, that is a tie.
+
+Since that last sentence is interpretation rather than reading, it was checked
+against the score. Walking the song block with the interpreter's grammar —not
+counting loose bytes, which would confuse arguments with commands— nineteen
+0x84s appear, and this is what precedes them:
+
+    after a note         9
+    after another 0x84   5
+    after 0x83 duration  4
+    after 0x88 noise     1
+
+Not one opens a block or lands where nothing is sounding, and five chained
+behind another 0x84 is just what you would expect from something that
+prolongs: they stack up to lengthen further.
+
+It also turned out that **duration is multiplied by the tempo, and the tempo is
+a division**: the duration command leaves `argument × tempo` in the counter, and
+the tempo command computes `6000 / (argument × 8)` using a 16-bit division
+routine that was sitting right next to it, unnamed. So the score's durations
+aren't in frames: they are in tempo units.
+
+Two of the commands give away the MSX sound chip without needing to look
+anywhere else:
 the tone/noise command masks its argument with `and 9`, exactly the two bits of
 the PSG's register 7, and the noise command masks with `and 0x1F`, the five bits
 of the noise period. The code doesn't say so, but the masks do.

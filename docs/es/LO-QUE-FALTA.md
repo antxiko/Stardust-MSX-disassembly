@@ -356,9 +356,8 @@ error más grande que ha tenido este bloque, contado en la sección siguiente.
 - El cotejo con la versión de Spectrum no puede decir nada sobre esa segunda
   parte: el snapshot con el que se compara se capturó en el menú de la primera,
   así que la fase de a pie del original no está ahí.
-- Los comentarios de los listados cubren las rutinas principales y las zonas de
-  datos, pero **la mayoría de las rutinas no tienen todavía un comentario que
-  explique qué hacen**. Tienen nombre y están acotadas; no es lo mismo.
+- **Algo más de la mitad de las rutinas siguen sin comentario.** Esto se
+  cuenta abajo, con cifras.
 
 ## Por qué se publica así
 
@@ -371,12 +370,42 @@ binario. Eso incluye las afirmaciones sobre lo que **no** se sabe: por eso los
 bytes sin clasificar estuvieron acotados uno a uno mientras existieron, y por
 eso las cifras de cobertura salen del trazador y no de una impresión.
 
+## Las rutinas por comentar, contadas
+
+Una rutina de este desensamblado pasa por tres estados, y conviene no
+confundirlos:
+
+1. **acotada**: el trazador sabe dónde empieza y dónde acaba;
+2. **nombrada**: alguien ha averiguado qué es y le ha puesto nombre;
+3. **comentada**: está escrito qué hace, y con qué evidencia.
+
+El tercero es el que cuesta, y va así:
+
+    fase de naves    189 rutinas,  92 comentadas (49 %)
+    fase de a pie    144 rutinas,  61 comentadas (42 %)
+    ------------------------------------------------------
+    total            333 rutinas, 153 comentadas (46 %)
+
+O sea que **quedan 180 sin comentar**. La cifra la mide
+`tools/rutinas_comentadas.py` y la vigila un test, para que no pueda quedarse
+vieja aquí mientras el listado avanza; es la misma precaución que se tomó con
+las cifras de la portada, que ya se quedaron desfasadas una vez.
+
+Cuenta como rutina una etiqueta que sea destino de al menos un `call`, o que
+esté declarada como punto de entrada. Los destinos de salto no cuentan: la
+mayoría son bucles internos de otra rutina, y contarlos es exactamente la
+confusión que llegó a publicar 1956 «rutinas».
+
 ## En qué se está trabajando ahora
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Comentar las rutinas** una a una. Están acotadas y con nombre; falta
+- **Comentar las 180 rutinas que quedan.** Están acotadas y con nombre; falta
   explicar qué hace cada una.
+- **El comando 0x84 del intérprete de sonido**, que ya se sabe que cuenta una
+  duración sin reatacar la nota. Que eso sea una ligadura es la lectura
+  musical, y encaja con dónde aparece en la partitura, pero no está probado
+  contra el chip como sí lo está el resto del intérprete.
 
 Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las

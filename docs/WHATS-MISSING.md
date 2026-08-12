@@ -353,9 +353,8 @@ error this block has had, set out in the next section.
 - The cross-check against the ZX Spectrum version can say nothing about that
   second part: the snapshot it compares against was captured in the *first*
   part's menu, so the original's on-foot stage simply isn't in it.
-- The listings' comments cover the main routines and the data zones, but **most
-  routines still have no comment explaining what they do**. They have a name and
-  they are bounded; that isn't the same thing.
+- **A little over half the routines still have no comment.** That is counted
+  below, with figures.
 
 ## Why it is published like this
 
@@ -368,12 +367,42 @@ the binary. That includes claims about what is **not** known: which is why the
 3349 bytes are bounded one by one instead of swept under the carpet, and why the
 coverage figures come out of the tracer rather than out of an impression.
 
+## The routines left to comment, counted
+
+A routine in this disassembly goes through three states, and they are worth
+keeping apart:
+
+1. **bounded**: the tracer knows where it starts and where it ends;
+2. **named**: somebody has worked out what it is and given it a name;
+3. **commented**: what it does is written down, and with what evidence.
+
+The third one is the expensive one, and it stands here:
+
+    ship stage       189 routines,  92 commented (49 %)
+    on-foot stage    144 routines,  61 commented (42 %)
+    ------------------------------------------------------
+    total            333 routines, 153 commented (46 %)
+
+So **180 are left**. The figure is measured by `tools/rutinas_comentadas.py`
+and guarded by a test, so it cannot go stale here while the listing moves on —
+the same precaution taken with the front page's figures, which did go stale
+once.
+
+A routine counts as one when its label is the target of at least one `call`, or
+when it is declared as an entry point. Jump targets do not count: most are loops
+inside another routine, and counting them is exactly the confusion that once
+published 1956 "routines".
+
 ## What is being worked on now
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **Commenting the routines** one by one. They are bounded and named; what they
-  do is still to be written down.
+- **Commenting the 180 routines that are left.** They are bounded and named;
+  what they do is still to be written down.
+- **The sound interpreter's 0x84 command**, which is now known to consume a
+  duration without re-attacking the note. Reading that as a tie is the musical
+  interpretation, and it fits where the command appears in the score, but it
+  has not been proven against the chip the way the rest of the interpreter has.
 
 If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and

@@ -164,6 +164,77 @@ son `and (hl)` contra `or (hl)`. Es la técnica del Spectrum, que no tiene
 sprites por hardware: se desplaza el dibujo bit a bit con una tira desenrollada
 de `adc hl,hl`, se abre hueco con AND y se pinta con OR.
 
+### Y no son solo los sprites: comparten una biblioteca entera
+
+Eso de arriba se quedó corto. Mirando el resto de rutinas de servicio aparece
+que **no es que se parezcan: son las mismas rutinas, copiadas y reubicadas**.
+Cinco son idénticas byte a byte:
+
+    buffer_dir      0xC541 / 0xAACD   18 de 18 bytes
+    solapa_eje      0xCD7A / 0xAEC2   12 de 12
+    hay_tecla       0xF660 / 0xD30B   16 de 16
+    mul_a_de        0xE591 / 0xC8A6   21 de 21
+    vram_pon_dir    0xEE24 / 0xD117   16 de 16
+
+Y en las demás, lo que convierte el parecido en prueba es **dónde** caen las
+diferencias: en parejas de bytes consecutivos, que es justo lo que mide un
+operando de 16 bits. En el pintor de sprites, de sus 74 bytes difieren once:
+diez son cinco direcciones —el pozo de sprites, el contador de filas, los dos
+`jr` que la rutina se parchea a sí misma y la llamada a `buffer_dir`— y el
+undécimo es **un byte suelto**, el del recorte por abajo, `0x50` en la fase de
+naves y `0x4F` en la de a pie. De toda la rutina, eso es lo único que cambia de
+verdad.
+
+En `borra_buffer` las cuatro diferencias son que el `di` está antes del
+`ld hl,0 / add hl,sp` en una parte y después en la otra. En el generador de
+azar, las cuatro son la dirección de la semilla, que sale dos veces.
+
+Contado en bruto: buscando tramos idénticos de 32 bytes o más entre los dos
+bloques salen 58 tramos y 5867 bytes, de los cuales 1200 caen en zona de
+código. Esa cifra se queda corta a propósito, porque **cada dirección distinta
+parte el tramo en dos**.
+
+Y también hay diferencias que no son reubicación, sino decisión. `gira_rumbo`
+existe en las dos y hace lo mismo —acercar el rumbo actual al pedido un octavo
+por vez, por el lado corto—, pero a la de a pie le falta el trozo que consulta
+un contador de espera metido en los bits 3 y 4 antes de aplicar el giro. Por
+eso **la nave tarda unos cuadros en tumbarse de una inclinación a la siguiente
+y el protagonista de a pie cambia de dirección al instante**.
+
+Con esto, la frase de arriba se puede afinar: los dos motores de juego son
+distintos, la biblioteca de servicio es la misma.
+
+## La segunda carga trae LD-BYTES del Spectrum otra vez
+
+De la cinta ya se contó que el cargador es una reimplementación de LD-BYTES, la
+rutina con la que la ROM del ZX Spectrum lee de cinta. Y también que la rutina
+con la que el juego se carga a sí mismo la segunda parte **no** es copia de
+aquella: se buscó su firma byte a byte en los tres bloques y no aparece.
+
+Son dos rutinas distintas, pero vienen del mismo sitio, y ésta lo lleva escrito
+en las constantes. Tres números, cada uno en su sitio y en el mismo orden que
+en el original:
+
+    0x16     el retardo de LD-EDGE-1
+    0x0415   la espera de LD-START
+    0x9C y 0xC6   los umbrales con que LD-LEADER reconoce el tono guía
+                  midiendo cuánto dura el pulso
+
+Hasta el reparto en dos rutinas es el mismo: una llama a la otra y vuelve si
+falla, que es lo que hacen LD-EDGE-2 y LD-EDGE-1. Lo único portado de verdad es
+la lectura del bit, porque el Spectrum va por `in a,(0feh)` y aquí hay que ir
+por el registro 14 del PSG.
+
+Y de propina, el espectáculo: en cada flanco leído, la rutina le mete al color
+del borde el registro de refresco enmascarado (`ld a,r / and 00fh`), que es
+exactamente **las rayas de colores que hace el Spectrum mientras carga**,
+montadas sobre el único sitio donde el MSX tiene un color de borde.
+
+Esto es una identificación por estructura y por constantes, **no un diff**: en
+el repositorio no hay ninguna ROM del Spectrum con la que cotejar. Con tres
+números tan concretos cayendo cada uno en su sitio es difícil que sea otra
+cosa, pero conviene que se sepa de qué clase es la prueba.
+
 ## Lo que el MSX obligó a cambiar
 
 Hay una diferencia de fondo entre las dos máquinas que la conversión no pudo
@@ -548,11 +619,52 @@ orden, por debajo es una nota—, y cada uno se lee de su rutina:
     0x81  tono/ruido       0x88  ruido
     0x82  bucle            0x89  efecto
     0x83  duración         0x8A  banderas
-    0x85  tempo            0x8B  fin
-    0x86  tempo a 1        0x8C  llama a frase
-                           0x8D  vuelve
+    0x84  ligadura         0x8B  fin
+    0x85  tempo            0x8C  llama a frase
+    0x86  tempo a 1        0x8D  vuelve
+                           0x8E  transposición
 
-Dos de ellos delatan el chip de sonido del MSX sin necesidad de mirar nada más:
+**Aquí estuvieron listados trece.** Faltaban el 0x84 y el 0x8E, que eran
+justamente los dos que no se sabía qué hacían; la cuenta decía quince y la
+tabla enseñaba trece. Los dos se han resuelto leyendo sus rutinas:
+
+El **0x8E** no guardaba «un byte» en ninguna parte: es la **transposición** de
+la voz. Escribe su argumento en una tabla de tres bytes, uno por canal, y el
+lector de notas lo suma al número de nota antes de ir a buscar el periodo:
+
+    call ...            <- HL = la entrada de este canal
+    add a,(hl)          <- lo suma a la nota
+    ld hl,0e6e3h        <- y con eso busca el periodo
+
+Y el **0x84** se resuelve mirando **a dónde vuelve**. Los otros catorce vuelven
+a la cabecera del bucle de comandos; éste salta más abajo, y lo que queda en
+medio es exactamente el ataque de una nota: abrir el mezclador, montar la
+envolvente del instrumento y ponerla a cero. Es decir, el 0x84 **cuenta una
+duración sin reatacar**: lo que esté sonando sigue igual y sólo pasa el tiempo.
+Eso, en música, es una ligadura.
+
+Como esa última frase es interpretación y no lectura, se contrastó con la
+partitura. Recorriendo el bloque de canciones con la gramática del intérprete
+—no contando bytes sueltos, que confundiría los argumentos con los comandos—
+aparecen diecinueve 0x84, y llevan delante esto:
+
+    tras una nota        9
+    tras otro 0x84       5
+    tras 0x83 duración   4
+    tras 0x88 ruido      1
+
+Ni uno abre bloque ni cae donde no hay nada sonando, y cinco encadenados
+detrás de otro 0x84 es justo lo que se espera de algo que prolonga: se apilan
+para alargar más.
+
+También salió que **la duración se multiplica por el tempo, y el tempo es una
+división**: el comando de duración deja `argumento × tempo` en el contador, y
+el de tempo calcula `6000 / (argumento × 8)` con una rutina de división de 16
+bits que estaba ahí al lado sin nombre. Así que las duraciones de la partitura
+no están en cuadros: están en unidades de tempo.
+
+Dos de los comandos delatan el chip de sonido del MSX sin necesidad de mirar
+nada más:
 el de tono/ruido enmascara su argumento con `and 9`, que son justo los dos bits
 del registro 7 del PSG, y el de ruido lo enmascara con `and 0x1F`, que son los
 cinco bits del periodo de ruido. El código no lo dice, pero las máscaras sí.

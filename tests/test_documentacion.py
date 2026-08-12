@@ -967,3 +967,62 @@ class TestElDetectorDeInteriores(unittest.TestCase):
         for instr in ("call 0bd85h", "djnz L_C47B", "ld a,001h", "nop",
                       "add hl,de", "push af"):
             self.assertFalse(self.corta(instr))
+
+
+class TestLaCifraDeRutinasComentadas(unittest.TestCase):
+    """«Lo que falta» publica cuantas rutinas llevan comentario. Que no envejezca.
+
+    Es la misma precaucion que ya se tomo con las cifras de la portada, y por
+    el mismo motivo: una cifra escrita a mano deja de ser cierta en cuanto
+    alguien comenta una rutina mas, y nada avisa, porque el binario reensambla
+    igual de bien.
+    """
+
+    @staticmethod
+    def medido():
+        sys.path.insert(0, TOOLS)
+        import rutinas_comentadas
+        total, comentadas = 0, 0
+        for mod in ("juego", "parte2"):
+            rut = rutinas_comentadas.rutinas(
+                os.path.join(SRC, "stardust_%s.asm" % mod),
+                os.path.join(SRC, "%s.entries" % mod))
+            anot = rutinas_comentadas.anotadas(
+                os.path.join(SRC, "%s.notes" % mod))
+            total += len(rut)
+            comentadas += sum(1 for d in rut if d in anot)
+        return total, comentadas
+
+    @staticmethod
+    def cifras_de(pagina):
+        """Las parejas (rutinas, comentadas) del recuadro de la pagina."""
+        with open(os.path.join(DOCS, pagina), encoding="utf-8") as f:
+            texto = f.read()
+        return [(int(a), int(b)) for a, b in
+                re.findall(r"(\d+)\s+(?:rutinas|routines),\s+(\d+)\s+"
+                           r"(?:comentadas|commented)", texto)]
+
+    def test_las_dos_paginas_dicen_lo_que_miden_las_herramientas(self):
+        total, comentadas = self.medido()
+        for pagina in ("es/LO-QUE-FALTA.md", "WHATS-MISSING.md"):
+            filas = self.cifras_de(pagina)
+            self.assertEqual(len(filas), 3,
+                             "%s: se esperaban tres filas (naves, a pie, total)"
+                             % pagina)
+            naves, apie, tot = filas
+            self.assertEqual(tot, (total, comentadas), pagina)
+            self.assertEqual(naves[0] + apie[0], tot[0], pagina)
+            self.assertEqual(naves[1] + apie[1], tot[1], pagina)
+
+    def test_las_que_quedan_cuadran_con_el_total(self):
+        """El '180 que quedan' del texto tiene que ser total - comentadas."""
+        total, comentadas = self.medido()
+        quedan = total - comentadas
+        for pagina, patron in (("es/LO-QUE-FALTA.md", r"quedan (\d+) sin comentar"),
+                               ("es/LO-QUE-FALTA.md", r"Comentar las (\d+) rutinas"),
+                               ("WHATS-MISSING.md", r"\*\*(\d+) are left\*\*"),
+                               ("WHATS-MISSING.md", r"Commenting the (\d+) routines")):
+            with open(os.path.join(DOCS, pagina), encoding="utf-8") as f:
+                m = re.search(patron, f.read())
+            self.assertIsNotNone(m, "%s: no aparece '%s'" % (pagina, patron))
+            self.assertEqual(int(m.group(1)), quedan, "%s / %s" % (pagina, patron))
