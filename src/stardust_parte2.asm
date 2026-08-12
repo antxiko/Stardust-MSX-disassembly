@@ -1146,7 +1146,7 @@ L_A2C0:
 	jr nz,L_A2BA		;a2cf
 	ei			;a2d1
 L_A2D2:
-	call L_B6D3		;a2d2
+	call entra_en_records		;a2d2
 L_A2D5:
 	ld hl,06858h		;a2d5
 	ld (0a6ebh),hl		;a2d8
@@ -1188,7 +1188,7 @@ L_A32A:
 	ld (0ad2ah),a		;a32f
 	call pinta_estrellas		;a332
 	call juega_en_firme		;a335
-	call L_B4CA		;a338
+	call rotula_menu		;a338
 	ld a,(0c462h)		;a33b
 	and a			;a33e
 	jr z,L_A36F		;a33f
@@ -1246,7 +1246,7 @@ L_A3A7:
 	cp 050h			;a3a7
 	jp z,L_A325		;a3a9
 	jr c,L_A3B4		;a3ac
-	call L_D16F		;a3ae
+	call redefine_teclas		;a3ae
 	jp L_A2D5		;a3b1
 L_A3B4:
 	ld hl,0b87fh		;a3b4
@@ -1361,7 +1361,7 @@ L_A4A1:
 	call tic_cuenta_atras		;a4c1
 	call mueve_tiros_torreta		;a4c4
 	call voladores_activos		;a4c7
-	call L_B3F7		;a4ca
+	call alta_enemigo_cuadro		;a4ca
 	xor a			;a4cd
 	ld (0c462h),a		;a4ce
 	ld a,(0a689h)		;a4d1
@@ -1477,7 +1477,7 @@ L_A5B3:
 	xor a			;a5b7
 	ld de,0ce1eh		;a5b8
 	di			;a5bb
-	call L_C4D1		;a5bc
+	call arranca_guion_sin_di		;a5bc
 	ld a,014h		;a5bf
 L_A5C1:
 	pop af			;a5c1
@@ -3431,7 +3431,7 @@ cadaver_parabola:		; El cuerpo tras el impacto: sube y cae acelerando (h += esta
 L_B2A4:
 	pop af			;b2a4
 	ret			;b2a5
-L_B2A6:
+gira_sprite_dcha:		; Gira el sprite un cuarto de vuelta a la derecha sobre el slot de trabajo: cuatro pasadas de predesplaza_sprite, una por cada byte de la fila de cuatro
 	ld h,000h		;b2a6
 	ld l,a			;b2a8
 	add hl,hl		;b2a9
@@ -3453,7 +3453,7 @@ L_B2A6:
 	call predesplaza_sprite		;b2ca
 	inc hl			;b2cd
 	ld iy,07d77h		;b2ce
-predesplaza_sprite:		; Construye de una pasada las cinco versiones desplazadas de un sprite: por cada bit que saca del original con `rlca` lo mete con `rr` en una copia distinta, separadas 4 bytes en (iy+001), (iy+005), (iy+009), (iy+00D) y (iy+011)
+predesplaza_sprite:		; El nucleo de los giros: por cada bit que saca del original con `rlca` lo mete con `rr` en OCHO destinos distintos, separados 4 bytes -(iy+001), +005, +009, +00D, +011, +015, +019 y +01D-. Ocho `rlca` repartiendo un bit a cada destino, durante ocho filas, es TRASPONER un bloque de 8x8 bits. (Aqui puso CINCO destinos y que era un pre-desplazado: son ocho, contados en el binario, y no desplaza: traspone)
 	push hl			;b2d2
 	ld c,002h		;b2d3
 L_B2D5:
@@ -3483,7 +3483,7 @@ L_B2D7:
 	jr nz,L_B2D5		;b306
 	pop hl			;b308
 	ret			;b309
-L_B30A:
+gira_sprite_izda:		; La simetrica, girando a la izquierda con predesplaza_sprite_izq y los mismos cuatro destinos en otro orden
 	ld h,000h		;b30a
 	ld l,a			;b30c
 	add hl,hl		;b30d
@@ -3505,7 +3505,7 @@ L_B30A:
 	call predesplaza_sprite_izq		;b32e
 	inc hl			;b331
 	ld iy,07d57h		;b332
-predesplaza_sprite_izq:		; La simetrica de predesplaza_sprite: mismo bucle de una pasada, pero sacando los bits con `rrca` y metiendolos con `rl`, o sea desplazando hacia el otro lado, y con las cinco copias en (iy+000), (iy+004), (iy+008), (iy+00C) y (iy+010)
+predesplaza_sprite_izq:		; La simetrica: mismo bucle, sacando los bits con `rrca` y metiendolos con `rl`, y con los ocho destinos en (iy+000), +004, +008, +00C, +010, +014, +018 y +01C. Traspone en el otro sentido
 	push hl			;b336
 	ld c,002h		;b337
 L_B339:
@@ -3535,7 +3535,7 @@ L_B33B:
 	jr nz,L_B339		;b36a
 	pop hl			;b36c
 	ret			;b36d
-L_B36E:
+voltea_sprite:		; Media vuelta: copia el sprite con la PILA -`ld sp,hl` sobre el pozo y dieciseis vueltas de `pop de / pop bc`- escribiendo las filas hacia atras desde el final del slot
 	ld h,000h		;b36e
 	ld l,a			;b370
 	add hl,hl		;b371
@@ -3565,7 +3565,7 @@ L_B385:
 	jr nz,L_B385		;b390
 	ld sp,00000h		;b392
 	ret			;b395
-L_B396:
+copia_sprite:		; La identidad de las cuatro: un `ldir` de 0x40 bytes del pozo al slot de trabajo
 	ld h,000h		;b396
 	ld l,a			;b398
 	add hl,hl		;b399
@@ -3622,7 +3622,7 @@ L_B3BE:
 	ret nc			;b3f2
 	inc (hl)		;b3f3
 	jp hud_vidas		;b3f4
-L_B3F7:
+alta_enemigo_cuadro:		; El alta de enemigos cuadro a cuadro: una de cada cuatro tiradas y solo con 0xB720 a cero, saca columna al azar por debajo de 0xB0, elige nacer por arriba (fila 0x10) o por abajo (0xC0), y manda a la tabla de voladores o, si consulta_mapa da suelo firme, a la de andantes
 	call azar		;b3f7
 	and 003h		;b3fa
 	ret nz			;b3fc
@@ -3765,14 +3765,14 @@ rotula_cadena:		; Imprime la cadena de (IX) hasta el 0 con rotula_glifo: el rotu
 	call rotula_glifo		;b4c3
 	inc hl			;b4c6
 	jp rotula_cadena		;b4c7
-L_B4CA:
+rotula_menu:		; Rotula el menu entero sobre el buffer con las cinco cadenas encadenadas de 0xB886, y remata poniendo la marca de seleccion en la linea que diga 0xB87C
 	ld ix,0b886h		;b4ca
 	ld de,000c8h		;b4ce
 	call suma_scroll		;b4d1
-	call L_BB0A		;b4d4
+	call rotula_cadena_menu		;b4d4
 	ld de,003c2h		;b4d7
 	call suma_scroll		;b4da
-	call L_BB0A		;b4dd
+	call rotula_cadena_menu		;b4dd
 	ld de,006c2h		;b4e0
 	call suma_scroll		;b4e3
 	call rotula_cadena		;b4e6
@@ -3825,7 +3825,7 @@ L_B50E:
 ; ======================================================================
 
 
-L_B65B:
+scroll_records:		; El scroll de la pantalla de records: baja el puntero de 0xB87D una fila del buffer por vuelta y rotula el titulo y las ocho fichas de 0xB8C8; cuando el rotulo se sale por arriba, el llamador desapila, arranca la musica y entra en la demo. Gemela de la de naves, 35 de 49 bytes
 	ld hl,(0b87dh)		;b65b
 	ld de,00018h		;b65e
 	and a			;b661
@@ -3856,14 +3856,14 @@ L_B68C:
 L_B692:
 	call borra_buffer		;b692
 	call pinta_estrellas		;b695
-	call L_B65B		;b698
+	call scroll_records		;b698
 	call vuelca_pantalla		;b69b
 	call hay_tecla		;b69e
 	jp nz,L_A2D5		;b6a1
 	jp L_B692		;b6a4
 L_B6A7:
 	pop hl			;b6a7
-	call L_C483		;b6a8
+	call arranca_musica		;b6a8
 	nop			;b6ab
 	nop			;b6ac
 	nop			;b6ad
@@ -3884,7 +3884,7 @@ L_B6C4:
 	ld hl,0a6eeh		;b6ca
 	ld (0a689h),hl		;b6cd
 	jp L_A3B4		;b6d0
-L_B6D3:
+entra_en_records:		; Mira si el marcador entra en la tabla: compara los seis digitos contra los ocho campos de puntuacion y, al ganar uno, hace hueco con un `lddr` y salta a la entrada del nombre. Es por donde vuelve todo game over. Gemela de la de naves, 57 de 71 bytes
 	ld hl,0b8d0h		;b6d3
 	ld c,008h		;b6d6
 L_B6D8:
@@ -4133,7 +4133,7 @@ L_BAB7:
 	pop hl			;bab7
 	pop af			;bab8
 	ret			;bab9
-L_BABA:
+rotula_glifo_menu:		; rotula_glifo con otro recorte, solo para el menu: mismo glifo a doble altura y mismas mascaras de damero, pero sin el recorte de la entrada y con uno por fila que, tal como esta escrito, NO se cumple nunca (compara H contra C, que vale 0x18 fijo). No se nota porque el menu nunca baja tanto
 	cp 020h			;baba
 	push hl			;babc
 	ld h,000h		;babd
@@ -4200,14 +4200,14 @@ L_BAF6:
 	jp nz,L_BAEF		;bb05
 	pop hl			;bb08
 	ret			;bb09
-L_BB0A:
+rotula_cadena_menu:		; La cadena de rotula_glifo_menu: lee (IX), avanza y sale con el cero. Byte a byte la misma que rotula_cadena, cambiando solo a quien llama
 	ld a,(ix+000h)		;bb0a
 	inc ix			;bb0d
 	and a			;bb0f
 	ret z			;bb10
-	call L_BABA		;bb11
+	call rotula_glifo_menu		;bb11
 	inc hl			;bb14
-	jp L_BB0A		;bb15
+	jp rotula_cadena_menu		;bb15
 suma_scroll:		; HL = el scroll de 0xC463 mas DE
 	ld hl,(0c463h)		;bb18
 	add hl,de		;bb1b
@@ -4390,7 +4390,7 @@ pinta_torre:		; Dibuja la torre, y solo cuando el scroll ha llegado: `ld a,(ix+0
 	ld a,c			;bc5b
 	sub 0a0h		;bc5c
 	neg			;bc5e
-L_BC60:
+pinta_nave:		; Estampa en el buffer, desde HL y durante A filas, el dibujo de 64x64 de 0x7DDB leido con la pila (ocho `pop de` por fila); si 0xC468 no es cero le anade bajo las dos toberas una llama de (0xC468+8)/2 filas, sacada del final de las dos tablas de 24 bytes de detras del dibujo
 	ld c,a			;bc60
 	ld a,h			;bc61
 	cp 04fh			;bc62
@@ -4549,7 +4549,7 @@ L_BD2E:
 L_BD3E:
 	add a,004h		;bd3e
 	ld e,a			;bd40
-	call L_D472		;bd41
+	call dir_vram_de_fila_columna		;bd41
 	di			;bd44
 	in a,(099h)		;bd45
 	ld a,l			;bd47
@@ -4677,7 +4677,7 @@ repinta_todo:		; Rehace la pantalla entera: el fondo desde el mapa, el jugador e
 	call redibuja_fondo		;be06
 	ld hl,(0a6ebh)		;be09
 	ld a,040h		;be0c
-	call L_BC60		;be0e
+	call pinta_nave		;be0e
 	call vuelca_pantalla		;be11
 	ret			;be14
 escena_final:		; La pantalla de estrellas del final: silencio, colores, el fondo de 0x6285 al buffer, cuatro esperas largas y el guion 0xCD8F, y luego el bucle que interpreta la animacion de 0x61D8
@@ -4812,7 +4812,7 @@ L_BF25:
 	ld a,002h		;bf3a
 	ld de,0ce11h		;bf3c
 	call arranca_guion		;bf3f
-	call L_C407		;bf42
+	call fogonazo_final		;bf42
 	ld b,06eh		;bf45
 L_BF47:
 	push bc			;bf47
@@ -4997,7 +4997,7 @@ L_C3E6:
 	pop hl			;c403
 	jr z,posicion_al_azar		;c404
 	ret			;c406
-L_C407:
+fogonazo_final:		; El destello del final feliz: rellena la tabla de colores cuatro veces seguidas -0x99, 0xAA, 0xFF y 0xF1, que es el color normal- justo antes de la metralla
 	ld a,099h		;c407
 	ld iy,00bb8h		;c409
 	call rellena_colores		;c40d
@@ -5054,10 +5054,10 @@ L_C42A:
 ; ======================================================================
 
 
-L_C46E:
+interrupcion:		; El epilogo de la interrupcion, enganchado en H.TIMI: `pop hl` para tirar la vuelta a la ROM, una llamada al motor de sonido y los diez pares de registros desapilados en orden. Gemela de la de la fase de naves, 19 de 21 bytes
 	di			;c46e
 	pop hl			;c46f
-	call L_C509		;c470
+	call tic_sonido		;c470
 	pop ix			;c473
 	pop iy			;c475
 	pop af			;c477
@@ -5072,7 +5072,7 @@ L_C46E:
 	pop hl			;c480
 	ei			;c481
 	ret			;c482
-L_C483:
+arranca_musica:		; La musica de esta mitad: canal 0 a 0xCE45, canal 1 a 0xCF3D y canal 2 a 0xCFBE, y CAE en sonido_off, o sea que deja el sonido cerrado detras
 	ld a,080h		;c483
 	ld de,0ce45h		;c485
 	call arranca_guion		;c488
@@ -5121,7 +5121,7 @@ L_C4CD:
 	jr L_C4DF		;c4ce
 arranca_guion:		; Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei`): borra los 46 bytes de su estado en 0xD068+canal*46 y siembra el puntero de ejecucion y el de inicio
 	di			;c4d0
-L_C4D1:
+arranca_guion_sin_di:		; La entrada de arranca_guion saltandose su `di`, para el unico cliente que ya lo ha hecho el mismo (0xA5BC)
 	push af			;c4d1
 	push de			;c4d2
 	and 07fh		;c4d3
@@ -5163,7 +5163,7 @@ L_C4E3:
 	ret m			;c506
 	ei			;c507
 	ret			;c508
-L_C509:
+tic_sonido:		; El motor del sonido, y lo unico que hace la interrupcion: recorre los tres canales desde 0xD068, gasta la duracion y, al agotarse, calla el canal y va a por el siguiente byte del guion -comando si es 0x80 o mas, nota si no, sumandole la transposicion del canal-; luego corre las envolventes de volumen y de tono y vuelca el canal al bloque sombra de 0xD100
 	push af			;c509
 	ld b,003h		;c50a
 	xor a			;c50c
@@ -5941,7 +5941,7 @@ L_D161:
 	djnz L_D13E		;d16b
 	ei			;d16d
 	ret			;d16e
-L_D16F:
+redefine_teclas:		; La pantalla de REDEFINIR TECLAS: limpia el buffer, fuerza teclado, libera los nombres de tecla quitandoles el bit 7 y da ocho vueltas rotulando, con siete llamadas intercaladas que rellenan las siete entradas de 0xB86A. Gemela de la de naves, 34 de 48 bytes
 	call borra_buffer		;d16f
 	call vuelca_pantalla		;d172
 	xor a			;d175
@@ -6055,7 +6055,7 @@ L_D211:
 	jr z,sonido_reset		;d217
 	call imprime_marco		;d219
 	jr L_D211		;d21c
-L_D21E:
+arranca_musica_carteles:		; Instala de golpe los tres guiones de la musica de los carteles, los dos primeros sin `ei`. La llama el rotulador como codigo de control
 	ld a,080h		;d21e
 	ld de,0ce2bh		;d220
 	push hl			;d223
@@ -6127,7 +6127,7 @@ L_D28B:
 	ld bc,00000h		;d292
 	call espera_bc		;d295
 	call espera_bc		;d298
-	jp L_D21E		;d29b
+	jp arranca_musica_carteles		;d29b
 L_D29E:
 	ld a,h			;d29e
 	and 018h		;d29f
@@ -6159,7 +6159,7 @@ L_D2BB:
 	call sonido_reset		;d2c5
 	ld bc,00fa0h		;d2c8
 	call espera_bc		;d2cb
-	call L_D21E		;d2ce
+	call arranca_musica_carteles		;d2ce
 	pop hl			;d2d1
 	ret			;d2d2
 L_D2D3:
@@ -6430,7 +6430,7 @@ L_D45E:
 	pop bc			;d46d
 	inc b			;d46e
 	jp L_D3EA		;d46f
-L_D472:
+dir_vram_de_fila_columna:		; De la fila de pixel D y la columna E a la direccion de VRAM: (D>>6)*0x800 + E*0x40 + (D and 0x3F). Identica byte a byte a la de la fase de naves, las 26. Y explica el reparto 56/64/40 de las tres bandas: el buffer empieza en la fila 8, y 8+56=64 y 64+64=128 son las dos fronteras de tercio del SCREEN 2. Las bandas son los tercios de la pantalla, cortados donde manda el hardware
 	ld l,000h		;d472
 	ld a,e			;d474
 	rra			;d475

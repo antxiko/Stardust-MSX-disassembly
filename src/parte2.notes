@@ -1079,6 +1079,63 @@ L 0xAE15 alta_tiro_enemigo Mete un tiro enemigo en la tabla de 0xACA3 (contador 
 L 0xAE95 alta_volador Da de alta un volador en la tabla de 0xACF9 (contador 0xACF8, tope 2, entradas de 5 B): velocidad horizontal 0, la vertical la que traiga A' (+4 si nace arriba, -4 si nace abajo), la fase del aleteo al azar en los dos bits altos, y el estado a cero
 L 0xAECE voladores_activos La segunda mitad de la vida de los voladores, la de estado 0x2E o mas: de 0x2E a 0x32 suben 3 px por cuadro, 0x33 es la forma que persigue al jugador y dispara una de cada 64 veces, y de 0x34 a 0x37 la explosion. Se reparte la tabla con mueve_voladores, que se queda con los de estado menor: los dos cortes son complementarios
 
+# ============================================================================
+# LA INTERRUPCION DE ESTA MITAD, Y LOS CUATRO GIROS DEL SPRITE
+# ============================================================================
+#
+# LA INTERRUPCION NO HACE NADA MAS QUE SONIDO. El arranque le mete `jp 0xC46E`
+# en H.TIMI, y lo que hay ahi es un epilogo de veintiun bytes: tira la direccion
+# de vuelta a la ROM con un `pop hl` -o sea que el juego se queda la interrupcion
+# entera y no se la devuelve al BIOS-, llama UNA vez a 0xC509 y desapila los diez
+# pares que el BIOS habia dejado, en este orden: IX, IY, AF, BC, DE, HL y,
+# despues de `ex af,af' / exx`, AF', BC', DE' y HL'. Mover, dibujar y volcar van
+# todos en el bucle principal.
+#
+# Y ES LA MISMA QUE LA DE LA FASE DE NAVES: el epilogo, 19 de 21 bytes iguales
+# -lo unico que cambia es el operando del `call`-, y el motor de sonido, 430
+# bytes los dos con 372 iguales y las 58 diferencias repartidas en 29 operandos
+# de direccion, ni una instruccion distinta.
+#
+# EL BLOQUE SOMBRA DEL PSG CIERRA AL BYTE: 0xD100-0xD105 los tres periodos de
+# tono, 0xD106 el del ruido, 0xD107 el mezclador y 0xD108-0xD10A los tres
+# volumenes. Once bytes, que son los registros 0 a 10 del chip y justo el
+# `ld d,00bh` del volcado.
+L 0xC46E interrupcion El epilogo de la interrupcion, enganchado en H.TIMI: `pop hl` para tirar la vuelta a la ROM, una llamada al motor de sonido y los diez pares de registros desapilados en orden. Gemela de la de la fase de naves, 19 de 21 bytes
+L 0xC509 tic_sonido El motor del sonido, y lo unico que hace la interrupcion: recorre los tres canales desde 0xD068, gasta la duracion y, al agotarse, calla el canal y va a por el siguiente byte del guion -comando si es 0x80 o mas, nota si no, sumandole la transposicion del canal-; luego corre las envolventes de volumen y de tono y vuelca el canal al bloque sombra de 0xD100
+#
+# LOS CUATRO GIROS DEL DERRUMBE. Cuando el jugador se cae al vacio, el sprite no
+# se dibuja tal cual: se GIRA al cuarto de vuelta que toque, y el giro se elige
+# parcheando el operando del `call` de 0xA5C5 con una de estas cuatro, segun el
+# rumbo cardinal en que se cayo (0 la identidad, 2 a la derecha, 4 media vuelta,
+# 6 a la izquierda). Las cuatro dejan el resultado en el slot de trabajo 0x7D55,
+# que es el sprite 0x60, y las cuatro empiezan con los mismos doce bytes que
+# pinta_sprite para sacar la entrada A del pozo.
+L 0xB2A6 gira_sprite_dcha Gira el sprite un cuarto de vuelta a la derecha sobre el slot de trabajo: cuatro pasadas de predesplaza_sprite, una por cada byte de la fila de cuatro
+L 0xB30A gira_sprite_izda La simetrica, girando a la izquierda con predesplaza_sprite_izq y los mismos cuatro destinos en otro orden
+L 0xB36E voltea_sprite Media vuelta: copia el sprite con la PILA -`ld sp,hl` sobre el pozo y dieciseis vueltas de `pop de / pop bc`- escribiendo las filas hacia atras desde el final del slot
+L 0xB396 copia_sprite La identidad de las cuatro: un `ldir` de 0x40 bytes del pozo al slot de trabajo
+#
+# LO QUE 0xBC60 DIBUJA NO ES UNA TORRE, ES LA NAVE. El dibujo son 64 filas de
+# 8 bytes en 0x7DDB -mascara y dibujo intercalados, leidos con la PILA, y
+# 0x7DDB + 0x400 = 0x81DB cierra clavado-, y las dos tablas de 24 bytes que hay
+# justo detras caen debajo de las columnas +1 y +6, que son dos toberas
+# simetricas, y alternan cuadro a cuadro con la paridad de 0xAD27: son las
+# LLAMAS. Cuadra con que su largo (0xC468) valga cero toda la partida y solo
+# crezca -2, 4... 0x10- dentro del remate de fase, que es el despegue.
+L 0xBC60 pinta_nave Estampa en el buffer, desde HL y durante A filas, el dibujo de 64x64 de 0x7DDB leido con la pila (ocho `pop de` por fila); si 0xC468 no es cero le anade bajo las dos toberas una llama de (0xC468+8)/2 filas, sacada del final de las dos tablas de 24 bytes de detras del dibujo
+L 0xB3F7 alta_enemigo_cuadro El alta de enemigos cuadro a cuadro: una de cada cuatro tiradas y solo con 0xB720 a cero, saca columna al azar por debajo de 0xB0, elige nacer por arriba (fila 0x10) o por abajo (0xC0), y manda a la tabla de voladores o, si consulta_mapa da suelo firme, a la de andantes
+L 0xB4CA rotula_menu Rotula el menu entero sobre el buffer con las cinco cadenas encadenadas de 0xB886, y remata poniendo la marca de seleccion en la linea que diga 0xB87C
+L 0xB65B scroll_records El scroll de la pantalla de records: baja el puntero de 0xB87D una fila del buffer por vuelta y rotula el titulo y las ocho fichas de 0xB8C8; cuando el rotulo se sale por arriba, el llamador desapila, arranca la musica y entra en la demo. Gemela de la de naves, 35 de 49 bytes
+L 0xB6D3 entra_en_records Mira si el marcador entra en la tabla: compara los seis digitos contra los ocho campos de puntuacion y, al ganar uno, hace hueco con un `lddr` y salta a la entrada del nombre. Es por donde vuelve todo game over. Gemela de la de naves, 57 de 71 bytes
+L 0xBABA rotula_glifo_menu rotula_glifo con otro recorte, solo para el menu: mismo glifo a doble altura y mismas mascaras de damero, pero sin el recorte de la entrada y con uno por fila que, tal como esta escrito, NO se cumple nunca (compara H contra C, que vale 0x18 fijo). No se nota porque el menu nunca baja tanto
+L 0xBB0A rotula_cadena_menu La cadena de rotula_glifo_menu: lee (IX), avanza y sale con el cero. Byte a byte la misma que rotula_cadena, cambiando solo a quien llama
+L 0xC407 fogonazo_final El destello del final feliz: rellena la tabla de colores cuatro veces seguidas -0x99, 0xAA, 0xFF y 0xF1, que es el color normal- justo antes de la metralla
+L 0xC483 arranca_musica La musica de esta mitad: canal 0 a 0xCE45, canal 1 a 0xCF3D y canal 2 a 0xCFBE, y CAE en sonido_off, o sea que deja el sonido cerrado detras
+L 0xC4D1 arranca_guion_sin_di La entrada de arranca_guion saltandose su `di`, para el unico cliente que ya lo ha hecho el mismo (0xA5BC)
+L 0xD16F redefine_teclas La pantalla de REDEFINIR TECLAS: limpia el buffer, fuerza teclado, libera los nombres de tecla quitandoles el bit 7 y da ocho vueltas rotulando, con siete llamadas intercaladas que rellenan las siete entradas de 0xB86A. Gemela de la de naves, 34 de 48 bytes
+L 0xD21E arranca_musica_carteles Instala de golpe los tres guiones de la musica de los carteles, los dos primeros sin `ei`. La llama el rotulador como codigo de control
+L 0xD472 dir_vram_de_fila_columna De la fila de pixel D y la columna E a la direccion de VRAM: (D>>6)*0x800 + E*0x40 + (D and 0x3F). Identica byte a byte a la de la fase de naves, las 26. Y explica el reparto 56/64/40 de las tres bandas: el buffer empieza en la fila 8, y 8+56=64 y 64+64=128 son las dos fronteras de tercio del SCREEN 2. Las bandas son los tercios de la pantalla, cortados donde manda el hardware
+
 # ---------------------------------------------------------------- mas comunes
 #
 # Estas tres son otra vez la misma rutina que en el bloque de naves, con las
@@ -1347,7 +1404,7 @@ L 0xC421 copia_al_buffer Copia 720 bytes de 0x6285 al buffer en 0x4B43, en tiras
 # una copia distinta, o sea que las cinco versiones desplazadas del sprite se
 # construyen EN UNA SOLA PASADA sobre el dibujo. Los destinos caen en 0x7D57 y
 # 0x7D77, al lado del hueco de trabajo de 0x7D55.
-L 0xB2D2 predesplaza_sprite Construye de una pasada las cinco versiones desplazadas de un sprite: por cada bit que saca del original con `rlca` lo mete con `rr` en una copia distinta, separadas 4 bytes en (iy+001), (iy+005), (iy+009), (iy+00D) y (iy+011)
+L 0xB2D2 predesplaza_sprite El nucleo de los giros: por cada bit que saca del original con `rlca` lo mete con `rr` en OCHO destinos distintos, separados 4 bytes -(iy+001), +005, +009, +00D, +011, +015, +019 y +01D-. Ocho `rlca` repartiendo un bit a cada destino, durante ocho filas, es TRASPONER un bloque de 8x8 bits. (Aqui puso CINCO destinos y que era un pre-desplazado: son ocho, contados en el binario, y no desplaza: traspone)
 L 0xD3A6 vuelca_columnas El nucleo del volcado, identico al de la fase de naves: 24 vueltas por banda recogiendo el buffer a saltos de 24 -por columnas- y avanzando 0x40 en la VRAM entre una y otra
 L 0xC3DC posicion_al_azar Saca una posicion al azar dentro del area de juego, repitiendo la tirada hasta que cae dentro: la columna entre 0x18 y 0xA7 (azar por debajo de 0x90) y la fila entre 0x98 y 0xBF (azar and 0x3F por debajo de 0x28)
 
@@ -1400,7 +1457,7 @@ L 0xBE06 repinta_todo Rehace la pantalla entera: el fondo desde el mapa, el juga
 # Quien usa el tercero es la secuencia de 0xBDAC, que ademas coloca la camara
 # en 0x4638 y arranca el guion 0xCD80: cuando hay que rehacer la pantalla
 # entera de golpe no interesa el doble pase.
-L 0xB336 predesplaza_sprite_izq La simetrica de predesplaza_sprite: mismo bucle de una pasada, pero sacando los bits con `rrca` y metiendolos con `rl`, o sea desplazando hacia el otro lado, y con las cinco copias en (iy+000), (iy+004), (iy+008), (iy+00C) y (iy+010)
+L 0xB336 predesplaza_sprite_izq La simetrica: mismo bucle, sacando los bits con `rrca` y metiendolos con `rl`, y con los ocho destinos en (iy+000), +004, +008, +00C, +010, +014, +018 y +01C. Traspone en el otro sentido
 L 0xBD9C escribe_par_vram Escribe la pareja D,E en la VRAM B veces seguidas, avanzando la direccion de una en una
 L 0xBDAC rehace_pantalla Coloca la camara en 0x4638, parchea el salto de 0xA98E con el 0xDA que no salta nunca -para que el dibujado pinte todas las celdas de una pasada- y arranca el guion 0xCD80
 L 0xB436 repinta_escudo Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro celdas de color, 0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1
