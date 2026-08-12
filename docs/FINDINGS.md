@@ -355,6 +355,98 @@ the seven bytes where the magazine's POKE lands —told above— and eight more 
 0xE03D which turned out to be an object behaviour, installed as a pointer from
 two places in the block itself. Fifteen bytes sitting in the wrong column.
 
+## Two `call 0000h` that don't exist, and 192 bytes that were not text
+
+The very first thing the game does is the STARDUST logo bouncing. And that
+animation hides the reason a cold disassembler cannot handle this area.
+
+Assembling one frame takes two operations: **painting** the logo stretched to
+whatever height is due, and **clearing** the rows the previous frame left dirty.
+Which of the two goes first depends on whether the logo is rising or falling.
+Instead of solving that with an `if`, the routine **writes its own two `call`s**:
+
+    f000:  ld (0f016h),hl        the operand of the first call
+    f003:  ld (0f019h),de        and of the second
+    ...
+    f015:  call 0000h            filled in from HL
+    f018:  call 0000h            filled in from DE
+
+On tape those operands are `00 00`, so a cold listing shows two `call 0000h` —
+and a helpful disassembler hangs a BIOS routine's name off them, which means
+nothing here. In flight they are always the same two addresses, in whichever
+order an `ex de,hl` decides.
+
+Worth looking twice before calling something orphaned: those two routines were
+recorded as "nobody calls them", and it is true no `call` names them, but their
+addresses **are** written in the binary, exactly once each, as the operands of a
+`ld`.
+
+Pulling that thread turned up an error in what was published. **The credits text
+is not 429 bytes, it is 234.** The declared range began 192 bytes too early and
+swallowed **the logo's frame table**: 96 pairs (top row, height) describing the
+bounce —the height grows from 1 to 16, the logo falls to row 186 flattening out,
+and comes back— with an `0xFF` closing the list. Where the text really starts is
+stated by the code itself, and the binary agrees: before `CONVERSION POR` there
+are increasing pairs that are not text and don't look like it.
+
+## The map cell is the drawing and the state at once
+
+The things bolted into the scenery —each zone's turrets and nests— are not
+flying enemies: they are **eight-byte objects** the level builder creates on
+entering the zone, one per occupied cell of a 5×5 grid. Each carries its
+position, its type, **a pointer to its own cell** in that grid, and the address
+of the routine that governs it.
+
+And here is the nice part: **the installation does not store its frame**. It
+writes it into the cell it points at, and whoever paints the zone draws whatever
+the cell says. That is why a turret's reload cycle reads, in the listing, as a
+count from 6 to 10 over a byte of the map: 6 is the loaded gun, 7, 8 and 9 the
+animation, and on reaching 10 it goes back to 6. The same idea already found in
+the on-foot stage, where the cell byte is the tile index and the physics solid at
+the same time.
+
+States chain by **rewriting their own routine pointer**: the turret fires and
+becomes "turret reloading"; the nest releases an enemy aimed at the ship and
+marks itself; whatever is blowing up walks its cell up to 0x10 and then retires
+by installing, as its behaviour, the address of a `ret` that already exists in
+the code — so the loop can keep calling everyone without asking.
+
+The level builder decides what each cell is from its value, with a dice roll in
+the middle: `call azar / and 004h / add a,006h` turns the value 6 into 6 or 10,
+so **the same cell of the same level is sometimes a turret and sometimes a
+nest**.
+
+That is also where the four-way shot comes from. It is dropped by **the bonus
+left behind when one particular type of installation is destroyed**, and only if
+you already carry 10 of energy and the one-in-four roll lands; otherwise what you
+get is ten more energy.
+
+### Seven tables in a row, and not one boundary has to be guessed
+
+That RAM map can be read whole without guessing anything, because each table
+carries its counter in front and **dies exactly where the next table's counter
+begins**. The cap and the entry size aren't estimated: they come from the
+insertion routine itself, from the `cp` that checks the cap and from how it
+indexes.
+
+    0xC8D7  counter    0xC8D8  9 installations of 8 B  →  0xC920
+    0xC920  the zone's 5×5 grid, 25 B                  →  0xC939
+    0xC939  counter    0xC93A  6 enemy shots of 4 B    →  0xC952
+    0xC952  counter    0xC953  9 of your shots, 4 B    →  0xC977
+    0xC977  the two variables of the table walker      →  0xC97A
+    0xC97A  counter    0xC97B  4 objects of 5 B        →  0xC98F
+    0xC98F  counter    0xC990  2 objects of 4 B        →  0xC998
+    0xC998  counter    0xC999  2 objects of 5 B        →  0xC9A3
+
+6×4, 9×4, 4×5, 2×4 and 2×5 all land exactly. There is a second table just like
+it, the special tiles', with its counter at 0xCA92 and eight objects from
+0xCB3A: 64 bytes ending precisely where the declared range ended.
+
+One thing worth saying even though it doesn't come out neat: **the first table
+never checks its cap**. The builder bumps the counter without looking, and there
+is room for only nine before the grid begins. Either the level data guarantees
+it, or it overflows; which of the two has not been measured here.
+
 ## Nobody polices the collisions: each one asks about itself
 
 In both halves of the game there are two tables of things flying about, one per

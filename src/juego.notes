@@ -120,14 +120,27 @@ D 0x68FF 0x69A8 relleno (169 B; 169 de 169 bytes son 0x00)
 #  la rutina a la que salta el poke de inmortalidad de la revista. Ver la
 #  seccion del poke mas abajo.)
 D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
-D 0xC8D7 0xCA5F tabla (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
+# El area de trabajo de los objetos, partida por lo que dicen sus rutinas de
+# alta (el tope sale de un `cp` y el tamano de entrada, de como indexan). Cada
+# tabla acaba justo donde empieza el contador de la siguiente; ver la seccion
+# "el mapa de RAM de los objetos" mas abajo.
+D 0xC8D7 0xC920 instalaciones de la zona (73 B): el contador en 0xC8D7 y NUEVE entradas de 8 bytes desde 0xC8D8, las que crea el constructor del nivel y gobierna recorre_instalaciones
+D 0xC920 0xC939 la rejilla 5x5 de la zona (25 B): un byte por celda, que es a la vez el dibujo y el estado de lo que hay en ella
+D 0xC939 0xC952 los tiros enemigos (25 B): contador en 0xC939 y seis entradas de 4 bytes, el tope que comprueba alta_enemigo
+D 0xC952 0xC977 los disparos del jugador (37 B): contador en 0xC952 y nueve entradas de 4 bytes, el tope que comprueba alta_objeto_c952
+D 0xC977 0xC97A las dos variables de mueve_tabla (3 B): en 0xC977 la direccion en la que acaba la tabla que esta recorriendo y en 0xC979 cual es (4 la del jugador, 5 la enemiga)
+D 0xC97A 0xC98F la tabla del alta de 0xC882 (21 B): contador y cuatro entradas de 5 bytes
+D 0xC98F 0xC998 la tabla de alta_objeto_c990 (9 B): contador y dos entradas de 4 bytes
+D 0xC998 0xC9A3 la tabla que compacta 0xDFB1 (11 B): contador y dos entradas de 5 bytes
+D 0xC9A3 0xCA5F variables y area de trabajo (188 B); en 0xC9A3 el fotograma de la nave en los cinco bits bajos y su rumbo en los tres altos
 D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
 # 0xDA72-0xDAC4 ESTUVO AQUI como tres rangos de datos -16 B de "tabla", 1 B
 # suelto y 86 B "sin clasificar"- y son 83 bytes de CODIGO seguido. Se retiran y
 # 0xDA72 pasa a src/juego.entries. Ver el comentario de ahi.
 D 0xE14E 0xE15A relleno (12 B; 12 de 12 bytes son 0x00)
 D 0xE5E2 0xE6D2 tabla de instrumentos del interprete de sonido: 16 entradas de 15 bytes. El comando L_E4A6 lee el numero de instrumento del guion y copia la entrada (HL = 0xE5E2 + n*15) al estado del canal (ix+0x16 en adelante). Cierra al byte por los dos lados: el codigo de al lado acaba en el ret de 0xE5E1, y 0xE5E2 + 16*15 = 0xE6D2, donde empieza la tabla siguiente
-D 0xF120 0xF124 relleno o resto (4 B; 4 bytes)
+D 0xF120 0xF126 el estado del animador del logo (6 B): (ix+000/001) la fila de la cima de este fotograma y la del anterior, (ix+002/003) la altura de los dos, (ix+004) cuantas filas hay que borrar y (ix+005) -que el codigo nombra ademas como 0xF125- el contador de filas montadas. Los seis llegan a cero de la cinta y los fija anima_logo, con `ld ix,0f120h` en 0xEE57
+D 0xF126 0xF1E7 la tabla de fotogramas del logo del arranque (193 B): 96 pares (fila de la cima, altura) y el 0xFF de 0xF1E6 que cierra el recorrido. La apunta `ld hl,0f126h` en 0xEE5B y la recorre de dos en dos el bucle de presentacion. Describe el rebote: la altura crece de 1 a 16, el logo baja hasta la fila 186 aplastandose, y vuelve
 D 0xF393 0xF394 relleno o resto (1 B; 1 bytes)
 D 0xF77D 0xF77E relleno o resto (1 B; 1 bytes)
 D 0xF7C7 0xF7F6 tabla (47 B; racha 1.95, entropia 3.71, 15 valores: pocos valores para ser un dibujo)
@@ -296,7 +309,14 @@ D 0xE6E3 0xE7A3 tabla de periodos del PSG: 96 notas cromaticas = OCHO OCTAVAS ju
 #
 #   El ajuste es al byte: 0xE6E3 + 81*2 = 0xE785, que es justo donde acababa el
 #   rango sin clasificar. Eso es lo que fija los dos extremos de la tabla.
-D 0xF124 0xF2D1 textos de la pantalla de creditos (429 B; leidos del binario:
+# OJO: ESTE RANGO EMPEZABA EN 0xF124 Y SE COMIA 192 BYTES QUE NO SON TEXTO.
+# Estuvo publicado como "429 B de textos de creditos" y son 234: los 192 de la
+# tabla de fotogramas del logo (0xF126-0xF1E6, con su terminador) y los dos
+# ultimos del estado del animador estaban contados aqui dentro. El principio de
+# verdad lo dice el propio codigo, `ld ix,0f1e7h` en 0xEE8C, y el binario: en
+# 0xF1E7 empieza `0d 01 09 "CONVERSION PO..."` y lo de antes son pares
+# crecientes (00 01, 00 01, 00 02...) que no son ni texto ni lo parecen.
+D 0xF1E7 0xF2D1 textos de la pantalla de creditos (234 B; leidos del binario:
 #   CONVERSION POR / CARLOS ARIAS / GRAFICOS / JUAN CARLOS Y JAVIER AREVALO /
 #   ...ADEMAS DE... / JULIO MARTIN / MUSICA COMPUESTA POR / GOMINOLAS /
 #   BASADO EN UNA IDEA ORIGINAL / JOSE MANUEL MU&OZ / TOPO SOFT.
@@ -576,6 +596,49 @@ D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,
 
 # --- Directivas de las rutinas identificadas en las tandas del 2026-08-06/07 --
 L 0xC066 nave_estado El despachador de 0xC188, que es ESCUDO y agonia en la misma variable: de 0 a 3 son los impactos que aguanta; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
+#
+# ============================================================================
+# EL LOGO DEL ARRANQUE, Y LOS DOS `call 0000h` QUE NO EXISTEN
+# ============================================================================
+#
+# Lo primero que hace el juego despues de engancharse a la interrupcion es la
+# presentacion: el logo STARDUST rebotando. La animacion son 96 pares (fila de
+# la cima, altura) en la tabla de 0xF126, y cada fotograma se monta ENTERO en
+# RAM, en 0x4000, y se vuelca de una vez.
+#
+# Y aqui esta la pieza que hace que un desensamblador en frio no pueda con esta
+# zona. Montar un fotograma son dos operaciones -pintar el logo estirado a la
+# altura que toque y borrar las filas que el fotograma anterior dejo sucias-, y
+# EL ORDEN DE LAS DOS DEPENDE DE SI EL LOGO SUBE O BAJA. En vez de un `if`, la
+# rutina se escribe los dos `call`:
+#
+#     f000: ld (0f016h),hl / ld (0f019h),de   <- los operandos, al vuelo
+#     ...
+#     f015: call 0000h    <- se rellena con HL
+#     f018: call 0000h    <- se rellena con DE
+#
+# En la cinta esos dos operandos son 00 00, asi que el listado en frio enseña
+# `call 0000h` con un comentario de la BIOS que no pinta nada. En marcha son
+# 0xF07B y 0xF02C, o al reves, segun el `ex de,hl` de 0xEFFB.
+#
+# Y no hay que fiarse de "no lo llama nadie": el par de bytes 2c f0 aparece UNA
+# sola vez en los 46663 del bloque, en 0xEFDA, que es el operando del `ld de` de
+# 0xEFD9; y 7b f0, tambien una sola, en 0xEFDD. O sea que las dos rutinas si
+# tienen quien las nombre, solo que no con un `call`.
+L 0xEE34 presentacion La presentacion, lo primero que hace el juego (call en 0xBDA6): borra los 6144 B de patrones, pone los de color a 0x71, enciende la pantalla y recorre los 96 pares de 0xF126 llamando a anima_logo, hasta el 0xFF de 0xF1E6; luego caen los creditos
+L 0xEFD3 anima_logo Un fotograma del logo sobre el estado de 0xF120: compara fila y altura con las del fotograma anterior, calcula en (ix+004) cuantas filas hay que borrar y SE PARCHEA los operandos de los dos `call` de 0xF015/0xF018 para dibujar antes de borrar si el logo sube, o al reves si baja
+L 0xF02C logo_estira Estira el logo de 0x47A0 -16 filas de 16 B- sobre el montaje que apunta DE, repartiendolo en (ix+002) filas con un acumulador que arranca en 8: con altura 16 sale copia fila a fila, y con altura 1, dos filas
+L 0xF07B logo_borra Pone a cero (ix+004) filas de 16 B desde DE, con `ld (hl),000h` y quince `ldi` desenrollados que arrastran el cero. Con (ix+004) a cero vuelve sin tocar nada
+L 0xF0AE logo_avanza Cierra una fila del montaje: suma 16 a DE y sube el contador de filas de (ix+005), que es lo que luego mira logo_vuelca
+L 0xF0BD logo_vuelca Suelta el montaje de 0x4000 a la VRAM transponiendolo: 16 columnas y, en cada una, las filas que diga (ix+005), leyendo a saltos de 16 en la RAM y bajando por la VRAM
+L 0xF363 parpadeo_energia El parpadeo de la barra de energia cuando queda poca: solo actua si 0xD3C1 vale 1, 2 o 3, y una vez de cada ocho; lee el color de la barra en la VRAM, le da la vuelta al nibble con cuatro `rrca` y lo reescribe
+L 0xF3A7 marca_hud_enciende La entrada de ENCENDER de pinta_marca_hud: el mismo cuadro de 2x2 celdas, pero con 0x71 en vez del 0x11 con que lo apaga la entrada de 0xF3A3
+L 0xF445 redefine_teclas La pantalla de REDEFINIR TECLAS: limpia el buffer, marca como libres los nombres de tecla quitandoles el bit 7, fuerza teclado en 0xDCC3 y da ocho vueltas rotulando desde 0xDB68, con siete llamadas intercaladas que rellenan las siete entradas de la tabla de 0xDCB1
+L 0xF4F4 arranca_musica_carteles Instala de golpe los tres guiones de la musica de los carteles -0xEB38, 0xED61 y 0xED6B- en los tres canales, los dos primeros sin `ei`
+L 0xF649 rellena_colores_banda El nucleo de rellena_colores: 24 columnas y, en cada una, C bytes del color de A, avanzando 0x40 en la VRAM entre columna y columna
+L 0xF7B8 pausa_larga Ocho vueltas de un bucle de 65536, para que de tiempo a leer el ERROR DE CARGA antes de reintentar. Es lo unico que la llama (0xF7AA)
+L 0xF89F carga_vuelta El final de la carga, y la direccion que carga_cinta se empuja a si misma en 0xF7F7: para el motor de la cinta y devuelve el borde a negro por el registro 7 del VDP, deshaciendo el `ld a,r` con que 0xF893 lo hace parpadear. No toca ni una bandera, para que el acarreo de exito llegue intacto
+L 0xF8AE dir_vram_de_fila_columna De la fila de pixel D y la columna de caracter E a la direccion de VRAM: tercio*0x800 + columna*0x40 + fila dentro del tercio, el orden por columnas que impone la tabla de nombres heredada de la pantalla de carga. Identica byte a byte a la de la fase de a pie
 L 0xC05C recarga_escudo Pone el escudo (0xC188) a 3 y sigue en actualiza_nave. Nadie la llama en el juego original -su direccion no aparece ni una vez en el bloque-: es donde aterriza el POKE de inmortalidad de Input MSX 19, que cambia el `jr c` de 0xC06E por un `jr -20`
 L 0xC5E3 siembra_particulas Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
 L 0xC60C mueve_particulas Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
@@ -1806,6 +1869,105 @@ L 0xDF0F mueve_disparos Recorre los disparos de 0xC999 (contador en 0xC998, dos 
 # y seis y nueve son exactamente los topes que comprueban sus altas. Dos vias
 # independientes dando el mismo numero.
 L 0xCC18 mueve_tabla Recorre una tabla de objetos cualquiera -IX en la primera entrada, contador en (ix-001), entradas de 4 B-, les aplica el rumbo con el paso que le hayan parcheado en 0xCC32, los pinta con pinta_glifo y retira los que pasan de la fila 0xC0 o de la columna 0xBC
+#
+# ============================================================================
+# EL MAPA DE RAM DE LOS OBJETOS, QUE CIERRA BYTE A BYTE
+# ============================================================================
+#
+# De 0xC8D7 a 0xC9A3 hay SIETE tablas, cada una con su contador delante, y no
+# hay que suponer donde acaba ninguna: el tope y el tamano de entrada salen de
+# las rutinas de alta, y cada tabla muere exactamente donde empieza el contador
+# de la siguiente.
+#
+#     0xC8D7  contador de las instalaciones de la zona
+#     0xC8D8  9 instalaciones de 8 B      72 B  -> 0xC920
+#     0xC920  la rejilla 5x5 de la zona   25 B  -> 0xC939
+#     0xC939  contador
+#     0xC93A  6 tiros enemigos de 4 B     24 B  -> 0xC952   (alta_enemigo, tope 6)
+#     0xC952  contador
+#     0xC953  9 disparos del jugador 4 B  36 B  -> 0xC977   (alta_objeto_c952, 9)
+#     0xC977  el final de la tabla que mueve_tabla esta recorriendo (16 bits)
+#     0xC979  cual de las dos esta recorriendo (4 la del jugador, 5 la enemiga)
+#     0xC97A  contador
+#     0xC97B  4 objetos de 5 B            20 B  -> 0xC98F   (alta de 0xC882, tope 4)
+#     0xC98F  contador
+#     0xC990  2 objetos de 4 B             8 B  -> 0xC998   (alta_objeto_c990, 2)
+#     0xC998  contador
+#     0xC999  2 objetos de 5 B            10 B  -> 0xC9A3   (compactador de 0xDFB1)
+#     0xC9A3  fotograma y rumbo de la nave
+#
+# Cada linea de esas se comprueba sola: 6x4=24, 9x4=36, 4x5=20, 2x4=8 y 2x5=10
+# caen clavadas. Los tamanos de entrada salen de como cada alta indexa (`add
+# hl,hl` dos veces para 4, mas `add hl,de` para 5) y los topes, de su `cp`.
+#
+# LO QUE NO TIENE TOPE ES LA PRIMERA. El constructor de la zona incrementa
+# 0xC8D7 sin comprobar nada, y solo hay sitio para NUEVE antes de que empiece la
+# rejilla. O sea que es el dato de los niveles el que tiene que garantizar que
+# no haya mas de nueve celdas ocupadas en la ventana de 5x5. No esta medido
+# cuantas hay como mucho: queda dicho como lo que es, un limite sin comprobar.
+#
+# ============================================================================
+# LAS INSTALACIONES FIJAS DE LA ZONA
+# ============================================================================
+#
+# Son las cosas que estan CLAVADAS en el decorado -torretas y nidos- frente a
+# los enemigos que vuelan. Cada una ocupa ocho bytes:
+#
+#     +0  columna (x8 para pasarla a pixeles)     +3/+4  su rutina de gobierno
+#     +1  fila dentro de la zona                  +5/+6  puntero A SU CELDA de
+#     +2  el tipo, copiado de la celda                   la rejilla de 0xC920
+#     +7  la fila ya sumada al scroll de 0xCA8D
+#
+# LA CELDA DE LA REJILLA ES A LA VEZ EL DIBUJO Y EL ESTADO. Las instalaciones no
+# guardan su fotograma: lo escriben en la celda a la que apuntan por (ix+5/6),
+# y el pintor de la zona dibuja lo que diga la celda. Por eso el ciclo de
+# recarga de una torreta se lee como una cuenta de 6 a 10 sobre ese byte.
+#
+# El constructor va con el nivel: recorre 5x5 celdas, copia cada valor a la
+# rejilla y, para las que valen 3 o mas, crea la instalacion y le asigna la
+# rutina POR EL VALOR de la celda -6 la torreta, 10 el nido, cualquier otro el
+# bloque quieto-. Y el 6 no es fijo: `call azar / and 004h / add a,006h` lo
+# convierte en 6 o en 10 al vuelo, asi que la misma celda unas veces sale
+# torreta y otras nido.
+L 0xD67C recorre_instalaciones Recorre las instalaciones de la zona (contador 0xC8D7, tabla 0xC8D8, entradas de 8 B): a cada una le suma el scroll de 0xCA8D en (ix+007), y si no se ha salido por abajo (0xC0) le llama a su rutina de gobierno con `jp (hl)`, empujando antes la vuelta
+L 0xD6EA contacto_instalacion La caja de la instalacion de IX contra la nave: HL sale de (ix+000/001) con la fila doblada, y de ahi a choca_con_nave3
+L 0xD8A3 inst_torreta La torreta: mira el contacto y, una vez de cada 32, dispara desde su propia posicion mas 0x1808. Si el disparo entra, se cambia a si misma la rutina por inst_recarga
+L 0xD8CD inst_recarga La torreta recargando: cada dos cuadros (bit 0 de 0xCA8E) sube su celda de la rejilla, y al llegar a 10 la devuelve a 6 y vuelve a ser inst_torreta. Ese 6..9 es la animacion del canon
+L 0xD8F4 inst_quieta La instalacion que no hace nada: solo mira si la han tocado. Dos instrucciones
+L 0xD8F8 inst_nido El nido: pone su celda a 10 y, una vez de cada 64, suelta un enemigo apuntado a la nave (rumbo_hacia sobre 0xC184) y se marca con un 11
+L 0xD933 inst_estalla La instalacion reventando: sube su celda cada cuadro y, al llegar a 0x10, se retira; si su tipo era 5, en vez de retirarse se convierte en el bonus
+L 0xD950 retira_instalacion Retira la instalacion instalandole como rutina la direccion de un `ret` que ya existe en el codigo (0xD959): asi el bucle puede seguir llamando a todas sin preguntar
+#
+# ---------------------------------------------------------------------------
+# Y HAY UNA SEGUNDA TABLA IGUAL, LA DE LOS TILES ESPECIALES
+# ---------------------------------------------------------------------------
+#
+# Misma idea y mismo tamano de entrada, pero otra tabla y otro despachador:
+#
+#     0xCA92  contador, tope 8 (`cp 008h / ret nc` en 0xC0E0)
+#     0xCB3A  8 objetos de 8 B   64 B -> 0xCB7A, justo donde acaba el rango
+#
+# El alta es 0xC0DC y lo que la hace distinta es que la rutina de gobierno NO
+# sale de una posicion, sale del INDICE DE TILE: pone 0xC678 de serie y luego el
+# despachador de 0xC116 la cambia si el indice esta entre 0x30 y 0x5D. El
+# recorrido es el `jp (hl)` de 0xCB99, no el de 0xD6B8.
+#
+# LOS ESTADOS SE ENCADENAN IGUAL QUE EN LAS INSTALACIONES, y el tile vuelve a
+# ser el dibujo y el estado a la vez. Se lee como un ciclo:
+#
+#     tile 0x37  crece hasta 0x3B y se convierte en el 0x3B
+#     tile 0x3B  cada 32 cuadros suelta un enemigo apuntado a la nave
+#     tile 0x32  cada 16 suelta un objeto, se anima de 0x32 a 0x35 y vuelve
+#     tile 0x3C  a partir de cierta columna pasa al estado comun de 0xE03D
+L 0xDFD4 tile_37 El tile 0x37: mira si le han dado y, una vez de cada 32, pasa al estado siguiente
+L 0xDFE7 tile_37b El 0x37 creciendo: sube su tile en el mapa un punto por cuadro hasta llegar a 0x3B, y entonces se convierte en el comportamiento del 0x3B
+L 0xE002 tile_3B El tile 0x3B: una vez de cada 32 suelta un enemigo desde su posicion mas 0x0C0C, con el rumbo apuntado a la nave (rumbo_hacia sobre 0xC184)
+L 0xE02A tile_3C El tile 0x3C: cuando su columna llega a 0x10 pasa al estado comun de 0xE03D
+L 0xE03D tile_est5 El estado comun que instalan tanto el tile 0x3C (0xE033) como el 0x32 (0xE086): mira el contacto y, en los cuadros impares de 0xCA8E, sigue en 0xE045
+L 0xE05E tile_est4 Una vez de cada 32 dispara desde su posicion mas 0x0C0C; si el disparo entra, se pone el tile 0x3F y pasa al estado comun de 0xE03D
+L 0xE091 tile_32 El tile 0x32: hasta la columna 0x28 y una vez de cada 16, suelta al azar un objeto en la tabla de 0xC990 (con A'=0x1E) o en la de 0xC97B (con A'=0x1B), y pasa a tile_est6
+L 0xE0CF tile_est6 El 0x32 animandose: suena 0xEA98 y sube su tile de 0x32 a 0x35; al llegar a 0x36 lo devuelve a 0x32 y vuelve a ser tile_32
+L 0xD95A inst_bonus El bonus que deja una instalacion de tipo 5 al morir: espera a que la nave lo toque (cajas 0x0C x 0x10 y 2x4), marca su celda con 0x10 y paga 27 puntos. Si la barra de energia llega a 10, el disparo cuadruple esta apagado y el azar da 0 -una de cada cuatro-, ENCIENDE EL DISPARO CUADRUPLE (0xE14E) con el sonido 0xEA8C; si no, suma 10 de energia y repinta la barra
 L 0xCBEB recorre_las_dos_tablas Mueve las dos tablas seguidas, parcheando antes la velocidad de cada una: 6 para la de 0xC93A (seis huecos) y 9 para la de 0xC953 (nueve)
 #
 # Y ASI SE SABE QUE LA ZONA ESTA DESPEJADA: no hay bandera ni contador global,

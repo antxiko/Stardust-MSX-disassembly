@@ -1974,7 +1974,7 @@ L_BD85:
 	ld (0fd9fh),a		;bd9d
 	ld hl,0e15ah		;bda0
 	ld (0fda0h),hl		;bda3
-	call L_EE34		;bda6
+	call presentacion		;bda6
 	call sonido_reset		;bda9
 	ld hl,0edffh		;bdac
 	ld de,0ee00h		;bdaf
@@ -2070,7 +2070,7 @@ L_BE73:
 	cp 098h			;be73
 	jr z,L_BE2A		;be75
 	jr nc,hud_reset		;be77
-	call L_F445		;be79
+	call redefine_teclas		;be79
 	jp L_BDE5		;be7c
 hud_reset:		; Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
 	ld hl,0dd80h		;be7f
@@ -2179,7 +2179,7 @@ L_BF6A:
 	inc (hl)		;bf6d
 	call L_C38A		;bf6e
 	call pinta_escudo		;bf71
-	call L_F363		;bf74
+	call parpadeo_energia		;bf74
 	call mueve_estrellas		;bf77
 	ld a,001h		;bf7a
 	ld (0d3c2h),a		;bf7c
@@ -2445,7 +2445,7 @@ L_C17D:
 
 L_C189:
 	call impacto_objeto		;c189
-	call L_D6EA		;c18c
+	call contacto_instalacion		;c18c
 	ret			;c18f
 L_C190:
 	ld a,(ix+002h)		;c190
@@ -3686,8 +3686,24 @@ alta_disparo:		; Mete un disparo en la tabla de 0xC999 (contador en 0xC998, entr
 	ret			;c8d6
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: (392 B; racha 12.30, entropia 2.16, 12 valores: pocos valores para ser un dibujo)
-;   0xc8d7..0xca5f  (392 bytes)
+; DATOS instalaciones: de la zona (73 B): el contador en 0xC8D7 y NUEVE entradas de 8 bytes desde 0xC8D8, las que crea el constructor del nivel y gobierna recorre_instalaciones
+;   0xc8d7..0xc920  (73 bytes)
+; DATOS la: rejilla 5x5 de la zona (25 B): un byte por celda, que es a la vez el dibujo y el estado de lo que hay en ella
+;   0xc920..0xc939  (25 bytes)
+; DATOS los: tiros enemigos (25 B): contador en 0xC939 y seis entradas de 4 bytes, el tope que comprueba alta_enemigo
+;   0xc939..0xc952  (25 bytes)
+; DATOS los: disparos del jugador (37 B): contador en 0xC952 y nueve entradas de 4 bytes, el tope que comprueba alta_objeto_c952
+;   0xc952..0xc977  (37 bytes)
+; DATOS las: dos variables de mueve_tabla (3 B): en 0xC977 la direccion en la que acaba la tabla que esta recorriendo y en 0xC979 cual es (4 la del jugador, 5 la enemiga)
+;   0xc977..0xc97a  (3 bytes)
+; DATOS la: tabla del alta de 0xC882 (21 B): contador y cuatro entradas de 5 bytes
+;   0xc97a..0xc98f  (21 bytes)
+; DATOS la: tabla de alta_objeto_c990 (9 B): contador y dos entradas de 4 bytes
+;   0xc98f..0xc998  (9 bytes)
+; DATOS la: tabla que compacta 0xDFB1 (11 B): contador y dos entradas de 5 bytes
+;   0xc998..0xc9a3  (11 bytes)
+; DATOS variables: y area de trabajo (188 B); en 0xC9A3 el fotograma de la nave en los cinco bits bajos y su rumbo en los tres altos
+;   0xc9a3..0xca5f  (188 bytes)
 ; DATOS datos: muertos: residuo de la grabacion (37 B). Tienen estructura -valores pequenos, 0 a 10, con pinta de variables- pero NADIE los toca: sin referencias directas ni punteros en el binario, y medido con watchpoints de lectura Y escritura sobre la partida COMPLETA de 38 minutos (las siete zonas y la multicarga) mas 350 s de otra partida: cero disparos (tools/omsx_f972.tcl con STARDUST_INI/FIN_R, dump/ca5f y dump/ca5f_araubi). Que fueron antes de morir no se sabe
 ;   0xca5f..0xca84  (37 bytes)
 ; DATOS variables: del juego (18 B), con nombre: 0xCA84-0xCA8B la fuente de 8 bytes del escritor de pantalla 0xC6E9 (patrones 00/FF/55/AA, cargada en 0xC6DC); 0xCA8C/8D variables del subsistema de 0xD6xx (los tiles especiales); 0xCA8E variable del arranque (0xBE2C); 0xCA8F/90 el PUNTERO-SEMILLA del generador de azar (ld hl,(0ca8fh) en 0xC840, dentro del RNG L_C83F, el gemelo del 0xAD28 de a pie); 0xCA91/92 variables de estado (0xCA92 la incrementa el alta de objetos en 0xC0F5); 0xCA93-0xCA95 el arranque de la fuente del rotulador 0xC5A8 (cargada en 0xC55B)
@@ -4519,7 +4535,7 @@ L_D0F1:
 	push hl			;d0f8
 	ld hl,02f78h		;d0f9
 	call z,pinta_marca_hud		;d0fc
-	call nz,L_F3A7		;d0ff
+	call nz,marca_hud_enciende		;d0ff
 	pop hl			;d102
 	ld a,e			;d103
 	add a,039h		;d104
@@ -5282,13 +5298,13 @@ L_D626:
 	ld (iy+000h),l		;d633
 	cp 006h			;d636
 	jr nz,L_D640		;d638
-	ld bc,L_D8A3		;d63a
+	ld bc,inst_torreta		;d63a
 	jp L_D64A		;d63d
 L_D640:
 	cp 00ah			;d640
-	ld bc,L_D8F4		;d642
+	ld bc,inst_quieta		;d642
 	jr nz,L_D64A		;d645
-	ld bc,L_D8F8		;d647
+	ld bc,inst_nido		;d647
 L_D64A:
 	ld (iy+003h),c		;d64a
 	ld (iy+004h),b		;d64d
@@ -5317,7 +5333,7 @@ L_D665:
 	xor a			;d675
 	ld de,0ea73h		;d676
 	jp arranca_guion_libre		;d679
-L_D67C:
+recorre_instalaciones:		; Recorre las instalaciones de la zona (contador 0xC8D7, tabla 0xC8D8, entradas de 8 B): a cada una le suma el scroll de 0xCA8D en (ix+007), y si no se ha salido por abajo (0xC0) le llama a su rutina de gobierno con `jp (hl)`, empujando antes la vuelta
 	ld a,(0c8d7h)		;d67c
 	and a			;d67f
 	ret z			;d680
@@ -5347,7 +5363,7 @@ L_D697:
 	ld l,(ix+003h)		;d6b5
 	jp (hl)			;d6b8
 L_D6B9:
-	call L_D950		;d6b9
+	call retira_instalacion		;d6b9
 L_D6BC:
 	ld de,00008h		;d6bc
 	add ix,de		;d6bf
@@ -5355,7 +5371,7 @@ L_D6BC:
 	djnz L_D686		;d6c2
 	ret			;d6c4
 L_D6C5:
-	call L_D6EA		;d6c5
+	call contacto_instalacion		;d6c5
 	ld a,(ix+000h)		;d6c8
 	dec a			;d6cb
 	jr nz,L_D6D6		;d6cc
@@ -5373,7 +5389,7 @@ L_D6D6:
 	xor (hl)		;d6e7
 	ld (hl),a		;d6e8
 	ret			;d6e9
-L_D6EA:
+contacto_instalacion:		; La caja de la instalacion de IX contra la nave: HL sale de (ix+000/001) con la fila doblada, y de ahi a choca_con_nave3
 	ld h,(ix+000h)		;d6ea
 	ld l,(ix+001h)		;d6ed
 	sla h			;d6f0
@@ -5543,7 +5559,7 @@ L_D820:
 	ret nz			;d836
 	jp L_D5AA		;d837
 L_D83A:
-	call L_D67C		;d83a
+	call recorre_instalaciones		;d83a
 	ld hl,(0ca8ch)		;d83d
 	ld a,(0ca8eh)		;d840
 	and 007h		;d843
@@ -5603,7 +5619,7 @@ L_D894:
 	ld l,a			;d89b
 	ld ix,0c920h		;d89c
 	jp L_C69F		;d8a0
-L_D8A3:
+inst_torreta:		; La torreta: mira el contacto y, una vez de cada 32, dispara desde su propia posicion mas 0x1808. Si el disparo entra, se cambia a si misma la rutina por inst_recarga
 	call choca_y_revienta		;d8a3
 	call azar		;d8a6
 	and 01fh		;d8a9
@@ -5622,11 +5638,11 @@ L_D8A3:
 	ex af,af'		;d8be
 	call alta_disparo		;d8bf
 	ret nc			;d8c2
-	ld hl,L_D8CD		;d8c3
+	ld hl,inst_recarga		;d8c3
 	ld (ix+003h),l		;d8c6
 	ld (ix+004h),h		;d8c9
 	ret			;d8cc
-L_D8CD:
+inst_recarga:		; La torreta recargando: cada dos cuadros (bit 0 de 0xCA8E) sube su celda de la rejilla, y al llegar a 10 la devuelve a 6 y vuelve a ser inst_torreta. Ese 6..9 es la animacion del canon
 	call choca_y_revienta		;d8cd
 	ld a,(0ca8eh)		;d8d0
 	and 001h		;d8d3
@@ -5641,14 +5657,14 @@ L_D8CD:
 	ld a,006h		;d8e4
 	ld (hl),a		;d8e6
 	ld (ix+002h),a		;d8e7
-	ld hl,L_D8A3		;d8ea
+	ld hl,inst_torreta		;d8ea
 	ld (ix+003h),l		;d8ed
 	ld (ix+004h),h		;d8f0
 	ret			;d8f3
-L_D8F4:
+inst_quieta:		; La instalacion que no hace nada: solo mira si la han tocado. Dos instrucciones
 	call choca_y_revienta		;d8f4
 	ret			;d8f7
-L_D8F8:
+inst_nido:		; El nido: pone su celda a 10 y, una vez de cada 64, suelta un enemigo apuntado a la nave (rumbo_hacia sobre 0xC184) y se marca con un 11
 	call choca_y_revienta		;d8f8
 	ld l,(ix+005h)		;d8fb
 	ld h,(ix+006h)		;d8fe
@@ -5678,7 +5694,7 @@ L_D8F8:
 	ld h,(ix+006h)		;d92d
 	ld (hl),00bh		;d930
 	ret			;d932
-L_D933:
+inst_estalla:		; La instalacion reventando: sube su celda cada cuadro y, al llegar a 0x10, se retira; si su tipo era 5, en vez de retirarse se convierte en el bonus
 	ld l,(ix+005h)		;d933
 	ld h,(ix+006h)		;d936
 	inc (hl)		;d939
@@ -5687,18 +5703,18 @@ L_D933:
 	ret c			;d93d
 	ld a,(ix+002h)		;d93e
 	cp 005h			;d941
-	jp nz,L_D950		;d943
-	ld hl,L_D95A		;d946
+	jp nz,retira_instalacion		;d943
+	ld hl,inst_bonus		;d946
 	ld (ix+003h),l		;d949
 	ld (ix+004h),h		;d94c
 	ret			;d94f
-L_D950:
+retira_instalacion:		; Retira la instalacion instalandole como rutina la direccion de un `ret` que ya existe en el codigo (0xD959): asi el bucle puede seguir llamando a todas sin preguntar
 	ld hl,ld959h		;d950
 	ld (ix+003h),l		;d953
 	ld (ix+004h),h		;d956
 L_D959:
 	ret			;d959
-L_D95A:
+inst_bonus:		; El bonus que deja una instalacion de tipo 5 al morir: espera a que la nave lo toque (cajas 0x0C x 0x10 y 2x4), marca su celda con 0x10 y paga 27 puntos. Si la barra de energia llega a 10, el disparo cuadruple esta apagado y el azar da 0 -una de cada cuatro-, ENCIENDE EL DISPARO CUADRUPLE (0xE14E) con el sonido 0xEA8C; si no, suma 10 de energia y repinta la barra
 	ld a,(0c188h)		;d95a
 	cp 004h			;d95d
 	jp nc,L_D9CA		;d95f
@@ -5748,7 +5764,7 @@ L_D9BF:
 	ld hl,0dd85h		;d9bf
 	ld b,01bh		;d9c2
 	call premia		;d9c4
-	jp L_D950		;d9c7
+	jp retira_instalacion		;d9c7
 L_D9CA:
 	ld a,(0ca8eh)		;d9ca
 	and 003h		;d9cd
@@ -6080,16 +6096,16 @@ L_DFB1:
 	pop de			;dfce
 	ldir			;dfcf
 	jp L_DFAB		;dfd1
-L_DFD4:
+tile_37:		; El tile 0x37: mira si le han dado y, una vez de cada 32, pasa al estado siguiente
 	call impacto_objeto		;dfd4
 	call azar		;dfd7
 	and 01fh		;dfda
 	ret nz			;dfdc
-	ld hl,L_DFE7		;dfdd
+	ld hl,tile_37b		;dfdd
 	ld (ix+003h),l		;dfe0
 	ld (ix+004h),h		;dfe3
 	ret			;dfe6
-L_DFE7:
+tile_37b:		; El 0x37 creciendo: sube su tile en el mapa un punto por cuadro hasta llegar a 0x3B, y entonces se convierte en el comportamiento del 0x3B
 	inc (ix+002h)		;dfe7
 	call impacto_objeto		;dfea
 	ld l,(ix+005h)		;dfed
@@ -6098,11 +6114,11 @@ L_DFE7:
 	ld a,(hl)		;dff4
 	cp 03bh			;dff5
 	ret c			;dff7
-	ld hl,L_E002		;dff8
+	ld hl,tile_3B		;dff8
 	ld (ix+003h),l		;dffb
 	ld (ix+004h),h		;dffe
 	ret			;e001
-L_E002:
+tile_3B:		; El tile 0x3B: una vez de cada 32 suelta un enemigo desde su posicion mas 0x0C0C, con el rumbo apuntado a la nave (rumbo_hacia sobre 0xC184)
 	call impacto_objeto		;e002
 	call azar		;e005
 	and 01fh		;e008
@@ -6122,16 +6138,16 @@ L_E002:
 	pop bc			;e025
 	call alta_enemigo		;e026
 	ret			;e029
-L_E02A:
+tile_3C:		; El tile 0x3C: cuando su columna llega a 0x10 pasa al estado comun de 0xE03D
 	call impacto_objeto		;e02a
 	ld a,(ix+000h)		;e02d
 	cp 010h			;e030
 	ret c			;e032
-	ld hl,L_E03D		;e033
+	ld hl,tile_est5		;e033
 	ld (ix+003h),l		;e036
 	ld (ix+004h),h		;e039
 	ret			;e03c
-L_E03D:
+tile_est5:		; El estado comun que instalan tanto el tile 0x3C (0xE033) como el 0x32 (0xE086): mira el contacto y, en los cuadros impares de 0xCA8E, sigue en 0xE045
 	call impacto_objeto		;e03d
 	ld a,(0ca8eh)		;e040
 	and 001h		;e043
@@ -6143,11 +6159,11 @@ L_E03D:
 	ld a,(hl)		;e050
 	cp 042h			;e051
 	ret c			;e053
-	ld hl,L_E05E		;e054
+	ld hl,tile_est4		;e054
 	ld (ix+003h),l		;e057
 	ld (ix+004h),h		;e05a
 	ret			;e05d
-L_E05E:
+tile_est4:		; Una vez de cada 32 dispara desde su posicion mas 0x0C0C; si el disparo entra, se pone el tile 0x3F y pasa al estado comun de 0xE03D
 	call impacto_objeto		;e05e
 	call azar		;e061
 	and 01fh		;e064
@@ -6168,11 +6184,11 @@ L_E05E:
 	ld l,(ix+005h)		;e080
 	ld h,(ix+006h)		;e083
 	ld (hl),a		;e086
-	ld hl,L_E03D		;e087
+	ld hl,tile_est5		;e087
 	ld (ix+003h),l		;e08a
 	ld (ix+004h),h		;e08d
 	ret			;e090
-L_E091:
+tile_32:		; El tile 0x32: hasta la columna 0x28 y una vez de cada 16, suelta al azar un objeto en la tabla de 0xC990 (con A'=0x1E) o en la de 0xC97B (con A'=0x1B), y pasa a tile_est6
 	call choca_con_nave4		;e091
 	ld a,(ix+000h)		;e094
 	cp 028h			;e097
@@ -6200,11 +6216,11 @@ L_E0BE:
 	call L_C882		;e0c1
 L_E0C4:
 	ret nc			;e0c4
-	ld hl,L_E0CF		;e0c5
+	ld hl,tile_est6		;e0c5
 	ld (ix+003h),l		;e0c8
 	ld (ix+004h),h		;e0cb
 	ret			;e0ce
-L_E0CF:
+tile_est6:		; El 0x32 animandose: suena 0xEA98 y sube su tile de 0x32 a 0x35; al llegar a 0x36 lo devuelve a 0x32 y vuelve a ser tile_32
 	call choca_con_nave4		;e0cf
 	inc (ix+002h)		;e0d2
 	ld a,001h		;e0d5
@@ -6219,7 +6235,7 @@ L_E0CF:
 	ld a,032h		;e0e8
 	ld (hl),a		;e0ea
 	ld (ix+002h),a		;e0eb
-	ld hl,L_E091		;e0ee
+	ld hl,tile_32		;e0ee
 	ld (ix+003h),l		;e0f1
 	ld (ix+004h),h		;e0f4
 	ret			;e0f7
@@ -7114,7 +7130,7 @@ vram_pon_dir:		; Fija la direccion de ESCRITURA del VDP por el puerto 0x99, con 
 	out (099h),a		;ee30
 	pop af			;ee32
 	ret			;ee33
-L_EE34:
+presentacion:		; La presentacion, lo primero que hace el juego (call en 0xBDA6): borra los 6144 B de patrones, pone los de color a 0x71, enciende la pantalla y recorre los 96 pares de 0xF126 llamando a anima_logo, hasta el 0xFF de 0xF1E6; luego caen los creditos
 	ld b,032h		;ee34
 	call retardo		;ee36
 	ld hl,00000h		;ee39
@@ -7146,7 +7162,7 @@ L_EE62:
 	push hl			;ee70
 	ld b,001h		;ee71
 	call retardo		;ee73
-	call L_EFD3		;ee76
+	call anima_logo		;ee76
 	pop hl			;ee79
 	jr L_EE62		;ee7a
 creditos:		; La secuencia de creditos: cinco carteles en el tercio central (bucle de 0xEE92 sobre la tabla de 0xF1E7, dentro del bloque de textos 0xF124-0xF2D0), cada uno con su pausa y su transicion
@@ -7332,11 +7348,11 @@ L_EFCA:
 	pop bc			;efcf
 	djnz retardo		;efd0
 	ret			;efd2
-L_EFD3:
+anima_logo:		; Un fotograma del logo sobre el estado de 0xF120: compara fila y altura con las del fotograma anterior, calcula en (ix+004) cuantas filas hay que borrar y SE PARCHEA los operandos de los dos `call` de 0xF015/0xF018 para dibujar antes de borrar si el logo sube, o al reves si baja
 	ld a,(ix+000h)		;efd3
 	sub (ix+001h)		;efd6
-	ld de,L_F02C		;efd9
-	ld hl,L_F07B		;efdc
+	ld de,logo_estira		;efd9
+	ld hl,logo_borra		;efdc
 	ld c,(ix+001h)		;efdf
 	jr c,L_EFF0		;efe2
 	jr nz,L_EFFD		;efe4
@@ -7357,7 +7373,7 @@ L_EFFD:
 	ld (0f019h),de		;f003
 	ld d,c			;f007
 	ld e,008h		;f008
-	call L_F8AE		;f00a
+	call dir_vram_de_fila_columna		;f00a
 	xor a			;f00d
 	ld (0f125h),a		;f00e
 	push hl			;f011
@@ -7365,13 +7381,13 @@ L_EFFD:
 	call 00000h		;f015   ; BIOS CHKRAM - Tests RAM and sets RAM slot for the system  [alias: STARTUP, RESET, BOOT]
 	call 00000h		;f018   ; BIOS CHKRAM - Tests RAM and sets RAM slot for the system  [alias: STARTUP, RESET, BOOT]
 	pop hl			;f01b
-	call L_F0BD		;f01c
+	call logo_vuelca		;f01c
 	ld a,(ix+000h)		;f01f
 	ld (ix+001h),a		;f022
 	ld a,(ix+002h)		;f025
 	ld (ix+003h),a		;f028
 	ret			;f02b
-L_F02C:
+logo_estira:		; Estira el logo de 0x47A0 -16 filas de 16 B- sobre el montaje que apunta DE, repartiendolo en (ix+002) filas con un acumulador que arranca en 8: con altura 16 sale copia fila a fila, y con altura 1, dos filas
 	ld a,020h		;f02c
 	ld b,010h		;f02e
 	sub (ix+002h)		;f030
@@ -7402,7 +7418,7 @@ L_F03A:
 	cp 010h			;f05d
 	jr nc,L_F069		;f05f
 	ex af,af'		;f061
-	call L_F0AE		;f062
+	call logo_avanza		;f062
 	ex af,af'		;f065
 	add a,010h		;f066
 	scf			;f068
@@ -7419,8 +7435,8 @@ L_F069:
 	jr L_F03A		;f075
 L_F077:
 	ret c			;f077
-	jp L_F0AE		;f078
-L_F07B:
+	jp logo_avanza		;f078
+logo_borra:		; Pone a cero (ix+004) filas de 16 B desde DE, con `ld (hl),000h` y quince `ldi` desenrollados que arrastran el cero. Con (ix+004) a cero vuelve sin tocar nada
 	ld a,(ix+004h)		;f07b
 	and a			;f07e
 	ret z			;f07f
@@ -7446,11 +7462,11 @@ L_F080:
 	ldi			;f0a0
 	ldi			;f0a2
 	pop de			;f0a4
-	call L_F0AE		;f0a5
+	call logo_avanza		;f0a5
 	dec (ix+004h)		;f0a8
 	ret z			;f0ab
 	jr L_F080		;f0ac
-L_F0AE:
+logo_avanza:		; Cierra una fila del montaje: suma 16 a DE y sube el contador de filas de (ix+005), que es lo que luego mira logo_vuelca
 	push hl			;f0ae
 	ld hl,00010h		;f0af
 	add hl,de		;f0b2
@@ -7460,7 +7476,7 @@ L_F0AE:
 	inc a			;f0b8
 	ld (0f125h),a		;f0b9
 	ret			;f0bc
-L_F0BD:
+logo_vuelca:		; Suelta el montaje de 0x4000 a la VRAM transponiendolo: 16 columnas y, en cada una, las filas que diga (ix+005), leyendo a saltos de 16 en la RAM y bajando por la VRAM
 	ld c,010h		;f0bd
 	ld de,04000h		;f0bf
 L_F0C2:
@@ -7539,10 +7555,12 @@ vram_pon_dir_lee:		; Fija la direccion de LECTURA del VDP por el puerto 0x99, si
 	ret			;f11f
 
 ; ----------------------------------------------------------------------
-; DATOS relleno: o resto (4 B; 4 bytes)
-;   0xf120..0xf124  (4 bytes)
-; DATOS textos: de la pantalla de creditos (429 B; leidos del binario:
-;   0xf124..0xf2d1  (429 bytes)
+; DATOS el: estado del animador del logo (6 B): (ix+000/001) la fila de la cima de este fotograma y la del anterior, (ix+002/003) la altura de los dos, (ix+004) cuantas filas hay que borrar y (ix+005) -que el codigo nombra ademas como 0xF125- el contador de filas montadas. Los seis llegan a cero de la cinta y los fija anima_logo, con `ld ix,0f120h` en 0xEE57
+;   0xf120..0xf126  (6 bytes)
+; DATOS la: tabla de fotogramas del logo del arranque (193 B): 96 pares (fila de la cima, altura) y el 0xFF de 0xF1E6 que cierra el recorrido. La apunta `ld hl,0f126h` en 0xEE5B y la recorre de dos en dos el bucle de presentacion. Describe el rebote: la altura crece de 1 a 16, el logo baja hasta la fila 186 aplastandose, y vuelve
+;   0xf126..0xf1e7  (193 bytes)
+; DATOS textos: de la pantalla de creditos (234 B; leidos del binario:
+;   0xf1e7..0xf2d1  (234 bytes)
 ; ----------------------------------------------------------------------
 	defb 000h,000h,000h,000h,000h,000h,000h,001h,000h,001h,000h,001h,000h,002h,000h,002h	; f120  ................
 	defb 000h,003h,000h,003h,000h,004h,000h,005h,000h,006h,000h,008h,000h,00ah,000h,00dh	; f130  ................
@@ -7681,7 +7699,7 @@ L_F35F:
 	ld l,a			;f35f
 	djnz L_F33E		;f360
 	ret			;f362
-L_F363:
+parpadeo_energia:		; El parpadeo de la barra de energia cuando queda poca: solo actua si 0xD3C1 vale 1, 2 o 3, y una vez de cada ocho; lee el color de la barra en la VRAM, le da la vuelta al nibble con cuatro `rrca` y lo reescribe
 	ld a,(0d3c1h)		;f363
 	cp 004h			;f366
 	ret nc			;f368
@@ -7736,7 +7754,7 @@ premia:		; Suma B al marcador por el digito que apunte HL (dentro de los seis de
 pinta_marca_hud:		; Pinta la marca del HUD en HL con el color 0x11; la entrada de 0xF3A7 hace lo mismo con el 0x71, que es como se enciende y se apaga
 	ld a,011h		;f3a3
 	jr L_F3A9		;f3a5
-L_F3A7:
+marca_hud_enciende:		; La entrada de ENCENDER de pinta_marca_hud: el mismo cuadro de 2x2 celdas, pero con 0x71 en vez del 0x11 con que lo apaga la entrada de 0xF3A3
 	ld a,071h		;f3a7
 L_F3A9:
 	ld b,002h		;f3a9
@@ -7841,7 +7859,7 @@ L_F432:
 	ex de,hl		;f43f
 	inc ix			;f440
 	jp hud_imprime		;f442
-L_F445:
+redefine_teclas:		; La pantalla de REDEFINIR TECLAS: limpia el buffer, marca como libres los nombres de tecla quitandoles el bit 7, fuerza teclado en 0xDCC3 y da ocho vueltas rotulando desde 0xDB68, con siete llamadas intercaladas que rellenan las siete entradas de la tabla de 0xDCB1
 	call borra_buffer		;f445
 	call vuelca_pantalla		;f448
 	xor a			;f44b
@@ -7955,7 +7973,7 @@ L_F4E7:
 	jr z,sonido_reset		;f4ed
 	call rotulador_cmd		;f4ef
 	jr L_F4E7		;f4f2
-L_F4F4:
+arranca_musica_carteles:		; Instala de golpe los tres guiones de la musica de los carteles -0xEB38, 0xED61 y 0xED6B- en los tres canales, los dos primeros sin `ei`
 	ld a,080h		;f4f4
 	ld de,0eb38h		;f4f6
 	push hl			;f4f9
@@ -8027,7 +8045,7 @@ L_F561:
 	ld bc,00000h		;f568
 	call espera_bc2		;f56b
 	call espera_bc2		;f56e
-	jp L_F4F4		;f571
+	jp arranca_musica_carteles		;f571
 L_F574:
 	ld a,h			;f574
 	and 018h		;f575
@@ -8059,7 +8077,7 @@ L_F591:
 	call sonido_reset		;f59b
 	ld bc,00fa0h		;f59e
 	call espera_bc2		;f5a1
-	call L_F4F4		;f5a4
+	call arranca_musica_carteles		;f5a4
 	pop hl			;f5a7
 	ret			;f5a8
 L_F5A9:
@@ -8172,13 +8190,13 @@ L_F615:
 rellena_colores:		; Pone el color A en la tabla de colores de la pantalla, tercio a tercio: 0x2108 x 56 filas, 0x2900 x 64 y 0x3100 x 40, las tres bandas de siempre, 24 caracteres de ancho
 	ld hl,02108h		;f634
 	ld c,038h		;f637
-	call L_F649		;f639
+	call rellena_colores_banda		;f639
 	ld hl,02900h		;f63c
 	ld c,040h		;f63f
-	call L_F649		;f641
+	call rellena_colores_banda		;f641
 	ld hl,03100h		;f644
 	ld c,028h		;f647
-L_F649:
+rellena_colores_banda:		; El nucleo de rellena_colores: 24 columnas y, en cada una, C bytes del color de A, avanzando 0x40 en la VRAM entre columna y columna
 	ld b,018h		;f649
 L_F64B:
 	call vram_pon_dir		;f64b
@@ -8389,13 +8407,13 @@ L_F79D:
 	ld ix,0f7c7h		;f7a0
 	ld hl,001f8h		;f7a4
 	call rotula_secuencia		;f7a7
-	call L_F7B8		;f7aa
+	call pausa_larga		;f7aa
 	jp L_F73B		;f7ad
 L_F7B0:
 	ld a,001h		;f7b0
 	ld (0a529h),a		;f7b2
 	jp 0a279h		;f7b5
-L_F7B8:
+pausa_larga:		; Ocho vueltas de un bucle de 65536, para que de tiempo a leer el ERROR DE CARGA antes de reintentar. Es lo unico que la llama (0xF7AA)
 	ld b,008h		;f7b8
 L_F7BA:
 	push bc			;f7ba
@@ -8423,7 +8441,7 @@ L_F7BE:
 
 
 carga_cinta:		; La carga de la segunda parte: empuja a mano la vuelta a 0xF89F, arranca el motor (0xAB) y el registro 14 del PSG, y engancha el tono guia midiendo pulsos contra 0x9C y 0xC6. Es LD-BYTES de la ROM del Spectrum, con la lectura del bit adaptada al PSG del MSX
-	ld hl,L_F89F		;f7f6
+	ld hl,carga_vuelta		;f7f6
 	push hl			;f7f9
 	push af			;f7fa
 	ld a,008h		;f7fb
@@ -8539,7 +8557,7 @@ L_F882:
 	out (099h),a		;f89b
 	scf			;f89d
 	ret			;f89e
-L_F89F:
+carga_vuelta:		; El final de la carga, y la direccion que carga_cinta se empuja a si misma en 0xF7F7: para el motor de la cinta y devuelve el borde a negro por el registro 7 del VDP, deshaciendo el `ld a,r` con que 0xF893 lo hace parpadear. No toca ni una bandera, para que el acarreo de exito llegue intacto
 	ld e,013h		;f89f
 	ld a,009h		;f8a1
 	out (0abh),a		;f8a3
@@ -8548,7 +8566,7 @@ L_F89F:
 	ld a,087h		;f8a9
 	out (099h),a		;f8ab
 	ret			;f8ad
-L_F8AE:
+dir_vram_de_fila_columna:		; De la fila de pixel D y la columna de caracter E a la direccion de VRAM: tercio*0x800 + columna*0x40 + fila dentro del tercio, el orden por columnas que impone la tabla de nombres heredada de la pantalla de carga. Identica byte a byte a la de la fase de a pie
 	ld l,000h		;f8ae
 	ld a,e			;f8b0
 	rra			;f8b1

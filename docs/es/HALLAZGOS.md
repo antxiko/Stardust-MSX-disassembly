@@ -333,6 +333,97 @@ más en 0xE03D que resultaron ser un comportamiento de objeto, instalado como
 puntero desde dos sitios del propio bloque. Quince bytes que estaban en la
 columna equivocada.
 
+## Dos `call 0000h` que no existen, y 192 bytes que no eran texto
+
+Lo primero que hace el juego, antes que nada, es el logo STARDUST rebotando. Y
+esa animación esconde la razón por la que un desensamblador en frío no puede con
+esta zona.
+
+Montar un fotograma son dos operaciones: **pintar** el logo estirado a la altura
+que toque y **borrar** las filas que dejó sucias el fotograma anterior. Y el
+orden de las dos depende de si el logo sube o baja. En vez de resolverlo con un
+`if`, la rutina **se escribe los dos `call` a sí misma**:
+
+    f000:  ld (0f016h),hl        el operando del primer call
+    f003:  ld (0f019h),de        el del segundo
+    ...
+    f015:  call 0000h            se rellena con HL
+    f018:  call 0000h            se rellena con DE
+
+En la cinta esos operandos son `00 00`, así que el listado en frío enseña dos
+`call 0000h` —y un desensamblador servicial les cuelga el comentario de una
+rutina de la BIOS que no pinta nada—. En marcha son siempre las mismas dos
+direcciones, en el orden que decida un `ex de,hl`.
+
+Conviene mirarlo dos veces antes de dar algo por huérfano: esas dos rutinas
+figuraban como «no las llama nadie», y es verdad que ningún `call` las nombra,
+pero sus direcciones **sí** están escritas en el binario, una sola vez cada una,
+como operandos de un `ld`.
+
+Y tirando de ahí apareció un descuadre en lo publicado. **Los textos de los
+créditos no son 429 bytes, son 234.** El rango declarado empezaba 192 bytes
+antes de tiempo y se comía **la tabla de fotogramas del logo**: 96 pares (fila de
+la cima, altura) que describen el rebote —la altura crece de 1 a 16, el logo baja
+hasta la fila 186 aplastándose, y vuelve— con un `0xFF` cerrando la lista. Dónde
+empieza el texto de verdad lo dice el propio código, y el binario lo confirma:
+antes del `CONVERSION POR` hay pares crecientes que no son texto ni lo parecen.
+
+## La casilla del mapa es a la vez el dibujo y el estado
+
+Las cosas que están clavadas en el decorado —las torretas y los nidos de cada
+zona— no son enemigos que vuelan: son **objetos de ocho bytes** que el
+constructor del nivel crea al entrar en la zona, uno por casilla ocupada de una
+rejilla de 5×5. Cada uno lleva su posición, el tipo, **un puntero a su casilla**
+de esa rejilla y la dirección de la rutina que lo gobierna.
+
+Y ahí está lo bonito: **la instalación no guarda su fotograma**. Lo escribe en la
+casilla a la que apunta, y el que pinta la zona dibuja lo que diga la casilla. Por
+eso el ciclo de recarga de una torreta se lee, en el listado, como una cuenta de
+6 a 10 sobre un byte del mapa: 6 es el cañón cargado, 7, 8 y 9 la animación, y al
+llegar a 10 vuelve a 6. La misma idea que ya apareció en la fase de a pie, donde
+el byte de celda es el índice del dibujo y a la vez el sólido de la física.
+
+Los estados se encadenan **reescribiéndose la rutina a sí mismos**: la torreta
+dispara y se convierte en «torreta recargando»; el nido suelta un enemigo
+apuntado a la nave y se marca; lo que revienta va subiendo su casilla hasta 0x10
+y se retira instalándose como comportamiento la dirección de un `ret` que ya
+existe en el código, para que el bucle pueda seguir llamando a todos sin
+preguntar.
+
+Y el constructor del nivel decide qué es cada casilla por su valor, con una
+tirada de azar de por medio: `call azar / and 004h / add a,006h` convierte el
+valor 6 en 6 o en 10, así que **la misma casilla del mismo nivel unas veces sale
+torreta y otras nido**.
+
+De ahí sale, además, de dónde viene el disparo cuádruple. Lo deja **el bonus que
+suelta al reventar una instalación de un tipo concreto**, y sólo si ya llevas 10
+de energía y te toca una de cada cuatro; si no, lo que da son diez de energía.
+
+### Siete tablas seguidas, y ninguna frontera hay que suponerla
+
+Ese mapa de RAM se puede leer entero sin adivinar nada, porque cada tabla lleva
+su contador delante y **muere exactamente donde empieza el contador de la
+siguiente**. El tope y el tamaño de entrada no se estiman: salen de la propia
+rutina de alta, del `cp` con que comprueba el tope y de cómo indexa.
+
+    0xC8D7  contador          0xC8D8  9 instalaciones de 8 B   →  0xC920
+    0xC920  la rejilla 5×5 de la zona, 25 B                    →  0xC939
+    0xC939  contador          0xC93A  6 tiros enemigos de 4 B  →  0xC952
+    0xC952  contador          0xC953  9 disparos tuyos de 4 B  →  0xC977
+    0xC977  las dos variables del recorredor de tablas         →  0xC97A
+    0xC97A  contador          0xC97B  4 objetos de 5 B         →  0xC98F
+    0xC98F  contador          0xC990  2 objetos de 4 B         →  0xC998
+    0xC998  contador          0xC999  2 objetos de 5 B         →  0xC9A3
+
+6×4, 9×4, 4×5, 2×4 y 2×5 caen clavados. Hay una segunda tabla igual, la de los
+tiles especiales, con su contador en 0xCA92 y ocho objetos desde 0xCB3A: 64
+bytes que acaban justo donde acababa el rango declarado.
+
+Una cosa que conviene decir aunque no quede redonda: **la primera tabla no
+comprueba su tope**. El constructor incrementa el contador sin mirar, y sólo hay
+sitio para nueve antes de que empiece la rejilla. O lo garantizan los datos de
+los niveles, o hay desbordamiento; aquí no se ha medido cuál de las dos.
+
 ## Nadie vigila las colisiones: cada uno se pregunta por sí mismo
 
 En las dos mitades del juego hay dos tablas de cosas volando, y cada una es de

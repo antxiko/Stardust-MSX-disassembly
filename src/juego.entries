@@ -50,14 +50,16 @@
 #
 # Muestreando el PC durante la partida salieron 460 direcciones distintas dentro
 # de este bloque, y 59 de ellas caian en zonas que el trazado daba por datos.
-# Casi todas son esta rutina, que no la llama NADIE con un call o un jp: no hay
-# una sola referencia directa a 0xF02C en los 46 KB del bloque. Se ejecuta,
-# porque el emulador la pillo ejecutandose, y ese es el motivo de que este aqui:
-# la prueba es la ejecucion, no una corazonada.
-0xF02C  huerfana    ejecutada de verdad (vista en el emulador), sin llamador directo
+# Casi todas son esta rutina, que entro aqui como "huerfana" porque no la llama
+# nadie con un `call` ni un `jp`. YA NO LO ES: la nombra `ld de,0f02ch` en
+# 0xEFDA -unica aparicion del par 2c f0 en los 46663 bytes del bloque- y quien
+# la ejecuta es el `call` que anima_logo se parchea en 0xF015/0xF018. Su pareja,
+# 0xF07B, igual: `ld hl,0f07bh` en 0xEFDD, tambien unica.
+0xF02C  logo_estira  estira el logo; la nombra el `ld de` de 0xEFD9 y la llama el `call` parcheado
 
-# El despachador automodificable de 0xF000. Merece una explicacion porque es la
-# razon de que un trazador estatico no pueda cubrir esta zona:
+# El despachador automodificable, que empieza en 0xEFD3 y no en 0xF000 -a 0xF000
+# se CAE desde 0xEFFD-. Merece una explicacion porque es la razon de que un
+# trazador estatico no pueda cubrir esta zona:
 #     f000: ld (0f016h),hl    <- se escribe el operando de un CALL
 #     f003: ld (0f019h),de    <- y el de otro
 #     ...
@@ -81,12 +83,12 @@
 # Los ix van de ocho en ocho: son tablas de objetos con estructuras de 8 bytes,
 # dos de un tipo y cinco de otro.
 0xC189  obj_C189    comportamiento de objeto, via jp (hl) de 0xCB99
-0xD8A3  obj_D8A3    comportamiento de objeto, via jp (hl) de 0xD6B8
-0xD8CD  obj_D8CD    comportamiento de objeto, via jp (hl) de 0xD6B8
-0xD8F4  obj_D8F4    comportamiento de objeto, via jp (hl) de 0xD6B8
-0xD8F8  obj_D8F8    comportamiento de objeto, via jp (hl) de 0xD6B8
-0xD933  obj_D933    comportamiento de objeto, via jp (hl) de 0xD6B8
-0xD95A  obj_D95A    comportamiento de objeto, via jp (hl) de 0xD6B8
+0xD8A3  inst_torreta  la torreta de la zona, via jp (hl) de 0xD6B8
+0xD8CD  inst_recarga  la torreta recargando, via jp (hl) de 0xD6B8
+0xD8F4  inst_quieta   la instalacion que solo mira el contacto
+0xD8F8  inst_nido     el nido que suelta enemigos, via jp (hl) de 0xD6B8
+0xD933  inst_estalla  la instalacion reventando, via jp (hl) de 0xD6B8
+0xD95A  inst_bonus    el bonus que deja al morir la de tipo 5
 
 # Dos tramos mas que la partida demostro que se ejecutan y a los que el trazado
 # no llega. Del muestreo del PC salieron 1889 direcciones distintas y solo 118
@@ -225,7 +227,7 @@
 # trazador ya alcanzaba 1444. Estas son las 45 que faltaban.
 0xC1AF  lee_mando_demo  saca un byte de la partida grabada de la demo y avanza el puntero
 0xC4FC  atajo_dibujo24  desplazamiento de 8 del dibujo de 24 bits (1002 muestras en dump/pcs.txt)
-0xF07B  ejec_F07B    ejecutado en partida (4 muestras)
+0xF07B  logo_borra   borra las filas sucias; la nombra el `ld hl` de 0xEFDC y la llama el `call` parcheado
 
 # La tira del dibujo de 16 bits ESTABA DECLARADA TRES PELDANOS MAS ALLA de donde
 # empieza. Lo dice la cuenta del desplazamiento, que ya estaba escrita en las
@@ -282,7 +284,7 @@
 #    apariciones del par 3d e0 en el binario. Muestras: E03D:1, E040:6 y E043:8.
 #
 #    Al declararlo, 0xE045 deja de ser punto de entrada: se cae en el desde aqui.
-0xE03D  obj_E03D  comportamiento de objeto instalado desde 0xE033 y 0xE086; sigue en 0xE045
+0xE03D  tile_est5  estado encadenado de los tiles especiales, instalado desde 0xE033 (tile 0x3C) y 0xE086 (tile 0x32); sigue en 0xE045
 
 # --- LAS PANTALLAS QUE UNA PARTIDA NORMAL NO TOCA ----------------------------
 #
