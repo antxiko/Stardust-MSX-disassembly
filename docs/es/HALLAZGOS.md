@@ -1038,6 +1038,20 @@ las de la fase de a pie, y ninguna es casualidad:
   —0xC188 aquí, 0xA6ED allí— pero el mecanismo es el mismo: un byte que vale
   poco mientras vives y se pone a contar en cuanto te matan.
 
+Y ese «vale poco mientras vives» es más concreto de lo que parecía: **es el
+escudo**. De 0 a 3 cuenta los impactos que la nave aguanta, y hay dos clases de
+impacto, uno que gasta un punto y otro que gasta dos —el segundo comprueba dos
+veces, entre resta y resta, si el primero ya bastaba para matarte—. De las seis
+escrituras que tiene esa variable, **una sola mete el cuatro** que arranca la
+explosión, y a ella llegan diez sitios del listado: la muerte tiene una única
+puerta.
+
+Con eso el premio de los 10.000 puntos se entiende del todo. Antes de dar la
+vida, el juego mira el escudo: si vienes con menos de 2, en lugar de una vida
+**te reponen el escudo a 3**. O sea que el mismo premio es una cosa o la otra
+según cómo llegues — con la nave tocada te curan, y con la nave entera te dan
+una vida.
+
 Ahí encaja, por fin, una pieza que llevaba suelta desde el primer día. El POKE
 de inmortalidad que publicó la revista *Input MSX* nº 19 parchea un salto para
 saltarse la comparación de ese contador contra cuatro. Es **la misma puerta de

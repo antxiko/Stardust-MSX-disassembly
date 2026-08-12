@@ -2022,7 +2022,7 @@ L_BDE5:
 	ld a,00ah		;be08
 	ld (0d3c1h),a		;be0a
 	call pinta_energia		;be0d
-	call hud_vidas_sin_premio		;be10
+	call repone_escudo		;be10
 	ld a,003h		;be13
 	ld (0e156h),a		;be15
 	call hud_vidas_zona		;be18
@@ -2095,7 +2095,7 @@ hud_reset:		; Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y l
 	ld (0d3c1h),a		;beb3
 	call pinta_energia		;beb6
 L_BEB9:
-	call hud_vidas_sin_premio		;beb9
+	call repone_escudo		;beb9
 	xor a			;bebc
 	ld (0c952h),a		;bebd
 	ld (0c9a3h),a		;bec0
@@ -2295,7 +2295,7 @@ hud_vidas_zona:		; Repinta los dos indicadores de un digito, vidas (0xE156 -> 0x
 
 va_a_nave_estado:		; Trampolin de tres bytes: `jp nave_estado`
 	jp nave_estado		;c063
-nave_estado:		; El despachador del estado de la nave (0xC188): menos de 4 juego normal; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
+nave_estado:		; El despachador de 0xC188, que es ESCUDO y agonia en la misma variable: de 0 a 3 son los impactos que aguanta; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
 	ld hl,(0c184h)		;c066
 	ld a,(0c188h)		;c069
 	cp 004h			;c06c
@@ -2643,7 +2643,7 @@ L_C2EA:
 	xor a			;c307
 	ld de,0ea52h		;c308
 	call arranca_guion_libre		;c30b
-	call L_D303		;c30e
+	call mata_nave		;c30e
 L_C311:
 	ld de,00005h		;c311
 	add ix,de		;c314
@@ -4186,7 +4186,7 @@ L_CE18:
 	jr c,L_CE46		;ce39
 	ld (ix+000h),080h	;ce3b
 	ld (ix+001h),01dh	;ce3f
-	call L_D303		;ce43
+	call mata_nave		;ce43
 L_CE46:
 	ld de,00004h		;ce46
 	add ix,de		;ce49
@@ -4470,7 +4470,7 @@ L_D067:
 	call choca_con_tabla		;d074
 	ret c			;d077
 	ld (iy+002h),080h	;d078
-	call L_D2B6		;d07c
+	call impacto_simple		;d07c
 	ret			;d07f
 L_D080:
 	ld l,(ix+002h)		;d080
@@ -4748,7 +4748,7 @@ L_D25E:
 	xor a			;d26b
 	ld de,0ea52h		;d26c
 	call arranca_guion_libre		;d26f
-	jp L_D303		;d272
+	jp mata_nave		;d272
 L_D275:
 	ld a,(0d3c9h)		;d275
 	bit 2,a			;d278
@@ -4782,19 +4782,19 @@ L_D2A0:
 	xor a			;d2b1
 	ld (0d3c2h),a		;d2b2
 	ret			;d2b5
-L_D2B6:
+impacto_simple:		; Gasta un punto de escudo, y si ya estaba a cero manda a mata_nave
 	ld a,(0c188h)		;d2b6
 	and a			;d2b9
-	jr z,L_D303		;d2ba
+	jr z,mata_nave		;d2ba
 	dec a			;d2bc
 	ld (0c188h),a		;d2bd
 	jr L_D2CF		;d2c0
-L_D2C2:
+impacto_doble:		; Gasta dos puntos de escudo, comprobando entre uno y otro si el primero ya bastaba para matar
 	ld a,(0c188h)		;d2c2
 	and a			;d2c5
-	jr z,L_D303		;d2c6
+	jr z,mata_nave		;d2c6
 	dec a			;d2c8
-	jr z,L_D303		;d2c9
+	jr z,mata_nave		;d2c9
 	dec a			;d2cb
 	ld (0c188h),a		;d2cc
 L_D2CF:
@@ -4831,7 +4831,7 @@ L_D2F4:
 	dec e			;d2ff
 	jr nz,L_D2E6		;d300
 	ret			;d302
-L_D303:
+mata_nave:		; La unica puerta de la muerte: apaga las dos marcas del HUD y mete un 4 en 0xC188, que es lo que arranca la explosion. Diez sitios del listado acaban aqui
 	ld hl,02778h		;d303
 	call pinta_marca_hud		;d306
 	ld hl,02f48h		;d309
@@ -4899,7 +4899,7 @@ L_D328:
 	ld l,a			;d37b
 	call solapa_eje		;d37c
 	ret c			;d37f
-	jp L_D303		;d380
+	jp mata_nave		;d380
 L_D383:
 	push bc			;d383
 	call azar		;d384
@@ -4981,7 +4981,7 @@ L_D3E1:
 	call sonido_off		;d404
 	ld a,(0c188h)		;d407
 	cp 002h			;d40a
-	jp c,hud_vidas_sin_premio		;d40c
+	jp c,repone_escudo		;d40c
 	ld hl,0e156h		;d40f
 	ld a,(hl)		;d412
 	cp 009h			;d413
@@ -5033,7 +5033,7 @@ L_D459:
 	xor a			;d459
 	ex af,af'		;d45a
 	jp L_C882		;d45b
-hud_vidas_sin_premio:		; La salida de suma_puntos cuando el premio de los 10.000 no toca porque la nave no esta en juego (0xC188 por debajo de 2)
+repone_escudo:		; La otra cara del premio de los 10.000: si la nave llega con el escudo por debajo de 2, en vez de una vida le reponen el ESCUDO, a 3
 	ld a,003h		;d45e
 	ld (0c188h),a		;d460
 	ld hl,02778h		;d463
@@ -5396,7 +5396,7 @@ L_D6EA:
 	sla h			;d6f0
 	call choca_con_nave3		;d6f2
 	ret c			;d6f5
-	jp L_D303		;d6f6
+	jp mata_nave		;d6f6
 L_D6F9:
 	ld hl,0dd10h		;d6f9
 	ld c,008h		;d6fc
@@ -5795,7 +5795,7 @@ choca_con_nave4:		; La cuarta caja de contacto con la nave, y la unica alargada:
 	ld b,007h		;d9fd
 	call solapa_eje		;d9ff
 	ret c			;da02
-	jp L_D303		;da03
+	jp mata_nave		;da03
 lee_texto:		; Recorre la lista de textos de 0xDE18 hasta el que pide A -en sus siete bits bajos-, saltando de uno a otro por la longitud que cada uno lleva en su primer byte
 	ld a,(hl)		;da06
 	cp 0ffh			;da07
@@ -6062,7 +6062,7 @@ L_DF52:
 	ld l,a			;df99
 	call solapa_eje		;df9a
 	jr c,L_DFA6		;df9d
-	call L_D2C2		;df9f
+	call impacto_doble		;df9f
 	ld (ix+000h),07ch	;dfa2
 L_DFA6:
 	ld de,00005h		;dfa6
@@ -6313,7 +6313,7 @@ L_E148:
 L_E15A:
 	di			;e15a
 	pop hl			;e15b
-	call L_E1F5		;e15c
+	call tic_sonido		;e15c
 	pop ix			;e15f
 	pop iy			;e161
 	pop af			;e163
@@ -6418,7 +6418,7 @@ L_E1CF:
 	ret m			;e1f2
 	ei			;e1f3
 	ret			;e1f4
-L_E1F5:
+tic_sonido:		; El motor del sonido, que la interrupcion llama cincuenta veces por segundo: recorre los tres canales desde 0xED75, gasta la duracion de (ix+004/005) y, al agotarse, apaga el mezclador y va a por el siguiente comando del guion
 	push af			;e1f5
 	ld b,003h		;e1f6
 	xor a			;e1f8
@@ -6451,7 +6451,7 @@ L_E222:
 	jp (hl)			;e230
 lee_nota:		; Un byte por debajo de 0x80 es una nota: le suma la transposicion de 0xEE21+canal, busca el periodo en la tabla de 0xE6E3 y lo deja en (ix+00A/00B)
 	push af			;e231
-	call L_E586		;e232
+	call entrada_transporte		;e232
 	pop af			;e235
 	add a,(hl)		;e236
 	ld hl,0e6e3h		;e237
@@ -6894,12 +6894,12 @@ L_E56B:
 	jp L_E222		;e579
 op_transporte:		; 0x8E n: escribe el argumento en 0xEE21 + canal, y eso es la TRANSPOSICION de la voz: el lector de notas lo suma al numero de nota antes de buscar el periodo (`call L_E586 / add a,(hl)` en 0xE232)
 	inc bc			;e57c
-	call L_E586		;e57d
+	call entrada_transporte		;e57d
 	ld a,(bc)		;e580
 	inc bc			;e581
 	ld (hl),a		;e582
 	jp L_E222		;e583
-L_E586:
+entrada_transporte:		; HL = 0xEE21 + el canal que hay en 0xEE19: la entrada de la tabla de transposiciones, la que el lector de notas suma y el comando 0x8E escribe
 	ld a,(0ee19h)		;e586
 	ld l,a			;e589
 	ld h,000h		;e58a

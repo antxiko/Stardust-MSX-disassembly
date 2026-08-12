@@ -1062,6 +1062,20 @@ on-foot stage, and none of them is chance:
   here, 0xA6ED there— but the mechanism is the same: a byte that means little
   while you live and starts counting the moment you're killed.
 
+And that "means little while you live" is more specific than it looked: **it is
+the shield**. From 0 to 3 it counts the hits the ship can take, and there are
+two kinds of hit, one that spends a point and one that spends two —the second
+checks twice, between subtractions, whether the first was already enough to
+kill you—. Of the six writes that variable gets, **only one puts the four** that
+sets off the explosion, and ten places in the listing lead to it: death has a
+single door.
+
+That rounds off the 10,000-point award, too. Before granting the life, the game
+looks at the shield: if you arrive with less than 2, instead of a life **it
+tops the shield back up to 3**. So the same award is one thing or the other
+depending on how you get there — with the ship damaged it heals you, with the
+ship intact it gives you a life.
+
 Which is where a piece that had been lying loose since day one finally fits.
 The immortality POKE published by *Input MSX* magazine issue 19 patches a jump
 to skip the comparison of that counter against four. It is **the same

@@ -549,7 +549,7 @@ D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,
 # y 0xAD28 alli), sembrada dos veces con `ld a,r` en el arranque.
 
 # --- Directivas de las rutinas identificadas en las tandas del 2026-08-06/07 --
-L 0xC066 nave_estado El despachador del estado de la nave (0xC188): menos de 4 juego normal; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
+L 0xC066 nave_estado El despachador de 0xC188, que es ESCUDO y agonia en la misma variable: de 0 a 3 son los impactos que aguanta; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
 L 0xC5E3 siembra_particulas Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
 L 0xC60C mueve_particulas Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
 L 0xC83F azar El generador de azar: identico al de la segunda parte (lee la ROM del BIOS como tabla de entropia), semilla en 0xCA8F sembrada con ld a,r en el arranque
@@ -1273,7 +1273,7 @@ L 0xF114 vram_pon_dir_lee Fija la direccion de LECTURA del VDP por el puerto 0x9
 # llamadas, o sea sin devolver las interrupciones entre voz y voz. Y el
 # `call sonido_off` de despues no es un descuido: deja el sonido cerrado para
 # que ningun efecto del juego pise la fanfarria mientras suena.
-L 0xD45E hud_vidas_sin_premio La salida de suma_puntos cuando el premio de los 10.000 no toca porque la nave no esta en juego (0xC188 por debajo de 2)
+L 0xD45E repone_escudo La otra cara del premio de los 10.000: si la nave llega con el escudo por debajo de 2, en vez de una vida le reponen el ESCUDO, a 3
 
 # ---------------------------------------------------- colisiones y volcado
 L 0xF3DC vuelca_pantalla El volcado del buffer a la VRAM en las tres bandas de siempre: 0x4000 -> 0x0108 (56 filas), 0x4540 -> 0x0900 (64) y 0x4B40 -> 0x1100 (40)
@@ -1718,3 +1718,44 @@ L 0xD1AF traza_estela Dibuja la estela del objeto de 0xD3BD restando al puntero 
 L 0xD9DB choca_con_nave4 La cuarta caja de contacto con la nave, y la unica alargada: 4x2 contra 0x38 x 0x0C en el primer eje y 7 contra 0x12 en el segundo
 L 0xD0DC pinta_escudo Repinta el indicador que va pegado a la nave, alternandolo cuadro a cuadro con el `xor 001h` sobre 0xD3C2: cambia a la vez el color de la marca de 0x2F78 -0x11 o 0x71- y el sprite, 0x39 o 0x3A
 L 0xD2E4 borra_celda Escribe el valor 0x11 ocho veces en dos celdas de VRAM separadas 0x40, con el puerto en C para poder usar `out (c),b`
+
+# ============================================================================
+# 0xC188 NO ES SOLO "EL ESTADO DE LA NAVE": ES EL ESCUDO
+# ============================================================================
+#
+# Estaba escrito que por debajo de 4 es juego normal, que en 4 arranca la
+# explosion y que por encima la explosion sigue. Es verdad, pero se queda a
+# medias: los valores por debajo de 4 no son un estado cualquiera, son
+# CUANTOS IMPACTOS AGUANTA. Lo dicen las dos rutinas que lo bajan:
+#
+#     d2b6: ld a,(0c188h) / and a / jr z,L_D303    <- a cero ya, muerte
+#           dec a / ld (0c188h),a                  <- si no, UNO menos
+#
+#     d2c2: ld a,(0c188h) / and a / jr z,L_D303
+#           dec a / jr z,L_D303                    <- y este mira DOS veces
+#           dec a / ld (0c188h),a                  <- porque quita DOS
+#
+# O sea que hay dos clases de impacto: uno que gasta un punto de escudo y otro
+# que gasta dos, y cada uno comprueba por su cuenta si eso llega a matarte.
+#
+# Y ES UNA VARIABLE CON DOS OFICIOS: de 0 a 3 cuenta el escudo que queda, y de
+# 4 en adelante cuenta la agonia. La frontera es el 4 justamente porque ahi
+# acaba lo uno y empieza lo otro.
+#
+# LA MUERTE TIENE UNA SOLA PUERTA. De las seis escrituras a 0xC188, la unica
+# que mete el 4 -el valor que dispara la explosion- es la de 0xD30E, y a ella
+# llegan diez referencias del listado. Las demas son los dos decrementos de
+# arriba, dos incrementos dentro de la propia agonia y la reposicion del
+# escudo. Es la misma forma que tiene la fase de a pie, donde la unica via de
+# muerte por caida es una escritura suelta de 0xA6ED=4.
+L 0xD303 mata_nave La unica puerta de la muerte: apaga las dos marcas del HUD y mete un 4 en 0xC188, que es lo que arranca la explosion. Diez sitios del listado acaban aqui
+L 0xD2B6 impacto_simple Gasta un punto de escudo, y si ya estaba a cero manda a mata_nave
+L 0xD2C2 impacto_doble Gasta dos puntos de escudo, comprobando entre uno y otro si el primero ya bastaba para matar
+#
+# Y CON ESO SE ENTIENDE EL PREMIO DE LOS 10.000 DEL TODO. Antes de dar la vida,
+# suma_puntos mira el escudo: si viene por debajo de 2 se desvia a 0xD45E, que
+# lo repone a 3 y no toca las vidas. O sea que el premio es una cosa o la otra
+# segun como llegues: con la nave tocada te curan, y con la nave entera te dan
+# una vida.
+L 0xE1F5 tic_sonido El motor del sonido, que la interrupcion llama cincuenta veces por segundo: recorre los tres canales desde 0xED75, gasta la duracion de (ix+004/005) y, al agotarse, apaga el mezclador y va a por el siguiente comando del guion
+L 0xE586 entrada_transporte HL = 0xEE21 + el canal que hay en 0xEE19: la entrada de la tabla de transposiciones, la que el lector de notas suma y el comando 0x8E escribe
