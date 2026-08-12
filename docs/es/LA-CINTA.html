@@ -94,7 +94,7 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 40 CLS:COLOR 0,0,0:SCREEN 2
 50 DEFUSR=54000!:A=USR(0) &#x27; 54000 = 0xD2F0: ahora si</code></pre>
 <p>Y sigue en el cargador turbo, que hace esto por orden:</p>
-<ol><li>Busca RAM y la mapea en las páginas 1 y 2, para tener los 64K planos.</li><li>Se copia 300 bytes a sí mismo en 0x4000 y salta allí.</li><li>Salva 94 bytes de 0xDAC0 a 0xFDE8 (el buzón de parches) y pone la pila.</li><li>Carga el bloque de la pantalla <b>y lo ejecuta</b>.</li><li>Carga el bloque del juego encima, machacando al anterior.</li><li>Aplica los parches del buzón, si los hay.</li><li>Salta a 0xBD85, que es el juego.</li></ol>
+<ol><li>Busca RAM y la mapea en las páginas 1 y 2, para tener 48K planos de 0x4000 a 0xFFFF, como los del Spectrum.</li><li>Se copia 300 bytes a sí mismo en 0x4000 y salta allí.</li><li>Salva 94 bytes de 0xDAC0 a 0xFDE8 (el buzón de parches) y pone la pila.</li><li>Carga el bloque de la pantalla <b>y lo ejecuta</b>.</li><li>Carga el bloque del juego encima, machacando al anterior.</li><li>Aplica los parches del buzón, si los hay.</li><li>Salta a 0xBD85, que es el juego.</li></ol>
 <p>El descriptor de ocho bytes y el último bloque no los carga él: los pide el propio juego al superar la última zona.</p>
 <h2 id="los-bloques-se-pisan-unos-a-otros">Los bloques se pisan unos a otros</h2>
 <p>Esto es lo que obliga a mirar la cinta de otra forma. En memoria, los bloques <b>no conviven</b>:</p>

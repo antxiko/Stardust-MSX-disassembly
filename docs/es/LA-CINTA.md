@@ -35,7 +35,8 @@ Empieza en el cargador BASIC, que son cinco líneas:
 
 Y sigue en el cargador turbo, que hace esto por orden:
 
-1. Busca RAM y la mapea en las páginas 1 y 2, para tener los 64K planos.
+1. Busca RAM y la mapea en las páginas 1 y 2, para tener 48K planos de
+   0x4000 a 0xFFFF, como los del Spectrum.
 2. Se copia 300 bytes a sí mismo en 0x4000 y salta allí.
 3. Salva 94 bytes de 0xDAC0 a 0xFDE8 (el buzón de parches) y pone la pila.
 4. Carga el bloque de la pantalla **y lo ejecuta**.

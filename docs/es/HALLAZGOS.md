@@ -61,7 +61,7 @@ ROM del Spectrum, con su mismo interfaz de registros:
 Quien haya programado un Spectrum reconoce esa llamada: es la de `0x0556` de su
 ROM, parámetro por parámetro.
 
-### Los 64K que el Spectrum tiene y el MSX no
+### Los 48K planos que el Spectrum tiene y el MSX no
 
 Antes de cargar nada, el cargador hace algo que en un juego de MSX normal no
 haría falta: **busca RAM y la mapea en las páginas 1 y 2**.

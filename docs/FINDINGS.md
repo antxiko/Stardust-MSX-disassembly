@@ -60,7 +60,7 @@ routine, with the same register interface:
 Anyone who has programmed a Spectrum will recognise that call: it is the one at
 `0x0556` in its ROM, parameter for parameter.
 
-### The 64K the Spectrum has and the MSX doesn't
+### The flat 48K the Spectrum has and the MSX doesn't
 
 Before loading anything, the loader does something an ordinary MSX game would
 never need to: it **hunts for RAM and maps it into pages 1 and 2**.

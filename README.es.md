@@ -27,7 +27,7 @@ para MSX graban en bloques KCS, que es el formato del MSX. Stardust usa
 **bloques del ZX Spectrum**, con su `[bandera][datos][XOR]`, y su cargador es
 una **reimplementación de LD-BYTES**, la rutina de carga de la ROM del Spectrum,
 con el mismo interfaz de registros. Antes de nada mapea RAM en las páginas 1 y 2
-para tener los 64K planos que el Spectrum da de serie y el MSX no.
+para tener los 48K planos de RAM que el Spectrum da de serie y el MSX no.
 
 Y es **multicarga**: las zonas 1 a 7 se juegan pilotando una nave y, al superar
 la última, el juego vuelve a la cinta a por una segunda parte en la que el

@@ -110,7 +110,7 @@ ld a,000h       ; A  = la bandera que se espera
 scf             ; carry activado = cargar, no verificar
 call 0405ch</code></pre>
 <p>Quien haya programado un Spectrum reconoce esa llamada: es la de <code>0x0556</code> de su ROM, parámetro por parámetro.</p>
-<h3 id="los-64k-que-el-spectrum-tiene-y-el-msx-no">Los 64K que el Spectrum tiene y el MSX no</h3>
+<h3 id="los-48k-planos-que-el-spectrum-tiene-y-el-msx-no">Los 48K planos que el Spectrum tiene y el MSX no</h3>
 <p>Antes de cargar nada, el cargador hace algo que en un juego de MSX normal no haría falta: <b>busca RAM y la mapea en las páginas 1 y 2</b>.</p>
 <pre><code>ld hl,04000h / call sub_d30fh
 ld hl,08000h / call sub_d30fh</code></pre>

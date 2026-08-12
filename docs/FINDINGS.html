@@ -110,7 +110,7 @@ ld a,000h       ; A  = the flag expected
 scf             ; carry set = load, don&#x27;t verify
 call 0405ch</code></pre>
 <p>Anyone who has programmed a Spectrum will recognise that call: it is the one at <code>0x0556</code> in its ROM, parameter for parameter.</p>
-<h3 id="the-64k-the-spectrum-has-and-the-msx-doesn-t">The 64K the Spectrum has and the MSX doesn&#x27;t</h3>
+<h3 id="the-flat-48k-the-spectrum-has-and-the-msx-doesn-t">The flat 48K the Spectrum has and the MSX doesn&#x27;t</h3>
 <p>Before loading anything, the loader does something an ordinary MSX game would never need to: it <b>hunts for RAM and maps it into pages 1 and 2</b>.</p>
 <pre><code>ld hl,04000h / call sub_d30fh
 ld hl,08000h / call sub_d30fh</code></pre>

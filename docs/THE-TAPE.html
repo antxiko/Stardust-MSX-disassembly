@@ -94,7 +94,7 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 40 CLS:COLOR 0,0,0:SCREEN 2
 50 DEFUSR=54000!:A=USR(0) &#x27; 54000 = 0xD2F0: now it does</code></pre>
 <p>And it carries on in the turbo loader, which does this in order:</p>
-<ol><li>Hunts for RAM and maps it into pages 1 and 2, to get a flat 64K.</li><li>Copies 300 bytes of itself to 0x4000 and jumps there.</li><li>Saves 94 bytes from 0xDAC0 to 0xFDE8 (the patch mailbox) and sets the stack.</li><li>Loads the loading-screen block <b>and executes it</b>.</li><li>Loads the game block on top, wiping out the previous one.</li><li>Applies the patches from the mailbox, if there are any.</li><li>Jumps to 0xBD85, which is the game.</li></ol>
+<ol><li>Hunts for RAM and maps it into pages 1 and 2, to get a flat 48K from 0x4000 to 0xFFFF, like the Spectrum&#x27;s.</li><li>Copies 300 bytes of itself to 0x4000 and jumps there.</li><li>Saves 94 bytes from 0xDAC0 to 0xFDE8 (the patch mailbox) and sets the stack.</li><li>Loads the loading-screen block <b>and executes it</b>.</li><li>Loads the game block on top, wiping out the previous one.</li><li>Applies the patches from the mailbox, if there are any.</li><li>Jumps to 0xBD85, which is the game.</li></ol>
 <p>The eight-byte descriptor and the last block are not loaded by it: the game itself asks for them on clearing the last zone.</p>
 <h2 id="the-blocks-tread-on-each-other">The blocks tread on each other</h2>
 <p>This is what forces you to look at the tape differently. In memory, the blocks <b>do not coexist</b>:</p>

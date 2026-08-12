@@ -35,7 +35,8 @@ It starts in the BASIC loader, which is five lines:
 
 And it carries on in the turbo loader, which does this in order:
 
-1. Hunts for RAM and maps it into pages 1 and 2, to get a flat 64K.
+1. Hunts for RAM and maps it into pages 1 and 2, to get a flat 48K from
+   0x4000 to 0xFFFF, like the Spectrum's.
 2. Copies 300 bytes of itself to 0x4000 and jumps there.
 3. Saves 94 bytes from 0xDAC0 to 0xFDE8 (the patch mailbox) and sets the stack.
 4. Loads the loading-screen block **and executes it**.

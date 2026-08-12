@@ -28,7 +28,7 @@ titles record in KCS blocks, the MSX's own tape format. Stardust uses **ZX
 Spectrum blocks**, with their `[flag][data][XOR]`, and its loader is a
 **reimplementation of LD-BYTES**, the Spectrum ROM's load routine, with the same
 register interface. Before anything else it maps RAM into pages 1 and 2, to get
-the flat 64K the Spectrum has as standard and the MSX does not.
+the flat 48K of RAM the Spectrum has as standard and the MSX does not.
 
 And it is **multiload**: zones 1 to 7 are played flying a ship and, once the
 last one is cleared, the game goes back to the tape for a second part where the
