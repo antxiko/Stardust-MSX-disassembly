@@ -1496,12 +1496,25 @@ L 0xD331 rellena_tercio El nucleo de rellena_colores: 24 filas de C bytes cada u
 # colocado en la franja central. Que eso es el remate de la fase es una lectura,
 # no un hecho medido; lo que si esta medido son las tres condiciones.
 #
-# Y ESO EXPLICA POR QUE LA MEDIDA DEL EMULADOR NO VIO NUNCA EL 0xDA. Esta
-# publicado que sobre la partida entera hay "4712 pases con cada opcode, ni un
-# cuadro con otro valor", y es verdad: la partida grabada NO LLEGA AL FINAL de
-# esta fase -eso ya estaba dicho en «Lo que falta»-, asi que nunca se cumplen
-# las tres condiciones. Las dos cosas son ciertas a la vez y conviene que
-# consten juntas, porque por separado la una parece desmentir a la otra.
+# POR QUE LA MEDIDA DEL EMULADOR NO VIO EL 0xDA, Y LA EXPLICACION QUE SE DIO
+# ERA FALSA (corregido 2026-08-12). Esta publicado que sobre la partida entera
+# hay "4712 pases con cada opcode, ni un cuadro con otro valor", y eso es
+# verdad. Pero aqui se explicaba diciendo que la partida grabada NO LLEGA AL
+# FINAL de esta fase y que por eso no se cumplen nunca las tres condiciones.
+# LLEGA. Con un bp en cada rutina de la cadena, sobre stardust_apie.omr:
+#
+#     t=3060,95   L_A91F   la puerta del remate, UNA vez
+#     t=3060,95   0xBDAC   rehace_pantalla: aqui se escribe el 0xDA
+#     t=3081,06   0xBE15   la pantalla de estrellas
+#     t=3083,49   0xBE47   la animacion, 79 pasadas (el guion tiene 78 pasos)
+#     t=3107,67   0xBFB6   las 200 particulas, inicializadas
+#     t=3113,31   0xBF47   la explosion, 110 pasadas
+#     control: 2741 pasadas por 0x0038 en la ventana; 0xBCEE ni una
+#
+# O sea que el tercer opcode SE USA, una sola vez por partida y justo aqui. Lo
+# que fallaba era la ventana de la medida vieja, que se cerraba antes de las
+# 3060. La leccion es la de siempre en este proyecto: cuando una medida sale a
+# cero, sospechar de la ventana antes que del juego.
 L 0xA91F remate_de_fase La puerta del remate: con el scroll en la fila 0x47, los seis objetivos muertos (0xBC33) y el jugador entre 0x50 y 0x5F, salta a rehace_pantalla
 
 # ============================================================================

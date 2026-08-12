@@ -749,6 +749,41 @@ sprites de la fase. Tres tramos pegados sin un byte de holgura, y con eso
 desaparecen de la clasificación tres «tablas» que se habían medido por su
 entropía: eran trozos del mismo guion, cortados por donde no era.
 
+### Y esto, que estaba leído, ahora está visto
+
+Todo lo anterior salió del listado, y aquí llegó a estar publicado que la
+secuencia **no se había visto ocurrir**, porque la partida grabada no llegaba
+hasta ahí. Sí llegaba. Poniendo un punto de interrupción en cada rutina de la
+cadena y reproduciendo la partida, salen las cinco con su hora:
+
+    t=3060,95   la puerta del remate: scroll arriba del todo, los seis
+                objetivos muertos y el jugador en la franja central
+    t=3060,95   el travelling
+    t=3081,06   la pantalla de estrellas
+    t=3083,49   la animación: 79 pasadas, y el guion tiene 78 pasos
+    t=3107,67   las 200 partículas, inicializadas
+    t=3113,31   la explosión, 110 pasadas
+
+Y con eso cae de paso otra afirmación que estaba en las notas: que el tercer
+opcode del fondo —el que pinta todas las celdas de una pasada— nunca se había
+visto usar. Se usa aquí, en el travelling, y es su único uso en toda la
+partida.
+
+![El travelling: la torre repintada de una pasada, con la nave despegando](../imagenes/final_travelling.png)
+
+![La pantalla de estrellas: la nave insignia abajo y la tuya subiendo](../imagenes/final_estrellas.png)
+
+![El texto, escrito encima de la escena](../imagenes/final_felicidades.png)
+
+![Y la nave insignia convertida en 200 partículas](../imagenes/final_metralla.png)
+
+**Y el final malo es este mismo, quitándole todo.** Al quedarse sin vidas —o al
+agotarse la cuenta atrás— el juego no enseña ninguna pantalla propia: salta al
+estado inicial y de ahí a la tabla de récords. No hay huida, no hay explosión y
+no hay texto; el final malo se define por lo que falta.
+
+![El final malo: ni huida ni explosión, directo a los récords](../imagenes/final_malo.png)
+
 
 ## La torre entera, y un mapa que es dos mapas
 
@@ -863,9 +898,26 @@ Sobre la partida grabada sale el retrato completo: **veintitrés muertes, 22
 por contacto y una sola por caída**, las veintitrés pasando por el mismo
 descuento y el mismo respawn. La partida va del segundo 2.464 al 3.124 —once
 minutos— y **acaba pasándose el juego**: el emulador ve pasar el programa por
-la rutina del final feliz, no por la de quedarse sin vidas. Y el contador de
-vidas antes de cada descuento fue subiendo de dos a seis: el jugador ganaba
-vidas más deprisa de lo que las perdía.
+la rutina del final feliz, no por la de quedarse sin vidas.
+
+**Y el contador de vidas nunca bajó, porque esa partida se jugó con truco.** Se
+publicó aquí que subía de dos a seis porque el jugador ganaba vidas más deprisa
+de lo que las perdía, y no: no perdió ninguna. El trainer parchea **un solo
+byte**, el operando del `sub 001h` que hay justo detrás del embudo:
+
+    a528:  D6 01     sub 001h      <- lo que trae la cinta
+    a528:  D6 00     sub 000h      <- lo que tenía la partida grabada
+
+No impide morir. Se muere igual, se pasa por el embudo igual y el marcador se
+repinta igual: lo que hace es que **la resta reste cero**. Y de rebote deja el
+game over inalcanzable, porque `sub 0` no puede dar acarreo nunca.
+
+Devolviendo ese `01` —que es restaurar el byte de la cinta, no tocar el juego— y
+dejándose matar seis veces seguidas, el contador baja 5, 4, 3, 2, 1, 0 y a la
+sexta salta el acarreo: el `jp c` se toma y el juego se acaba. **Es la primera
+vez que se ve tomar ese salto.** Con un detalle de propina: la resta se guarda
+*antes* del salto, así que el contador de vidas se queda en **255**. No hay tope
+ni comprobación, y da igual, porque de ahí no se vuelve.
 
 (Aquí estuvo publicado "veinte muertes, 19 por contacto", por medir una
 ventana de tiempo que se cortaba antes del final de la partida.)

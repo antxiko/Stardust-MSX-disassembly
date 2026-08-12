@@ -773,6 +773,41 @@ Three stretches flush against each other without a byte to spare, and with that
 three "tables" that had been classified by their entropy disappear: they were
 pieces of the same script, cut in the wrong places.
 
+### And what was read here has now been watched
+
+All of the above came out of the listing, and this page used to say the sequence
+had **never been seen to happen**, because the recorded playthrough didn't get
+that far. It did. Putting a breakpoint on every routine in the chain and
+replaying the game, all five turn up with their timestamps:
+
+    t=3060.95   the end-of-stage gate: scroll at the top, all six targets
+                destroyed and the player in the middle band
+    t=3060.95   the tracking shot
+    t=3081.06   the starfield screen
+    t=3083.49   the animation: 79 passes, and the script has 78 steps
+    t=3107.67   the 200 particles, initialised
+    t=3113.31   the explosion, 110 passes
+
+And that takes another claim down with it: that the background's third opcode
+—the one that paints every cell in a single pass— had never been seen used. It
+is used right here, in the tracking shot, and that is its only use in the whole
+game.
+
+![The tracking shot: the tower repainted in one pass, ship lifting off](imagenes/final_travelling.png)
+
+![The starfield screen: the flagship below and yours climbing away](imagenes/final_estrellas.png)
+
+![The text, written over the scene](imagenes/final_felicidades.png)
+
+![And the flagship turned into 200 particles](imagenes/final_metralla.png)
+
+**And the bad ending is this same one with everything taken away.** On running
+out of lives —or on the countdown expiring— the game shows no screen of its own:
+it jumps to the initial state and from there to the high-score table. No escape,
+no explosion, no text; the bad ending is defined by what is missing.
+
+![The bad ending: no escape, no explosion, straight to the scores](imagenes/final_malo.png)
+
 
 ## The whole tower, and a map that is two maps
 
@@ -889,8 +924,28 @@ contact and a single one by falling**, all twenty-three through the same
 subtraction and the same respawn. The game runs from second 2,464 to 3,124
 —eleven minutes— and **ends by finishing the game**: the emulator watches the
 program pass through the happy-ending routine, not through running out of
-lives. And the life counter before each subtraction climbed from two to six:
-the player was earning lives faster than he lost them.
+lives.
+
+**And the life counter never went down, because that game was played with a
+cheat.** This page used to say it climbed from two to six because the player was
+earning lives faster than he lost them. He lost none. The trainer patches **one
+single byte**, the operand of the `sub 001h` right behind the funnel:
+
+    a528:  D6 01     sub 001h      <- what the tape carries
+    a528:  D6 00     sub 000h      <- what the recorded game had
+
+It doesn't stop you dying. You die the same, go through the funnel the same and
+the scoreboard is repainted the same: what it does is make **the subtraction
+subtract nothing**. And as a side effect it puts the game over out of reach,
+because `sub 0` can never set the carry.
+
+Putting that `01` back —which is restoring the tape's own byte, not touching the
+game— and getting killed six times over, the counter goes 5, 4, 3, 2, 1, 0 and on
+the sixth the carry fires: the `jp c` is taken and the game ends. **That is the
+first time that jump has been seen taken.** With a detail thrown in: the
+subtraction is stored *before* the jump, so the life counter is left holding
+**255**. There is no clamp and no check, and it doesn't matter, because there is
+no coming back from there.
 
 (This page used to say "twenty deaths, 19 by contact", from measuring a time
 window that stopped before the end of the game.)

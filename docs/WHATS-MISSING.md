@@ -353,12 +353,14 @@ error this block has had, set out in the next section.
 
 ## What hasn't been checked
 
-- The second part has been seen to start and run, but **it has not been played
-  all the way through**. Its ending has now been read —the tracking shot, the
-  starfield screen and the closing animation, told in
-  <a href='FINDINGS.html'>Findings</a>— but **read in the listing, not seen to
-  happen**: no emulator measurement backs it up, because the recorded
-  playthrough does not get that far.
+- This used to say the second part had **not been played all the way through**
+  and that its ending was "read in the listing, not seen to happen". Both were
+  false: the recorded playthrough does reach the end, and all five routines of
+  the sequence have been watched executing with their timestamps, told in
+  <a href='FINDINGS.html'>Findings</a>. What is still unchecked is **how many
+  distinct endings there are**: both have been seen —finishing the game and
+  running out of lives— but nobody has looked for whether the score or the
+  scoreboard change anything else.
 - The cross-check against the ZX Spectrum version can say nothing about that
   second part: the snapshot it compares against was captured in the *first*
   part's menu, so the original's on-foot stage simply isn't in it.

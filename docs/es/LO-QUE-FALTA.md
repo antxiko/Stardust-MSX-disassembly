@@ -356,12 +356,14 @@ error más grande que ha tenido este bloque, contado en la sección siguiente.
 
 ## Lo que no se ha comprobado
 
-- La segunda parte del juego se ha visto arrancar y correr, pero **no se ha
-  jugado entera**. Su remate sí está leído —el travelling, la pantalla de
-  estrellas y la animación final, contados en
-  <a href='HALLAZGOS.html'>Hallazgos</a>— pero **leído en el listado, no visto
-  ocurrir**: no hay ninguna medida del emulador que lo respalde, porque la
-  partida grabada no llega hasta ahí.
+- Aquí figuraba que la segunda parte **no se había jugado entera** y que su
+  remate estaba «leído en el listado, no visto ocurrir». Las dos cosas eran
+  falsas: la partida grabada llega al final, y las cinco rutinas de la
+  secuencia se han visto ejecutarse con su hora, contadas en
+  <a href='HALLAZGOS.html'>Hallazgos</a>. Lo que sí sigue sin comprobarse es
+  **cuántos finales distintos hay**: se han visto los dos —terminar el juego y
+  quedarse sin vidas— pero no se ha buscado si el marcador o la puntuación
+  cambian algo más.
 - El cotejo con la versión de Spectrum no puede decir nada sobre esa segunda
   parte: el snapshot con el que se compara se capturó en el menú de la primera,
   así que la fase de a pie del original no está ahí.
