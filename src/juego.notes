@@ -2216,10 +2216,30 @@ L 0xDA33 descomprime_nivel El bucle del descompresor de mapas: pone IX = 0x5C50 
 # Que se quisiera dividir entre dos es lo que sugiere todo -el juego usa `srl`
 # para dividir en los dos bloques, y `rra` (0x1F) esta a un solo bit del `rrca`
 # (0x0F)-, pero eso es SUPOSICION: nadie puede afirmar la intencion, y los
-# propios autores dejaron esa rutina sin comentar en su repositorio. Y el efecto
-# real en partida NO esta medido en el emulador; ademas se atenua porque estas
-# dos tablas tienen otra via de alta por los tiles del mapa (0xE0B8/0xE0C1) que
-# no mira la zona.
+# propios autores dejaron esa rutina sin comentar en su repositorio. Ademas se
+# atenua porque estas dos tablas tienen otra via de alta por los tiles del mapa
+# (0xE0B8/0xE0C1) que no mira la zona.
+#
+# Y EL EFECTO EN PARTIDA, MEDIDO (2026-08-12, tools/omsx_rrca.tcl). Un bp en
+# 0xD436 -donde EMPIEZA el `add a,e`, con el `rrca` ya ejecutado- leyendo A, la
+# zona (0xE157) y E, sobre Stardust.omr en la ventana en que manda el juego de
+# naves (t=600 en adelante; la segunda carga arranca en t=1552,20). Las 206
+# pasadas dan la tabla de arriba y nada mas:
+#
+#     zona 2   A=0x82   6 pasadas      zona 3   A=0x02   38
+#     zona 4   A=0x81  42              zona 5   A=0x01   53
+#     zona 6   A=0x80  39              zona 7   A=0x00   28
+#
+# Las tres zonas pares jugadas traen el bit 7 puesto y las impares dan la
+# progresion limpia, o sea que la lectura del listado se cumple clavada. La E
+# nunca pasa de 6 en toda la partida, asi que no llega a mover el resultado: en
+# las pares la suma sigue por encima de 0x80 y la mascara se satura igual.
+# Y las 12 pasadas de zona 7 con E=0 son el caso del `jr z` de 0xD437: entran
+# sin tirar los dados.
+#
+# La zona 1 no sale porque la ventana empieza con el jugador ya en la 2. Basta
+# con ver UNA vez el par (zona 2, 0x82) para cerrarlo: esto es aritmetica, no
+# una tendencia.
 L 0xD41A alta_enemigo_cuadro El alta de enemigos cuadro a cuadro, la penultima llamada del bucle de partida (0xBF97). Tres filtros antes de nada: una tirada de cada 32 (`and 01fh`), la bandera 0xDAC5 a cero -o sea antes de que salga el tile de fin de zona- y una segunda tirada cuya dificultad sale de la zona y de cuantos enemigos hay ya volando: b = ((7 - zona) pasado por `rrca`) + 0xC97A + 0xC98F, y hay que sacar cero en `azar and (2^b - 1)`; si esa suma es cero entra sin tirar. Luego saca una columna al azar por debajo de 0xB0 y suelta el enemigo en la fila 0, en la tabla de 0xC990 si el bit 1 de esa columna esta puesto -con la de 0xC97B de reserva si estaba llena- y en la de 0xC97B si no. Es la hermana de la alta_enemigo_cuadro de la fase de a pie: mismo esquema con otros numeros, y solo 7 de sus 68 bytes coinciden
 L 0xD7A4 bonus_zona El remate de la zona, dentro del bucle de 0xD75B: mientras zona_despejada diga que queda algo en pantalla no hace mas que esperar 1000 vueltas, y en cuanto la zona esta limpia el contador de 0xDDF7 lleva el guion -19 cuadros de espera, 20 rotulando "BONUS xx00" (0xDDF8) en 0x40C7, y en el paso 0x28 se queda dando vueltas cobrando-. Cada vuelta del cobro paga 100 puntos, suena 0xEB2C y baja una unidad los dos digitos de 0xDDFE/0xDDFF, que L_D740 dejo en (zona + 0x32) y '0': la zona 1 cobra "30" y paga 3000, y la 7 cobra "90" y paga 9000. Cuando el contador llega a 0x50 desapila la vuelta y se va a carga_zona, o a 0xF71C -la multicarga- si la zona ya es la 8
 #

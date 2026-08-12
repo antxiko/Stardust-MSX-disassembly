@@ -427,12 +427,28 @@ This isn't parked. The open lines, in order of what would pay off most:
   address operands. The `rrca` was there in 1987 and the port copied it
   instruction by instruction.
 
+  **And in play that is exactly what happens**, which was the one thing left to
+  check. Pointing the emulator at the `add a,e` at 0xD436 —right after the
+  `rrca`, with the zone alongside— over the stretch of the recorded playthrough
+  where the ship game owns the memory, the 206 times it executes give this table
+  and no other:
+
+  ```
+  zone 2   A=0x82      zone 3   A=0x02
+  zone 4   A=0x81      zone 5   A=0x01
+  zone 6   A=0x80      zone 7   A=0x00
+  ```
+
+  The three even zones that got played all carry bit 7 set, so the mask really
+  does saturate; the odd ones give the clean progression. And zone 7 comes out
+  0x00, which is the case where the enemy enters without rolling at all. It is
+  softened, mind, by those tables having another spawn route, through the map
+  tiles, that ignores the zone.
+
   What cannot be claimed is the intent. That a shift was meant is what
   everything suggests — the game uses `srl` to divide in both blocks, and `rra`
   is a single bit away from `rrca` — but nobody can read the mind of whoever
-  wrote it, and the authors themselves left that routine uncommented. Nor is the
-  in-game effect measured in the emulator, and it is softened by those tables
-  having another spawn route, through the map tiles, that ignores the zone.
+  wrote it, and the authors themselves left that routine uncommented.
 - **The scene that closes zone 7.** The mechanism has been read byte by byte —
   two sprites descend and drag the ship off the screen — but what those two
   sprites actually draw has not been checked. It is precisely the scene that

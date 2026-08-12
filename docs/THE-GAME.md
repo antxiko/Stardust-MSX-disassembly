@@ -120,3 +120,24 @@ Read out of the binary, exactly as it sits there:
   `HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN
   NO HA LLEGADO` — you have broken through the flagship's defences, but the
   worst is yet to come.
+
+## And this is it running
+
+Everything above is drawn from the tape. These two are the opposite: two frames
+of the recorded playthrough that ships with the repository (`Stardust.omr`),
+taken with openMSX at seconds 1002 and 2150 of the recording. A render proves
+the data has been understood; a screenshot proves something else — that the
+program starts and runs.
+
+![The ship stage at second 1002 of the recording: ZONA:05](imagenes/emulador_naves.png)
+
+![The on-foot stage at second 2150: the scoreboard reads ZONA:08](imagenes/emulador_apie.png)
+
+The second one doubles as proof of the multiload, which is why it is taken so
+late: in that playthrough the player **clears zone 7**, the game goes back to
+the tape —the motor comes on at second 1552.20— and what carries on running is
+the other program. You don't have to take the scoreboard's word for it: dumping
+memory from 0x61D0 to 0xD674 at that instant, **29,585 of its 29,861 bytes
+(99.08%) are those of the tape's fourth block**, against 674 of the ship block
+that was at those same addresses before. And the program counter sits at
+0xA9BA, inside the second part.

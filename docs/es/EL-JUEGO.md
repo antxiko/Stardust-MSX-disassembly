@@ -112,3 +112,24 @@ Leídos del binario, tal cual están:
 - Y el aviso de que viene lo bueno, justo antes de la segunda carga:
   `HAS CONSEGUIDO PENETRAR LAS DEFENSAS DE LA NAVE INSIGNIA / PERO LO PEOR AUN
   NO HA LLEGADO`.
+
+## Y así se ve corriendo
+
+Todo lo de arriba está dibujado desde la cinta. Estas dos son lo contrario: dos
+fotogramas de la partida grabada que viene en el repositorio (`Stardust.omr`),
+sacados con openMSX en los segundos 1002 y 2150 de la grabación. Un render
+demuestra que los datos se han entendido; una captura demuestra otra cosa, que
+el programa arranca y corre.
+
+![La fase de naves en el segundo 1002 de la grabación: ZONA:05](../imagenes/emulador_naves.png)
+
+![La fase de a pie en el segundo 2150: el marcador dice ZONA:08](../imagenes/emulador_apie.png)
+
+La segunda vale además como prueba de la multicarga, y por eso está tomada tan
+tarde: en esa partida el jugador **supera la zona 7**, el juego vuelve a la
+cinta —el motor se enciende en el segundo 1552,20— y lo que sigue corriendo ya
+es el otro programa. No hace falta creerse el marcador: volcando la memoria de
+0x61D0 a 0xD674 en ese instante, **29 585 de sus 29 861 bytes (99,08 %) son los
+del cuarto bloque de la cinta**, contra 674 del bloque de naves que había antes
+en esas mismas direcciones. Y el contador de programa está en 0xA9BA, dentro de
+la segunda parte.

@@ -430,13 +430,29 @@ Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
   operandos de dirección. El `rrca` estaba ahí en 1987 y el port lo copió
   instrucción a instrucción.
 
+  **Y en partida pasa exactamente eso**, que era lo único que quedaba por
+  comprobar. Poniendo el emulador a mirar el `add a,e` de 0xD436 —justo después
+  del `rrca`, con la zona al lado— sobre el tramo de la partida grabada en que
+  manda el juego de naves, las 206 veces que se ejecuta dan esta tabla y ninguna
+  otra:
+
+  ```
+  zona 2   A=0x82      zona 3   A=0x02
+  zona 4   A=0x81      zona 5   A=0x01
+  zona 6   A=0x80      zona 7   A=0x00
+  ```
+
+  Las tres zonas pares que se llegaron a jugar traen el bit 7 puesto, o sea que
+  la máscara se satura de verdad; las impares dan la progresión limpia. Y la
+  zona 7 sale con 0x00, que es el caso en que el enemigo entra sin tirar los
+  dados. Se atenúa, eso sí, porque esas tablas tienen otra vía de alta, por los
+  tiles del mapa, que no mira la zona.
+
   Lo que **no** se puede afirmar es la intención. Que se quisiera un
   desplazamiento lo sugiere todo —el juego usa `srl` para dividir en los dos
   bloques, y `rra` está a un solo bit del `rrca`—, pero nadie puede leer la
   cabeza de quien lo escribió, y los propios autores dejaron esa rutina sin
-  comentar. El efecto en partida tampoco está medido en el emulador, y se
-  atenúa porque esas tablas tienen otra vía de alta, por los tiles del mapa,
-  que no mira la zona.
+  comentar.
 - **La escena que cierra la zona 7.** La mecánica está leída byte a byte —dos
   sprites que bajan y arrastran a la nave fuera de la pantalla—, pero no está
   comprobado qué dibujan exactamente esos dos sprites. Es justo la escena que
