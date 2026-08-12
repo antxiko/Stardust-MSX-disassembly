@@ -390,15 +390,21 @@ confundirlos:
 
 El tercero es el que cuesta, y va así:
 
-    fase de naves    191 rutinas, 170 comentadas (89 %)
-    fase de a pie    144 rutinas, 126 comentadas (88 %)
+    fase de naves    191 rutinas, 191 comentadas (100 %)
+    fase de a pie    144 rutinas, 144 comentadas (100 %)
     ------------------------------------------------------
-    total            335 rutinas, 296 comentadas (88 %)
+    total            335 rutinas, 335 comentadas (100 %)
 
-O sea que **quedan 39 sin comentar**. La cifra la mide
+O sea que **quedan 0 sin comentar**. La cifra la mide
 `tools/rutinas_comentadas.py` y la vigila un test, para que no pueda quedarse
 vieja aquí mientras el listado avanza; es la misma precaución que se tomó con
 las cifras de la portada, que ya se quedaron desfasadas una vez.
+
+**Y ese 100 % tampoco quiere decir «terminado», igual que el de los bytes.**
+Quiere decir que cada rutina tiene escrito qué hace y con qué evidencia. No
+quiere decir que todo se haya comprobado en marcha: unas cuantas se sostienen
+sobre la lectura del listado y están marcadas como tales allí donde lo están,
+y las preguntas que siguen abiertas se cuentan más abajo.
 
 Cuenta como rutina una etiqueta que sea destino de al menos un `call`, o que
 esté declarada como punto de entrada. Los destinos de salto no cuentan: la
@@ -409,12 +415,27 @@ confusión que llegó a publicar 1956 «rutinas».
 
 Esto no está parado. Las líneas abiertas, por orden de lo que más rendiría:
 
-- **Comentar las 39 rutinas que quedan.** Están acotadas y con nombre; falta
-  explicar qué hace cada una.
+- **Un posible bug del juego original, en el alta de enemigos.** La rutina de
+  0xD41A calcula la dificultad con `rrca`, que *rota* en vez de desplazar: en
+  las zonas pares el bit bajo se le cuela al bit 7, la máscara se satura y la
+  probabilidad de que entre un enemigo por esa vía cae a una de cada 256.
+  Tiene toda la pinta de que se quería un `srl`. Está leído del listado, **no
+  medido en el emulador**, y por eso se cuenta aquí y no como hallazgo: los
+  enemigos siguen saliendo por la otra vía, así que las zonas pares no se
+  quedan vacías.
+- **La escena que cierra la zona 7.** La mecánica está leída byte a byte —dos
+  sprites que bajan y arrastran a la nave fuera de la pantalla—, pero no está
+  comprobado qué dibujan exactamente esos dos sprites. Es justo la escena que
+  enlaza con la segunda carga.
+- **La tabla de efectos de ruido se sale de su sitio, y en las dos mitades.**
+  Su última entrada se solapa con el principio de la tabla de notas. No rompe
+  nada, porque ese campo no llega a leerse nunca; que el solape sea deliberado
+  —economía de bytes— o casualidad del empaquetado, no está establecido.
 - **El comando 0x84 del intérprete de sonido**, que ya se sabe que cuenta una
-  duración sin reatacar la nota. Que eso sea una ligadura es la lectura
-  musical, y encaja con dónde aparece en la partitura, pero no está probado
-  contra el chip como sí lo está el resto del intérprete.
+  duración sin reatacar la nota: se salta entero el tramo de ataque. Que eso
+  sea una ligadura es la lectura musical, y encaja con dónde aparece en la
+  partitura, pero no está probado contra el chip como sí lo está el resto del
+  intérprete.
 
 Si tienes una idea sobre cualquiera de esas cosas, o quieres mirarlo por tu
 cuenta, todo lo necesario está en el repositorio: los listados, las

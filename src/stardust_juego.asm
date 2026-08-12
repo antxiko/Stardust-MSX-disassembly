@@ -2003,7 +2003,7 @@ L_BDD6:
 	inc de			;bddf
 	djnz L_BDD6		;bde0
 L_BDE2:
-	call L_D6F9		;bde2
+	call entra_en_records		;bde2
 L_BDE5:
 	ld hl,0a058h		;bde5
 	ld (0c184h),hl		;bde8
@@ -2138,7 +2138,7 @@ L_BEED:
 	ld a,(hl)		;bf00
 	push af			;bf01
 	ex de,hl		;bf02
-	call L_DA33		;bf03
+	call descomprime_nivel		;bf03
 	ld iy,0cb03h		;bf06
 	ld (iy+000h),050h	;bf0a
 	ld (iy+001h),001h	;bf0e
@@ -2191,9 +2191,9 @@ L_BF6A:
 	call mueve_disparos		;bf8e
 	call mueve_bandada		;bf91
 	call mueve_objetos		;bf94
-	call L_D41A		;bf97
+	call alta_enemigo_cuadro		;bf97
 	call va_a_nave_estado		;bf9a
-	call L_D820		;bf9d
+	call gobierna_instalaciones		;bf9d
 	ld a,(actualiza_nave+1)	;bfa0
 	cp 0afh			;bfa3
 	jr nz,L_BFD0		;bfa5
@@ -2443,11 +2443,11 @@ L_C17D:
 ; ======================================================================
 
 
-L_C189:
+tile_30_31:		; El comportamiento de los tiles 0x30 y 0x31, los dos unicos que el despachador manda a la misma rutina (`ld de,0c189h` en 0xC11C y en 0xC126): siete bytes que solo encadenan impacto_objeto -quien lo revienta y paga los 200 puntos- y contacto_instalacion, que con la caja de choca_con_nave3 va derecho a mata_nave. Ni se anima ni dispara: es el tile que solo esta ahi para matar al que lo roce
 	call impacto_objeto		;c189
 	call contacto_instalacion		;c18c
 	ret			;c18f
-L_C190:
+tile_estalla:		; El derrumbe de un tile especial: el estado que impacto_objeto le instala al reventarlo, con (ix+002) puesto a 0x28 (`ld hl,0c190h` en 0xD201). Cada cuadro escribe (ix+002) en la celda del mapa que apunta (ix+005/006) y lo sube uno, o sea que la celda recorre los tiles 0x28, 0x29, 0x2A y 0x2B -que dibujados son el boquete abriendose-; al llegar a 0x2C echa a suertes entre 0x2C y 0x2D (`call azar / and 001h / add a,e`), lo pinta un cuadro mas y se da de baja dejando ese crater en el mapa. Cinco cuadros clavados
 	ld a,(ix+002h)		;c190
 	ld l,(ix+005h)		;c193
 	ld h,(ix+006h)		;c196
@@ -4670,12 +4670,12 @@ L_D1D3:
 	inc de			;d1d8
 	jr L_D1DE		;d1d9
 L_D1DB:
-	call L_D1E2		;d1db
+	call pinta_tramo_estela		;d1db
 L_D1DE:
 	pop af			;d1de
 	cp 003h			;d1df
 	ret nc			;d1e1
-L_D1E2:
+pinta_tramo_estela:		; El nucleo de traza_estela: pinta (iy+003) puntos de la estela subiendo por el buffer, dos bytes por punto -(iy+006) y (iy+007) con `or (hl)`- y restando DE entre uno y otro. traza_estela entra aqui una vez con vida 3, DOS con vida 2 (la llama en 0xD1DB y ademas cae dentro tras el `cp 003h / ret nc` de 0xD1DF), y con vida 1 una sola vez pero despues de subir (iy+003) pasos de 24 sin pintar nada. OJO: el paso con el que PINTA es siempre 25; el 24 de 0xD1CF solo recoloca HL, porque su bucle (0xD1D3) no escribe en el buffer y el `inc de` de 0xD1D8 devuelve DE a 25 antes de pintar
 	ld b,(iy+003h)		;d1e2
 L_D1E5:
 	ld a,(iy+006h)		;d1e5
@@ -4837,7 +4837,7 @@ mata_nave:		; La unica puerta de la muerte: apaga las dos marcas del HUD y mete 
 	ld a,004h		;d30c
 	ld (0c188h),a		;d30e
 	jp pinta_marca_hud		;d311
-L_D314:
+tile_46:		; El comportamiento del tile 0x46 (`ld de,0d314h` en 0xC16B), que es una onda expansiva horizontal. El primer cuadro convierte (ix+002) -que traia el indice de tile, 0x46- en un contador que sube de 0 a 8 y ahi se queda, y con el pinta por pinta_banda_ruido una banda de 8 px de alto y (contador*2+4) bytes de ancho que arranca en la columna (ix+001) - contador*8: crece 16 px por cuadro, ocho por cada lado, de 32 px hasta 160. Suena 0xEAA1 en el canal 1 cada cuadro y, si la nave sigue viva (0xC188 por debajo de 4), la mata al tocarla con una caja que crece a la par: contador*16 + 0x1E contra 0x0C en el eje de columnas, y 6 contra 0x0C en el de filas. Antes de todo eso llama a impacto_objeto, o sea que se puede reventar como cualquier otro tile especial
 	call impacto_objeto		;d314
 	ld a,(ix+002h)		;d317
 	cp 046h			;d31a
@@ -4867,7 +4867,7 @@ L_D328:
 	add a,a			;d343
 	add a,004h		;d344
 	ld b,a			;d346
-	call L_D383		;d347
+	call pinta_banda_ruido		;d347
 	ld a,001h		;d34a
 	ld de,0eaa1h		;d34c
 	call arranca_guion_libre		;d34f
@@ -4899,7 +4899,7 @@ L_D328:
 	call solapa_eje		;d37c
 	ret c			;d37f
 	jp mata_nave		;d380
-L_D383:
+pinta_banda_ruido:		; La brocha de tile_46, y solo suya: pinta B columnas de un byte por 8 filas del buffer, y para CADA columna echa a suertes (`call azar / and 001h`) entre los dos patrones de 8 bytes de 0xD3AD y 0xD3B5, que son los dieciseis primeros de los 34 que figuraban en 0xD3AD como tabla sin dueno. Cada byte lo borra primero con el patron rotado y complementado (`ld a,(de) / rrca / cpl / and (hl)`) y lo pinta despues con `or (hl)`; entre fila y fila suma 24, el ancho del buffer, y entre columna y columna un `inc hl`
 	push bc			;d383
 	call azar		;d384
 	and 001h		;d387
@@ -4929,7 +4929,7 @@ L_D394:
 	pop hl			;d3a7
 	inc hl			;d3a8
 	pop bc			;d3a9
-	djnz L_D383		;d3aa
+	djnz pinta_banda_ruido		;d3aa
 	ret			;d3ac
 
 ; ----------------------------------------------------------------------
@@ -4987,7 +4987,7 @@ L_D3E1:
 	ret nc			;d415
 	inc (hl)		;d416
 	jp hud_vidas_zona		;d417
-L_D41A:
+alta_enemigo_cuadro:		; El alta de enemigos cuadro a cuadro, la penultima llamada del bucle de partida (0xBF97). Tres filtros antes de nada: una tirada de cada 32 (`and 01fh`), la bandera 0xDAC5 a cero -o sea antes de que salga el tile de fin de zona- y una segunda tirada cuya dificultad sale de la zona y de cuantos enemigos hay ya volando: b = ((7 - zona) pasado por `rrca`) + 0xC97A + 0xC98F, y hay que sacar cero en `azar and (2^b - 1)`; si esa suma es cero entra sin tirar. Luego saca una columna al azar por debajo de 0xB0 y suelta el enemigo en la fila 0, en la tabla de 0xC990 si el bit 1 de esa columna esta puesto -con la de 0xC97B de reserva si estaba llena- y en la de 0xC97B si no. Es la hermana de la alta_enemigo_cuadro de la fase de a pie: mismo esquema con otros numeros, y solo 7 de sus 68 bytes coinciden
 	call azar		;d41a
 	and 01fh		;d41d
 	ret nz			;d41f
@@ -5157,7 +5157,7 @@ L_D525:
 	ld ix,0dd00h		;d525
 	ld hl,046c2h		;d529
 	jp rotula_cadena		;d52c
-L_D52F:
+scroll_records:		; Un cuadro de la pantalla de records: baja el puntero de 0xDCC4 una fila del buffer (24 bytes) y vuelve a rotular el titulo "STARDUST" de 0xDCC6 y las ocho fichas de 0xDD08, cada una 384 bytes por debajo de la anterior, que a 24 por fila son las 16 filas justas que ocupa un glifo a doble altura. Cuando el puntero se sale por arriba del buffer (`ld a,h / cp 040h`) se va a 0xD591, que desapila la vuelta, arranca la musica, espera a que acabe y entra en la demo sembrando el azar con 0xA710 y parcheando 0xC090 con lee_mando_demo. El llamador es el bucle de 0xD566, que arranca poniendo 0xDCC4 en 0x4F08. Gemela de la scroll_records de la fase de a pie: 35 de sus 49 bytes son identicos
 	ld hl,(0dcc4h)		;d52f
 	ld de,00018h		;d532
 	and a			;d535
@@ -5188,7 +5188,7 @@ L_D560:
 L_D566:
 	call borra_buffer		;d566
 	call mueve_estrellas		;d569
-	call L_D52F		;d56c
+	call scroll_records		;d56c
 	call vuelca_pantalla		;d56f
 	call hay_tecla		;d572
 	jp nz,L_BDE5		;d575
@@ -5370,7 +5370,7 @@ L_D6BC:
 	pop bc			;d6c1
 	djnz L_D686		;d6c2
 	ret			;d6c4
-L_D6C5:
+tile_43:		; El comportamiento del tile 0x43 (`ld de,0d6c5h` en 0xC158): entra por contacto_instalacion, o sea que mata a la nave al tocarla, y anima el aparato alternando su celda del mapa entre los tiles 0x43 y 0x44 con un `ld a,007h / xor (hl)` cada ocho cuadros. La fase la echa a suertes: en su primer cuadro -(ix+000) valiendo 1- mete en (ix+007) un `azar and 007h`, de modo que dos tiles 0x43 en pantalla no parpadeen a la vez. Dibujados desde el pozo de tiles, el 0x43 y el 0x44 son el mismo aparato con el interior cambiado
 	call contacto_instalacion		;d6c5
 	ld a,(ix+000h)		;d6c8
 	dec a			;d6cb
@@ -5396,7 +5396,7 @@ contacto_instalacion:		; La caja de la instalacion de IX contra la nave: HL sale
 	call choca_con_nave3		;d6f2
 	ret c			;d6f5
 	jp mata_nave		;d6f6
-L_D6F9:
+entra_en_records:		; Mira si el marcador entra en la tabla de records, y es por donde pasa TODO game over: la llama 0xBDE2, adonde llegan tanto quedarse sin vidas (0xC000) como la tecla ABANDONAR (0xBFE8). Compara los seis digitos de 0xDD80 contra los ocho campos de puntuacion de 0xDD10 + n*15 y, al ganar uno, hace hueco con un `lddr` de (7-n)*15 bytes que empuja las fichas de abajo y tira la ultima, copia ahi la puntuacion con un `ldir` de 6 y salta a 0xF671 -la entrada del nombre- con la direccion del nombre nuevo en la pila. La tabla son ocho fichas de 15 bytes desde 0xDD08 -8 de nombre, 6 de puntuacion y el cero-, y cierra al byte: 0xDD08 + 120 = 0xDD80, que es el marcador. Gemela de la entra_en_records de la fase de a pie: 57 de sus 71 bytes son identicos
 	ld hl,0dd10h		;d6f9
 	ld c,008h		;d6fc
 L_D6FE:
@@ -5479,11 +5479,11 @@ L_D75B:
 	call c,va_a_nave_estado		;d790
 	ld a,(0ca91h)		;d793
 	cp 080h			;d796
-	call nz,L_D83A	;d798
-	call L_D7A4		;d79b
+	call nz,avanza_instalaciones	;d798
+	call bonus_zona		;d79b
 	call vuelca_pantalla		;d79e
 	jp L_D75B		;d7a1
-L_D7A4:
+bonus_zona:		; El remate de la zona, dentro del bucle de 0xD75B: mientras zona_despejada diga que queda algo en pantalla no hace mas que esperar 1000 vueltas, y en cuanto la zona esta limpia el contador de 0xDDF7 lleva el guion -19 cuadros de espera, 20 rotulando "BONUS xx00" (0xDDF8) en 0x40C7, y en el paso 0x28 se queda dando vueltas cobrando-. Cada vuelta del cobro paga 100 puntos, suena 0xEB2C y baja una unidad los dos digitos de 0xDDFE/0xDDFF, que L_D740 dejo en (zona + 0x32) y '0': la zona 1 cobra "30" y paga 3000, y la 7 cobra "90" y paga 9000. Cuando el contador llega a 0x50 desapila la vuelta y se va a carga_zona, o a 0xF71C -la multicarga- si la zona ya es la 8
 	call zona_despejada		;d7a4
 	jp nz,espera_1000		;d7a7
 	ld a,(0ddf7h)		;d7aa
@@ -5544,10 +5544,10 @@ espera_bc:		; Espera activa: decrementa BC hasta cero y vuelve
 	or c			;d81c
 	jr nz,espera_bc		;d81d
 	ret			;d81f
-L_D820:
+gobierna_instalaciones:		; La ultima llamada del bucle de partida (0xBF9D), y el arbitro de la tanda de instalaciones: si 0xCA91 vale 0x80 no hay ninguna montada, y entonces -sin perseguidor (0xD3C5) y sin que haya salido el tile de fin de zona (0xDAC5)- una tirada de cada 128 salta al constructor de 0xD5AA. Si la hay, pasa el mando a avanza_instalaciones, que es la que la mueve
 	ld a,(0ca91h)		;d820
 	cp 080h			;d823
-	jr nz,L_D83A		;d825
+	jr nz,avanza_instalaciones		;d825
 	ld a,(0d3c5h)		;d827
 	and a			;d82a
 	ret nz			;d82b
@@ -5558,7 +5558,7 @@ L_D820:
 	and 07fh		;d834
 	ret nz			;d836
 	jp L_D5AA		;d837
-L_D83A:
+avanza_instalaciones:		; El cuadro de la tanda de instalaciones: llama a recorre_instalaciones y mueve el scroll de la tanda, que es un contador de NUEVE bits -los ocho bajos en 0xCA8D y el noveno en el bit 7 de 0xCA8C-, al que suma 1, 2 o 3 segun la velocidad de 0xCA91. Una vez de cada ocho (`ld a,(0ca8eh) / and 007h`) ajusta esa velocidad: a saco mientras la tanda va por la pagina de entrada, y despues la acerca a la fila de la nave (0xC185) menos 0x34, subiendo o bajando de uno en uno con topes 1 y 3. Cuando el contador pasa de 0xC0 con el noveno bit ya apagado, la tanda se fue: pone 0xCA91 = 0x80 -la marca que mira zona_despejada- y repone el dibujo 0x73 del HUD. Remata con el `jp pinta_rejilla` de 0xD8A0, que es la unica entrada de esa rutina, pasandole la fila en H, la columna sin el bit 7 en L y ese noveno bit en D. La llama tambien el bucle de fin de zona, en 0xD798
 	call recorre_instalaciones		;d83a
 	ld hl,(0ca8ch)		;d83d
 	ld a,(0ca8eh)		;d840
@@ -5795,7 +5795,7 @@ choca_con_nave4:		; La cuarta caja de contacto con la nave, y la unica alargada:
 	call solapa_eje		;d9ff
 	ret c			;da02
 	jp mata_nave		;da03
-lee_texto:		; Recorre la lista de textos de 0xDE18 hasta el que pide A -en sus siete bits bajos-, saltando de uno a otro por la longitud que cada uno lleva en su primer byte
+descomprime_token:		; Expande un token del mapa comprimido: si el bit 7 esta a cero es un literal, que escribe en (ix+000) y avanza IX; si esta a uno, sus siete bits bajos son el numero de frase del diccionario de 0xDE18, adonde llega saltando de frase en frase por el tamano que cada una lleva en su primer byte, y la expande LLAMANDOSE A SI MISMA una vez por cada token que contenga, de modo que una frase puede contener otras. El 0xFF cierra el flujo y se come la vuelta con el `pop hl` de 0xDA31
 	ld a,(hl)		;da06
 	cp 0ffh			;da07
 	jr z,L_DA31		;da09
@@ -5816,7 +5816,7 @@ L_DA1D:
 	inc hl			;da1f
 L_DA20:
 	push bc			;da20
-	call lee_texto		;da21
+	call descomprime_token		;da21
 	pop bc			;da24
 	djnz L_DA20		;da25
 	pop hl			;da27
@@ -5830,12 +5830,12 @@ L_DA2A:
 L_DA31:
 	pop hl			;da31
 	ret			;da32
-L_DA33:
+descomprime_nivel:		; El bucle del descompresor de mapas: pone IX = 0x5C50 -el destino, la entrada 5 de la tabla de 6 en 6 que empieza en 0x5C32- y llama sin parar a descomprime_token sobre el flujo que carga_zona le deja en HL desde la tabla de zonas de 0xDE03 (`call L_DA33` en 0xBF03). No tiene salida propia: el 0xFF que cierra el flujo hace que descomprime_token se coma la vuelta con el `pop hl` de 0xDA31, asi que el `jp` de 0xDA3A no llega a repetirse y el control vuelve directo a 0xBF06. Las siete zonas expanden a 450 bytes justos, 75 filas de a seis
 	ld ix,05c50h		;da33
 L_DA37:
-	call lee_texto		;da37
+	call descomprime_token		;da37
 	jp L_DA37		;da3a
-L_DA3D:
+tile_5D:		; La rutina de gobierno que el despachador de 0xC170 le da al tile 0x5D (`cp 05dh / ld de,0da3dh`), el que cierra la zona 7. Al decimo cuadro de vida -(ix+000), que recorre_tiles_especiales sube uno por cuadro, contra el `cp 00ah / ret c` de 0xDA40- CONGELA EL SCROLL poniendo 0xCB04 a cero, que es la puerta que mira repinta_fondo en 0xC42A antes de bajar una fila del mapa, levanta la bandera 0xDAC5 -que corta la aparicion de enemigos sueltos en 0xD420 y la creacion de tandas nuevas en 0xD82C- y se cambia a si misma la rutina de gobierno por la de 0xDA72
 	ld a,(ix+000h)		;da3d
 	cp 00ah			;da40
 	ret c			;da42
@@ -5843,7 +5843,7 @@ L_DA3D:
 	ld (0cb04h),a		;da44
 	inc a			;da47
 	ld (0dac5h),a		;da48
-	ld hl,L_DA72		;da4b
+	ld hl,tile_5D_espera		;da4b
 	ld (ix+003h),l		;da4e
 	ld (ix+004h),h		;da51
 	ret			;da54
@@ -5864,7 +5864,7 @@ zona_despejada:		; Vuelve con Z solo si no queda nada en pantalla: 0xCA91 en 0x8
 	ld a,(0d3c5h)		;da6d
 	or e			;da70
 	ret			;da71
-L_DA72:
+tile_5D_espera:		; El 0x5D esperando: cada cuadro repone (ix+000) a cero para no caducar nunca en el `cp 060h` de recorre_tiles_especiales, y no hace nada hasta que se dan tres condiciones a la vez -que zona_despejada diga que no queda nada, que la nave este en la columna 0x58 (la misma en la que la deja el arranque de zona con `ld hl,0a058h`) y que 0xC9A3 valga exactamente 8-. Cuando se cumplen, parchea el operando del `jp` de va_a_nave_estado (0xC064) para que el bucle principal llame a arrastra_nave en vez de a la nave, parchea el de pinta_escudo (0xD0DD) con el `ret` de 0xD959 para apagar el indicador -los dos mismos trampolines que hud_reset repone en 0xBE9F y 0xBEA8-, devuelve el scroll poniendo 0xCB04 = 8, siembra 0xC9A3 con 0x1F y se da de baja
 	call zona_despejada		;da72
 	ld (ix+000h),000h	;da75
 	ret nz			;da79
@@ -5874,7 +5874,7 @@ L_DA72:
 	ld a,(0c9a3h)		;da80
 	cp 008h			;da83
 	ret nz			;da85
-	ld hl,L_DA9D		;da86
+	ld hl,arrastra_nave		;da86
 	ld (0c064h),hl		;da89
 	ld hl,ld959h		;da8c
 	ld (0d0ddh),hl		;da8f
@@ -5882,7 +5882,7 @@ L_DA72:
 	ld a,01fh		;da95
 	ld (0c9a3h),a		;da97
 	jp baja_tile_especial		;da9a
-L_DA9D:
+arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB1. Los dos numeros de sprite son fotogramas del mismo tramo 0x00-0x1F que pinta actualiza_nave con `and 01fh`; que dibujan exactamente no esta establecido
 	ld hl,(0c184h)		;da9d
 	push hl			;daa0
 	ld a,008h		;daa1
@@ -6300,7 +6300,7 @@ L_E148:
 ; ======================================================================
 
 
-L_E15A:
+interrupcion:		; El epilogo de la interrupcion, lo que el arranque engancha en H.TIMI (0xBD9D mete 0xC3 en 0xFD9F y 0xBDA3 la direccion en 0xFDA0, con H.KEYI ya tapado con un `ret`): corta con `di`, tira con `pop hl` la vuelta a la ROM, llama a tic_sonido y desapila los DIEZ pares que el manejador de la BIOS habia guardado -IX, IY, AF, BC, DE, HL y, tras `ex af,af` y `exx`, los cuatro alternos-, de modo que el `ei / ret` de 0xE16D vuelve de la interrupcion sin pasar por el resto del manejador. Gemela de la interrupcion de la fase de a pie (0xC46E): 21 bytes, y las dos unicas diferencias son el operando del `call`
 	di			;e15a
 	pop hl			;e15b
 	call tic_sonido		;e15c
@@ -6628,7 +6628,7 @@ L_E393:
 	ld a,(0ee0bh)		;e397
 	add a,e			;e39a
 	ld (0ee13h),a		;e39b
-	call L_E5CD		;e39e
+	call vuelca_psg		;e39e
 	pop af			;e3a1
 	ret			;e3a2
 carga_envolvente_1:		; Copia dos parejas de la plantilla del instrumento a las variables vivas: (ix+020) a (ix+00C) y (ix+016) a (ix+00E)
@@ -6801,7 +6801,7 @@ L_E4BE:
 	ld (ix+02bh),000h	;e4e4
 	ld (ix+02ch),000h	;e4e8
 	jp L_E222		;e4ec
-L_E4EF:
+op_efecto:		; 0x89 n: arranca el barrido de ruido. Copia los seis bytes de la entrada 0xE6D2 + n*6 a 0xEE03-0xEE08 -por parejas, porque son dos etapas entrelazadas: las dos recargas del contador de pasos, los dos pasos y las dos recargas de la espera-, pone a cero los dos contadores vivos de 0xEDFF/0xEE00 y el acumulador 0xEE0B -el que se suma a 0xEE0A para dar el periodo de ruido en 0xEE13-, y apunta en 0xEE0C el canal de 0xEE19, que queda de dueno: es el que op_fin compara para saber si al cerrarse debe limpiar el bloque. Ademas APAGA el bit 2 de 0xEE09, que es el que hace que el barrido se recargue solo al agotarse (`bit 2,a / call nz,refresca_globales_sonido` en 0xE38E), asi que de serie suena una vez; quien lo vuelve a encender es op_banderas
 	inc bc			;e4ef
 	ld a,(0ee09h)		;e4f0
 	res 2,a			;e4f3
@@ -6853,7 +6853,7 @@ op_tempo1:		; 0x86: el tempo a 1, sin argumento
 	ld (0ee18h),a		;e548
 	inc bc			;e54b
 	jp L_E222		;e54c
-L_E54F:
+op_llama_frase:		; 0x8C n: el CALL del interprete. Guarda el BC que ya apunta detras del argumento en la pila por canal de 0xEE1B + canal*2 -tres parejas, 0xEE1B a 0xEE20, que cierran al byte contra la tabla de transposiciones de 0xEE21- y sigue interpretando desde la palabra que hay en 0xE7C1 + n*2, que es la tabla de las VEINTE frases y no la de los quince opcodes. Es el comando mas frecuente de la partitura, con 208 apariciones, e identico a su gemelo 0xC864 salvo los cinco operandos de direccion
 	ld a,(0ee19h)		;e54f
 	inc bc			;e552
 	add a,a			;e553
@@ -6871,7 +6871,7 @@ L_E54F:
 	ld b,h			;e566
 	ld c,l			;e567
 	jp L_E222		;e568
-L_E56B:
+op_vuelve:		; 0x8D: el RETURN. Recupera BC de la misma pila por canal (0xEE1B + canal*2, con el canal en 0xEE19) y vuelve al bucle del interprete en 0xE222 sin consumir ningun byte, que es por lo que TODAS las frases acaban en 0x8D mientras que las canciones acaban en 0x8B. Diecisiete bytes, los mismos que su gemelo 0xC880 salvo los tres operandos de direccion
 	ld a,(0ee19h)		;e56b
 	add a,a			;e56e
 	ld l,a			;e56f
@@ -6946,7 +6946,7 @@ L_E5C7:
 	ld l,a			;e5ca
 	pop af			;e5cb
 	ret			;e5cc
-L_E5CD:
+vuelca_psg:		; El volcado al chip, y el unico `out (0a1h),a` de sonido del bloque -el otro, 0xC1D1, es la lectura del joystick-: escribe los ONCE bytes del bloque sombra de 0xEE0D-0xEE17 en los registros 0 a 10 del PSG, con `ld a,000h` de primer registro y `ld d,00bh` de cuenta, sacando el numero por 0xA0 y el dato por 0xA1. Lo llama tic_sonido como ultima cosa de cada tic (`call L_E5CD` en 0xE39E), justo despues de componer el ruido en 0xEE13 sumando la base de 0xEE0A y el barrido de 0xEE0B. La sombra cierra al byte: 0xEE0D-0xEE12 los tres periodos de tono, 0xEE13 el ruido, 0xEE14 el mezclador y 0xEE15-0xEE17 los tres volumenes; los 21 bytes son los de su gemela 0xC8E2 salvo el operando del `ld hl`
 	ld hl,0ee0dh		;e5cd
 	ld a,000h		;e5d0
 	ld d,00bh		;e5d2

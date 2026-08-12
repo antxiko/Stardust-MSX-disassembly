@@ -387,15 +387,21 @@ keeping apart:
 
 The third one is the expensive one, and it stands here:
 
-    ship stage       191 routines, 170 commented (89 %)
-    on-foot stage    144 routines, 126 commented (88 %)
+    ship stage       191 routines, 191 commented (100 %)
+    on-foot stage    144 routines, 144 commented (100 %)
     ------------------------------------------------------
-    total            335 routines, 296 commented (88 %)
+    total            335 routines, 335 commented (100 %)
 
-So **39 are left**. The figure is measured by `tools/rutinas_comentadas.py`
+So **0 are left**. The figure is measured by `tools/rutinas_comentadas.py`
 and guarded by a test, so it cannot go stale here while the listing moves on —
 the same precaution taken with the front page's figures, which did go stale
 once.
+
+**And that 100 % does not mean "finished" either**, no more than the one about
+bytes does. It means every routine has what it does written down, and with what
+evidence. It does not mean everything has been checked while running: a handful
+rest on reading the listing, they say so where they do, and the questions still
+open are set out below.
 
 A routine counts as one when its label is the target of at least one `call`, or
 when it is declared as an entry point. Jump targets do not count: most are loops
@@ -406,12 +412,27 @@ published 1956 "routines".
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **Commenting the 39 routines that are left.** They are bounded and named;
-  what they do is still to be written down.
+- **A possible bug in the original game, in the enemy spawner.** The routine at
+  0xD41A works out the difficulty with `rrca`, which *rotates* instead of
+  shifting: on even-numbered zones the low bit lands in bit 7, the mask
+  saturates, and the odds of an enemy entering by that route drop to one in
+  256. It looks very much like an `srl` was meant. This is read off the
+  listing, **not measured in the emulator**, which is why it is filed here and
+  not as a finding: enemies still arrive by the other route, so the
+  even-numbered zones are not left empty.
+- **The scene that closes zone 7.** The mechanism has been read byte by byte —
+  two sprites descend and drag the ship off the screen — but what those two
+  sprites actually draw has not been checked. It is precisely the scene that
+  leads into the second tape load.
+- **The noise-effect table runs past its own end, in both halves.** Its last
+  entry overlaps the start of the note table. Nothing breaks, because that
+  field is never read; whether the overlap is deliberate — saving bytes — or an
+  accident of the packing is not established.
 - **The sound interpreter's 0x84 command**, which is now known to consume a
-  duration without re-attacking the note. Reading that as a tie is the musical
-  interpretation, and it fits where the command appears in the score, but it
-  has not been proven against the chip the way the rest of the interpreter has.
+  duration without re-attacking the note: it skips the attack section
+  entirely. Reading that as a tie is the musical interpretation, and it fits
+  where the command appears in the score, but it has not been proven against
+  the chip the way the rest of the interpreter has.
 
 If you have an idea about any of that, or you want to look at it yourself,
 everything needed is in the repository: the listings, the measuring tools and

@@ -1014,18 +1014,52 @@ class TestLaCifraDeRutinasComentadas(unittest.TestCase):
             self.assertEqual(naves[0] + apie[0], tot[0], pagina)
             self.assertEqual(naves[1] + apie[1], tot[1], pagina)
 
+    # La cuenta de las que quedan aparece en dos sitios distintos de cada
+    # pagina, y no son lo mismo:
+    #
+    #   - el RECUENTO ("quedan N sin comentar") describe el estado, y tiene que
+    #     estar siempre, valga lo que valga N;
+    #   - la LINEA DE TRABAJO ("Comentar las N rutinas que quedan") promete algo
+    #     que se va a hacer, y solo tiene sentido mientras N sea mayor que cero.
+    #
+    # Cuando se comentaron las ultimas y N se puso a 0, exigir la segunda
+    # obligaba a la pagina a anunciar como tarea pendiente "comentar las 0
+    # rutinas que quedan". Por eso el recuento se exige siempre y la linea de
+    # trabajo solo cuando de verdad queda trabajo; y si vuelve a quedar alguna
+    # -porque el trazador acote una rutina nueva-, vuelve a exigirse.
+    RECUENTO = (("es/LO-QUE-FALTA.md", r"quedan (\d+) sin comentar"),
+                ("WHATS-MISSING.md", r"\*\*(\d+) are left\*\*"))
+    LINEA_DE_TRABAJO = (("es/LO-QUE-FALTA.md", r"Comentar las (\d+) rutinas"),
+                        ("WHATS-MISSING.md", r"Commenting the (\d+) routines"))
+
     def test_las_que_quedan_cuadran_con_el_total(self):
         """El '180 que quedan' del texto tiene que ser total - comentadas."""
         total, comentadas = self.medido()
         quedan = total - comentadas
-        for pagina, patron in (("es/LO-QUE-FALTA.md", r"quedan (\d+) sin comentar"),
-                               ("es/LO-QUE-FALTA.md", r"Comentar las (\d+) rutinas"),
-                               ("WHATS-MISSING.md", r"\*\*(\d+) are left\*\*"),
-                               ("WHATS-MISSING.md", r"Commenting the (\d+) routines")):
+        exigidos = list(self.RECUENTO)
+        if quedan:
+            exigidos += list(self.LINEA_DE_TRABAJO)
+        for pagina, patron in exigidos:
             with open(os.path.join(DOCS, pagina), encoding="utf-8") as f:
                 m = re.search(patron, f.read())
             self.assertIsNotNone(m, "%s: no aparece '%s'" % (pagina, patron))
             self.assertEqual(int(m.group(1)), quedan, "%s / %s" % (pagina, patron))
+
+    def test_no_se_promete_trabajo_que_ya_no_queda(self):
+        """Y al reves: con 0 pendientes, la pagina no puede seguir prometiendolo.
+
+        Sin esto, la excepcion de arriba dejaria pasar una pagina que anunciase
+        "comentar las 39 rutinas que quedan" para siempre, que es justo la clase
+        de cifra vieja que estos tests existen para cazar.
+        """
+        total, comentadas = self.medido()
+        if total != comentadas:
+            self.skipTest("todavia quedan %d por comentar" % (total - comentadas))
+        for pagina, patron in self.LINEA_DE_TRABAJO:
+            with open(os.path.join(DOCS, pagina), encoding="utf-8") as f:
+                m = re.search(patron, f.read())
+            self.assertIsNone(m, "%s: sigue prometiendo comentar rutinas que ya "
+                                 "estan comentadas ('%s')" % (pagina, patron))
 
 
 class TestLosDestinosSinTrazar(unittest.TestCase):
