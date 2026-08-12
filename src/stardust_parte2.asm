@@ -1096,7 +1096,7 @@ lb262h:	equ 0x0b262
 ; ======================================================================
 
 
-L_A279:
+arranque_apie:		; Todo el armazon de la fase (0xA279-0xA538): pone la pila, enciende la pantalla con R1=0xE2 heredando el SCREEN 2 que dejo la fase de naves, engancha `ret` en H.KEYI y `jp 0xC46E` en H.TIMI, recoge los records y el marcador que el otro programa dejo en 0xD6D8, monta el titulo, arranca la partida y se queda en el bucle de juego. Entra por el `jp 0a279h` de 0xF7B5, ya en el bloque de naves
 	di			;a279
 	ld sp,05b32h		;a27a
 	in a,(099h)		;a27d
@@ -1187,7 +1187,7 @@ L_A32A:
 	ld a,001h		;a32d
 	ld (0ad2ah),a		;a32f
 	call pinta_estrellas		;a332
-	call L_A672		;a335
+	call juega_en_firme		;a335
 	call L_B4CA		;a338
 	ld a,(0c462h)		;a33b
 	and a			;a33e
@@ -1308,7 +1308,7 @@ L_A41F:
 respawn:		; Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) con la camara del checkpoint 0xC466/67, escudo a 3, tablas de enemigos vaciadas y el update restaurado
 	call repinta_escudo		;a439
 	ld hl,L_A580		;a43c
-	ld (L_A57D+1),hl	;a43f
+	ld (update_jugador+1),hl	;a43f
 	xor a			;a442
 	ld (0acbbh),a		;a443
 	ld (0ad0eh),a		;a446
@@ -1333,7 +1333,7 @@ respawn:		; Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) co
 	ld (0c45ch),a		;a47d
 	ld (0b720h),a		;a480
 	call sonido_reset		;a483
-	call L_A930		;a486
+	call borra_globales_sonido		;a486
 	call hud_vidas		;a489
 	call azar		;a48c
 	and 003h		;a48f
@@ -1355,12 +1355,12 @@ L_A4A1:
 	ld a,0cah		;a4b0
 	ld (0a98eh),a		;a4b2
 	call redibuja_fondo		;a4b5
-	call L_AD76		;a4b8
+	call mueve_disparos		;a4b8
 	call dispara_torretas		;a4bb
 	call mueve_enemigos		;a4be
 	call tic_cuenta_atras		;a4c1
 	call mueve_tiros_torreta		;a4c4
-	call L_AECE		;a4c7
+	call voladores_activos		;a4c7
 	call L_B3F7		;a4ca
 	xor a			;a4cd
 	ld (0c462h),a		;a4ce
@@ -1383,7 +1383,7 @@ L_A4A1:
 	ld a,0aah		;a4fc
 	ld (0b4b0h),a		;a4fe
 L_A501:
-	call L_A57D		;a501
+	call update_jugador		;a501
 	call vuelca_pantalla		;a504
 	ld ix,0b86ah		;a507
 	ld a,(ix+00dh)		;a50b
@@ -1401,7 +1401,7 @@ L_A525:
 	sub 001h		;a528   ; El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acarreo game over, si no respawn
 	ld (0c45fh),a		;a52a
 	ld hl,L_A580		;a52d
-	ld (L_A57D+1),hl	;a530
+	ld (update_jugador+1),hl	;a530
 	jp c,L_A2D2		;a533
 	jp respawn		;a536
 pausa:		; Si la tecla PARAR (la sexta de 0xB86A) esta pulsada, espera a que se suelten todas las teclas y luego a que se pulse cualquiera
@@ -1445,7 +1445,7 @@ hud_vidas:		; Pasa las vidas de 0xC45F a ASCII con `add a,030h` y las estampa co
 	ld ix,0c45dh		;a573
 	ld de,007a0h		;a577
 	jp hud_imprime		;a57a
-L_A57D:
+update_jugador:		; El turno del jugador, y la unica llamada que se parchea en caliente: es un `jp` cuyo operando (0xA57E) apunta a 0xA580 en juego normal y a cadaver_parabola tras un impacto. Reparte segun 0xA6ED -1 a 3 vivo, 4 sentencia, 5 a 0x2D agonia- y de 7 a 0x1E pinta los doce fotogramas del derrumbe (0x50 a 0x5B, dos cuadros cada uno)
 	jp L_A580		;a57d
 L_A580:
 	ld hl,(0a6ebh)		;a580
@@ -1577,11 +1577,11 @@ L_A64D:
 	jp L_A5D0		;a662
 L_A665:
 	call consulta_mapa		;a665   ; La consulta del suelo del JUGADOR: celda vacia bajo los pies = 0xA6ED=4, muerte sentenciada (la unica escritura de la via de caida)
-	jr nz,L_A672		;a668
+	jr nz,juega_en_firme		;a668
 	ld a,004h		;a66a
 	ld (0a6edh),a		;a66c
 	jp L_A583		;a66f
-L_A672:
+juega_en_firme:		; El turno del jugador cuando hay suelo bajo los pies: apunta el checkpoint, lee el mando por el `call` parcheable de 0xA688, dispara, gira el rumbo, da el paso y avanza la animacion sumando 8 a 0xAD0E solo si se ha movido de verdad. Lo llama tambien el bucle del titulo, que es lo que mueve el cursor del menu
 	xor a			;a672
 	ld (0c462h),a		;a673
 	ld hl,(0a6ebh)		;a676
@@ -1609,7 +1609,7 @@ L_A672:
 	call gira_rumbo		;a6aa
 	ld (0ad0eh),a		;a6ad
 	ld c,002h		;a6b0
-	call L_A8BA		;a6b2
+	call paso_jugador		;a6b2
 	call recorta_x_jugador		;a6b5
 	ld (0a6ebh),hl		;a6b8
 	ld a,(0c462h)		;a6bb
@@ -1837,7 +1837,7 @@ L_A83C:
 	ld a,(ix+001h)		;a85c
 	add a,004h		;a85f
 	ld b,a			;a861
-	call L_AE15		;a862
+	call alta_tiro_enemigo		;a862
 L_A865:
 	call disparo_derriba_andante		;a865
 	ld a,(0a6edh)		;a868
@@ -1886,7 +1886,7 @@ L_A897:
 	pop de			;a8b4
 	ldir			;a8b5
 	jp L_A891		;a8b7
-L_A8BA:
+paso_jugador:		; Cruza la mascara del rumbo actual con la del pedido y mueve 2 px solo en lo que tengan en comun; luego FIJA la fila en 0x68 y, si el paso la habia cambiado, cae en actualiza_scroll con el carry diciendo si sube
 	push af			;a8ba
 	and 007h		;a8bb
 	call rumbo_a_mascara		;a8bd
@@ -1947,7 +1947,7 @@ remate_de_fase:		; La puerta del remate: con el scroll en la fila 0x47, los seis
 	cp 060h			;a92a
 	ret nc			;a92c
 	jp rehace_pantalla		;a92d
-L_A930:
+borra_globales_sonido:		; Pone a cero los catorce bytes de variables globales del interprete de sonido, 0xD0F2-0xD0FF, que es 0xD068 + 3*46: justo detras del tercer estado de canal
 	ld hl,0d0f2h		;a930
 	ld de,0d0f3h		;a933
 	ld bc,0000dh		;a936
@@ -2605,7 +2605,7 @@ lanza_tiro_torreta:		; Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (
 ; ======================================================================
 
 
-L_AD31:
+persigue_con_inercia:		; Guia un tiro de torreta: una de cada dos veces empuja la velocidad BC un paso hacia el blanco con tope mas menos cinco, y siempre la suma a la posicion; si la columna se sale repone la X guardada y rebota negando C. Es vaga_o_persigue con velocidades en pixeles y otros topes
 	ld (0b13eh),hl		;ad31
 	call azar		;ad34
 	and 001h		;ad37
@@ -2652,21 +2652,21 @@ L_AD67:
 	ld c,a			;ad74
 L_AD75:
 	ret			;ad75
-L_AD76:
+mueve_disparos:		; Pasa las DOS tablas de disparos por el mismo motor parcheando antes el paso en el `ld bc` de 0xADC4: los tiros enemigos a 4 pixeles por cuadro y los del jugador a 10. El 0x0707 que trae el binario no lo usa nadie
 	ld ix,ladc4h		;ad76
 	ld (ix+001h),004h	;ad7a
 	ld (ix+002h),004h	;ad7e
 	ld ix,0aca3h		;ad82
 	ld hl,0acbbh		;ad86
 	ld a,005h		;ad89
-	call L_ADA3		;ad8b
+	call mueve_tabla_disparos		;ad8b
 	ld ix,ladc4h		;ad8e
 	ld (ix+001h),00ah	;ad92
 	ld (ix+002h),00ah	;ad96
 	ld ix,0acbch		;ad9a
 	ld hl,0ace0h		;ad9e
 	ld a,004h		;ada1
-L_ADA3:
+mueve_tabla_disparos:		; El motor comun de las dos tablas: suma el scroll del cuadro a la fila, mueve con el paso parcheado, pinta el glifo y da de baja al que traiga 0x80 en el rumbo o se salga (fila 0xC0, columna 0xBC), compactando con un `ldir`
 	ld (0ace0h),hl		;ada3
 	ld (0ace2h),a		;ada6
 	ld a,(ix-001h)		;ada9
@@ -2731,7 +2731,7 @@ L_ADF5:
 	pop de			;ae0f
 	ldir			;ae10
 	jp L_ADE4		;ae12
-L_AE15:
+alta_tiro_enemigo:		; Mete un tiro enemigo en la tabla de 0xACA3 (contador 0xACA2, tope 6) con el guion 0xCD5F en el canal 1. Es la COLA de alta_enemigo de la fase de naves -7 de 11 bytes iguales desde 0xCC98- SIN la tirada de dificultad por zona que aquella lleva delante, que aqui no tendria de donde sacar la zona
 	ld hl,0aca2h		;ae15
 	ld e,006h		;ae18
 	exx			;ae1a
@@ -2772,7 +2772,7 @@ alta_en_tabla:		; El alta comun a las tablas: si el contador no ha llegado al to
 	ld (hl),a		;ae49
 	scf			;ae4a
 	ret			;ae4b
-vaga_o_persigue:		; El rumbo de un enemigo cuadro a cuadro: tres de cada cuatro veces sigue recto, y la cuarta -cuando el azar and 3 da cero- gira un paso hacia donde este el jugador, con la suma modular de ocho direcciones del `add a,004h / cp / adc`
+vaga_o_persigue:		; Tres de cada cuatro veces deja al enemigo yendo recto y la cuarta -cuando el azar and 3 da cero- empuja su velocidad un paso hacia el jugador, un eje cada vez. (Aqui puso "la suma modular de ocho direcciones" y no lo es: `add a,004h / cp 008h / adc a,000h / sub 004h` sube uno SATURANDO en +4, y su pareja `cp 001h / adc a,0ffh` baja uno saturando en -4. Y B y C no son rumbos, son velocidades en pixeles)
 	ld (0b13eh),hl		;ae4c
 	call azar		;ae4f
 	and 003h		;ae52
@@ -2822,7 +2822,7 @@ L_AE87:
 	add hl,bc		;ae93
 L_AE94:
 	ret			;ae94
-L_AE95:
+alta_volador:		; Da de alta un volador en la tabla de 0xACF9 (contador 0xACF8, tope 2, entradas de 5 B): velocidad horizontal 0, la vertical la que traiga A' (+4 si nace arriba, -4 si nace abajo), la fase del aleteo al azar en los dos bits altos, y el estado a cero
 	ld hl,0acf8h		;ae95
 	ld a,(hl)		;ae98
 	cp 002h			;ae99
@@ -2868,7 +2868,7 @@ L_AECA:
 	add a,d			;aecb
 	cp l			;aecc
 	ret			;aecd
-L_AECE:
+voladores_activos:		; La segunda mitad de la vida de los voladores, la de estado 0x2E o mas: de 0x2E a 0x32 suben 3 px por cuadro, 0x33 es la forma que persigue al jugador y dispara una de cada 64 veces, y de 0x34 a 0x37 la explosion. Se reparte la tabla con mueve_voladores, que se queda con los de estado menor: los dos cortes son complementarios
 	ld ix,0acf9h		;aece
 	ld a,(0acf8h)		;aed2
 	and a			;aed5
@@ -2942,7 +2942,7 @@ L_AF21:
 	call rumbo_a_mascara2		;af60
 	ex af,af'		;af63
 	pop bc			;af64
-	call L_AE15		;af65
+	call alta_tiro_enemigo		;af65
 	pop hl			;af68
 L_AF69:
 	ld a,(ix+001h)		;af69
@@ -3648,7 +3648,7 @@ L_B412:
 	ld a,004h		;b41d
 L_B41F:
 	ex af,af'		;b41f
-	call L_AE95		;b420
+	call alta_volador		;b420
 	ret c			;b423
 L_B424:
 	ld h,b			;b424
@@ -4024,7 +4024,7 @@ L_B9E9:
 	ld hl,0ff60h		;b9f0
 L_B9F3:
 	ex de,hl		;b9f3
-	call L_AD31		;b9f4
+	call persigue_con_inercia		;b9f4
 	ex de,hl		;b9f7
 	ld a,d			;b9f8
 	cp 0e0h			;b9f9

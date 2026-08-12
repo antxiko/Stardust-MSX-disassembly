@@ -240,6 +240,12 @@
 # tres peldanos que faltaban. No fallo la medida, fallo que nadie cruzara las
 # medidas con las zonas declaradas como datos. Lo confirma ademas la gemela de
 # la fase de a pie (0xAB47), donde la tira si estaba declarada entera.
+# 0xC69F es una rutina aparte, no la cola de 0xC678: esta acaba en el `ret` de
+# 0xC69E. A 0xC69F no se llega con un `call` -su unica cita en el binario es el
+# `jp L_C69F` de 0xD8A0, y el par 9f c6 aparece una sola vez en todo el bloque-,
+# asi que hay que declararla o el recuento la cuenta como parte de la de arriba.
+0xC69F  pinta_rejilla  el pintor de las 25 celdas de la rejilla de la zona
+
 0xC5BB  tira_dibujo16  la tira entera del dibujo de 16 bits (7 x adc hl,hl; C5BB:40 C5BD:155 C5BF:226 en dump/pcs.txt)
 
 # --- Y DOS TRAMOS MAS QUE SALIERON DEL MISMO CRUCE ---------------------------

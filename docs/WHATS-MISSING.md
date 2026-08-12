@@ -387,12 +387,12 @@ keeping apart:
 
 The third one is the expensive one, and it stands here:
 
-    ship stage       190 routines, 158 commented (83 %)
-    on-foot stage    144 routines,  96 commented (67 %)
+    ship stage       191 routines, 170 commented (89 %)
+    on-foot stage    144 routines, 107 commented (74 %)
     ------------------------------------------------------
-    total            334 routines, 254 commented (76 %)
+    total            335 routines, 277 commented (83 %)
 
-So **80 are left**. The figure is measured by `tools/rutinas_comentadas.py`
+So **58 are left**. The figure is measured by `tools/rutinas_comentadas.py`
 and guarded by a test, so it cannot go stale here while the listing moves on —
 the same precaution taken with the front page's figures, which did go stale
 once.
@@ -406,7 +406,7 @@ published 1956 "routines".
 
 This isn't parked. The open lines, in order of what would pay off most:
 
-- **Commenting the 80 routines that are left.** They are bounded and named;
+- **Commenting the 58 routines that are left.** They are bounded and named;
   what they do is still to be written down.
 - **The sound interpreter's 0x84 command**, which is now known to consume a
   duration without re-attacking the note. Reading that as a tie is the musical

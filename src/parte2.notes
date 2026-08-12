@@ -1047,6 +1047,38 @@ L 0xAC1F borra_buffer Borra los 3840 bytes del buffer con la PILA: SP al final (
 L 0xD127 premia Suma B al marcador por el digito que apunta HL (dentro de 0xB87F) y lo repinta en 0x12B0, que es la misma posicion de pantalla que usa el marcador de la fase de naves
 L 0xAC49 alta_enemigo Mete un enemigo andante en la tabla de 0xACE4 (contador 0xACE3, tope 4, entradas de 5 B) con el rumbo sacado del azar, y suena 0xCE35 en el canal 0
 
+# ============================================================================
+# EL ARRANQUE Y EL MOTOR DE LA FASE DE A PIE
+# ============================================================================
+#
+# EL PUENTE ENTRE LOS DOS PROGRAMAS, que es lo que explica como sobreviven los
+# records y los puntos a la segunda carga. Antes de ir a la cinta, el bloque de
+# naves se copia a si mismo 0x7F bytes a una direccion que la segunda parte NO
+# pisa (esta acaba en 0xD674):
+#
+#     f748: ld hl,0dd08h / ld de,0d6d8h / ld bc,0007fh / ldir
+#
+# 0xDD08 son las ocho entradas de records de 15 bytes (120) y 0xDD80 el marcador
+# de la partida (7): 120 + 7 = 0x7F clavado. Y aqui el arranque los recoge: los
+# records de 0xD6D8 a 0xB8C8, y el marcador de 0xD750 a 0xB87F, esto ultimo solo
+# si no es la demo.
+#
+# EL JUGADOR ESTA CLAVADO EN LA FILA 0x68. paso_jugador la FIJA en sus dos
+# salidas y convierte el desplazamiento vertical en scroll de camara: por eso el
+# `Carry = subir` que ya estaba anotado, y por eso los voladores persiguen a un
+# punto fijo (`ld de,06858h`).
+L 0xA279 arranque_apie Todo el armazon de la fase (0xA279-0xA538): pone la pila, enciende la pantalla con R1=0xE2 heredando el SCREEN 2 que dejo la fase de naves, engancha `ret` en H.KEYI y `jp 0xC46E` en H.TIMI, recoge los records y el marcador que el otro programa dejo en 0xD6D8, monta el titulo, arranca la partida y se queda en el bucle de juego. Entra por el `jp 0a279h` de 0xF7B5, ya en el bloque de naves
+L 0xA57D update_jugador El turno del jugador, y la unica llamada que se parchea en caliente: es un `jp` cuyo operando (0xA57E) apunta a 0xA580 en juego normal y a cadaver_parabola tras un impacto. Reparte segun 0xA6ED -1 a 3 vivo, 4 sentencia, 5 a 0x2D agonia- y de 7 a 0x1E pinta los doce fotogramas del derrumbe (0x50 a 0x5B, dos cuadros cada uno)
+L 0xA672 juega_en_firme El turno del jugador cuando hay suelo bajo los pies: apunta el checkpoint, lee el mando por el `call` parcheable de 0xA688, dispara, gira el rumbo, da el paso y avanza la animacion sumando 8 a 0xAD0E solo si se ha movido de verdad. Lo llama tambien el bucle del titulo, que es lo que mueve el cursor del menu
+L 0xA8BA paso_jugador Cruza la mascara del rumbo actual con la del pedido y mueve 2 px solo en lo que tengan en comun; luego FIJA la fila en 0x68 y, si el paso la habia cambiado, cae en actualiza_scroll con el carry diciendo si sube
+L 0xA930 borra_globales_sonido Pone a cero los catorce bytes de variables globales del interprete de sonido, 0xD0F2-0xD0FF, que es 0xD068 + 3*46: justo detras del tercer estado de canal
+L 0xAD31 persigue_con_inercia Guia un tiro de torreta: una de cada dos veces empuja la velocidad BC un paso hacia el blanco con tope mas menos cinco, y siempre la suma a la posicion; si la columna se sale repone la X guardada y rebota negando C. Es vaga_o_persigue con velocidades en pixeles y otros topes
+L 0xAD76 mueve_disparos Pasa las DOS tablas de disparos por el mismo motor parcheando antes el paso en el `ld bc` de 0xADC4: los tiros enemigos a 4 pixeles por cuadro y los del jugador a 10. El 0x0707 que trae el binario no lo usa nadie
+L 0xADA3 mueve_tabla_disparos El motor comun de las dos tablas: suma el scroll del cuadro a la fila, mueve con el paso parcheado, pinta el glifo y da de baja al que traiga 0x80 en el rumbo o se salga (fila 0xC0, columna 0xBC), compactando con un `ldir`
+L 0xAE15 alta_tiro_enemigo Mete un tiro enemigo en la tabla de 0xACA3 (contador 0xACA2, tope 6) con el guion 0xCD5F en el canal 1. Es la COLA de alta_enemigo de la fase de naves -7 de 11 bytes iguales desde 0xCC98- SIN la tirada de dificultad por zona que aquella lleva delante, que aqui no tendria de donde sacar la zona
+L 0xAE95 alta_volador Da de alta un volador en la tabla de 0xACF9 (contador 0xACF8, tope 2, entradas de 5 B): velocidad horizontal 0, la vertical la que traiga A' (+4 si nace arriba, -4 si nace abajo), la fase del aleteo al azar en los dos bits altos, y el estado a cero
+L 0xAECE voladores_activos La segunda mitad de la vida de los voladores, la de estado 0x2E o mas: de 0x2E a 0x32 suben 3 px por cuadro, 0x33 es la forma que persigue al jugador y dispara una de cada 64 veces, y de 0x34 a 0x37 la explosion. Se reparte la tabla con mueve_voladores, que se queda con los de estado menor: los dos cortes son complementarios
+
 # ---------------------------------------------------------------- mas comunes
 #
 # Estas tres son otra vez la misma rutina que en el bloque de naves, con las
@@ -1327,7 +1359,7 @@ L 0xC3DC posicion_al_azar Saca una posicion al azar dentro del area de juego, re
 # entrada (mascara, puerto) de la tabla de teclas de 0xB86A.
 L 0xD19F lee_tecla_pulsada Barre las nueve filas de la matriz y devuelve en E el indice fila*8 + bit de la primera tecla pulsada
 L 0xD1B6 redefine_tecla Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001)
-L 0xAE4C vaga_o_persigue El rumbo de un enemigo cuadro a cuadro: tres de cada cuatro veces sigue recto, y la cuarta -cuando el azar and 3 da cero- gira un paso hacia donde este el jugador, con la suma modular de ocho direcciones del `add a,004h / cp / adc`
+L 0xAE4C vaga_o_persigue Tres de cada cuatro veces deja al enemigo yendo recto y la cuarta -cuando el azar and 3 da cero- empuja su velocidad un paso hacia el jugador, un eje cada vez. (Aqui puso "la suma modular de ocho direcciones" y no lo es: `add a,004h / cp 008h / adc a,000h / sub 004h` sube uno SATURANDO en +4, y su pareja `cp 001h / adc a,0ffh` baja uno saturando en -4. Y B y C no son rumbos, son velocidades en pixeles)
 L 0xBE06 repinta_todo Rehace la pantalla entera: el fondo desde el mapa, el jugador encima y el volcado del buffer a la VRAM
 
 # ---------------------------------------- los tres avisos de este bloque

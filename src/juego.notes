@@ -639,6 +639,44 @@ L 0xF649 rellena_colores_banda El nucleo de rellena_colores: 24 columnas y, en c
 L 0xF7B8 pausa_larga Ocho vueltas de un bucle de 65536, para que de tiempo a leer el ERROR DE CARGA antes de reintentar. Es lo unico que la llama (0xF7AA)
 L 0xF89F carga_vuelta El final de la carga, y la direccion que carga_cinta se empuja a si misma en 0xF7F7: para el motor de la cinta y devuelve el borde a negro por el registro 7 del VDP, deshaciendo el `ld a,r` con que 0xF893 lo hace parpadear. No toca ni una bandera, para que el acarreo de exito llegue intacto
 L 0xF8AE dir_vram_de_fila_columna De la fila de pixel D y la columna de caracter E a la direccion de VRAM: tercio*0x800 + columna*0x40 + fila dentro del tercio, el orden por columnas que impone la tabla de nombres heredada de la pantalla de carga. Identica byte a byte a la de la fase de a pie
+#
+# ============================================================================
+# EL ARRANQUE, EL MENU Y EL SCROLL DE LA ZONA
+# ============================================================================
+#
+# EL MENU SE ELIGE CON LA FILA DE LA NAVE. No hay cursor: se pilota la nave
+# arriba y abajo y se dispara, y el despachador de 0xBE4E mira 0xC185:
+#
+#     0x39-0x57  joystick        0x79-0x97  redefinir teclas
+#     0x59-0x77  teclado         0x99 o mas  jugar
+#
+# y esas bandas cuadran con donde se rotula cada opcion: JOYSTICK en 0x43C2,
+# TECLADO en 0x46C2, REDEFINIR en 0x49C2 y JUGAR en 0x4CCA, que a 24 bytes por
+# fila son las filas 40, 72, 104 y 136. La nave lleva la fila con el sesgo de
+# 0x20, o sea que cada banda es su linea mas menos quince. Las tres fronteras
+# exactas (0x58, 0x78, 0x98) no hacen nada.
+#
+# EN EL MENU EL MANDO ES SIEMPRE EL TECLADO, y por eso la opcion JOYSTICK se
+# elige con las teclas: lee_mando mira 0xE151 (0xC1C5) y el menu lo pone a 1 y
+# la partida a 0.
+#
+# Y EL MANDO SE ELIGE PARCHEANDO UN OPERANDO, igual que en la fase de a pie: el
+# arranque escribe 0xC1BD -lee_mando- en el operando de 0xC090, y la demo
+# escribe 0xC1AF, que es el lector de la partida grabada. La demo ademas siembra
+# el azar con un valor FIJO (0xA710), que es lo que hace que la partida grabada
+# case cuadro a cuadro.
+L 0xBD85 arranque Donde salta el cargador: pila en 0x5B32, apaga la pantalla por el registro 1 del VDP, engancha `ret` en H.KEYI y `jp 0xE15A` en H.TIMI, hace la presentacion y los creditos, limpia el mapa y las variables del sonido, siembra el azar con dos `ld a,r`, monta la pantalla del menu y se queda en el bucle de atraccion de 0xBE2F hasta que el disparo elige opcion por la fila de la nave
+L 0xC0DC alta_tile_especial Mete una entrada en la tabla de los tiles especiales (0xCB3A, contador 0xCA92, tope 8): columna en (ix+001), indice de tile en (ix+002) y puntero al byte del mapa en (ix+005/006); la rutina de gobierno la pone luego el despachador de 0xC116 segun el indice, con 0xC678 de serie
+L 0xC38A repinta_fondo Redibuja las 160 filas del buffer leyendo la fila del mapa de 0x5C32 -seis tiles de 32x32 desde 0x6DE0, 128 B cada uno- y avanza el scroll dos pixeles; al completar los 32 de un tile baja una fila del mapa y da de alta los tiles especiales de la fila nueva. Es la rutina mas cara del bloque: 217.893 muestras en dump/pcs.txt
+L 0xC678 baja_tile_especial Da de baja una entrada de la tabla de tiles especiales: resta uno al contador, compacta con un `ldir` de (B-1)*8 bytes y retrocede IX ocho para que el recorrido no se salte la entrada que ocupa el hueco. El `dec b / ret z` de 0xC67F es lo que evita el `ldir` de 65536 bytes cuando la que se va es la ultima
+L 0xC69F pinta_rejilla Estampa en el buffer las 25 celdas de la rejilla de 0xC920, tres bytes por 24 filas cada una, con tres dibujos segun el valor: el 1 alterna dos bytes, el 2 saca ocho filas de la fuente de 0xCA84 y del 3 en adelante lee 0x69A8 + (celda-3)*72, que es la tabla de los centinelas. No la llama nadie: se entra por el `jp` de 0xD8A0
+L 0xC882 alta_bandada Mete un objeto en la tabla de 0xC97B (contador 0xC97A, tope 4, entradas de 5 B) con rumbo inicial 0x14 y el A' de entrada como RETARDO en (ix+004): si es cero suena 0xEB42 al nacer y, si no, el sonido lo dispara mueve_bandada cuando la cuenta se agota. Vuelve con carry si ha entrado
+L 0xCB7A recorre_tiles_especiales Recorre las entradas de 0xCB3A, sube (ix+000) una por cuadro y salta a la rutina de (ix+003/004) con el `jp (hl)` de 0xCB99; al llegar (ix+000) a 0x60 la da de baja en vez de gobernarla
+L 0xCBA6 persigue_con_velocidad Corrige la velocidad de BC hacia el objetivo DE un punto por eje, la mitad de las veces y saturada a mas menos cinco, aplica el movimiento y, si la columna se pasa de 0xB8, la repone e invierte el sentido. La usa mueve_disparos
+L 0xCCCC persigue_a_cuadros Lo mismo con reja de cuadros y saturacion a mas menos cuatro: corrige siempre en el cuadro 0 de cada 4 y la mitad de las veces en el 2. Al rebotar en 0xB0 rehace el movimiento entero desde la posicion guardada, no solo la columna
+L 0xCD52 pinta_figura32 Pinta una figura de 32x32 con cuatro sprites consecutivos: A en HL, A+1 a 16 pixeles a la derecha, A+2 dieciseis filas abajo y A+3 en la esquina
+L 0xCE73 tile_45 El tile 0x45 suelta al perseguidor: cuando su fila llega a 0x2D, no hay perseguidor (0xD3C5 a cero) y la zona ya no tiene instalaciones (0xCA91 en 0x80), monta sus dos mitades en 0xD3C7, pone los 16 cuadros de aparicion en 0xD3C6 y arranca el sonido 0xED55
+L 0xCEBC aparece_perseguidor Los 16 cuadros de la aparicion: pinta dos parejas de sprites (0x19/0x1A y 0x1B/0x1C) reflejadas respecto a 0xD3C5, subiendolas 4 y 3 filas por cuadro; al agotarse el contador pone 0xD3C5 a 1 -ya vuela-, le da tres impactos de vida y suena 0xEA98
 L 0xC05C recarga_escudo Pone el escudo (0xC188) a 3 y sigue en actualiza_nave. Nadie la llama en el juego original -su direccion no aparece ni una vez en el bloque-: es donde aterriza el POKE de inmortalidad de Input MSX 19, que cambia el `jr c` de 0xC06E por un `jr -20`
 L 0xC5E3 siembra_particulas Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
 L 0xC60C mueve_particulas Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00

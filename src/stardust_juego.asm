@@ -1959,7 +1959,7 @@ lef00h:	equ 0x0ef00
 ; ======================================================================
 
 
-L_BD85:
+arranque:		; Donde salta el cargador: pila en 0x5B32, apaga la pantalla por el registro 1 del VDP, engancha `ret` en H.KEYI y `jp 0xE15A` en H.TIMI, hace la presentacion y los creditos, limpia el mapa y las variables del sonido, siembra el azar con dos `ld a,r`, monta la pantalla del menu y se queda en el bucle de atraccion de 0xBE2F hasta que el disparo elige opcion por la fila de la nave
 	ld sp,05b32h		;bd85
 	in a,(099h)		;bd88
 	ld hl,00000h		;bd8a
@@ -2177,15 +2177,15 @@ L_BEED:
 L_BF6A:
 	ld hl,0ca8eh		;bf6a
 	inc (hl)		;bf6d
-	call L_C38A		;bf6e
+	call repinta_fondo		;bf6e
 	call pinta_escudo		;bf71
 	call parpadeo_energia		;bf74
 	call mueve_estrellas		;bf77
 	ld a,001h		;bf7a
 	ld (0d3c2h),a		;bf7c
-	call L_CB7A		;bf7f
+	call recorre_tiles_especiales		;bf7f
 	call mueve_perseguidor		;bf82
-	call L_CEBC		;bf85
+	call aparece_perseguidor		;bf85
 	call traza_estela		;bf88
 	call recorre_las_dos_tablas		;bf8b
 	call mueve_disparos		;bf8e
@@ -2345,7 +2345,7 @@ L_C0D0:
 	call pinta_sprite		;c0d5
 	call tiro_alcanza_nave		;c0d8
 	ret			;c0db
-L_C0DC:
+alta_tile_especial:		; Mete una entrada en la tabla de los tiles especiales (0xCB3A, contador 0xCA92, tope 8): columna en (ix+001), indice de tile en (ix+002) y puntero al byte del mapa en (ix+005/006); la rutina de gobierno la pone luego el despachador de 0xC116 segun el indice, con 0xC678 de serie
 	ex af,af'		;c0dc
 	ld a,(0ca92h)		;c0dd
 	cp 008h			;c0e0
@@ -2456,7 +2456,7 @@ L_C190:
 	ld (ix+002h),a		;c19b
 	cp 02ch			;c19e
 	ret c			;c1a0
-	jp nz,L_C678		;c1a1
+	jp nz,baja_tile_especial		;c1a1
 	ld e,a			;c1a4
 	call azar		;c1a5
 	and 001h		;c1a8
@@ -2722,7 +2722,7 @@ L_C385:
 	dec c			;c386
 	jr nz,L_C344		;c387
 	ret			;c389
-L_C38A:
+repinta_fondo:		; Redibuja las 160 filas del buffer leyendo la fila del mapa de 0x5C32 -seis tiles de 32x32 desde 0x6DE0, 128 B cada uno- y avanza el scroll dos pixeles; al completar los 32 de un tile baja una fila del mapa y da de alta los tiles especiales de la fila nueva. Es la rutina mas cara del bloque: 217.893 muestras en dump/pcs.txt
 	ld iy,0cb03h		;c38a
 	ld (iy+003h),000h	;c38e
 	call entrada_tabla_5c32		;c392
@@ -2831,7 +2831,7 @@ L_C452:
 	jr nc,L_C460		;c459
 	cp 030h			;c45b
 L_C45D:
-	call nc,L_C0DC		;c45d
+	call nc,alta_tile_especial		;c45d
 L_C460:
 	inc hl			;c460
 	djnz L_C452		;c461
@@ -3227,7 +3227,7 @@ L_C66D:
 	pop bc			;c674
 	djnz L_C619		;c675
 	ret			;c677
-L_C678:
+baja_tile_especial:		; Da de baja una entrada de la tabla de tiles especiales: resta uno al contador, compacta con un `ldir` de (B-1)*8 bytes y retrocede IX ocho para que el recorrido no se salte la entrada que ocupa el hueco. El `dec b / ret z` de 0xC67F es lo que evita el `ldir` de 65536 bytes cuando la que se va es la ultima
 	ld a,(0ca92h)		;c678
 	dec a			;c67b
 	ld (0ca92h),a		;c67c
@@ -3254,7 +3254,7 @@ L_C678:
 	push hl			;c69b
 	pop ix			;c69c
 	ret			;c69e
-L_C69F:
+pinta_rejilla:		; Estampa en el buffer las 25 celdas de la rejilla de 0xC920, tres bytes por 24 filas cada una, con tres dibujos segun el valor: el 1 alterna dos bytes, el 2 saca ocho filas de la fuente de 0xCA84 y del 3 en adelante lee 0x69A8 + (celda-3)*72, que es la tabla de los centinelas. No la llama nadie: se entra por el `jp` de 0xD8A0
 	ld a,h			;c69f
 	sub 020h		;c6a0
 	ld h,a			;c6a2
@@ -3622,7 +3622,7 @@ L_C865:
 	ld sp,hl		;c87f
 	ei			;c880
 	ret			;c881
-L_C882:
+alta_bandada:		; Mete un objeto en la tabla de 0xC97B (contador 0xC97A, tope 4, entradas de 5 B) con rumbo inicial 0x14 y el A' de entrada como RETARDO en (ix+004): si es cero suena 0xEB42 al nacer y, si no, el sonido lo dispara mueve_bandada cuando la cuenta se agota. Vuelve con carry si ha entrado
 	ld hl,0c97ah		;c882
 	ld a,(hl)		;c885
 	cp 004h			;c886
@@ -3760,7 +3760,7 @@ alta_disparo:		; Mete un disparo en la tabla de 0xC999 (contador en 0xC998, entr
 ; ======================================================================
 
 
-L_CB7A:
+recorre_tiles_especiales:		; Recorre las entradas de 0xCB3A, sube (ix+000) una por cuadro y salta a la rutina de (ix+003/004) con el `jp (hl)` de 0xCB99; al llegar (ix+000) a 0x60 la da de baja en vez de gobernarla
 	ld a,(0ca92h)		;cb7a
 	and a			;cb7d
 	ret z			;cb7e
@@ -3778,14 +3778,14 @@ L_CB84:
 	ld h,(ix+004h)		;cb96
 	jp (hl)			;cb99
 L_CB9A:
-	call L_C678		;cb9a
+	call baja_tile_especial		;cb9a
 L_CB9D:
 	ld de,00008h		;cb9d
 	add ix,de		;cba0
 	pop bc			;cba2
 	djnz L_CB84		;cba3
 	ret			;cba5
-L_CBA6:
+persigue_con_velocidad:		; Corrige la velocidad de BC hacia el objetivo DE un punto por eje, la mitad de las veces y saturada a mas menos cinco, aplica el movimiento y, si la columna se pasa de 0xB8, la repone e invierte el sentido. La usa mueve_disparos
 	ld (0d3cdh),hl		;cba6
 	call azar		;cba9
 	and 001h		;cbac
@@ -3962,7 +3962,7 @@ alta_en_tabla:		; El alta comun a las tres tablas: si el contador no ha llegado 
 	ld (hl),a		;ccc9
 	scf			;ccca
 	ret			;cccb
-L_CCCC:
+persigue_a_cuadros:		; Lo mismo con reja de cuadros y saturacion a mas menos cuatro: corrige siempre en el cuadro 0 de cada 4 y la mitad de las veces en el 2. Al rebotar en 0xB0 rehace el movimiento entero desde la posicion guardada, no solo la columna
 	ld (0d3cdh),hl		;cccc
 	ld a,(0ca8eh)		;cccf
 	and 003h		;ccd2
@@ -4053,7 +4053,7 @@ alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope
 	call arranca_guion_libre		;cd4d
 	scf			;cd50
 	ret			;cd51
-L_CD52:
+pinta_figura32:		; Pinta una figura de 32x32 con cuatro sprites consecutivos: A en HL, A+1 a 16 pixeles a la derecha, A+2 dieciseis filas abajo y A+3 en la esquina
 	push hl			;cd52
 	push af			;cd53
 	call pinta_sprite		;cd54
@@ -4136,7 +4136,7 @@ L_CDD2:
 L_CDD8:
 	sub 004h		;cdd8
 	ld b,a			;cdda
-	call L_CCCC		;cddb
+	call persigue_a_cuadros		;cddb
 	ld a,h			;cdde
 	cp 0e0h			;cddf
 	jr nc,L_CE51		;cde1
@@ -4218,7 +4218,7 @@ L_CE51:
 	pop de			;ce6d
 	ldir			;ce6e
 	jp L_CE4B		;ce70
-L_CE73:
+tile_45:		; El tile 0x45 suelta al perseguidor: cuando su fila llega a 0x2D, no hay perseguidor (0xD3C5 a cero) y la zona ya no tiene instalaciones (0xCA91 en 0x80), monta sus dos mitades en 0xD3C7, pone los 16 cuadros de aparicion en 0xD3C6 y arranca el sonido 0xED55
 	call impacto_objeto		;ce73
 	ld a,(ix+000h)		;ce76
 	cp 02dh			;ce79
@@ -4250,7 +4250,7 @@ L_CE73:
 	xor a			;ceb5
 	ld de,0ed55h		;ceb6
 	jp arranca_guion_libre		;ceb9
-L_CEBC:
+aparece_perseguidor:		; Los 16 cuadros de la aparicion: pinta dos parejas de sprites (0x19/0x1A y 0x1B/0x1C) reflejadas respecto a 0xD3C5, subiendolas 4 y 3 filas por cuadro; al agotarse el contador pone 0xD3C5 a 1 -ya vuela-, le da tres impactos de vida y suena 0xEA98
 	ld a,(0d3c5h)		;cebc
 	cp 00ah			;cebf
 	ret c			;cec1
@@ -4351,7 +4351,7 @@ L_CF65:
 	ld hl,(0d3c7h)		;cf7a
 L_CF7D:
 	ld a,019h		;cf7d
-	call L_CD52		;cf7f
+	call pinta_figura32		;cf7f
 	jp L_D25E		;cf82
 L_CF85:
 	cp 00ah			;cf85
@@ -4365,7 +4365,7 @@ L_CF85:
 	add a,a			;cf93
 	add a,03bh		;cf94
 	ld hl,(0d3c7h)		;cf96
-	jp L_CD52		;cf99
+	jp pinta_figura32		;cf99
 L_CF9C:
 	xor a			;cf9c
 	ld (0d3c5h),a		;cf9d
@@ -5031,7 +5031,7 @@ L_D445:
 L_D459:
 	xor a			;d459
 	ex af,af'		;d45a
-	jp L_C882		;d45b
+	jp alta_bandada		;d45b
 repone_escudo:		; La otra cara del premio de los 10.000: si la nave llega con el escudo por debajo de 2, en vez de una vida le reponen el ESCUDO, a 3
 	ld a,003h		;d45e
 	ld (0c188h),a		;d460
@@ -5618,7 +5618,7 @@ L_D894:
 	and 07fh		;d899
 	ld l,a			;d89b
 	ld ix,0c920h		;d89c
-	jp L_C69F		;d8a0
+	jp pinta_rejilla		;d8a0
 inst_torreta:		; La torreta: mira el contacto y, una vez de cada 32, dispara desde su propia posicion mas 0x1808. Si el disparo entra, se cambia a si misma la rutina por inst_recarga
 	call choca_y_revienta		;d8a3
 	call azar		;d8a6
@@ -5881,7 +5881,7 @@ L_DA72:
 	ld (0cb04h),a		;da92
 	ld a,01fh		;da95
 	ld (0c9a3h),a		;da97
-	jp L_C678		;da9a
+	jp baja_tile_especial		;da9a
 L_DA9D:
 	ld hl,(0c184h)		;da9d
 	push hl			;daa0
@@ -6028,7 +6028,7 @@ L_DF48:
 	ld hl,0ff60h		;df4f
 L_DF52:
 	ex de,hl		;df52
-	call L_CBA6		;df53
+	call persigue_con_velocidad		;df53
 	ex de,hl		;df56
 	ld a,d			;df57
 	cp 0e0h			;df58
@@ -6213,7 +6213,7 @@ tile_32:		; El tile 0x32: hasta la columna 0x28 y una vez de cada 16, suelta al 
 L_E0BE:
 	ld a,01bh		;e0be
 	ex af,af'		;e0c0
-	call L_C882		;e0c1
+	call alta_bandada		;e0c1
 L_E0C4:
 	ret nc			;e0c4
 	ld hl,tile_est6		;e0c5
