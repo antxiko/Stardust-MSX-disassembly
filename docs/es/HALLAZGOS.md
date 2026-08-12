@@ -486,6 +486,19 @@ dos», y como caen dentro del rango de los gráficos parecían apuntar ahí. Lo
 que descendía de dos en dos no era una tabla ordenada: era el dibujo subiendo
 por la pantalla.
 
+Y se puede mirar, que es la comprobación que vale en este proyecto: dibujando
+esos 720 bytes con la geometría que dice la rutina de copia —40 filas de 18
+bytes— sale una superficie, no ruido. Y poniendo encima el recorrido de los 78
+pasos del guion, se ve lo que hace: sale del suelo por el centro, sube recto un
+buen trecho y arriba se curva a la izquierda hasta salir de la pantalla.
+
+![La imagen de fondo de la escena final, dibujada desde la cinta](../imagenes/escena_final.png)
+
+![La misma imagen con el recorrido de los 78 pasos del guion encima](../imagenes/escena_final_guion.png)
+
+Ninguna de las dos es una captura: están dibujadas a partir del binario con la
+geometría que usa el propio juego.
+
 La aritmética lo remata por los dos lados. El guion acaba en 0x6284; la imagen
 de fondo de la escena empieza en 0x6285 y mide 720 bytes —40 filas de 18, que
 es justo lo que la rutina de copia lleva a la banda central del buffer—; y

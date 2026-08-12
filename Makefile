@@ -137,6 +137,7 @@ imagenes: extracted/.stamp
 	python3 tools/render_niveles.py work/juego.raw docs/imagenes
 	python3 tools/render_torre.py work/parte2.raw docs/imagenes
 	python3 tools/render_marco.py work/juego.raw docs/imagenes
+	python3 tools/render_final.py work/parte2.raw docs/imagenes
 
 verify: listados sanity imagenes
 	@echo "=================================================================="

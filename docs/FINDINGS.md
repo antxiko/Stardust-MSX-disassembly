@@ -509,6 +509,19 @@ is understandable: read as little-endian words, the pairs give 0x78BA, 0x78B8,
 the graphics range they looked like they pointed there. What descended by two
 wasn't a sorted table: it was a drawing climbing up the screen.
 
+And it can be looked at, which is the check that counts in this project:
+drawing those 720 bytes with the geometry the copy routine states —40 rows of
+18 bytes— yields a surface, not noise. And laying the 78 steps of the script
+over it shows what it does: it leaves the ground at the centre, climbs straight
+for a good stretch, and near the top curves left until it leaves the screen.
+
+![The final scene's background, drawn from the tape](imagenes/escena_final.png)
+
+![The same picture with the 78 steps of the script drawn over it](imagenes/escena_final_guion.png)
+
+Neither is a screenshot: both are drawn from the binary with the geometry the
+game itself uses.
+
 The arithmetic closes it from both sides. The script ends at 0x6284; the scene's
 background picture starts at 0x6285 and measures 720 bytes —40 rows of 18, which
 is exactly what the copy routine takes to the buffer's middle band—; and
