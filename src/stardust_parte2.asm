@@ -1178,7 +1178,7 @@ L_A2D5:
 	ld a,r			;a31c
 	ld h,a			;a31e
 	ld (0ad28h),hl		;a31f
-	call L_BBE2		;a322
+	call borra_torre		;a322
 L_A325:
 	ld a,0a0h		;a325
 	ld (0ad27h),a		;a327
@@ -1262,7 +1262,7 @@ L_A3B4:
 	call hud_vidas		;a3d0
 	call borra_buffer		;a3d3
 	call vuelca_pantalla		;a3d6
-	call L_BBE2		;a3d9
+	call borra_torre		;a3d9
 	ld hl,0d750h		;a3dc
 	ld de,0b87fh		;a3df
 	ld bc,00007h		;a3e2
@@ -1845,7 +1845,7 @@ L_A865:
 	jr nc,L_A88C		;a86d
 	ld l,(ix+000h)		;a86f
 	ld h,(ix+001h)		;a872
-	call L_B089		;a875
+	call choca_con_jugador		;a875
 	jr c,L_A88C		;a878
 	ld (ix+002h),0ffh	;a87a
 	ld (ix+003h),01dh	;a87e
@@ -2963,7 +2963,7 @@ L_AF69:
 	jr nc,L_AF9C		;af88
 	ld l,(ix+002h)		;af8a
 	ld h,(ix+003h)		;af8d
-	call L_B089		;af90
+	call choca_con_jugador		;af90
 	jr c,L_AF9C		;af93
 	ld (ix+004h),034h	;af95
 	call mata_jugador_impacto		;af99
@@ -3088,7 +3088,7 @@ L_B064:
 	ld b,035h		;b083
 	call premia		;b085
 	ret			;b088
-L_B089:
+choca_con_jugador:		; Contacto con el jugador (0xA6EB/0xA6EC): solapa_eje con 2x3 contra 0x0C x 0x0A, las mismas medidas que la caja pequena de la nave
 	push hl			;b089
 	ld a,(0a6ech)		;b08a
 	ld l,a			;b08d
@@ -4319,16 +4319,16 @@ L_BBD9:
 	sub 008h		;bbde
 	ld h,a			;bbe0
 	ret			;bbe1
-L_BBE2:
+borra_torre:		; Borra la torre de la cuenta atras en los tres tercios: los patrones a cero en 0x0050, 0x0840 y 0x1040 (48, 64 y 48 bytes) y los colores a 0xF1 en los 0x2050, 0x2840 y 0x3040 correspondientes
 	ld bc,03098h		;bbe2
 	ld hl,00050h		;bbe5
-	call L_BBF8		;bbe8
+	call vram_pone_ceros		;bbe8
 	ld b,040h		;bbeb
 	ld hl,00840h		;bbed
-	call L_BBF8		;bbf0
+	call vram_pone_ceros		;bbf0
 	ld b,030h		;bbf3
 	ld hl,01040h		;bbf5
-L_BBF8:
+vram_pone_ceros:		; Escribe B ceros seguidos por el puerto que traiga C, sin releer la direccion
 	call vram_pon_dir		;bbf8
 L_BBFB:
 	ld a,000h		;bbfb
@@ -4337,13 +4337,13 @@ L_BBFB:
 	djnz L_BBFB		;bc00
 	ld bc,03098h		;bc02
 	ld hl,02050h		;bc05
-	call L_BC18		;bc08
+	call vram_pone_f1		;bc08
 	ld b,040h		;bc0b
 	ld hl,02840h		;bc0d
-	call L_BC18		;bc10
+	call vram_pone_f1		;bc10
 	ld b,030h		;bc13
 	ld hl,03040h		;bc15
-L_BC18:
+vram_pone_f1:		; Lo mismo con el valor 0xF1: la pareja de la de arriba, para la tabla de colores
 	call vram_pon_dir		;bc18
 L_BC1B:
 	ld a,0f1h		;bc1b
@@ -5207,9 +5207,9 @@ L_C545:
 L_C558:
 	ld a,(ix+008h)		;c558
 	call L_C83E		;c55b
-	call L_C6B7		;c55e
+	call carga_envolvente_1		;c55e
 	ld (ix+02ah),000h	;c561
-	call L_C6CF		;c565
+	call carga_envolvente_2		;c565
 	ld (ix+02bh),000h	;c568
 	ld (ix+02ch),000h	;c56c
 L_C570:
@@ -5259,7 +5259,7 @@ L_C5C5:
 	or a			;c5c6
 	jr nz,L_C5D0		;c5c7
 	bit 0,(ix+02dh)		;c5c9
-	call nz,L_C6B7	;c5cd
+	call nz,carga_envolvente_1	;c5cd
 L_C5D0:
 	push ix			;c5d0
 	pop iy			;c5d2
@@ -5316,7 +5316,7 @@ L_C630:
 	or a			;c631
 	jr nz,L_C63B		;c632
 	bit 1,(ix+02dh)		;c634
-	call nz,L_C6CF	;c638
+	call nz,carga_envolvente_2	;c638
 L_C63B:
 	pop bc			;c63b
 	pop de			;c63c
@@ -5376,7 +5376,7 @@ L_C69B:
 	jr nz,L_C6A7		;c69d
 	ld a,(0d0fch)		;c69f
 	bit 2,a			;c6a2
-	call nz,L_C6E7	;c6a4
+	call nz,refresca_globales_sonido	;c6a4
 L_C6A7:
 	ld a,(0d0fdh)		;c6a7
 	ld e,a			;c6aa
@@ -5386,7 +5386,7 @@ L_C6A7:
 	call L_C8E2		;c6b2
 	pop af			;c6b5
 	ret			;c6b6
-L_C6B7:
+carga_envolvente_1:		; Copia dos parejas de la plantilla del instrumento a las variables vivas; identica byte a byte a la de la fase de naves
 	push ix			;c6b7
 	ld d,002h		;c6b9
 L_C6BB:
@@ -5399,7 +5399,7 @@ L_C6BB:
 	jr nz,L_C6BB		;c6ca
 	pop ix			;c6cc
 	ret			;c6ce
-L_C6CF:
+carga_envolvente_2:		; Lo mismo con tres parejas; tambien identica
 	ld d,003h		;c6cf
 	push ix			;c6d1
 L_C6D3:
@@ -5412,7 +5412,7 @@ L_C6D3:
 	jr nz,L_C6D3		;c6e2
 	pop ix			;c6e4
 	ret			;c6e6
-L_C6E7:
+refresca_globales_sonido:		; Refresca las variables globales del interprete desde 0xD0F2, que es 0xD068 + 3*46: justo detras del tercer estado de canal
 	ld d,002h		;c6e7
 	push iy			;c6e9
 	ld iy,0d0f2h		;c6eb
@@ -5495,7 +5495,7 @@ L_C774:
 	push af			;c776
 	and 01fh		;c777
 	ld (0d0fdh),a		;c779
-	call L_C6E7		;c77c
+	call refresca_globales_sonido		;c77c
 	pop af			;c77f
 	inc bc			;c780
 	or a			;c781

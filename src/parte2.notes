@@ -1375,3 +1375,29 @@ L 0xA91F remate_de_fase La puerta del remate: con el scroll en la fila 0x47, los
 # cortados por donde no era.
 L 0xBE15 escena_final La pantalla de estrellas del final: silencio, colores, el fondo de 0x6285 al buffer, cuatro esperas largas y el guion 0xCD8F, y luego el bucle que interpreta la animacion de 0x61D8
 L 0xBE47 anima_guion Recorre el guion de (IX): 0xC0 termina, un byte por encima de 0xC0 cambia el fotograma parcheando el operando de 0xBE6B, y el resto son parejas (columna, fila) que se pintan con pinta_glifo sobre las estrellas
+
+# ---------------------------------------- mas gemelas, y la base que cuadra
+#
+# Tres del subsistema de sonido, medidas contra las de la fase de naves:
+#
+#     carga_envolvente_1   0xE3A3 / 0xC6B7   24 de 24   IDENTICA
+#     carga_envolvente_2   0xE3BB / 0xC6CF   24 de 24   IDENTICA
+#     refresca_globales    0xE3D3 / 0xC6E7   26 de 28, y las dos diferencias
+#                                            son la base: 0xEDFF contra 0xD0F2
+#
+# Y esa base es la comprobacion: 0xD068 + 3*46 = 0xD0F2 exacto, igual que
+# 0xED75 + 3*46 = 0xEDFF alli. Las globales del interprete empiezan justo
+# detras del tercer estado de canal, en las dos mitades.
+L 0xC6B7 carga_envolvente_1 Copia dos parejas de la plantilla del instrumento a las variables vivas; identica byte a byte a la de la fase de naves
+L 0xC6CF carga_envolvente_2 Lo mismo con tres parejas; tambien identica
+L 0xC6E7 refresca_globales_sonido Refresca las variables globales del interprete desde 0xD0F2, que es 0xD068 + 3*46: justo detras del tercer estado de canal
+#
+# Y EL CONTACTO CON EL JUGADOR TRAE LA MISMA CAJA Y EL MISMO PRECIO. Es la
+# gemela de choca_con_nave2, con las mismas medidas -2x3 contra 0x0C x 0x0A- y
+# sus seis diferencias son tres direcciones. Ademas, lo que se cobra al matar
+# lo que llega por ahi es 0x35 en el digito de las unidades: los mismos 53
+# puntos, con el mismo B, que su equivalente de la fase de naves.
+L 0xB089 choca_con_jugador Contacto con el jugador (0xA6EB/0xA6EC): solapa_eje con 2x3 contra 0x0C x 0x0A, las mismas medidas que la caja pequena de la nave
+L 0xBBE2 borra_torre Borra la torre de la cuenta atras en los tres tercios: los patrones a cero en 0x0050, 0x0840 y 0x1040 (48, 64 y 48 bytes) y los colores a 0xF1 en los 0x2050, 0x2840 y 0x3040 correspondientes
+L 0xBBF8 vram_pone_ceros Escribe B ceros seguidos por el puerto que traiga C, sin releer la direccion
+L 0xBC18 vram_pone_f1 Lo mismo con el valor 0xF1: la pareja de la de arriba, para la tabla de colores
