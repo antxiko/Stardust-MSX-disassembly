@@ -154,10 +154,14 @@ del bloque, a falta de saber el arranque real»*. Era **una suposición**: 0x61D
 es donde el bloque se *carga*, no donde empieza a ejecutarse. Y de esa
 suposición colgaba todo lo demás:
 
-- a 38 bytes hay una **tabla de punteros** —palabras descendiendo de dos en dos,
-  el 76 % apuntando dentro de los gráficos— que el trazador leía como código;
+- a 38 bytes hay lo que entonces se llamó una **tabla de punteros** —palabras
+  descendiendo de dos en dos, el 76 % apuntando dentro de los gráficos— que el
+  trazador leía como código. **Tampoco era eso**: hoy se sabe que son las
+  coordenadas de la animación final, y se cuenta en
+  <a href='HALLAZGOS.html'>Hallazgos</a>. Lo de «palabras que bajan de dos en
+  dos» era la fila del dibujo subiendo por la pantalla;
 - a 57 bytes se topaba con un `C2 78 8A` leído a caballo entre dos entradas de
-  esa tabla, o sea un `jp nz,8A78`, **y se metía dentro del dibujo**;
+  esa lista, o sea un `jp nz,8A78`, **y se metía dentro del dibujo**;
 - y desde ahí desensamblaba **3542 bytes de gráficos** como instrucciones, con
   el `0xE9` del final figurando como el último salto ciego del proyecto.
 
@@ -352,7 +356,11 @@ error más grande que ha tenido este bloque, contado en la sección siguiente.
 ## Lo que no se ha comprobado
 
 - La segunda parte del juego se ha visto arrancar y correr, pero **no se ha
-  jugado entera**. Lo que hace de la mitad en adelante está sin mirar.
+  jugado entera**. Su remate sí está leído —el travelling, la pantalla de
+  estrellas y la animación final, contados en
+  <a href='HALLAZGOS.html'>Hallazgos</a>— pero **leído en el listado, no visto
+  ocurrir**: no hay ninguna medida del emulador que lo respalde, porque la
+  partida grabada no llega hasta ahí.
 - El cotejo con la versión de Spectrum no puede decir nada sobre esa segunda
   parte: el snapshot con el que se compara se capturó en el menú de la primera,
   así que la fase de a pie del original no está ahí.

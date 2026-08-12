@@ -26,14 +26,14 @@ lafa1h:	equ 0x0afa1
 lb262h:	equ 0x0b262
 
 ; ----------------------------------------------------------------------
-; DATOS tabla: de punteros a los graficos (76 B): palabras little-endian
-;   0x61d0..0x621c  (76 bytes)
-; DATOS tabla: (43 B; racha 2.21, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
-;   0x621c..0x6247  (43 bytes)
-; DATOS tabla: (23 B; racha 1.92, entropia 3.08, 14 valores: pocos valores para ser un dibujo)
-;   0x6247..0x625e  (23 bytes)
-; DATOS graficos: (998 B), y en 0x6555 ARRANCA EL POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
-;   0x625e..0x6644  (998 bytes)
+; DATOS ocho: bytes sin identificar, lo que queda de lo que se llamo "tabla de punteros a los graficos" (ver el bloque de la escena final)
+;   0x61d0..0x61d8  (8 bytes)
+; DATOS el: GUION DE LA ESCENA FINAL (173 B): 78 pasos de (columna, fila) con marcadores por encima de 0xC0 que cambian el fotograma, y 0xC0 como terminador. Lo recorre el bucle de 0xBE47
+;   0x61d8..0x6285  (173 bytes)
+; DATOS la: IMAGEN de la escena final (720 B): 40 filas de 18 bytes que copia_al_buffer lleva a la banda C del buffer, centradas (18 + 6 = 24, el ancho). 0x6285 + 0x2D0 = 0x6555, justo donde arranca el pool de sprites
+;   0x6285..0x6555  (720 bytes)
+; DATOS EL: POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
+;   0x6555..0x6644  (239 bytes)
 ; DATOS pool: de sprites de la fase (tramo): las entradas 3 a 11 del pool de 64 B de 0x6555, dibujadas limpias con la geometria de 16x16 con mascara. Los recortes que habia aqui (dos rangos sin clasificar y una "tabla" de 9 B) eran cortes arbitrarios en mitad de los sprites
 ;   0x6644..0x682e  (490 bytes)
 ; DATOS pool: de sprites de la fase (continuacion): entradas de 64 B; los frames del derrumbe del protagonista (0x50 en adelante) caen aqui, en 0x6555 + 0x50*64 = 0x7955
@@ -4664,7 +4664,7 @@ L_BDE6:
 	ld a,(0ad2ah)		;bdef
 	and a			;bdf2
 	pop bc			;bdf3
-	jr z,L_BE15		;bdf4
+	jr z,escena_final		;bdf4
 	djnz L_BDDA		;bdf6
 	ld a,(0c468h)		;bdf8
 	cp 010h			;bdfb
@@ -4680,7 +4680,7 @@ repinta_todo:		; Rehace la pantalla entera: el fondo desde el mapa, el jugador e
 	call L_BC60		;be0e
 	call vuelca_pantalla		;be11
 	ret			;be14
-L_BE15:
+escena_final:		; La pantalla de estrellas del final: silencio, colores, el fondo de 0x6285 al buffer, cuatro esperas largas y el guion 0xCD8F, y luego el bucle que interpreta la animacion de 0x61D8
 	ld iy,01388h		;be15
 	ld ix,061d8h		;be19
 	call sonido_reset		;be1d
@@ -4698,7 +4698,7 @@ L_BE15:
 	xor a			;be40
 	ld de,0cd8fh		;be41
 	call arranca_guion		;be44
-L_BE47:
+anima_guion:		; Recorre el guion de (IX): 0xC0 termina, un byte por encima de 0xC0 cambia el fotograma parcheando el operando de 0xBE6B, y el resto son parejas (columna, fila) que se pintan con pinta_glifo sobre las estrellas
 	call borra_buffer		;be47
 	call pinta_estrellas		;be4a
 	call copia_al_buffer		;be4d
@@ -4718,7 +4718,7 @@ L_BE63:
 	ld a,000h		;be6b
 	call pinta_glifo		;be6d
 	call vuelca_pantalla		;be70
-	jp L_BE47		;be73
+	jp anima_guion		;be73
 L_BE76:
 	ld bc,00000h		;be76
 	call espera		;be79

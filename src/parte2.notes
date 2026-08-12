@@ -5,13 +5,14 @@
 # y la etiqueta lleva detras la medida de la que sale: la racha media de bits
 # iguales, la entropia y cuantos valores distintos usa. Lo que no se ha podido
 # clasificar con confianza pone "datos sin clasificar", que es lo que hay.
-D 0x61D0 0x621C tabla de punteros a los graficos (76 B): palabras little-endian
+D 0x61D0 0x61D8 ocho bytes sin identificar, lo que queda de lo que se llamo "tabla de punteros a los graficos" (ver el bloque de la escena final)
+D 0x61D8 0x6285 el GUION DE LA ESCENA FINAL (173 B): 78 pasos de (columna, fila) con marcadores por encima de 0xC0 que cambian el fotograma, y 0xC0 como terminador. Lo recorre el bucle de 0xBE47
+D 0x6285 0x6555 la IMAGEN de la escena final (720 B): 40 filas de 18 bytes que copia_al_buffer lleva a la banda C del buffer, centradas (18 + 6 = 24, el ancho). 0x6285 + 0x2D0 = 0x6555, justo donde arranca el pool de sprites
 #   descendiendo de dos en dos -78BA, 78B8, 78B6...- de las que el 76 % apunta
 #   dentro de 0x682E-0x7C78, declarado graficos. 24 de las 37 diferencias entre
 #   palabras consecutivas son exactamente 2. Es la misma tabla que sigue debajo,
 #   que estaba cortada demasiado tarde.
-D 0x621C 0x6247 tabla (43 B; racha 2.21, entropia 4.27, 23 valores: pocos valores para ser un dibujo)
-D 0x625E 0x6644 graficos (998 B), y en 0x6555 ARRANCA EL POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
+D 0x6555 0x6644 EL POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
 D 0x6644 0x682E pool de sprites de la fase (tramo): las entradas 3 a 11 del pool de 64 B de 0x6555, dibujadas limpias con la geometria de 16x16 con mascara. Los recortes que habia aqui (dos rangos sin clasificar y una "tabla" de 9 B) eran cortes arbitrarios en mitad de los sprites
 D 0x682E 0x7C78 pool de sprites de la fase (continuacion): entradas de 64 B; los frames del derrumbe del protagonista (0x50 en adelante) caen aqui, en 0x6555 + 0x50*64 = 0x7955
 D 0x7C9D 0x840B graficos: el final del pool de sprites (hasta 0x7D54), el slot de trabajo 0x60 del derrumbe (0x7D55-0x7D94) y graficos hasta el mapa de 0x840B
@@ -131,7 +132,6 @@ D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valore
 # de graficos ya declarados, que es donde cabe esperarlos.
 D 0xC001 0xC3DC graficos (987 B; racha 10.91, entropia 1.35, 29 valores: rachas mas largas que el azar)
 D 0x7C78 0x7C9D pool de sprites de la fase (cola de la entrada 0x48)
-D 0x6247 0x625E tabla (23 B; racha 1.92, entropia 3.08, 14 valores: pocos valores para ser un dibujo)
 D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
 
 # --- EL ROTULO DEMO DE LA FASE DE A PIE --------------------------------------
@@ -1314,3 +1314,64 @@ L 0xD331 rellena_tercio El nucleo de rellena_colores: 24 filas de C bytes cada u
 # las tres condiciones. Las dos cosas son ciertas a la vez y conviene que
 # consten juntas, porque por separado la una parece desmentir a la otra.
 L 0xA91F remate_de_fase La puerta del remate: con el scroll en la fila 0x47, los seis objetivos muertos (0xBC33) y el jugador entre 0x50 y 0x5F, salta a rehace_pantalla
+
+# ============================================================================
+# LA ESCENA FINAL DEL JUEGO, Y LA "TABLA DE PUNTEROS" QUE NO LO ERA
+# ============================================================================
+#
+# Tirando del hilo del tercer opcode aparece la secuencia con que termina el
+# juego, que estaba en el tramo dado por no explorado. Va asi:
+#
+#  1. UN TRAVELLING QUE ACELERA. rehace_pantalla sube la camara 0x18 -una fila
+#     de celda- dieciseis veces seguidas repintando cada vez, y despues entra
+#     en un bucle que llama a actualiza_scroll A veces por cuadro, con A
+#     saliendo de 0xC468 partido por dos. Ese contador empieza en 2 y SUBE DE
+#     DOS EN DOS cada diez cuadros hasta 0x10, y ahi se queda:
+#
+#         bdd3: ld a,002h / ld (0c468h),a
+#         bdf8: ld a,(0c468h) / cp 010h / jr z,L_BDD8
+#         bdff: inc a / inc a / ld (0c468h),a
+#
+#     o sea que la camara se va hacia arriba cada vez mas deprisa hasta que el
+#     scroll llega a la fila 0 (`ld a,(0ad2ah) / and a / jr z`).
+#
+#  2. LA PANTALLA DE ESTRELLAS. Con el scroll agotado se salta a 0xBE15:
+#     silencio, colores a 0xF1, buffer a cero, las 48 estrellas de la ROM, la
+#     imagen de 0x6285 al buffer, volcado, cuatro esperas largas seguidas y el
+#     guion 0xCD8F sonando.
+#
+#  3. Y UNA ANIMACION ESCRITA COMO UN GUION, que es lo mejor de todo.
+#
+# EL GUION VIVE EN 0x61D8 Y ESTABA CLASIFICADO COMO "TABLA DE PUNTEROS A LOS
+# GRAFICOS". No son punteros: son COORDENADAS. El bucle de 0xBE47 lo lee asi:
+#
+#     be50: ld a,(ix+000h) / cp 0c0h / jr z,...    <- 0xC0 termina
+#     be57: jr c,L_BE63                            <- por debajo, es posicion
+#     be59: sub 0bdh / ld (0be6ch),a               <- por encima, CAMBIA EL
+#     be5e: inc ix / ld a,(ix+000h)                   FOTOGRAMA, parcheando el
+#     be63: ld l,a / ld h,(ix+001h)                   operando de 0xBE6B
+#     be6d: call pinta_glifo
+#
+# Decodificado entero: 78 pasos, trece fotogramas distintos (del 4 al 16), y
+# el terminador 0xC0 cae en 0x6284. La columna arranca en 0x78 -el centro de
+# los 192 pixeles- y la fila en 0xBA, abajo del todo; la fila BAJA SIEMPRE, sin
+# una sola excepcion en los 78 pasos, y la columna se va yendo a la izquierda
+# hasta que el ultimo paso es (0x00, 0x00). Es algo que despega del centro,
+# sube y se aleja por la esquina.
+#
+# POR QUE ENGANO. Leidas como palabras little-endian, las parejas dan 0x78BA,
+# 0x78B8, 0x78B6... que es "palabras descendiendo de dos en dos", y como caen
+# en el rango de los graficos parecian punteros. La fila bajando de dos en dos
+# ES la cuenta atras de la animacion, no una tabla ordenada.
+#
+# Y LA ARITMETICA CIERRA POR LOS DOS LADOS: el guion acaba en 0x6284, la imagen
+# de la escena empieza en 0x6285 y mide 720 bytes -40 filas de 18, que es lo
+# que copia_al_buffer lleva a la banda C-, y 0x6285 + 0x2D0 = 0x6555, que es
+# exactamente donde arranca el pool de sprites. Tres tramos pegados sin un byte
+# de holgura.
+#
+# De paso desaparecen las tres "tablas" que habia declaradas ahi por su
+# entropia (0x621C, 0x6247 y el resto de 0x61D0): eran trozos del mismo guion,
+# cortados por donde no era.
+L 0xBE15 escena_final La pantalla de estrellas del final: silencio, colores, el fondo de 0x6285 al buffer, cuatro esperas largas y el guion 0xCD8F, y luego el bucle que interpreta la animacion de 0x61D8
+L 0xBE47 anima_guion Recorre el guion de (IX): 0xC0 termina, un byte por encima de 0xC0 cambia el fotograma parcheando el operando de 0xBE6B, y el resto son parejas (columna, fila) que se pintan con pinta_glifo sobre las estrellas

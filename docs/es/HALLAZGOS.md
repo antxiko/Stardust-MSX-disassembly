@@ -447,6 +447,54 @@ llega al final de esta fase**, como se cuenta en
 se cumplen ni una vez. La medida era buena; lo que se quedaba corto era la
 conclusión de que solo hubiera dos valores posibles.
 
+## Cómo termina el juego, y una tabla de punteros que eran coordenadas
+
+Tirando del hilo del tercer opcode aparece la secuencia con la que Stardust
+acaba, que estaba en el tramo dado por no explorado. Son tres cosas seguidas.
+
+**Un travelling que acelera.** La cámara sube una fila de celda dieciséis
+veces, repintando cada vez, y después entra en un bucle que la desplaza *A*
+veces por cuadro. Ese *A* no es fijo: empieza en 2 y **sube de dos en dos cada
+diez cuadros** hasta llegar a 16, donde se queda.
+
+    bdd3: ld a,002h / ld (0c468h),a
+    bdf8: ld a,(0c468h) / cp 010h / jr z,...
+    bdff: inc a / inc a / ld (0c468h),a
+
+Así que la torre se aleja por debajo cada vez más deprisa, hasta que el scroll
+se agota.
+
+**Una pantalla de estrellas.** Silencio, colores, el buffer a cero, las 48
+estrellas que salen de la ROM del MSX, una imagen de fondo, cuatro esperas
+largas seguidas y una melodía nueva.
+
+**Y una animación escrita como un guion.** Aquí está lo bueno. En 0x61D8 hay
+una lista que el juego recorre así: un byte por encima de 0xC0 **cambia el
+fotograma** —y lo hace parcheando el operando de la instrucción que lo pinta—,
+un `0xC0` termina, y todo lo demás son parejas de bytes que son la posición.
+
+Decodificada entera son **78 pasos y trece fotogramas**. La columna arranca en
+0x78, que es el centro exacto de los 192 píxeles de ancho, y la fila en 0xBA,
+abajo del todo. **La fila baja siempre, sin una sola excepción en los 78
+pasos**, y la columna se va hacia la izquierda hasta que el último paso es
+(0, 0). Algo que despega del centro, sube y se aleja por la esquina.
+
+Y esa lista **estuvo publicada como una «tabla de punteros a los gráficos»**.
+Se entiende el engaño: leídas como palabras little-endian, las parejas dan
+0x78BA, 0x78B8, 0x78B6… que es literalmente «palabras descendiendo de dos en
+dos», y como caen dentro del rango de los gráficos parecían apuntar ahí. Lo
+que descendía de dos en dos no era una tabla ordenada: era el dibujo subiendo
+por la pantalla.
+
+La aritmética lo remata por los dos lados. El guion acaba en 0x6284; la imagen
+de fondo de la escena empieza en 0x6285 y mide 720 bytes —40 filas de 18, que
+es justo lo que la rutina de copia lleva a la banda central del buffer—; y
+0x6285 + 0x2D0 = **0x6555**, que es exactamente donde arranca el pool de
+sprites de la fase. Tres tramos pegados sin un byte de holgura, y con eso
+desaparecen de la clasificación tres «tablas» que se habían medido por su
+entropía: eran trozos del mismo guion, cortados por donde no era.
+
+
 ## La torre entera, y un mapa que es dos mapas
 
 La zona de la fase de a pie es una torre, y su mapa está en 0x840B: **78 filas

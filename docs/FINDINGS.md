@@ -472,6 +472,52 @@ the end of this stage**, as <a href='WHATS-MISSING.html'>What's missing</a>
 says, so those three conditions are never met. The measurement was sound; what
 fell short was concluding that only two values were possible.
 
+## How the game ends, and a pointer table that was coordinates
+
+Pulling on the thread of the third opcode brings up the sequence Stardust ends
+with, which sat in the stretch given as unexplored. Three things in a row.
+
+**A tracking shot that accelerates.** The camera rises one cell row sixteen
+times, repainting each time, and then enters a loop that moves it *A* times per
+frame. That *A* isn't fixed: it starts at 2 and **goes up by two every ten
+frames** until it reaches 16, where it stays.
+
+    bdd3: ld a,002h / ld (0c468h),a
+    bdf8: ld a,(0c468h) / cp 010h / jr z,...
+    bdff: inc a / inc a / ld (0c468h),a
+
+So the tower falls away below faster and faster, until the scroll runs out.
+
+**A starfield screen.** Silence, colours, buffer cleared, the 48 stars that come
+out of the MSX ROM, a background picture, four long waits in a row and a new
+tune.
+
+**And an animation written as a script.** This is the good part. At 0x61D8 there
+is a list the game walks like this: a byte above 0xC0 **changes the frame** —and
+it does so by patching the operand of the instruction that draws it—, a `0xC0`
+ends it, and everything else is pairs of bytes that are the position.
+
+Decoded in full: **78 steps and thirteen frames**. The column starts at 0x78,
+the exact centre of the 192 pixels of width, and the row at 0xBA, right at the
+bottom. **The row always decreases, without a single exception across the 78
+steps**, and the column drifts left until the last step is (0, 0). Something
+that lifts off from the centre, climbs, and recedes out of the corner.
+
+And that list **was published as a "pointer table into the graphics"**. The trap
+is understandable: read as little-endian words, the pairs give 0x78BA, 0x78B8,
+0x78B6… which is literally "words descending by two", and since they land inside
+the graphics range they looked like they pointed there. What descended by two
+wasn't a sorted table: it was a drawing climbing up the screen.
+
+The arithmetic closes it from both sides. The script ends at 0x6284; the scene's
+background picture starts at 0x6285 and measures 720 bytes —40 rows of 18, which
+is exactly what the copy routine takes to the buffer's middle band—; and
+0x6285 + 0x2D0 = **0x6555**, precisely where the stage's sprite pool begins.
+Three stretches flush against each other without a byte to spare, and with that
+three "tables" that had been classified by their entropy disappear: they were
+pieces of the same script, cut in the wrong places.
+
+
 ## The whole tower, and a map that is two maps
 
 The on-foot zone is a tower, and its map lives at 0x840B: **78 rows of 6

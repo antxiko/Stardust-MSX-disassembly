@@ -153,8 +153,12 @@ block, for want of knowing the real start"*. It was **a guess**: 0x61D0 is where
 the block is *loaded*, not where it starts executing. Everything else hung off
 that guess:
 
-- 38 bytes in there is a **pointer table** —words descending by two, 76% of them
-  pointing inside the graphics— which the tracer read as code;
+- 38 bytes in there is what was then called a **pointer table** —words
+  descending by two, 76% of them pointing inside the graphics— which the tracer
+  read as code. **That wasn't it either**: those are now known to be the
+  coordinates of the closing animation, told in
+  <a href='FINDINGS.html'>Findings</a>. The "words descending by two" was the
+  row of a drawing climbing up the screen;
 - 57 bytes in it hit a `C2 78 8A` read straddling two entries of that table,
   that is, a `jp nz,8A78`, **and walked straight into the artwork**;
 - and from there it disassembled **3542 bytes of graphics** as instructions,
@@ -349,7 +353,11 @@ error this block has had, set out in the next section.
 ## What hasn't been checked
 
 - The second part has been seen to start and run, but **it has not been played
-  all the way through**. What it does from the middle onwards is unexamined.
+  all the way through**. Its ending has now been read —the tracking shot, the
+  starfield screen and the closing animation, told in
+  <a href='FINDINGS.html'>Findings</a>— but **read in the listing, not seen to
+  happen**: no emulator measurement backs it up, because the recorded
+  playthrough does not get that far.
 - The cross-check against the ZX Spectrum version can say nothing about that
   second part: the snapshot it compares against was captured in the *first*
   part's menu, so the original's on-foot stage simply isn't in it.
