@@ -4,10 +4,10 @@
 El diseno es el compartido por la serie (tools/estilo_web.py) y la pagina sale
 autocontenida, con las imagenes embebidas.
 
-Una nota sobre las cifras: la portada lleva un aviso ANTES de ellas, y esta ahi
-a proposito. Que el presupuesto cierre al 100% significa que cada byte tiene
-dueno, no que se sepa para que sirve, y esa diferencia es facil de leer mal. Si
-la portada dijera "100% explicado" a secas estaria vendiendo humo.
+Una nota sobre las cifras: mientras el trabajo estuvo a medias, la portada
+llevo un aviso antes de ellas. Al cerrarse los siete criterios el usuario lo
+quito (2026-08-12): lo que significa cada cifra —y lo que no— se cuenta en la
+pagina de Preguntas abiertas, no en un cartel.
 
 Uso: make_web.py <work/juego.raw> <docs/imagenes> <salida.html> <idioma>
 """
@@ -27,15 +27,6 @@ TXT = {
         claim="Una cinta de cassette de 1987, desmontada bloque a bloque. Por "
               "dentro resultó ser <b>una conversión del ZX Spectrum que se trajo "
               "hasta el sistema de grabación</b>.",
-        aviso="<b>El desensamblado está terminado, y «terminado» no quiere decir "
-              "agotado.</b> Cada byte de la cinta tiene dueño —o es código que el "
-              "trazador alcanza de verdad, o cae en un rango con nombre y "
-              "medida—, los cinco bloques reensamblan byte a byte y las 335 "
-              "rutinas del listado tienen escrito qué hacen y con qué evidencia. "
-              "Eso <b>no</b> quiere decir que se sepa para qué sirve cada byte ni "
-              "que todo esté comprobado en marcha: lo que sigue abierto está "
-              "contado con cifras en "
-              "<a href='PREGUNTAS-ABIERTAS.html'>Preguntas abiertas</a>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
                "Carga de cinta <b>multicarga</b>", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "Las cifras"), ("#findings", "Hallazgos"),
@@ -70,15 +61,6 @@ TXT = {
         claim="A 1987 cassette tape, taken apart block by block. Inside it turned "
               "out to be <b>a ZX Spectrum conversion that brought the tape system "
               "across with it</b>.",
-        aviso="<b>The disassembly is finished, and \"finished\" does not mean "
-              "exhausted.</b> Every byte on the tape has an owner —either code "
-              "the tracer genuinely reaches, or a range with a name and a "
-              "measurement—, all five blocks reassemble byte for byte, and the "
-              "listing's 335 routines have what they do written down, evidence "
-              "included. That does <b>not</b> mean every byte's purpose is known, "
-              "nor that everything has been checked running: what remains open is "
-              "set out with figures in "
-              "<a href='OPEN-QUESTIONS.html'>Open questions</a>.",
         ficha=["Topo Soft · <b>1987</b>", "A <b>ZX Spectrum</b> conversion",
                "<b>Multiload</b> from tape", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "The numbers"), ("#findings", "What turned up"),
@@ -350,7 +332,6 @@ def main(argv):
   <p class="ficha">{' · '.join(t['ficha'])}</p>
 </header>
 <nav>{nav}</nav>
-<section class="aviso"><p>{t['aviso']}</p></section>
 <section id="numbers">
   <h2>{t['h_num']}</h2>
   <div class="cifras">{cifras}</div>
