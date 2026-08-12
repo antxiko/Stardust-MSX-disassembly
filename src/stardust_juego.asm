@@ -2178,7 +2178,7 @@ L_BF6A:
 	ld hl,0ca8eh		;bf6a
 	inc (hl)		;bf6d
 	call L_C38A		;bf6e
-	call L_D0DC		;bf71
+	call pinta_escudo		;bf71
 	call L_F363		;bf74
 	call mueve_estrellas		;bf77
 	ld a,001h		;bf7a
@@ -4516,7 +4516,7 @@ choca_con_nave3:		; La tercera caja de contacto con la nave, 5x3 contra 0x16x0A,
 	ld a,(0c184h)		;d0d5
 	ld l,a			;d0d8
 	jp solapa_eje		;d0d9
-L_D0DC:
+pinta_escudo:		; Repinta el indicador que va pegado a la nave, alternandolo cuadro a cuadro con el `xor 001h` sobre 0xD3C2: cambia a la vez el color de la marca de 0x2F78 -0x11 o 0x71- y el sprite, 0x39 o 0x3A
 	jp L_D0DF		;d0dc
 L_D0DF:
 	ld a,(0c188h)		;d0df
@@ -4800,15 +4800,15 @@ L_D2C2:
 L_D2CF:
 	ld hl,06f50h		;d2cf
 	xor 003h		;d2d2
-	call L_D2E4		;d2d4
+	call borra_celda		;d2d4
 	dec a			;d2d7
 	ret z			;d2d8
 	ld hl,06f48h		;d2d9
-	call L_D2E4		;d2dc
+	call borra_celda		;d2dc
 	dec a			;d2df
 	ret z			;d2e0
 	ld hl,06f40h		;d2e1
-L_D2E4:
+borra_celda:		; Escribe el valor 0x11 ocho veces en dos celdas de VRAM separadas 0x40, con el puerto en C para poder usar `out (c),b`
 	ld e,002h		;d2e4
 L_D2E6:
 	di			;d2e6
@@ -5464,7 +5464,7 @@ L_D75B:
 	call borra_buffer		;d762
 	ld bc,005dch		;d765
 	call espera_bc		;d768
-	call L_D0DC		;d76b
+	call pinta_escudo		;d76b
 	ld a,001h		;d76e
 	ld (0d3c2h),a		;d770
 	call mueve_estrellas		;d773
@@ -5776,7 +5776,7 @@ L_D9CA:
 	xor 001h		;d9d7
 	ld (hl),a		;d9d9
 	ret			;d9da
-L_D9DB:
+choca_con_nave4:		; La cuarta caja de contacto con la nave, y la unica alargada: 4x2 contra 0x38 x 0x0C en el primer eje y 7 contra 0x12 en el segundo
 	ld a,(0c188h)		;d9db
 	cp 004h			;d9de
 	ret nc			;d9e0
@@ -6199,7 +6199,7 @@ L_E05E:
 	ld (ix+004h),h		;e08d
 	ret			;e090
 L_E091:
-	call L_D9DB		;e091
+	call choca_con_nave4		;e091
 	ld a,(ix+000h)		;e094
 	cp 028h			;e097
 	ret nc			;e099
@@ -6231,7 +6231,7 @@ L_E0C4:
 	ld (ix+004h),h		;e0cb
 	ret			;e0ce
 L_E0CF:
-	call L_D9DB		;e0cf
+	call choca_con_nave4		;e0cf
 	inc (ix+002h)		;e0d2
 	ld a,001h		;e0d5
 	ld de,0ea98h		;e0d7

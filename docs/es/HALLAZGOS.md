@@ -420,6 +420,33 @@ se desplazan todas igual —lo del párrafo de arriba sigue siendo cierto— y a
 así el ojo ve dos velocidades. Medido sobre la partida entera: 4712 pases con
 cada opcode, ni un cuadro con otro valor.
 
+### Y hay un tercer opcode, que es un salto imposible
+
+Aquí estuvo publicado que los opcodes eran dos. Son **tres**, y el que faltaba
+es el más listo de los tres. La instrucción de justo antes del salto parcheado
+es un `and a`, que **pone el carry a cero por definición**:
+
+    a98a: and a                <- el carry queda a 0, siempre
+    a98b: ld b,(iy+004h)
+    a98e: jp ?,L_A9E4          <- el opcode que se parchea
+
+Así que el tercer valor, `0xDA` (`jp c`), **no salta nunca**. No es una tercera
+condición: es la manera de que no haya condición. Con `0xC2` se pintan solo las
+celdas vacías, con `0xCA` solo las sólidas, y con `0xDA` se pintan **todas de
+una pasada**.
+
+Lo escribe una sola rutina, y para llegar a ella hay que cumplir tres cosas a
+la vez: el scroll arriba del todo (fila 0x47), **los seis objetivos
+destruidos** y el jugador colocado entre 0x50 y 0x5F. O sea el remate de la
+fase.
+
+Y eso explica por qué la medida de la partida entera no vio nunca ese valor,
+sin que ninguna de las dos cosas deje de ser cierta: **la partida grabada no
+llega al final de esta fase**, como se cuenta en
+<a href='LO-QUE-FALTA.html'>Lo que falta</a>, así que esas tres condiciones no
+se cumplen ni una vez. La medida era buena; lo que se quedaba corto era la
+conclusión de que solo hubiera dos valores posibles.
+
 ## La torre entera, y un mapa que es dos mapas
 
 La zona de la fase de a pie es una torre, y su mapa está en 0x840B: **78 filas

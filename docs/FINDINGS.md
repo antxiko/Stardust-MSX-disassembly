@@ -447,6 +447,31 @@ above still holds— and the eye still sees two speeds. Measured over the whole
 recorded game: 4712 passes with each opcode, not one frame with any other
 value.
 
+### And there is a third opcode, which is an impossible jump
+
+This page used to say there were two opcodes. There are **three**, and the
+missing one is the cleverest of them. The instruction right before the patched
+jump is an `and a`, which **clears the carry by definition**:
+
+    a98a: and a                <- carry is 0, always
+    a98b: ld b,(iy+004h)
+    a98e: jp ?,L_A9E4          <- the opcode that gets patched
+
+So the third value, `0xDA` (`jp c`), **never jumps**. It isn't a third
+condition: it is the way to have no condition at all. With `0xC2` only the
+empty cells get painted, with `0xCA` only the solid ones, and with `0xDA`
+**all of them, in a single pass**.
+
+One routine writes it, and reaching that routine takes three things at once:
+the scroll at the very top (row 0x47), **all six targets destroyed**, and the
+player positioned between 0x50 and 0x5F. That is, the end of the stage.
+
+And that explains why measuring the whole recorded game never saw that value,
+without either statement ceasing to be true: **the recorded game does not reach
+the end of this stage**, as <a href='WHATS-MISSING.html'>What's missing</a>
+says, so those three conditions are never met. The measurement was sound; what
+fell short was concluding that only two values were possible.
+
 ## The whole tower, and a map that is two maps
 
 The on-foot zone is a tower, and its map lives at 0x840B: **78 rows of 6

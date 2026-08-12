@@ -716,10 +716,10 @@ C 0xA8F9 El engranaje de la camara: fino agotado (32) -> fila una menos, fino a 
 # Medido sobre la partida entera (t=2464-3100, tools/omsx_muerte.tcl): 4712
 # pases con 0xC2 y 4712 con 0xCA, cero cuadros con el opcode en otro valor.
 
-L 0xA93E redibuja_fondo Pinta la pantalla desde el mapa: origen = 0x87F3 + celda*128 (+4*(32-fino) en la tira parcial de arriba), 6 columnas x 5-6 tiras. El jp de 0xA98E se parchea: 0xC2 pinta solo las celdas vacias (tile 0), 0xCA solo las solidas
+L 0xA93E redibuja_fondo Pinta la pantalla desde el mapa: origen = 0x87F3 + celda*128 (+4*(32-fino) en la tira parcial de arriba), 6 columnas x 5-6 tiras. El jp de 0xA98E se parchea con TRES opcodes: 0xC2 pinta solo las celdas vacias (tile 0), 0xCA solo las solidas y 0xDA todas
 L 0xB140 rota_fondo_sube Rota el tile 0 una fila de pixel (ldir de 124 B) y deja el delta del cuadro en 0xC462 (+2): la trama del fondo, a mitad de velocidad que el scroll
 L 0xB167 rota_fondo_baja El simetrico de rota_fondo_sube (lddr; 0xC462 = -2)
-C 0xA98E El opcode parcheado del doble pase: 0xC2 = solo celdas vacias, 0xCA = solo solidas
+C 0xA98E El opcode parcheado: 0xC2 solo las celdas vacias, 0xCA solo las solidas, y 0xDA -jp c, con el carry recien limpiado por el `and a` de arriba- no salta NUNCA, o sea las pinta todas
 
 # --- LA MUERTE DEL JUGADOR, CAZADA — Y L_B1BE NO ERA (2026-08-07) ------------
 #
@@ -1260,3 +1260,57 @@ L 0xBE06 repinta_todo Rehace la pantalla entera: el fondo desde el mapa, el juga
 #            que se le meten son 4 y 10, alli 6 y 9.
 #   0xAFA1   el epilogo de un bucle, pasado en DE como direccion de vuelta.
 #   0xB262   lo mismo, en el bucle de al lado.
+
+# ============================================================================
+# EL SALTO PARCHEADO TIENE TRES VALORES, Y EL TERCERO ES UN SALTO IMPOSIBLE
+# ============================================================================
+#
+# Estaba publicado que el `jp` de 0xA98E se parchea con DOS opcodes segun que
+# pasada del dibujado se quiera. Son TRES, y hay tres sitios que escriben ahi:
+#
+#     a4a5: ld a,0c2h / ld (0a98eh),a     -> jp nz
+#     a4b0: ld a,0cah / ld (0a98eh),a     -> jp z
+#     bdb2: ld a,0dah / ld (0a98eh),a     -> jp c     <- este faltaba
+#
+# Y el tercero es el bonito, porque la instruccion de justo antes decide su
+# suerte:
+#
+#     a98a: and a                <- pone el carry a CERO, siempre
+#     a98b: ld b,(iy+004h)
+#     a98e: jp ?,L_A9E4
+#
+# `and a` limpia el carry por definicion, asi que un `jp c` ahi NO SALTA NUNCA.
+# El tercer modo no es una tercera condicion: es la manera de que no haya
+# condicion. Con 0xC2 se salta las celdas que no estan vacias -pinta solo el
+# fondo-, con 0xCA se salta las vacias -pinta solo lo solido- y con 0xDA no se
+# salta nada y las pinta TODAS de una pasada.
+#
+# Quien usa el tercero es la secuencia de 0xBDAC, que ademas coloca la camara
+# en 0x4638 y arranca el guion 0xCD80: cuando hay que rehacer la pantalla
+# entera de golpe no interesa el doble pase.
+L 0xB336 predesplaza_sprite_izq La simetrica de predesplaza_sprite: mismo bucle de una pasada, pero sacando los bits con `rrca` y metiendolos con `rl`, o sea desplazando hacia el otro lado, y con las cinco copias en (iy+000), (iy+004), (iy+008), (iy+00C) y (iy+010)
+L 0xBD9C escribe_par_vram Escribe la pareja D,E en la VRAM B veces seguidas, avanzando la direccion de una en una
+L 0xBDAC rehace_pantalla Coloca la camara en 0x4638, parchea el salto de 0xA98E con el 0xDA que no salta nunca -para que el dibujado pinte todas las celdas de una pasada- y arranca el guion 0xCD80
+L 0xB436 repinta_escudo Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro celdas de color, 0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1
+L 0xD331 rellena_tercio El nucleo de rellena_colores: 24 filas de C bytes cada una, avanzando 0x40 en la VRAM entre fila y fila
+#
+# Y CUANDO SE USA ESE TERCER OPCODE ESTA MEDIDO EN EL CODIGO. A rehace_pantalla
+# se llega por una sola via, desde la rama de subir de actualiza_scroll, y hay
+# que cumplir TRES condiciones a la vez:
+#
+#     a911: ld a,(iy+000h) / cp 047h / jr z,L_A91F   <- la fila del scroll, arriba
+#     a91f: ld a,(0bc33h) / and a / ret nz           <- los SEIS objetivos muertos
+#     a924: ld a,(0a6ebh) / cp 050h / ret c
+#     a92a:                 cp 060h / ret nc         <- y el jugador entre 0x50 y 0x5F
+#
+# o sea: arriba del todo de la torre, con todas las torretas destruidas y
+# colocado en la franja central. Que eso es el remate de la fase es una lectura,
+# no un hecho medido; lo que si esta medido son las tres condiciones.
+#
+# Y ESO EXPLICA POR QUE LA MEDIDA DEL EMULADOR NO VIO NUNCA EL 0xDA. Esta
+# publicado que sobre la partida entera hay "4712 pases con cada opcode, ni un
+# cuadro con otro valor", y es verdad: la partida grabada NO LLEGA AL FINAL de
+# esta fase -eso ya estaba dicho en «Lo que falta»-, asi que nunca se cumplen
+# las tres condiciones. Las dos cosas son ciertas a la vez y conviene que
+# consten juntas, porque por separado la una parece desmentir a la otra.
+L 0xA91F remate_de_fase La puerta del remate: con el scroll en la fila 0x47, los seis objetivos muertos (0xBC33) y el jugador entre 0x50 y 0x5F, salta a rehace_pantalla

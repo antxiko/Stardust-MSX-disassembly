@@ -1167,7 +1167,7 @@ L_A2D5:
 	call pinta_marca_hud		;a300
 	ld a,0f1h		;a303
 	call rellena_colores		;a305
-	call L_B436		;a308
+	call repinta_escudo		;a308
 	ld a,003h		;a30b
 	ld (0c45fh),a		;a30d
 	call hud_vidas		;a310
@@ -1306,7 +1306,7 @@ L_A41F:
 	inc ix			;a435
 	djnz L_A41F		;a437
 respawn:		; Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) con la camara del checkpoint 0xC466/67, escudo a 3, tablas de enemigos vaciadas y el update restaurado
-	call L_B436		;a439
+	call repinta_escudo		;a439
 	ld hl,L_A580		;a43c
 	ld (L_A57D+1),hl	;a43f
 	xor a			;a442
@@ -1933,11 +1933,11 @@ L_A8FF:
 L_A90E:
 	ld a,(iy+000h)		;a90e
 	cp 047h			;a911
-	jr z,L_A91F		;a913
+	jr z,remate_de_fase		;a913
 	ld (iy+002h),020h	;a915
 	inc (iy+000h)		;a919
 	jp rota_fondo_baja		;a91c
-L_A91F:
+remate_de_fase:		; La puerta del remate: con el scroll en la fila 0x47, los seis objetivos muertos (0xBC33) y el jugador entre 0x50 y 0x5F, salta a rehace_pantalla
 	ld a,(0bc33h)		;a91f
 	and a			;a922
 	ret nz			;a923
@@ -1946,7 +1946,7 @@ L_A91F:
 	ret c			;a929
 	cp 060h			;a92a
 	ret nc			;a92c
-	jp L_BDAC		;a92d
+	jp rehace_pantalla		;a92d
 L_A930:
 	ld hl,0d0f2h		;a930
 	ld de,0d0f3h		;a933
@@ -1954,7 +1954,7 @@ L_A930:
 	ld (hl),000h		;a939
 	ldir			;a93b
 	ret			;a93d
-redibuja_fondo:		; Pinta la pantalla desde el mapa: origen = 0x87F3 + celda*128 (+4*(32-fino) en la tira parcial de arriba), 6 columnas x 5-6 tiras. El jp de 0xA98E se parchea: 0xC2 pinta solo las celdas vacias (tile 0), 0xCA solo las solidas
+redibuja_fondo:		; Pinta la pantalla desde el mapa: origen = 0x87F3 + celda*128 (+4*(32-fino) en la tira parcial de arriba), 6 columnas x 5-6 tiras. El jp de 0xA98E se parchea con TRES opcodes: 0xC2 pinta solo las celdas vacias (tile 0), 0xCA solo las solidas y 0xDA todas
 	ld iy,0ad2ah		;a93e
 	ld (iy+003h),000h	;a942
 	call base_mapa		;a946
@@ -1992,7 +1992,7 @@ L_A980:
 	inc ix			;a988
 	and a			;a98a
 	ld b,(iy+004h)		;a98b
-	jp z,L_A9E4		;a98e   ; El opcode parcheado del doble pase: 0xC2 = solo celdas vacias, 0xCA = solo solidas
+	jp z,L_A9E4		;a98e   ; El opcode parcheado: 0xC2 solo las celdas vacias, 0xCA solo las solidas, y 0xDA -jp c, con el carry recien limpiado por el `and a` de arriba- no salta NUNCA, o sea las pinta todas
 	ld d,a			;a991
 	xor a			;a992
 	ld e,a			;a993
@@ -3496,16 +3496,16 @@ L_B30A:
 	add hl,de		;b316
 	ld de,00004h		;b317
 	ld iy,07d75h		;b31a
-	call L_B336		;b31e
+	call predesplaza_sprite_izq		;b31e
 	inc hl			;b321
 	ld iy,07d55h		;b322
-	call L_B336		;b326
+	call predesplaza_sprite_izq		;b326
 	inc hl			;b329
 	ld iy,07d77h		;b32a
-	call L_B336		;b32e
+	call predesplaza_sprite_izq		;b32e
 	inc hl			;b331
 	ld iy,07d57h		;b332
-L_B336:
+predesplaza_sprite_izq:		; La simetrica de predesplaza_sprite: mismo bucle de una pasada, pero sacando los bits con `rrca` y metiendolos con `rl`, o sea desplazando hacia el otro lado, y con las cinco copias en (iy+000), (iy+004), (iy+008), (iy+00C) y (iy+010)
 	push hl			;b336
 	ld c,002h		;b337
 L_B339:
@@ -3615,7 +3615,7 @@ L_B3BE:
 	call sonido_off		;b3e1
 	ld a,(0a6edh)		;b3e4
 	cp 002h			;b3e7
-	jp c,L_B436		;b3e9
+	jp c,repinta_escudo		;b3e9
 	ld hl,0c45fh		;b3ec
 	ld a,(hl)		;b3ef
 	cp 009h			;b3f0
@@ -3663,7 +3663,7 @@ L_B424:
 L_B432:
 	ex af,af'		;b432
 	jp alta_enemigo		;b433
-L_B436:
+repinta_escudo:		; Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro celdas de color, 0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1
 	ld a,003h		;b436
 	ld (0a6edh),a		;b438
 	ld hl,02778h		;b43b
@@ -4596,13 +4596,13 @@ flash_dameros:		; XOR de los tres tercios de la pantalla con el patron DE (0x2A5
 	ld e,a			;bd86
 	ld b,018h		;bd87
 	ld hl,00050h		;bd89
-	call L_BD9C		;bd8c
+	call escribe_par_vram		;bd8c
 	ld b,020h		;bd8f
 	ld hl,00840h		;bd91
-	call L_BD9C		;bd94
+	call escribe_par_vram		;bd94
 	ld b,018h		;bd97
 	ld hl,01040h		;bd99
-L_BD9C:
+escribe_par_vram:		; Escribe la pareja D,E en la VRAM B veces seguidas, avanzando la direccion de una en una
 	call vram_pon_dir		;bd9c
 	ld a,d			;bd9f
 	out (098h),a		;bda0
@@ -4610,7 +4610,7 @@ L_BD9C:
 	inc hl			;bda3
 	out (098h),a		;bda4
 	ei			;bda6
-	djnz L_BD9C		;bda7
+	djnz escribe_par_vram		;bda7
 	ret			;bda9
 
 ; ----------------------------------------------------------------------
@@ -4624,7 +4624,7 @@ L_BD9C:
 ; ======================================================================
 
 
-L_BDAC:
+rehace_pantalla:		; Coloca la camara en 0x4638, parchea el salto de 0xA98E con el 0xDA que no salta nunca -para que el dibujado pinte todas las celdas de una pasada- y arranca el guion 0xCD80
 	ld hl,04638h		;bdac
 	ld (0a6ebh),hl		;bdaf
 	ld a,0dah		;bdb2
@@ -6221,13 +6221,13 @@ L_D30D:
 rellena_colores:		; Pone el color A en la tabla de colores, tercio a tercio: 0x2108 x 56 filas, 0x2900 x 64 y 0x3100 x 40
 	ld hl,02108h		;d31c
 	ld c,038h		;d31f
-	call L_D331		;d321
+	call rellena_tercio		;d321
 	ld hl,02900h		;d324
 	ld c,040h		;d327
-	call L_D331		;d329
+	call rellena_tercio		;d329
 	ld hl,03100h		;d32c
 	ld c,028h		;d32f
-L_D331:
+rellena_tercio:		; El nucleo de rellena_colores: 24 filas de C bytes cada una, avanzando 0x40 en la VRAM entre fila y fila
 	ld b,018h		;d331
 L_D333:
 	call vram_pon_dir		;d333

@@ -1697,3 +1697,24 @@ L 0xD1AF traza_estela Dibuja la estela del objeto de 0xD3BD restando al puntero 
 #
 # El aviso queda corregido para separar las dos cosas, y con eso los dos
 # bloques se quedan en CERO destinos de salto sin trazar.
+
+# ============================================================================
+# CUATRO CAJAS DE COLISION PARA LA MISMA NAVE
+# ============================================================================
+#
+# Todo lo que puede tocar a la nave pasa por solapa_eje dos veces, una por eje,
+# pero cada cosa trae su propia caja. Son cuatro, y las cuatro llaman igual:
+#
+#     choca_con_nave    0xD23E   4x5   contra 0x18 x 6
+#     choca_con_nave2   0xD0A5   2x3   contra 0x0C x 0x0A
+#     choca_con_nave3   0xD0BD   5x3   contra 0x16 x 0x0A
+#     choca_con_nave4   0xD9DB   4x2   contra 0x38 x 0x0C en un eje,
+#                                      y 7 contra 0x12 en el otro
+#
+# La cuarta es la unica que usa medidas DISTINTAS en cada eje -las otras tres
+# reaprovechan el mismo BC y DE para las dos llamadas-, o sea que su caja es
+# claramente alargada. Y tres de las cuatro empiezan comprobando que la nave
+# siga viva, con el mismo `ld a,(0c188h) / cp 004h`.
+L 0xD9DB choca_con_nave4 La cuarta caja de contacto con la nave, y la unica alargada: 4x2 contra 0x38 x 0x0C en el primer eje y 7 contra 0x12 en el segundo
+L 0xD0DC pinta_escudo Repinta el indicador que va pegado a la nave, alternandolo cuadro a cuadro con el `xor 001h` sobre 0xD3C2: cambia a la vez el color de la marca de 0x2F78 -0x11 o 0x71- y el sprite, 0x39 o 0x3A
+L 0xD2E4 borra_celda Escribe el valor 0x11 ocho veces en dos celdas de VRAM separadas 0x40, con el puerto en C para poder usar `out (c),b`
