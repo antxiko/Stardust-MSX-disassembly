@@ -1238,3 +1238,14 @@ L 0xC421 copia_al_buffer Copia 720 bytes de 0x6285 al buffer en 0x4B43, en tiras
 L 0xB2D2 predesplaza_sprite Construye de una pasada las cinco versiones desplazadas de un sprite: por cada bit que saca del original con `rlca` lo mete con `rr` en una copia distinta, separadas 4 bytes en (iy+001), (iy+005), (iy+009), (iy+00D) y (iy+011)
 L 0xD3A6 vuelca_columnas El nucleo del volcado, identico al de la fase de naves: 24 vueltas por banda recogiendo el buffer a saltos de 24 -por columnas- y avanzando 0x40 en la VRAM entre una y otra
 L 0xC3DC posicion_al_azar Saca una posicion al azar dentro del area de juego, repitiendo la tirada hasta que cae dentro: la columna entre 0x18 y 0xA7 (azar por debajo de 0x90) y la fila entre 0x98 y 0xBF (azar and 0x3F por debajo de 0x28)
+
+# ---------------------------------------- redefinir teclas, tambien aqui
+#
+# Las dos rutinas de redefinir son las mismas que en la fase de naves: la que
+# barre la matriz con D de 0xF0 a 0xF8 y una E que cuenta todas las teclas sin
+# reiniciarse -asi que E acaba valiendo fila*8 + bit- y la que con eso monta la
+# entrada (mascara, puerto) de la tabla de teclas de 0xB86A.
+L 0xD19F lee_tecla_pulsada Barre las nueve filas de la matriz y devuelve en E el indice fila*8 + bit de la primera tecla pulsada
+L 0xD1B6 redefine_tecla Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001)
+L 0xAE4C vaga_o_persigue El rumbo de un enemigo cuadro a cuadro: tres de cada cuatro veces sigue recto, y la cuarta -cuando el azar and 3 da cero- gira un paso hacia donde este el jugador, con la suma modular de ocho direcciones del `add a,004h / cp / adc`
+L 0xBE06 repinta_todo Rehace la pantalla entera: el fondo desde el mapa, el jugador encima y el volcado del buffer a la VRAM

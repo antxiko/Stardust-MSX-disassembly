@@ -2771,7 +2771,7 @@ alta_en_tabla:		; El alta comun a las tablas: si el contador no ha llegado al to
 	ld (hl),a		;ae49
 	scf			;ae4a
 	ret			;ae4b
-L_AE4C:
+vaga_o_persigue:		; El rumbo de un enemigo cuadro a cuadro: tres de cada cuatro veces sigue recto, y la cuarta -cuando el azar and 3 da cero- gira un paso hacia donde este el jugador, con la suma modular de ocho direcciones del `add a,004h / cp / adc`
 	ld (0b13eh),hl		;ae4c
 	call azar		;ae4f
 	and 003h		;ae52
@@ -2911,7 +2911,7 @@ L_AF21:
 	and 03fh		;af24
 	sub 004h		;af26
 	ld b,a			;af28
-	call L_AE4C		;af29
+	call vaga_o_persigue		;af29
 	ld a,h			;af2c
 	cp 0e0h			;af2d
 	ld de,lafa1h		;af2f
@@ -3360,7 +3360,7 @@ L_B1E6:
 	jr L_B25D		;b21b
 L_B21D:
 	ld de,06858h		;b21d
-	call L_AE4C		;b220
+	call vaga_o_persigue		;b220
 	ld a,h			;b223
 	cp 0e0h			;b224
 	ld de,lb262h		;b226
@@ -4634,7 +4634,7 @@ L_BDAC:
 	ld b,010h		;bdbe
 L_BDC0:
 	push bc			;bdc0
-	call L_BE06		;bdc1
+	call repinta_todo		;bdc1
 	pop bc			;bdc4
 	ld hl,(0a6ebh)		;bdc5
 	ld de,00018h		;bdc8
@@ -4648,7 +4648,7 @@ L_BDD8:
 	ld b,00ah		;bdd8
 L_BDDA:
 	push bc			;bdda
-	call L_BE06		;bddb
+	call repinta_todo		;bddb
 	ld hl,0ad27h		;bdde
 	inc (hl)		;bde1
 	ld a,(0c468h)		;bde2
@@ -4672,7 +4672,7 @@ L_BDE6:
 	inc a			;be00
 	ld (0c468h),a		;be01
 	jr L_BDD8		;be04
-L_BE06:
+repinta_todo:		; Rehace la pantalla entera: el fondo desde el mapa, el jugador encima y el volcado del buffer a la VRAM
 	call redibuja_fondo		;be06
 	ld hl,(0a6ebh)		;be09
 	ld a,040h		;be0c
@@ -5960,7 +5960,7 @@ L_D190:
 	call rotula_secuencia		;d191
 	pop bc			;d194
 	dec c			;d195
-	jr nz,L_D1B6		;d196
+	jr nz,redefine_tecla		;d196
 	ld b,c			;d198
 L_D199:
 	dec bc			;d199
@@ -5968,7 +5968,7 @@ L_D199:
 	or c			;d19b
 	jr nz,L_D199		;d19c
 	ret			;d19e
-L_D19F:
+lee_tecla_pulsada:		; Barre las nueve filas de la matriz y devuelve en E el indice fila*8 + bit de la primera tecla pulsada
 	ld de,0f000h		;d19f
 L_D1A2:
 	ld a,d			;d1a2
@@ -5983,10 +5983,10 @@ L_D1A9:
 	inc d			;d1ae
 	ld a,0f9h		;d1af
 	cp d			;d1b1
-	jr z,L_D19F		;d1b2
+	jr z,lee_tecla_pulsada		;d1b2
 	jr L_D1A2		;d1b4
-L_D1B6:
-	call L_D19F		;d1b6
+redefine_tecla:		; Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001)
+	call lee_tecla_pulsada		;d1b6
 	xor a			;d1b9
 	scf			;d1ba
 L_D1BB:
@@ -6006,7 +6006,7 @@ L_D1BB:
 	dec iy			;d1d3
 	dec iy			;d1d5
 	pop hl			;d1d7
-	jr L_D1B6		;d1d8
+	jr redefine_tecla		;d1d8
 L_D1DA:
 	set 7,(hl)		;d1da
 	push ix			;d1dc
@@ -6350,7 +6350,7 @@ L_D3EC:
 	jr nz,L_D3EC		;d3ef
 	ld bc,007d0h		;d3f1
 	call espera		;d3f4
-	call L_D19F		;d3f7
+	call lee_tecla_pulsada		;d3f7
 	ld d,000h		;d3fa
 	push hl			;d3fc
 	ld hl,0b7c2h		;d3fd

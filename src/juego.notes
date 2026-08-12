@@ -1619,3 +1619,41 @@ L 0xF48C redefine_tecla Espera una tecla y guarda su entrada en la tabla: la mas
 # fila 124, la misma comprobacion con los mismos dos numeros que hace la fase
 # de a pie con los tiros de las torretas.
 L 0xDF0F mueve_disparos Recorre los disparos de 0xC999 (contador en 0xC998, dos como maximo): los mueve, y al cruzar el borde del piso -Y+10 contra 0x7C- los pinta ya como impacto, con el sprite base 0x69
+
+# ============================================================================
+# LA VELOCIDAD DE LOS OBJETOS SE PARCHEA DENTRO DEL BUCLE
+# ============================================================================
+#
+# Hay una rutina que recorre CUALQUIERA de las tablas de objetos -IX apuntando
+# a la primera entrada, el contador en (ix-001), entradas de 4 bytes- y les
+# aplica el rumbo. El paso de ese movimiento no es un parametro: es el operando
+# de un `ld bc,` que el llamador reescribe antes de entrar.
+#
+#     cc32: ld bc,00707h        <- ESTO es lo que se parchea
+#     cc35: call aplica_rumbo
+#
+#     cbeb: ld ix,lcc32h / ld (ix+001h),006h / ld (ix+002h),006h   <- 6,6
+#     cc03: ld ix,lcc32h / ld (ix+001h),009h / ld (ix+002h),009h   <- 9,9
+#
+# (ix+001) y (ix+002) sobre 0xCC32 son justo los dos bytes del 0x0707, asi que
+# cada tabla se recorre con su velocidad sin que la rutina tenga que recibirla.
+# Y de paso queda explicado por que 0xCC32 figura entre los "destinos de salto
+# sin trazar" del generador: nadie salta ahi, es una direccion cargada como
+# DATO para escribir encima.
+#
+# LOS TAMANOS DE LAS DOS TABLAS CIERRAN CON SUS TOPES. El recorrido va de
+# 0xC93A a 0xC952 en un caso y de 0xC953 a 0xC977 en el otro:
+#
+#     0xC93A..0xC952 = 24 bytes = SEIS entradas de 4
+#     0xC953..0xC977 = 36 bytes = NUEVE entradas de 4
+#
+# y seis y nueve son exactamente los topes que comprueban sus altas. Dos vias
+# independientes dando el mismo numero.
+L 0xCC18 mueve_tabla Recorre una tabla de objetos cualquiera -IX en la primera entrada, contador en (ix-001), entradas de 4 B-, les aplica el rumbo con el paso que le hayan parcheado en 0xCC32, los pinta con pinta_glifo y retira los que pasan de la fila 0xC0 o de la columna 0xBC
+L 0xCBEB recorre_las_dos_tablas Mueve las dos tablas seguidas, parcheando antes la velocidad de cada una: 6 para la de 0xC93A (seis huecos) y 9 para la de 0xC953 (nueve)
+#
+# Y ASI SE SABE QUE LA ZONA ESTA DESPEJADA: no hay bandera ni contador global,
+# se pregunta a los CINCO contadores de objetos de una vez y se juntan con OR.
+L 0xDA55 zona_despejada Vuelve con Z solo si no queda nada en pantalla: 0xCA91 en 0x80 y los cinco contadores de objetos -0xC98F, 0xC97A, 0xC939, 0xC998 y 0xD3C5- todos a cero, juntados con OR
+L 0xDA06 lee_texto Recorre la lista de textos de 0xDE18 hasta el que pide A -en sus siete bits bajos-, saltando de uno a otro por la longitud que cada uno lleva en su primer byte
+L 0xD1AF traza_estela Dibuja la estela del objeto de 0xD3BD restando al puntero del buffer un paso fijo, 24 si le queda poca vida y 25 si le queda mas, o sea recta o en diagonal

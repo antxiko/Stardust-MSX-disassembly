@@ -2185,8 +2185,8 @@ L_BF6A:
 	call L_CB7A		;bf7f
 	call mueve_perseguidor		;bf82
 	call L_CEBC		;bf85
-	call L_D1AF		;bf88
-	call L_CBEB		;bf8b
+	call traza_estela		;bf88
+	call recorre_las_dos_tablas		;bf8b
 	call mueve_disparos		;bf8e
 	call mueve_bandada		;bf91
 	call mueve_objetos		;bf94
@@ -3832,21 +3832,21 @@ L_CBDC:
 	ld c,a			;cbe9
 L_CBEA:
 	ret			;cbea
-L_CBEB:
+recorre_las_dos_tablas:		; Mueve las dos tablas seguidas, parcheando antes la velocidad de cada una: 6 para la de 0xC93A (seis huecos) y 9 para la de 0xC953 (nueve)
 	ld ix,lcc32h		;cbeb
 	ld (ix+001h),006h	;cbef
 	ld (ix+002h),006h	;cbf3
 	ld ix,0c93ah		;cbf7
 	ld hl,0c952h		;cbfb
 	ld a,005h		;cbfe
-	call L_CC18		;cc00
+	call mueve_tabla		;cc00
 	ld ix,lcc32h		;cc03
 	ld (ix+001h),009h	;cc07
 	ld (ix+002h),009h	;cc0b
 	ld ix,0c953h		;cc0f
 	ld hl,0c977h		;cc13
 	ld a,004h		;cc16
-L_CC18:
+mueve_tabla:		; Recorre una tabla de objetos cualquiera -IX en la primera entrada, contador en (ix-001), entradas de 4 B-, les aplica el rumbo con el paso que le hayan parcheado en 0xCC32, los pinta con pinta_glifo y retira los que pasan de la fila 0xC0 o de la columna 0xBC
 	ld (0c977h),hl		;cc18
 	ld (0c979h),a		;cc1b
 	ld a,(ix-001h)		;cc1e
@@ -4647,7 +4647,7 @@ L_D1A8:
 	ld (iy+006h),h		;d1a8
 	ld (iy+007h),l		;d1ab
 	ret			;d1ae
-L_D1AF:
+traza_estela:		; Dibuja la estela del objeto de 0xD3BD restando al puntero del buffer un paso fijo, 24 si le queda poca vida y 25 si le queda mas, o sea recta o en diagonal
 	ld iy,0d3bdh		;d1af
 	ld a,(iy+000h)		;d1b3
 	and a			;d1b6
@@ -5468,10 +5468,10 @@ L_D75B:
 	ld (0d3c2h),a		;d770
 	call mueve_estrellas		;d773
 	call mueve_perseguidor		;d776
-	call L_CBEB		;d779
+	call recorre_las_dos_tablas		;d779
 	call mueve_disparos		;d77c
 	call mueve_bandada		;d77f
-	call L_D1AF		;d782
+	call traza_estela		;d782
 	call mueve_objetos		;d785
 	call pausa		;d788
 	ld a,(0c188h)		;d78b
@@ -5484,7 +5484,7 @@ L_D75B:
 	call vuelca_pantalla		;d79e
 	jp L_D75B		;d7a1
 L_D7A4:
-	call L_DA55		;d7a4
+	call zona_despejada		;d7a4
 	jp nz,espera_1000		;d7a7
 	ld a,(0ddf7h)		;d7aa
 	inc a			;d7ad
@@ -5795,7 +5795,7 @@ L_D9DB:
 	call solapa_eje		;d9ff
 	ret c			;da02
 	jp L_D303		;da03
-L_DA06:
+lee_texto:		; Recorre la lista de textos de 0xDE18 hasta el que pide A -en sus siete bits bajos-, saltando de uno a otro por la longitud que cada uno lleva en su primer byte
 	ld a,(hl)		;da06
 	cp 0ffh			;da07
 	jr z,L_DA31		;da09
@@ -5816,7 +5816,7 @@ L_DA1D:
 	inc hl			;da1f
 L_DA20:
 	push bc			;da20
-	call L_DA06		;da21
+	call lee_texto		;da21
 	pop bc			;da24
 	djnz L_DA20		;da25
 	pop hl			;da27
@@ -5833,7 +5833,7 @@ L_DA31:
 L_DA33:
 	ld ix,05c50h		;da33
 L_DA37:
-	call L_DA06		;da37
+	call lee_texto		;da37
 	jp L_DA37		;da3a
 L_DA3D:
 	ld a,(ix+000h)		;da3d
@@ -5847,7 +5847,7 @@ L_DA3D:
 	ld (ix+003h),l		;da4e
 	ld (ix+004h),h		;da51
 	ret			;da54
-L_DA55:
+zona_despejada:		; Vuelve con Z solo si no queda nada en pantalla: 0xCA91 en 0x80 y los cinco contadores de objetos -0xC98F, 0xC97A, 0xC939, 0xC998 y 0xD3C5- todos a cero, juntados con OR
 	ld a,(0ca91h)		;da55
 	cp 080h			;da58
 	ret nz			;da5a
@@ -5865,7 +5865,7 @@ L_DA55:
 	or e			;da70
 	ret			;da71
 L_DA72:
-	call L_DA55		;da72
+	call zona_despejada		;da72
 	ld (ix+000h),000h	;da75
 	ret nz			;da79
 	ld a,(0c184h)		;da7a
