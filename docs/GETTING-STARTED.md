@@ -2,13 +2,13 @@
 
 ## What you need
 
-`pasmo` and `z80dasm` to assemble and disassemble, and Python 3 for the tools.
-For screenshots and for the harnesses that pull data out of the running game,
-`openmsx`.
+`pasmo` and `z80dasm` to assemble and disassemble, and Python 3 for the
+tools. And for screenshots, and for the harnesses that pull data out of the
+running game, `openmsx`.
 
-**The tape is not distributed** with this repository — only the documentation
-work. You need your own copy, named `stardust.tsx` in the root of the project,
-and it has to give this sha256:
+The tape isn't distributed with this repository, only the documentation
+work. So you'll need your own copy, named `stardust.tsx` in the root of the
+project, and it has to give this sha256:
 
     8f4fb3840e5ad043d8d694faeaa86a6e4a5cd2cabe5dd99fec08e5cf0a7dbb13
 
@@ -20,16 +20,17 @@ make test     # the tests only
 make web      # rebuilds the site under docs/
 ```
 
-`make` on its own runs the whole cycle and **fails if anything doesn't add up**:
-if a listing stops reproducing its block byte for byte, if the tracer wanders
-into a data zone, if an entry point sits inside a range declared as data, or if
-a single byte of the tape is left unaccounted for.
+`make` on its own runs the whole cycle, and it fails if anything doesn't
+add up: if a listing stops reproducing its block byte for byte, if the
+tracer wanders into a data zone, if an entry point sits inside a range
+declared as data, or if a single byte of the tape is left unaccounted for.
 
 ## Without the tape
 
-You can read the listings in `src/` and the notes, which is where the work is.
-And the tests that don't depend on the binary pass all the same: several of them
-just do arithmetic on the published figures and run with nothing else.
+You can still read the listings in `src/` and the notes, which is where the
+work actually lives. And the tests that don't depend on the binary pass all
+the same, needing nothing else: a handful of them just do arithmetic on the
+published figures.
 
 ## How it is laid out
 
@@ -41,12 +42,13 @@ Each block on the tape has three files that govern its disassembly:
 | `src/X.nocode` | the zones that are NOT code, and how that is known |
 | `src/X.notes` | the annotations, and the data ranges with their explanation |
 
-Those produce the `src/stardust_X.asm` files, which are **never edited by
-hand**: they are generated. If you want to change a comment, it goes in the
-`.notes`.
+Those produce the `src/stardust_X.asm` files, and those never get touched
+by hand: they're generated. If you want to change a comment, it goes in the
+`.notes` file instead.
 
-That separation is what keeps the listing and its verification from drifting
-apart: the file that gets published is the file that gets checked.
+That separation is exactly what keeps the listing and its verification
+from drifting apart over time: the file that gets published is the same
+one that gets checked.
 
 ## The tools you'll reach for most
 
@@ -62,8 +64,8 @@ apart: the file that gets published is the file that gets checked.
 
 ## If you want to pull on a thread
 
-No bytes are left unowned and no routines uncommented, but there are loose
-ends —the 149 bytes of music nothing names, the noise mode no score ever
-switches on—, and they are counted, figures and all, in
-[Open questions](OPEN-QUESTIONS.html). Everything needed to look into them is
-in the repository.
+No bytes are left unowned, and no routines uncommented — but there are
+still loose ends, like the 149 bytes of music nothing names, or the noise
+mode no score ever switches on. They're counted, figures and all, in
+[Open questions](OPEN-QUESTIONS.html), and everything needed to look into
+them is right there in the repository.

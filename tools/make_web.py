@@ -24,9 +24,9 @@ SIN_IDENTIFICAR = 0
 TXT = {
     "es": dict(
         titulo="Stardust (1987) — desensamblado comentado",
-        claim="Una cinta de cassette de 1987, desmontada bloque a bloque. Por "
-              "dentro es <b>una conversión del ZX Spectrum que se trajo hasta "
-              "el sistema de grabación</b>.",
+        claim="Una cinta de cassette de 1987, desmontada bloque a bloque. Y por "
+              "dentro es una conversión del ZX Spectrum que se trajo hasta el "
+              "sistema de grabación, no solo los gráficos.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
                "Carga de cinta <b>multicarga</b>", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "Las cifras"), ("#findings", "Hallazgos"),
@@ -41,26 +41,29 @@ TXT = {
         cifras=[("100%", "del binario con dueño"), ("106", "rutinas identificadas"),
                 ("7+1", "zonas de naves, y una a pie"), ("20.076", "bytes de código"),
                 ("73.785", "bytes de datos"), ("0", "bytes sin identificar")],
-        nota_scr="No son capturas de pantalla. Están dibujadas a partir de los "
-                 "datos del propio binario, con la geometría que usa el juego. "
-                 "Por eso valen de comprobación: si el reparto del bloque "
-                 "estuviera mal, saldría ruido en vez de una tilería.",
-        pie_gracias="<b>Gracias a Araubi.</b> Su grabación de una partida "
-                    "completa en el emulador es lo que ha permitido trazar el "
-                    "código de las pantallas a las que una partida automática no "
-                    "llega nunca, y llegar a la segunda parte del juego. Buena "
-                    "parte de lo que hay en esta página sale de ahí.",
-        pie_leg="Trabajo de documentación y preservación sobre un juego de 1987. "
-                "El código y los gráficos son de sus autores y de Topo Soft. La "
-                "imagen de cinta no se distribuye. Parte del análisis se apoya en "
-                "el desensamblado de la versión de ZX Spectrum publicado por sus "
-                "autores originales; ver el aviso legal.",
+        nota_scr="Nada de lo que ves aquí es una captura de pantalla: está "
+                 "dibujado a partir de los propios datos del binario, con la "
+                 "misma geometría que usa el juego. Y eso lo convierte en una "
+                 "comprobación además de una ilustración, porque si el reparto "
+                 "del bloque estuviera mal, lo que saldría es ruido, no una "
+                 "tilería reconocible.",
+        pie_gracias="Gracias a Araubi. Su grabación de una partida completa en "
+                    "el emulador es lo que ha permitido trazar el código de las "
+                    "pantallas a las que una partida automática no llega nunca, "
+                    "y llegar hasta la segunda parte del juego. Buena parte de "
+                    "lo que cuenta esta página sale de ahí.",
+        pie_leg="Esto es trabajo de documentación y preservación sobre un juego "
+                "de 1987: el código y los gráficos siguen siendo de sus autores "
+                "y de Topo Soft, y la imagen de la cinta no se distribuye. Parte "
+                "del análisis se apoya en el desensamblado de la versión de ZX "
+                "Spectrum que publicaron sus autores originales; los detalles "
+                "están en el aviso legal.",
     ),
     "en": dict(
         titulo="Stardust (1987) — a commented disassembly",
-        claim="A 1987 cassette tape, taken apart block by block. Inside it is "
-              "<b>a ZX Spectrum conversion that brought the tape system across "
-              "with it</b>.",
+        claim="A 1987 cassette tape, taken apart block by block. Inside, it's a "
+              "ZX Spectrum conversion that brought the tape system across with "
+              "it, not just the graphics.",
         ficha=["Topo Soft · <b>1987</b>", "A <b>ZX Spectrum</b> conversion",
                "<b>Multiload</b> from tape", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "The numbers"), ("#findings", "What turned up"),
@@ -76,158 +79,171 @@ TXT = {
         cifras=[("100%", "of the binary owned"), ("106", "routines identified"),
                 ("7+1", "ship zones, plus one on foot"), ("20,076", "bytes of code"),
                 ("73,785", "bytes of data"), ("0", "bytes unidentified")],
-        nota_scr="These aren't screen captures. They are drawn from the binary's "
-                 "own data, using the geometry the game itself uses. That is what "
-                 "makes them a check: if the block's layout were wrong, noise "
-                 "would come out instead of a tileset.",
-        pie_gracias="<b>Thanks to Araubi.</b> Their recording of a complete "
-                    "playthrough in the emulator is what made it possible to trace "
-                    "the code behind the screens a scripted run never reaches, and "
-                    "to get to the second part of the game. A good deal of what is "
-                    "on this page comes from it.",
-        pie_leg="Documentation and preservation work on a 1987 game. The code and "
-                "artwork belong to their authors and to Topo Soft. The tape image "
-                "is not distributed. Part of the analysis leans on the ZX Spectrum "
-                "disassembly published by its original authors; see the legal "
-                "notice.",
+        nota_scr="None of this is a screen capture: it's drawn straight from the "
+                 "binary's own data, using the same geometry the game itself "
+                 "uses. Which makes it a check as much as an illustration, "
+                 "because if the block's layout were wrong, what would come out "
+                 "is noise, not a recognisable tileset.",
+        pie_gracias="Thanks to Araubi. Their recording of a complete playthrough "
+                    "in the emulator is what made it possible to trace the code "
+                    "behind the screens a scripted run never reaches, and to get "
+                    "all the way to the second part of the game. A good deal of "
+                    "what this page tells comes from it.",
+        pie_leg="This is documentation and preservation work on a 1987 game: the "
+                "code and artwork still belong to their authors and to Topo "
+                "Soft, and the tape image isn't distributed. Part of the "
+                "analysis leans on the ZX Spectrum disassembly published by its "
+                "original authors; the details are in the legal notice.",
     ),
 }
 
 HALLAZGOS = {
     "es": [
         ("La cinta no es una cinta de MSX",
-         "<p>Un juego de MSX se graba en bloques <b>KCS</b>, que es el formato del "
-         "sistema. Stardust, no: sus cuatro bloques de datos son <b>bloques del ZX "
-         "Spectrum</b>, con su bandera, sus datos y un XOR de comprobación. Los "
-         "cuatro traen ese checksum correcto.</p>"
-         "<p>Y el cargador es una <b>reimplementación de LD-BYTES</b>, la rutina de "
-         "carga de la ROM del Spectrum, con su mismo interfaz de registros.</p>"),
+         "<p>Un juego de MSX se graba en bloques KCS, que es el formato del "
+         "sistema. Stardust no: sus cuatro bloques de datos son bloques del "
+         "ZX Spectrum, con su bandera, sus datos y un XOR de comprobación al "
+         "final, y los cuatro lo traen correcto.</p>"
+         "<p>Y el cargador tampoco es de aquí: es una reimplementación de "
+         "LD-BYTES, la rutina de carga de la ROM del Spectrum, con su mismo "
+         "interfaz de registros.</p>"),
         ("El cargador trae una puerta trasera para trainers",
-         "<p>Antes de arrancar el juego, el cargador salva 94 bytes a memoria alta "
-         "y mira si empiezan por tres <code>0xC9</code>. Si es así, los trata como "
-         "una lista de parches y los aplica sobre el juego recién cargado: "
-         "dirección y valor, uno detrás de otro.</p>"
-         "<p>La cuenta dice para cuántos: 3 de firma + 1 de contador + <b>30 "
-         "parches de 3 bytes = 94</b>. Está dimensionado exactamente para treinta. "
-         "Es lo que usaban los cargadores de las revistas de la época.</p>"),
+         "<p>Antes de arrancar el juego, el cargador salva 94 bytes a memoria "
+         "alta y les echa un vistazo: si empiezan por tres <code>0xC9</code>, "
+         "los toma por una lista de parches y los aplica sobre el juego que "
+         "acaba de cargar, dirección y valor, uno detrás de otro.</p>"
+         "<p>Y la cuenta cuadra sola: tres bytes de firma, uno de contador y "
+         "treinta parches de tres bytes, noventa y cuatro en total. Está "
+         "pensado para treinta pokes exactos, que es justo lo que usaban los "
+         "cargadores de las revistas de la época.</p>"),
         ("Dos juegos en una cinta",
-         "<p>Al superar la última zona de naves el juego vuelve al cassette a por "
-         "una segunda parte en la que el protagonista va a pie. Y no usa para ello "
-         "la rutina del cargador, que sigue viva en memoria: <b>trae la suya</b>, "
-         "que enciende el motor de la cinta y lee el bit de datos del chip de "
-         "sonido.</p>"
-         "<p>Los dos programas ni siquiera comparten motor: los objetos de la "
-         "primera parte llevan estructuras de 8 bytes con la rutina que los "
-         "gobierna apuntada dentro, y los enemigos de la segunda viven en tablas "
-         "ligeras de 5 bytes movidas por bucles fijos —cuatro andantes como "
-         "máximo, con los voladores aparte—. (En la segunda sí hay objetos de "
-         "46 bytes, pero son los tres canales del intérprete de sonido, no "
-         "enemigos.)</p>"),
+         "<p>Al superar la última zona de naves, el juego vuelve al cassette a "
+         "por una segunda parte en la que el protagonista sigue a pie. Y no "
+         "usa la rutina del cargador para eso, aunque sigue viva en memoria: "
+         "trae la suya, que enciende el motor de la cinta y lee el bit de "
+         "datos por el chip de sonido.</p>"
+         "<p>Los dos programas ni siquiera comparten motor. En la primera "
+         "parte cada objeto lleva una estructura de 8 bytes con la rutina que "
+         "lo gobierna apuntada dentro; en la segunda, los enemigos viven en "
+         "tablas ligeras de 5 bytes que mueven bucles fijos —cuatro andantes "
+         "como mucho, y los voladores aparte—. Sí hay objetos de 46 bytes en "
+         "la segunda parte, pero no son enemigos: son los tres canales del "
+         "intérprete de sonido.</p>"),
         ("Lo que el MSX obligó a cambiar",
-         "<p>El Spectrum escribe directamente en su memoria de pantalla, que es RAM "
-         "normal. En el MSX la memoria de vídeo está detrás del chip gráfico y hay "
-         "que enviarla por un puerto, byte a byte.</p>"
-         "<p>Por eso esta versión lleva un <b>buffer de pantalla</b> que el original "
-         "no necesita: 3840 bytes en 0x4000-0x4EFF, de <b>24 de ancho por 160 de "
-         "alto</b>, que el volcado envía a la VRAM en tres bandas de 56, 64 y 40 "
-         "filas, columna a columna. Veinticuatro bytes son 192 píxeles, más estrecho "
-         "que la pantalla: por eso el marco de los lados no se mueve. Y lo que sobra "
-         "está a lo alto, que es por donde scrollea.</p>"
-         "<p>Los ejes son fáciles de leer <b>al revés</b>: el <code>ld b,028h</code> del "
-         "volcado parece decir «40 columnas» y es el bucle interior, que recoge 40 "
-         "bytes de una misma columna a saltos de 24. El error se propagó al ancho de "
-         "los mapas de nivel. Lo caza dibujarlo: de 24 en 24 sale la tabla de récords "
-         "legible; de 40 en 40, ruido.</p>"),
+         "<p>El Spectrum escribe directamente en su memoria de pantalla, que "
+         "es RAM normal. En el MSX la memoria de vídeo está detrás del chip "
+         "gráfico, así que hay que mandársela por un puerto, byte a byte.</p>"
+         "<p>Por eso esta versión carga con un buffer de pantalla que el "
+         "original no necesita: 3840 bytes en 0x4000-0x4EFF, de 24 de ancho "
+         "por 160 de alto, que el volcado envía a la VRAM en tres bandas, "
+         "columna a columna. Veinticuatro bytes son 192 píxeles, más estrecho "
+         "que la pantalla, y por eso el marco de los lados no se mueve nunca: "
+         "lo que sobra está a lo alto, que es justo por donde scrollea.</p>"
+         "<p>Y esos ejes son fáciles de leer al revés. El <code>ld b,028h</code> "
+         "del volcado parece decir «40 columnas», pero es el bucle interior, "
+         "el que recoge 40 bytes de una misma columna a saltos de 24. Lo caza "
+         "dibujarlo: partido de 24 en 24 sale la tabla de récords, legible; "
+         "de 40 en 40, ruido.</p>"),
         ("Sprites dibujados a mano",
-         "<p>El MSX tiene sprites por hardware. Aquí no se usan: se dibujan por "
-         "software, a la manera del Spectrum, desplazando el dibujo bit a bit y "
-         "componiéndolo con AND y OR.</p>"
-         "<p>Las dos partes del juego llevan esa rutina, copiada y reubicada: el "
-         "pintor de sprites mide 198 bytes y, emparejadas sus dos mitades como "
-         "toca, las diferencias son diez direcciones reubicadas y un solo byte, "
-         "el del recorte por abajo.</p>"),
+         "<p>El MSX tiene sprites por hardware, pero aquí no se usan: se "
+         "dibujan por software, a la manera del Spectrum, desplazando el "
+         "dibujo bit a bit y componiéndolo con AND y OR.</p>"
+         "<p>Las dos partes del juego llevan la misma rutina para eso, "
+         "copiada y reubicada de una a otra. El pintor de sprites mide 198 "
+         "bytes, y si emparejas bien sus dos mitades las únicas diferencias "
+         "son diez direcciones reubicadas y un solo byte suelto, el del "
+         "recorte por abajo.</p>"),
         ("Ningún punto de entrada cae dentro de un gráfico",
          "<p>Sembrar el trazador con rutinas mal ancladas puede hinchar la "
-         "cobertura de golpe sin que se note: el binario reensambla igual "
-         "—son los mismos bytes, solo cambia cómo se leen—, el presupuesto "
-         "cierra igual, y una comprobación de trazado que solo mire un "
-         "fichero de excepciones no lo ve. Por eso hay una comprobación para "
-         "exactamente esto: <b>ningún punto de entrada puede caer dentro de "
-         "un rango declarado como datos</b>, y corre en el gate junto al "
-         "resto de comprobaciones.</p>"
-         "<p>La otra prueba es una partida jugada de verdad. Reproduciendo "
-         "una grabación completa de 38 minutos —cortesía de Araubi— y "
-         "anotando por dónde pasa el procesador, de las <b>1489 direcciones "
-         "que el juego ejecuta, el trazador ya alcanza 1444</b>: las que "
-         "faltan se convierten en puntos de entrada, cada una con su cuenta "
-         "de muestras al lado. La cobertura real del bloque de naves es del "
-         "<b>23,0 %</b>, y la de la segunda parte, del <b>28,6 %</b>.</p>"),
+         "cobertura de golpe sin que nadie lo note: el binario reensambla "
+         "igual, porque son los mismos bytes y solo cambia cómo se leen; el "
+         "presupuesto cierra igual; y una comprobación de trazado que solo "
+         "mire un fichero de excepciones tampoco lo ve. Por eso hay una regla "
+         "para exactamente esto, corriendo en el gate junto al resto: ningún "
+         "punto de entrada puede caer dentro de un rango declarado como "
+         "datos.</p>"
+         "<p>Y luego está la otra prueba, jugar la partida de verdad. "
+         "Reproduciendo una grabación completa de 38 minutos —cortesía de "
+         "Araubi— y anotando por dónde pasa el procesador, resulta que de "
+         "las 1489 direcciones que el juego llega a ejecutar, el trazador ya "
+         "alcanza 1444 por su cuenta; las que faltan pasan a ser puntos de "
+         "entrada, cada una con su cuenta de muestras al lado. La cobertura "
+         "real del bloque de naves acaba en 23,0 %, y la de la segunda "
+         "parte, en 28,6 %.</p>"),
     ],
     "en": [
         ("This isn't an MSX tape",
-         "<p>MSX games are recorded in <b>KCS</b> blocks, the system's own format. "
-         "Not Stardust: its four data blocks are <b>ZX Spectrum blocks</b>, with "
-         "their flag, their data and an XOR checksum. All four carry that checksum "
+         "<p>MSX games are recorded in KCS blocks, the system's own format. Not "
+         "Stardust: its four data blocks are ZX Spectrum blocks, with a flag "
+         "byte, the data and an XOR check at the end, and all four carry it "
          "correctly.</p>"
-         "<p>And the loader is a <b>reimplementation of LD-BYTES</b>, the Spectrum "
-         "ROM's load routine, with the same register interface.</p>"),
+         "<p>The loader isn't native either: it's a reimplementation of "
+         "LD-BYTES, the Spectrum ROM's own load routine, with the same "
+         "register interface.</p>"),
         ("The loader ships with a back door for trainers",
-         "<p>Before starting the game, the loader saves 94 bytes to high memory and "
-         "checks whether they begin with three <code>0xC9</code>. If so, it treats "
-         "them as a list of patches and applies them to the freshly loaded game: "
-         "address and value, one after another.</p>"
-         "<p>The arithmetic says how many: 3 of signature + 1 counter + <b>30 "
-         "patches of 3 bytes = 94</b>. Sized for exactly thirty. This is what the "
-         "magazine loaders of the day were using.</p>"),
+         "<p>Before starting the game, the loader saves 94 bytes to high "
+         "memory and takes a look at them: if they begin with three "
+         "<code>0xC9</code>, it treats them as a list of patches and applies "
+         "them to the game it just loaded, address and value, one after "
+         "another.</p>"
+         "<p>And the arithmetic works out on its own: three bytes of "
+         "signature, one counter byte, and thirty patches of three bytes "
+         "each, ninety-four in total. It's sized for exactly thirty pokes, "
+         "which happens to be exactly what the magazine loaders of the day "
+         "were using.</p>"),
         ("Two games on one tape",
-         "<p>Clearing the last ship zone sends the game back to the cassette for a "
-         "second part where the character continues on foot. And it doesn't use the "
-         "loader's routine, still alive in memory: <b>it brings its own</b>, which "
-         "starts the tape motor and reads the data bit off the sound chip.</p>"
-         "<p>The two programs don't even share an engine: objects in the first "
-         "part carry 8-byte structures with their governing routine's pointer "
-         "inside, while the second part's enemies live in light 5-byte tables "
-         "moved by fixed loops —four walkers at most, with the flyers kept "
-         "apart—. (46-byte objects do exist in the second part, but they are "
-         "the sound interpreter's three channels, not enemies.)</p>"),
+         "<p>Clearing the last ship zone sends the game back to the cassette "
+         "for a second part where the character carries on on foot. And it "
+         "doesn't reuse the loader's routine for that, even though it's "
+         "still alive in memory: it brings its own, which starts the tape "
+         "motor and reads the data bit off the sound chip.</p>"
+         "<p>The two programs don't even share an engine. In the first part "
+         "each object carries an 8-byte structure with a pointer to its "
+         "governing routine; in the second, the enemies live in light 5-byte "
+         "tables moved by fixed loops —four walkers at most, flyers kept "
+         "apart. There are 46-byte objects in the second part too, but "
+         "they're not enemies: they're the sound interpreter's three "
+         "channels.</p>"),
         ("What the MSX forced them to change",
-         "<p>The Spectrum writes straight into its screen memory, which is ordinary "
-         "RAM. On the MSX, video memory sits behind the graphics chip and has to be "
-         "sent through a port, byte by byte.</p>"
-         "<p>So this version carries a <b>screen buffer</b> the original doesn't "
-         "need: 3840 bytes at 0x4000-0x4EFF, <b>24 wide by 160 tall</b>, which the "
-         "dump sends to VRAM in three bands of 56, 64 and 40 rows, column by "
-         "column. Twenty-four bytes are 192 pixels, narrower than the screen: which "
-         "is why the frame down the sides never moves. And the surplus is vertical, "
-         "which is the way it scrolls.</p>"
-         "<p>The axes are easy to read <b>backwards</b>: the dump's <code>ld b,028h</code> "
-         "looks like it says \"40 columns\" and it is the inner loop, collecting 40 bytes from a "
-         "single column in steps of 24. The error spread to the width of the level "
-         "maps. Drawing it catches it: 24 at a time gives a legible high-score table; "
-         "40 at a time, noise.</p>"),
+         "<p>The Spectrum writes straight into its screen memory, which is "
+         "ordinary RAM. On the MSX, video memory sits behind the graphics "
+         "chip, so it has to go out through a port, byte by byte.</p>"
+         "<p>Which is why this version carries a screen buffer the original "
+         "never needed: 3840 bytes at 0x4000-0x4EFF, 24 wide by 160 tall, "
+         "sent to VRAM in three bands, column by column. Twenty-four bytes "
+         "are 192 pixels, narrower than the screen, and that's why the frame "
+         "down the sides never moves: the surplus is vertical, which is "
+         "exactly where it scrolls.</p>"
+         "<p>And those axes are easy to read backwards. The dump's "
+         "<code>ld b,028h</code> looks like it's saying \"40 columns\", but "
+         "it's the inner loop, the one collecting 40 bytes from a single "
+         "column in steps of 24. Drawing it settles it: split 24 at a time "
+         "and the high-score table comes out legible; 40 at a time, "
+         "noise.</p>"),
         ("Sprites drawn by hand",
-         "<p>The MSX has hardware sprites. They aren't used here: sprites are drawn "
-         "in software, the Spectrum way, shifting the image bit by bit and "
-         "compositing it with AND and OR.</p>"
-         "<p>Both halves of the game carry that routine, copied and relocated: "
-         "the sprite painter is 198 bytes, and with its two halves paired "
-         "correctly the differences are ten relocated addresses and a single "
-         "byte, the bottom clip.</p>"),
+         "<p>The MSX has hardware sprites, but they're not used here: sprites "
+         "get drawn in software, the Spectrum way, shifting the image bit by "
+         "bit and compositing it with AND and OR.</p>"
+         "<p>Both halves of the game carry the same routine for that, copied "
+         "and relocated from one to the other. The sprite painter is 198 "
+         "bytes long, and pair its two halves correctly and the only "
+         "differences are ten relocated addresses and one loose byte, the "
+         "bottom clip.</p>"),
         ("No entry point falls inside a picture",
-         "<p>Seeding the tracer with badly anchored routines can inflate "
-         "coverage in one go without it showing: the binary still "
-         "reassembles — same bytes, only read differently —, the budget "
-         "still closes, and a trace sanity check that only looks at a file "
-         "of exceptions cannot see it. So there is a check for exactly "
-         "this: <b>no entry point may fall inside a range declared as "
-         "data</b>, and it runs in the gate alongside the rest.</p>"
-         "<p>The other proof is a game actually played. Replaying a "
-         "complete 38-minute recording —courtesy of Araubi— and noting "
-         "where the processor actually goes, of the <b>1489 addresses the "
-         "game executes the tracer already reaches 1444</b>: the ones it "
-         "misses become entry points, each with its sample count beside "
-         "it. The ship block's real coverage is <b>23.0%</b>, and the "
-         "second part's is <b>28.6%</b>.</p>"),
+         "<p>Seed the tracer with badly anchored routines and coverage can "
+         "inflate in one go without anyone noticing: the binary still "
+         "reassembles, because it's the same bytes and only the reading "
+         "changes; the budget still closes; and a trace check that only "
+         "looks at a file of exceptions won't catch it either. So there's a "
+         "rule for exactly this, running in the gate alongside the rest: no "
+         "entry point may fall inside a range declared as data.</p>"
+         "<p>And then there's the other proof, actually playing the game. "
+         "Replaying a complete 38-minute recording —courtesy of Araubi— and "
+         "noting where the processor goes, it turns out that of the 1489 "
+         "addresses the game actually executes, the tracer already reaches "
+         "1444 on its own; the ones it misses become entry points, each with "
+         "its sample count beside it. The ship block's real coverage lands "
+         "at 23.0%, and the second part's at 28.6%.</p>"),
     ],
 }
 

@@ -1,13 +1,13 @@
 # Stardust (Topo Soft, 1987, MSX) — desensamblado comentado
 
-Una cinta de cassette de 1987, desmontada bloque a bloque. Los **93 861 bytes**
-que trae están acotados y con dueño, y por dentro es **una conversión del ZX
-Spectrum que se trajo hasta el sistema de grabación**.
+Una cinta de cassette de 1987, desmontada bloque a bloque. Los 93 861 bytes
+que trae están acotados y con dueño, y por dentro es una conversión del ZX
+Spectrum que se trajo hasta el sistema de grabación, no solo los gráficos.
 
-✅ **El desensamblado está terminado**: cada byte de la cinta tiene dueño, los
-cinco bloques reensamblan byte a byte y las **335 rutinas** del listado están
-comentadas con su evidencia. «Terminado» no quiere decir agotado: las preguntas
-que siguen abiertas, con sus cifras, están en
+✅ **El desensamblado está terminado**: cada byte de la cinta tiene dueño,
+los cinco bloques reensamblan byte a byte y las 335 rutinas del listado
+están comentadas con su evidencia. Y «terminado» no quiere decir agotado —
+las preguntas que siguen abiertas, con sus cifras, están en
 [la página de preguntas abiertas](https://antxiko.github.io/Stardust-MSX-disassembly/es/PREGUNTAS-ABIERTAS.html).
 
 📖 **[Documentación completa](https://antxiko.github.io/Stardust-MSX-disassembly/)**
@@ -17,21 +17,23 @@ que siguen abiertas, con sus cifras, están en
 
 ## Qué es esto
 
-*Stardust* es un matamarcianos vertical que Topo Soft publicó para MSX en 1987.
-Este repositorio contiene el código de sus cinco bloques, comentado, más las
-herramientas para reconstruirlo y comprobarlo.
+*Stardust* es un matamarcianos vertical que Topo Soft publicó para MSX en
+1987. Este repositorio contiene el código de sus cinco bloques, comentado,
+más las herramientas para reconstruirlo y comprobarlo.
 
-Lo que hace este juego distinto de los demás de la casa: **es una conversión, y
-se nota en sitios donde uno no la buscaría**. Los otros títulos de Topo Soft
-para MSX graban en bloques KCS, que es el formato del MSX. Stardust usa
-**bloques del ZX Spectrum**, con su `[bandera][datos][XOR]`, y su cargador es
-una **reimplementación de LD-BYTES**, la rutina de carga de la ROM del Spectrum,
-con el mismo interfaz de registros. Antes de nada mapea RAM en las páginas 1 y 2
-para tener los 48K planos de RAM que el Spectrum da de serie y el MSX no.
+Y lo que hace a este juego distinto de los demás de la casa es que es una
+conversión, y se nota en sitios donde uno no la buscaría a simple vista.
+Los otros títulos de Topo Soft para MSX graban en bloques KCS, que es el
+formato del propio MSX. Stardust usa bloques del ZX Spectrum, con su
+`[bandera][datos][XOR]`, y su cargador es una reimplementación de LD-BYTES,
+la rutina de carga de la ROM del Spectrum, con el mismo interfaz de
+registros. Antes de nada mapea RAM en las páginas 1 y 2, para tener los 48K
+planos de RAM que el Spectrum da de serie y el MSX no.
 
-Y es **multicarga**: las zonas 1 a 7 se juegan pilotando una nave y, al superar
+Y es multicarga: las zonas 1 a 7 se juegan pilotando una nave y, al superar
 la última, el juego vuelve a la cinta a por una segunda parte en la que el
-protagonista va a pie. Son dos programas distintos en un mismo cassette.
+protagonista sigue a pie. Son, en la práctica, dos programas distintos en
+un mismo cassette.
 
 ## Cómo se comprueba que esto es verdad
 
@@ -48,28 +50,30 @@ parte2 29861 B   OK: reproducible byte a byte
 TOTAL 93861 bytes, 93861 explicados (100.00%), 0 sin explicar
 ```
 
-Ojo con ese 100 %, que es fácil de leer mal: quiere decir que **cada byte tiene
-dueño** —o es código que el trazador alcanza de verdad, o cae en un rango con
-nombre y medida—, no que se sepa para qué sirve cada uno. Los rangos cuyo nombre
-era «datos sin clasificar» contaban como explicados en el sentido de estar
-acotados y medidos, no en el de estar entendidos; llegaron a ser 4089 bytes y
-hoy no queda ninguno. El camino está
+Ojo con ese 100 %, porque es fácil de leer mal: quiere decir que cada byte
+tiene dueño —o es código que el trazador alcanza de verdad, o cae en un
+rango con nombre y medida— pero no que se sepa para qué sirve cada uno. Los
+rangos cuyo nombre era «datos sin clasificar» contaban como explicados en
+el sentido de estar acotados y medidos, no en el de estar entendidos, y
+llegaron a ser 4089 bytes; hoy ya no queda ninguno. El camino entero está
 [contado paso a paso](https://antxiko.github.io/Stardust-MSX-disassembly/es/PREGUNTAS-ABIERTAS.html).
 
-Hay además un **presupuesto**, que es una comprobación distinta: cada byte tiene
-que ser o código que el trazador alcanza de verdad, o un rango de datos con
-nombre y explicación. Existe porque la reproducibilidad no ve los errores de
-interpretación: si unos gráficos se marcaran como código, los bytes seguirían
-saliendo idénticos y el único que mentiría sería el listado.
+Hay además un presupuesto, que es una comprobación distinta: cada byte
+tiene que ser o código que el trazador alcanza de verdad, o un rango de
+datos con nombre y explicación. Existe porque la reproducibilidad no ve los
+errores de interpretación — si unos gráficos se marcaran como código, los
+bytes seguirían saliendo idénticos, y el único que mentiría sería el
+listado.
 
-Y aquí ese peligro es real, no teórico: `tools/check_datos_como_codigo.py`
-cruza cada zona declarada como datos contra lo que cree el trazador,
-precisamente porque una contaminación así puede hinchar la cobertura del
-25 % al 75,8 % de golpe —el trazador metido en las tablas de color y en los
-datos de nivel— y parecer un éxito. Está contado en la página de cómo se hizo.
+Y ese peligro es real, no teórico: `tools/check_datos_como_codigo.py` cruza
+cada zona declarada como datos contra lo que cree el trazador, precisamente
+porque una contaminación así puede hinchar la cobertura del 25 % al 75,8 %
+de golpe —con el trazador metido en las tablas de color y en los datos de
+nivel— y parecer un éxito cuando no lo es. Está contado en la página de
+cómo se hizo.
 
-Y **17 tests**, dedicados a comprobar que lo que dice la documentación es lo que
-hace el juego.
+Y hay 17 tests dedicados solo a comprobar que lo que dice la documentación
+es lo que hace el juego de verdad.
 
 ## Empezar
 
@@ -81,10 +85,10 @@ make web      # regenera la web de docs/
 
 Hace falta `pasmo`, `z80dasm` y Python 3. Para las capturas, `openmsx`.
 
-**La cinta no se distribuye** con este repositorio, solo el trabajo de
-documentación (ver [AVISO-LEGAL.md](AVISO-LEGAL.md)). Para reconstruirlo todo
-hace falta tu propia copia, con el nombre `stardust.tsx` en la raíz y este
-sha256:
+La cinta no se distribuye con este repositorio, solo el trabajo de
+documentación (ver [AVISO-LEGAL.md](AVISO-LEGAL.md)). Para reconstruirlo
+todo hace falta tu propia copia, con el nombre `stardust.tsx` en la raíz, y
+tiene que dar este sha256:
 
 ```
 8f4fb3840e5ad043d8d694faeaa86a6e4a5cd2cabe5dd99fec08e5cf0a7dbb13
@@ -107,16 +111,16 @@ sha256:
 
 ## Sobre el trabajo de otros
 
-Parte de este desensamblado se apoya en el **desensamblado de la versión de ZX
-Spectrum que publicaron sus autores originales**, y eso queda dicho con detalle
-en [AVISO-LEGAL.md](AVISO-LEGAL.md). El criterio ha sido no dar por buena
-ninguna de sus etiquetas sin comprobarla: solo se adoptan las de los tramos que
-aparecen **idénticos byte a byte** en los dos binarios, porque la versión de MSX
-la hizo otra gente y sus nombres son una hipótesis hasta que los bytes los
-confirman.
+Parte de este desensamblado se apoya en el desensamblado de la versión de
+ZX Spectrum que publicaron sus autores originales, y eso queda dicho con
+detalle en [AVISO-LEGAL.md](AVISO-LEGAL.md). El criterio ha sido no dar por
+buena ninguna de sus etiquetas sin comprobarla antes: solo se adoptan las
+de los tramos que aparecen idénticos byte a byte en los dos binarios,
+porque la versión de MSX la hizo otra gente, y sus nombres son una
+hipótesis hasta que los bytes los confirman.
 
 ## Créditos
 
-*Stardust* es de Topo Soft y de sus autores; esto es trabajo de preservación y
-estudio. La pantalla de carga de esta versión va firmada **CANO**. Ver
-[AVISO-LEGAL.md](AVISO-LEGAL.md).
+*Stardust* es de Topo Soft y de sus autores; esto es trabajo de
+preservación y estudio. La pantalla de carga de esta versión va firmada
+CANO. Ver [AVISO-LEGAL.md](AVISO-LEGAL.md).

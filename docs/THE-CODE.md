@@ -1,26 +1,28 @@
 # The code
 
-The tape's five blocks come to **93,861 bytes**, and **20,076** of them are code
-the tracer reaches by following the flow. The rest are graphics, tables, buffers
-and padding, all of it named.
+The tape's five blocks come to **93,861 bytes**, and **20,076** of them are
+code the tracer reaches by following the flow. The rest is graphics,
+tables, buffers and padding — all of it named, though.
 
-That figure is deliberately low: it counts only code genuinely arrived at by
-following calls and jumps from a known entry point. There is more code on the
-tape, but until we know how it is entered it is not counted — taking it as
-traced is precisely the mistake that had to be undone here.
+That figure is deliberately low. It only counts code genuinely arrived at
+by following calls and jumps from a known entry point, and there's more
+code on the tape than that covers — but until it's known how it gets
+entered, it doesn't get counted, because taking it as traced is exactly the
+mistake that had to be undone here in the first place.
 
 ## How the screen gets drawn
 
-This is the big difference from the original. The Spectrum writes straight into
-its screen memory, which is ordinary RAM; the MSX has its video memory behind
-the graphics chip and it has to be sent through a port. So this version carries
-an **intermediate buffer** the original doesn't need.
+Here's the big difference from the original. The Spectrum writes straight
+into its screen memory, which is ordinary RAM; the MSX keeps its video
+memory behind the graphics chip, so it has to be sent out through a port.
+Which is why this version carries an intermediate buffer the original
+never needed at all.
 
-The buffer runs from **0x4000 to 0x4EFF** and is 3,840 bytes: **24 wide by 160
-tall**. The dump moves it to VRAM in **three bands** —0x4000 with 56 rows,
-0x4540 with 64 and 0x4B40 with 40, contiguous and closing to the byte—, one per
-call, each into its own third of SCREEN 2. And each band is walked **by
-columns**, not by rows (here the third call, the 40-row one):
+The buffer runs from 0x4000 to 0x4EFF, 3,840 bytes, 24 wide by 160 tall,
+and the dump moves it to VRAM in three bands — 0x4000 with 56 rows, 0x4540
+with 64 and 0x4B40 with 40, contiguous and closing to the byte — one per
+call, each into its own third of SCREEN 2. And each band gets walked by
+columns, not by rows (here's the third call, the 40-row one):
 
 ```
 f3f2: ld de,04b40h     ;       the band: its buffer, its target and its height
@@ -31,32 +33,32 @@ f40b:   ld a,(hl) / out (098h),a / add hl,de
 f40f:   djnz           ; 40  <- INNER loop, with B=0x28
 ```
 
-The axes are worth dwelling on, because **they are easy to read backwards**.
-The `ld b,028h` looks like it says "40 columns" and it does not: it
-is the inner loop, and it walks the buffer in steps of 24, so it collects 40
-bytes from **a single column**. The one counting columns is the outer loop,
-which steps the buffer one byte at a time, 24 times.
+The axes are worth dwelling on, because they're easy to read backwards. The
+`ld b,028h` looks like it's saying "40 columns" and it isn't: it's the
+inner loop, and it walks the buffer in steps of 24 — so it's actually
+collecting 40 bytes from a single column. The one really counting columns
+is the outer loop, stepping the buffer one byte at a time, 24 times over.
 
-Drawing it settles it: split the buffer 24 at a time and the high-score table
-comes out legible, halftone and all; split it 40 at a time and it is noise. And
-it matches what you see while playing: 24 bytes are 192 pixels, narrower than
-the screen's 256 —hence the fixed frame down the sides— and the surplus is in
-the **vertical**, which is exactly where it scrolls.
+Drawing it settles the question: split the buffer 24 at a time and the
+high-score table comes out legible, halftone and all; split it 40 at a
+time and it's noise. And it matches what you see while playing: 24 bytes
+are 192 pixels, narrower than the screen's 256 — hence the fixed frame
+down the sides — and the surplus sits vertically, exactly where it scrolls.
 
-That routine made **3,252,480 writes** in two minutes of play,
-which makes it by far the hardest-working code in the game.
-
-Watching the port that video memory arrives through turns up **seventeen
-routines** that write to it. That method —look at who writes, instead of
-guessing what the data is— is what allowed the buffer to be pinned down to the
-byte.
+That routine racked up 3,252,480 writes in two minutes of play, which
+makes it by far the hardest-working code in the whole game. Watching the
+port video memory arrives through turns up seventeen separate routines
+that write to it — and that method, watching who writes instead of
+guessing what the data is, is exactly what let the buffer get pinned down
+to the byte.
 
 ## Sprites, the Spectrum way
 
 The Spectrum has no hardware sprites, so they have to be drawn by hand: the
-image is shifted bit by bit to the exact position, a hole is opened in the
-background with AND, and it is painted with OR. To avoid paying for the shift
-loop, the instruction is written out N times and entered in the middle:
+image gets shifted bit by bit to the exact position, a hole gets opened in
+the background with AND, and it gets painted with OR. And to avoid paying
+for the shift loop every time, the instruction gets written out N times
+and entered halfway through:
 
 ```
 c4c5: ld a,h / ld h,l / ld l,0ffh
@@ -64,51 +66,55 @@ c4c9: jp 0c4e1h          ; the jump that vaults over the whole run
 c4cc: adc hl,hl / adc a,a / adc hl,hl / adc a,a / ...
 ```
 
-That technique is what throws the tracer off: the `jp` skips the entire run, and
-the `adc`s are entered through a computed jump that isn't in the binary. We know
-they execute because the emulator caught them running half-way down the run.
+That technique is exactly what throws the tracer off: the `jp` skips the
+whole run, and the `adc`s get entered through a computed jump that isn't
+anywhere in the binary. The only reason we know they run at all is that
+the emulator caught them running, halfway down the run.
 
-And the MSX **does** have hardware sprites, which are not used for this: the
-conversion brought the source machine's method across with it.
+And the MSX does have hardware sprites, even though they're not used for
+this: the conversion brought the source machine's method across as it was,
+without adapting it.
 
 ## A script interpreter
 
-The sound is not written as code but as scripts run by a small virtual
-machine. Bytes below 0x80 are notes; from 0x80 up they are commands:
+The sound isn't written as code at all, but as scripts a small virtual
+machine interprets. Bytes below 0x80 are notes; from 0x80 up they're
+commands:
 
 ```
 e230: ld a,(bc) / cp 080h / jp c,0e231h
       sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)
 ```
 
-with `0xE5C0` doing "HL = table + A×2, HL = (HL)". There are **fifteen
-commands**, and that jump table is also the first trap in tracing: if it
-isn't declared as data, the tracer walks into it and starts disassembling
-addresses as though they were instructions.
+with `0xE5C0` doing "HL = table + A×2, HL = (HL)". There are fifteen
+commands in total, and that jump table is also the first trap in tracing:
+left undeclared as data, the tracer walks straight in and starts
+disassembling addresses as though they were instructions.
 
 ## Every object carries its own routine
 
-The ship part settles entity behaviour like this: each one keeps a pointer to
-its governing routine in its own **8-byte** structure, and the game jumps there
-with `jp (hl)`. Those structures arrive **all 0xFF on the tape** and are filled
-in while playing, so the destinations can't be read from the binary — they have
-to be captured with the game running. Doing that turns up eight routines, and
-the captured IX values step 8 at a time.
+The ship part settles entity behaviour like this: each one keeps a pointer
+to its governing routine right in its own 8-byte structure, and the game
+jumps there with `jp (hl)`. Those structures arrive all 0xFF on the tape
+and only get filled in while playing, so the destinations can't be read
+cold from the binary — they have to be caught with the game running. Doing
+that turns up eight routines, with the captured IX values stepping 8 at a
+time.
 
-The same measurement in the part on foot steps **46** at a time. That
-`jp (hl)` —the one at 0xC544— dispatches not entities but the **sound
-interpreter's commands**, and the 46-byte objects are its three channels: the
-routine that starts a sound takes
-the channel number and multiplies it by 46 (`ld de,0002eh`) to reach its state.
-The whole story is in [Findings](FINDINGS.html).
+The same measurement in the part on foot steps 46 at a time. But that
+`jp (hl)` — the one at 0xC544 — doesn't dispatch entities at all: it
+dispatches the sound interpreter's commands, and the 46-byte objects are
+its three channels. The routine that starts a sound takes the channel
+number and multiplies it by 46 (`ld de,0002eh`) to reach its state. The
+whole story is in [Findings](FINDINGS.html).
 
-The on-foot enemies carry no routine pointer. They live in **5-byte tables**
-—walkers at 0xACE4, flyers at 0xACF9, the turret's two shots at 0xAD04— and
-fixed loops move them, one per species.
+The on-foot enemies, on the other hand, carry no routine pointer at all:
+they live in 5-byte tables — walkers at 0xACE4, flyers at 0xACF9, the
+turret's two shots at 0xAD04 — and fixed loops move them, one per species.
 
 ## Code that writes itself
 
-There is a dispatcher that patches its own calls:
+There's a dispatcher that patches its own calls:
 
 ```
 f000: ld (0f016h),hl    ; the operand of a CALL gets written
@@ -118,21 +124,24 @@ f015: call 0000h        ; that 0000 isn't real: HL fills it in
 f018: call 0000h        ; and DE this one
 ```
 
-Read cold that looks like `call 0`, which would reset the machine. Where it
-really calls isn't in the binary — it is in the registers of whoever invokes it.
+Read cold, that looks like `call 0`, which would reset the machine if it
+ever actually ran. Where it really calls isn't in the binary at all — it's
+in the registers of whoever invokes it at the time.
 
 ## What only a full playthrough shows
 
-Both of the things above —the unrolled runs and the self-patching dispatcher—
-are cases of the same problem: a static tracer cannot follow them. The way past
-it is to watch the machine run, and for that a recorded playthrough is worth
-more than any scripted harness, because it reaches screens a script never does.
+Both of the things above — the unrolled runs and the self-patching
+dispatcher — are really the same problem seen twice: a static tracer just
+can't follow them. The only way past it is watching the machine run, and
+for that a recorded playthrough beats any scripted harness, because it
+reaches screens a script never does.
 
-Replaying a complete 38-minute run and sampling the program counter, of the
-**1489 addresses the ship game executed the tracer already reached 1444**. The
-45 it missed became entry points, each with its sample count beside it.
+Replaying a complete 38-minute run and sampling the program counter, of
+the 1,489 addresses the ship game actually executed, the tracer already
+reached 1,444 on its own. The 45 it missed became entry points, each with
+its sample count beside it.
 
-In the second part, which is far less explored because you have to clear seven
+In the second part, far less explored because you have to clear seven
 zones to get there, 159 addresses turn up untraced. Two are worth telling
 apart, because they show the trap in sampling the program counter when
 several addresses on the tape serve different programs at different times:
@@ -142,30 +151,32 @@ several addresses on the tape serve different programs at different times:
 0xC865    27,928 samples
 ```
 
-**0xD48C is not code.** It disassembles to `nop / rst 38h / nop / rst 38h`,
-the disassembler gives up on part of it with an *illegal sequence*, and
+0xD48C is not code. It disassembles to `nop / rst 38h / nop / rst 38h`,
+the disassembler gives up partway through with an *illegal sequence*, and
 nothing in the listing calls it. Sampling the program counter over 130
-seconds of play with the window set right —after the tape load has actually
-finished, not when it should have— not one sample lands there: 259,149
-samples across two windows, zero at that address. Its 489 bytes are data: 21
-distinct values, 199 of them 0xFF, and the rest bytes with few bits set,
-arranged in pairs — `40 ff / 01 ff / 41 ff / 00 ff / 40 f9` — which is what
-artwork with a mask looks like in a conversion that has to shift its sprites
-by hand.
+seconds of play with the window set right — after the tape load has
+actually finished, not when it should have — not one sample lands there:
+259,149 samples across two windows, zero at that address. Its 489 bytes
+are simply data: 21 distinct values, 199 of them 0xFF, and the rest bytes
+with few bits set, arranged in pairs — `40 ff / 01 ff / 41 ff / 00 ff /
+40 f9` — exactly what artwork with a mask looks like in a conversion that
+has to shift its sprites by hand.
 
-What takes care is the window. At t=1775 —"once the load finishes"— the load
-has not actually finished: the program counter sits at 0xF87E, 0xF88D,
-0xF887, inside the tape loader, across only 45 distinct addresses. The tape
-is still turning, and half the memory from 0x61D0 up is still the ship game
-underneath. Five programs occupy the **same addresses** at different
-moments —the TOPO logo, the loading screen, the BASIC ROM, the ship game and
-the second part— so the samples have to be split into windows with a clear
-reference point —the loader's jump to the game at 0xBD85, or the second
-load— getting both the start and the end of the window right.
+What actually takes care here is the window. At t=1775 — "once the load
+finishes" — the load hasn't actually finished: the program counter sits at
+0xF87E, 0xF88D, 0xF887, still inside the tape loader, across only 45
+distinct addresses. The tape's still turning, and half the memory from
+0x61D0 up is still the ship game underneath it. Five programs occupy the
+same addresses at different moments — the TOPO logo, the loading screen,
+the BASIC ROM, the ship game and the second part — so the samples have to
+be split into windows with a clear reference point — the loader's jump to
+the game at 0xBD85, or the second load — getting both the start and the
+end of the window right.
 
-**0xC865 is not a real address: it is the second byte** of the instruction
-that starts at **0xC864**, which is why a breakpoint set at 0xC865 never
-fires — breakpoints only trigger where an instruction starts. 0xC864 is
-code: the handler for the sound interpreter's 0x8C command, the one that
-calls a phrase of the music. With 208 appearances in the score it is by far
-the commonest command, so its 27,928 samples add up.
+0xC865, meanwhile, isn't a real address at all: it's the second byte of
+the instruction that starts at 0xC864, which is why a breakpoint set at
+0xC865 never fires — breakpoints only trigger where an instruction
+actually starts. 0xC864 is code: the handler for the sound interpreter's
+0x8C command, the one that calls a phrase of the music. With 208
+appearances in the score, it's by far the commonest command, so its
+27,928 samples add up just fine.
