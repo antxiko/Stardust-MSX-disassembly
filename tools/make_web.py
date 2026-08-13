@@ -25,8 +25,8 @@ TXT = {
     "es": dict(
         titulo="Stardust (1987) — desensamblado comentado",
         claim="Una cinta de cassette de 1987, desmontada bloque a bloque. Por "
-              "dentro resultó ser <b>una conversión del ZX Spectrum que se trajo "
-              "hasta el sistema de grabación</b>.",
+              "dentro es <b>una conversión del ZX Spectrum que se trajo hasta "
+              "el sistema de grabación</b>.",
         ficha=["Topo Soft · <b>1987</b>", "Conversión del <b>ZX Spectrum</b>",
                "Carga de cinta <b>multicarga</b>", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "Las cifras"), ("#findings", "Hallazgos"),
@@ -58,9 +58,9 @@ TXT = {
     ),
     "en": dict(
         titulo="Stardust (1987) — a commented disassembly",
-        claim="A 1987 cassette tape, taken apart block by block. Inside it turned "
-              "out to be <b>a ZX Spectrum conversion that brought the tape system "
-              "across with it</b>.",
+        claim="A 1987 cassette tape, taken apart block by block. Inside it is "
+              "<b>a ZX Spectrum conversion that brought the tape system across "
+              "with it</b>.",
         ficha=["Topo Soft · <b>1987</b>", "A <b>ZX Spectrum</b> conversion",
                "<b>Multiload</b> from tape", "MSX1 · <b>64K</b>"],
         nav=[("#numbers", "The numbers"), ("#findings", "What turned up"),
@@ -120,9 +120,9 @@ HALLAZGOS = {
          "primera parte llevan estructuras de 8 bytes con la rutina que los "
          "gobierna apuntada dentro, y los enemigos de la segunda viven en tablas "
          "ligeras de 5 bytes movidas por bucles fijos —cuatro andantes como "
-         "máximo, con los voladores aparte—. (Aquí estuvo publicado que la "
-         "segunda usaba «entidades de 46 bytes»: esos objetos existen, pero son "
-         "los tres canales del intérprete de sonido, no enemigos.)</p>"),
+         "máximo, con los voladores aparte—. (En la segunda sí hay objetos de "
+         "46 bytes, pero son los tres canales del intérprete de sonido, no "
+         "enemigos.)</p>"),
         ("Lo que el MSX obligó a cambiar",
          "<p>El Spectrum escribe directamente en su memoria de pantalla, que es RAM "
          "normal. En el MSX la memoria de vídeo está detrás del chip gráfico y hay "
@@ -133,8 +133,8 @@ HALLAZGOS = {
          "filas, columna a columna. Veinticuatro bytes son 192 píxeles, más estrecho "
          "que la pantalla: por eso el marco de los lados no se mueve. Y lo que sobra "
          "está a lo alto, que es por donde scrollea.</p>"
-         "<p>Los ejes estuvieron publicados <b>al revés</b>: el <code>ld b,028h</code> del "
-         "volcado se leyó como «40 columnas» y es el bucle interior, que recoge 40 "
+         "<p>Los ejes son fáciles de leer <b>al revés</b>: el <code>ld b,028h</code> del "
+         "volcado parece decir «40 columnas» y es el bucle interior, que recoge 40 "
          "bytes de una misma columna a saltos de 24. El error se propagó al ancho de "
          "los mapas de nivel. Lo caza dibujarlo: de 24 en 24 sale la tabla de récords "
          "legible; de 40 en 40, ruido.</p>"),
@@ -145,38 +145,23 @@ HALLAZGOS = {
          "<p>Las dos partes del juego llevan esa rutina, copiada y reubicada: el "
          "pintor de sprites mide 198 bytes y, emparejadas sus dos mitades como "
          "toca, las diferencias son diez direcciones reubicadas y un solo byte, "
-         "el del recorte por abajo. (Aquí estuvo publicado «de 40 bytes solo "
-         "difieren seis, tres de ellos and contra or»: comparaba la tira del "
-         "dibujo de una mitad con la de la máscara de la otra.)</p>"),
-        ("Una cobertura que era mentira, dos veces",
-         "<p>A mitad del trabajo, sembrar el trazador con rutinas sacadas del cotejo "
-         "con la versión de Spectrum subió la cobertura <b>del 25 % al 75,8 % de "
-         "golpe</b>. Parecía el hallazgo de la sesión y era contaminación: las tablas "
-         "de color, el relleno de ceros y hasta los datos de nivel aparecían marcados "
-         "como código al 100 %.</p>"
-         "<p>Se arregló declarando esas zonas como datos… y volvió a colarse, porque "
-         "las rutinas se quedaron como <b>puntos de entrada</b>. Cuarenta y una caían "
-         "dentro de los tiles y los sprites, así que el trazador seguía entrando a "
-         "desensamblar dibujos: <b>17.000 bytes de gráficos publicados como "
-         "instrucciones</b>, con la cobertura hinchada del 24,6 % al 61,6 %.</p>"
-         "<p>Nada de lo que se comprobaba podía verlo. El binario reensamblaba igual "
-         "—son los mismos bytes, solo cambia cómo se leen—, el presupuesto cerraba "
-         "igual, y la sanidad del trazado sólo miraba los rangos de un fichero donde "
-         "los gráficos no estaban. Ahora hay una comprobación para exactamente esto: "
-         "<b>ningún punto de entrada puede caer dentro de un rango declarado como "
-         "datos</b>.</p>"
-         "<p>Y luego llegó la prueba de verdad. Un aficionado, Araubi, había "
-         "grabado una partida completa de 38 minutos en el emulador. "
-         "Reproduciéndola y anotando por dónde pasa el procesador, de las "
-         "<b>1489 direcciones que el juego ejecutó, el trazador ya alcanzaba "
-         "1444</b>: la limpieza era correcta. Y las que faltaban dejaron de ser "
-         "una corazonada para pasar a ser código con su cuenta de muestras al "
-         "lado. La cobertura real del bloque es del <b>23,0 %</b>, y la de la "
-         "segunda parte es del <b>28,6 %</b>. Esa segunda cifra llegó a "
-         "publicarse como 35,0 %, y era mentira por tercera vez: una semilla "
-         "puesta en 0xCC3E caía dentro de un guion de música y hacía "
-         "desensamblar la banda sonora de la fase —1.318 de sus 1.380 "
-         "bytes— como si fuera código.</p>"),
+         "el del recorte por abajo.</p>"),
+        ("Ningún punto de entrada cae dentro de un gráfico",
+         "<p>Sembrar el trazador con rutinas mal ancladas puede hinchar la "
+         "cobertura de golpe sin que se note: el binario reensambla igual "
+         "—son los mismos bytes, solo cambia cómo se leen—, el presupuesto "
+         "cierra igual, y una comprobación de trazado que solo mire un "
+         "fichero de excepciones no lo ve. Por eso hay una comprobación para "
+         "exactamente esto: <b>ningún punto de entrada puede caer dentro de "
+         "un rango declarado como datos</b>, y corre en el gate junto al "
+         "resto de comprobaciones.</p>"
+         "<p>La otra prueba es una partida jugada de verdad. Reproduciendo "
+         "una grabación completa de 38 minutos —cortesía de Araubi— y "
+         "anotando por dónde pasa el procesador, de las <b>1489 direcciones "
+         "que el juego ejecuta, el trazador ya alcanza 1444</b>: las que "
+         "faltan se convierten en puntos de entrada, cada una con su cuenta "
+         "de muestras al lado. La cobertura real del bloque de naves es del "
+         "<b>23,0 %</b>, y la de la segunda parte, del <b>28,6 %</b>.</p>"),
     ],
     "en": [
         ("This isn't an MSX tape",
@@ -203,9 +188,8 @@ HALLAZGOS = {
          "part carry 8-byte structures with their governing routine's pointer "
          "inside, while the second part's enemies live in light 5-byte tables "
          "moved by fixed loops —four walkers at most, with the flyers kept "
-         "apart—. (This page used to report \"46-byte entities\" in the second "
-         "part: those objects exist, but they are the sound interpreter's three "
-         "channels, not enemies.)</p>"),
+         "apart—. (46-byte objects do exist in the second part, but they are "
+         "the sound interpreter's three channels, not enemies.)</p>"),
         ("What the MSX forced them to change",
          "<p>The Spectrum writes straight into its screen memory, which is ordinary "
          "RAM. On the MSX, video memory sits behind the graphics chip and has to be "
@@ -216,8 +200,8 @@ HALLAZGOS = {
          "column. Twenty-four bytes are 192 pixels, narrower than the screen: which "
          "is why the frame down the sides never moves. And the surplus is vertical, "
          "which is the way it scrolls.</p>"
-         "<p>The axes went out <b>backwards</b>: the dump's <code>ld b,028h</code> was "
-         "read as \"40 columns\" and it is the inner loop, collecting 40 bytes from a "
+         "<p>The axes are easy to read <b>backwards</b>: the dump's <code>ld b,028h</code> "
+         "looks like it says \"40 columns\" and it is the inner loop, collecting 40 bytes from a "
          "single column in steps of 24. The error spread to the width of the level "
          "maps. Drawing it catches it: 24 at a time gives a legible high-score table; "
          "40 at a time, noise.</p>"),
@@ -228,36 +212,22 @@ HALLAZGOS = {
          "<p>Both halves of the game carry that routine, copied and relocated: "
          "the sprite painter is 198 bytes, and with its two halves paired "
          "correctly the differences are ten relocated addresses and a single "
-         "byte, the bottom clip. (This page used to say \"of 40 bytes only six "
-         "differ, three of them and versus or\": that compared one half's "
-         "drawing run against the other half's mask run.)</p>"),
-        ("A coverage figure that was a lie, twice over",
-         "<p>Midway through, seeding the tracer with routines from the cross-check "
-         "against the Spectrum version pushed coverage <b>from 25% to 75.8% in one "
-         "go</b>. It looked like the find of the session and it was contamination: "
-         "colour tables, zero padding and even level data were showing up marked as "
-         "code at 100%.</p>"
-         "<p>That was fixed by declaring those zones as data… and it crept back in, "
-         "because the routines stayed on as <b>entry points</b>. Forty-one of them "
-         "landed inside the tiles and the sprites, so the tracer kept walking into "
-         "artwork: <b>17,000 bytes of graphics published as instructions</b>, with "
-         "coverage inflated from 24.6% to 61.6%.</p>"
-         "<p>Nothing being checked could see it. The binary still reassembled — same "
-         "bytes, only read differently — the budget still closed, and the trace "
-         "sanity check only looked at ranges in a file the graphics weren't in. There "
-         "is now a check for exactly this: <b>no entry point may fall inside a range "
-         "declared as data</b>.</p>"
-         "<p>Then came the real test. An enthusiast, Araubi, had recorded a "
-         "complete 38-minute playthrough in the emulator. Replaying it and "
-         "noting where the processor actually goes, of the <b>1489 addresses "
-         "the game executed the tracer already reached 1444</b>: the cleanup "
-         "was right. And the ones it missed stopped being a hunch and became "
-         "code with a sample count beside it. The block's real coverage is "
-         "<b>23.0%</b>, and the second part's is <b>28.6%</b>. That second figure "
-         "was once published as 35.0%, and it was a lie for the third time: a "
-         "seed placed at 0xCC3E landed inside a music script, and had the "
-         "stage's soundtrack —1,318 of its 1,380 bytes— disassembled as if it "
-         "were code.</p>"),
+         "byte, the bottom clip.</p>"),
+        ("No entry point falls inside a picture",
+         "<p>Seeding the tracer with badly anchored routines can inflate "
+         "coverage in one go without it showing: the binary still "
+         "reassembles — same bytes, only read differently —, the budget "
+         "still closes, and a trace sanity check that only looks at a file "
+         "of exceptions cannot see it. So there is a check for exactly "
+         "this: <b>no entry point may fall inside a range declared as "
+         "data</b>, and it runs in the gate alongside the rest.</p>"
+         "<p>The other proof is a game actually played. Replaying a "
+         "complete 38-minute recording —courtesy of Araubi— and noting "
+         "where the processor actually goes, of the <b>1489 addresses the "
+         "game executes the tracer already reaches 1444</b>: the ones it "
+         "misses become entry points, each with its sample count beside "
+         "it. The ship block's real coverage is <b>23.0%</b>, and the "
+         "second part's is <b>28.6%</b>.</p>"),
     ],
 }
 

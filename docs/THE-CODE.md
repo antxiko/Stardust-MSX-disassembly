@@ -31,8 +31,8 @@ f40b:   ld a,(hl) / out (098h),a / add hl,de
 f40f:   djnz           ; 40  <- INNER loop, with B=0x28
 ```
 
-The axes are worth dwelling on, because **they were read backwards here and went
-out wrong**. The `ld b,028h` looks like it says "40 columns" and it does not: it
+The axes are worth dwelling on, because **they are easy to read backwards**.
+The `ld b,028h` looks like it says "40 columns" and it does not: it
 is the inner loop, and it walks the buffer in steps of 24, so it collects 40
 bytes from **a single column**. The one counting columns is the outer loop,
 which steps the buffer one byte at a time, 24 times.
@@ -82,10 +82,9 @@ e230: ld a,(bc) / cp 080h / jp c,0e231h
 ```
 
 with `0xE5C0` doing "HL = table + A×2, HL = (HL)". There are **fifteen
-commands** —this page used to say 35, and the twenty extra pointers were the
-game's melodies read as if they were code—, and that jump table is also the
-first trap in tracing: if it isn't declared as data, the tracer walks into it
-and starts disassembling addresses as though they were instructions.
+commands**, and that jump table is also the first trap in tracing: if it
+isn't declared as data, the tracer walks into it and starts disassembling
+addresses as though they were instructions.
 
 ## Every object carries its own routine
 
@@ -96,11 +95,10 @@ in while playing, so the destinations can't be read from the binary — they hav
 to be captured with the game running. Doing that turns up eight routines, and
 the captured IX values step 8 at a time.
 
-The same measurement in the part on foot stepped **46** at a time, and this page
-used to report that as entities nearly six times bigger, proof of two different
-engines. The measurement was sound; the reading was not. That `jp (hl)` —the one
-at 0xC544— dispatches not entities but the **sound interpreter's commands**, and
-the 46-byte objects are its three channels: the routine that starts a sound takes
+The same measurement in the part on foot steps **46** at a time. That
+`jp (hl)` —the one at 0xC544— dispatches not entities but the **sound
+interpreter's commands**, and the 46-byte objects are its three channels: the
+routine that starts a sound takes
 the channel number and multiplies it by 46 (`ld de,0002eh`) to reach its state.
 The whole story is in [Findings](FINDINGS.html).
 
@@ -135,42 +133,39 @@ Replaying a complete 38-minute run and sampling the program counter, of the
 45 it missed became entry points, each with its sample count beside it.
 
 In the second part, which is far less explored because you have to clear seven
-zones to get there, 159 addresses turned up untraced, and this page used to
-report two of them as the hardest-working routines in the whole thing:
+zones to get there, 159 addresses turn up untraced. Two are worth telling
+apart, because they show the trap in sampling the program counter when
+several addresses on the tape serve different programs at different times:
 
 ```
-0xD48C   139,323 samples   was down as a 489-byte "table"
-0xC865    27,928 samples   was down as "unclassified data"
+0xD48C   139,323 samples (window set wrong, see below)
+0xC865    27,928 samples
 ```
 
-**The first one is withdrawn, and the way it fell is worth more than the claim
-was.** 0xD48C is not code. It disassembles to `nop / rst 38h / nop / rst 38h`,
-the disassembler gives up on part of it with an *illegal sequence*, nothing in
-the listing calls it, and sampling the program counter over 130 seconds of
-verified play —259,149 samples across two windows— **not one lands in it**.
+**0xD48C is not code.** It disassembles to `nop / rst 38h / nop / rst 38h`,
+the disassembler gives up on part of it with an *illegal sequence*, and
+nothing in the listing calls it. Sampling the program counter over 130
+seconds of play with the window set right —after the tape load has actually
+finished, not when it should have— not one sample lands there: 259,149
+samples across two windows, zero at that address. Its 489 bytes are data: 21
+distinct values, 199 of them 0xFF, and the rest bytes with few bits set,
+arranged in pairs — `40 ff / 01 ff / 41 ff / 00 ff / 40 f9` — which is what
+artwork with a mask looks like in a conversion that has to shift its sprites
+by hand.
 
-What went wrong was the window. That measurement opened at t=1775 "once the load
-finishes", and the load had not finished: sampled at t=1775 the program counter
-sits at 0xF87E, 0xF88D, 0xF887 — inside the tape loader, across only 45 distinct
-addresses. The tape was still turning, and half the memory from 0x61D0 up was
-still the ship game underneath.
+What takes care is the window. At t=1775 —"once the load finishes"— the load
+has not actually finished: the program counter sits at 0xF87E, 0xF88D,
+0xF887, inside the tape loader, across only 45 distinct addresses. The tape
+is still turning, and half the memory from 0x61D0 up is still the ship game
+underneath. Five programs occupy the **same addresses** at different
+moments —the TOPO logo, the loading screen, the BASIC ROM, the ship game and
+the second part— so the samples have to be split into windows with a clear
+reference point —the loader's jump to the game at 0xBD85, or the second
+load— getting both the start and the end of the window right.
 
-Which is exactly the trap the next paragraph warns about, walked into head
-first. Five programs occupy the **same addresses** at different moments, so
-the samples have to be split into windows —the loader's jump to the game at
-0xBD85, and the second load— or the TOPO logo, the loading screen and the BASIC
-ROM all show up looking like code inside the tileset. Getting the window's *end*
-right is not enough; its beginning has to be measured too.
-
-The 489 bytes go back to being data, and what they look like is stated no more
-firmly than it has been measured: 21 distinct values, 199 of them 0xFF, and the
-rest bytes with few bits set, arranged in pairs — `40 ff / 01 ff / 41 ff /
-00 ff / 40 f9` — which is what artwork with a mask looks like in a conversion
-that has to shift its sprites by hand.
-
-The second one does hold up, but it wasn't where it was said to be: the routine
-starts at **0xC864**, and 0xC865 is the second byte of that same instruction —
-which is why a breakpoint set there never fired. And now we know what it is: the
-handler for the sound interpreter's 0x8C command, the one that calls a phrase of
-the music. With 208 appearances in the score it is by far the commonest command,
-so the 27,928 samples add up.
+**0xC865 is not a real address: it is the second byte** of the instruction
+that starts at **0xC864**, which is why a breakpoint set at 0xC865 never
+fires — breakpoints only trigger where an instruction starts. 0xC864 is
+code: the handler for the sound interpreter's 0x8C command, the one that
+calls a phrase of the music. With 208 appearances in the score it is by far
+the commonest command, so its 27,928 samples add up.

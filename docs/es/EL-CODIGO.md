@@ -31,11 +31,11 @@ f40b:   ld a,(hl) / out (098h),a / add hl,de
 f40f:   djnz           ; 40  <- bucle INTERIOR, con B=0x28
 ```
 
-Conviene pararse en los ejes, porque **aquí se leyeron al revés y estuvo
-publicado mal**. El `ld b,028h` parece decir «40 columnas» y no lo dice: es el
-bucle interior, y recorre el buffer a saltos de 24, o sea que recoge 40 bytes de
-**una misma columna**. El que cuenta columnas es el exterior, que avanza el
-buffer de uno en uno 24 veces.
+Conviene pararse en los ejes, porque **son fáciles de leer al revés**. El
+`ld b,028h` parece decir «40 columnas» y no lo dice: es el bucle interior, y
+recorre el buffer a saltos de 24, o sea que recoge 40 bytes de **una misma
+columna**. El que cuenta columnas es el exterior, que avanza el buffer de uno
+en uno 24 veces.
 
 Se comprueba dibujándolo: partiendo el buffer de 24 en 24 sale la tabla de
 récords legible, con su tramado; de 40 en 40 sale ruido. Y cuadra con lo que se
@@ -81,11 +81,10 @@ e230: ld a,(bc) / cp 080h / jp c,0e231h
       sub 080h / ld hl,0e7a3h / call 0e5c0h / jp (hl)
 ```
 
-con `0xE5C0` haciendo «HL = tabla + A×2, HL = (HL)». Son **quince comandos**
-—aquí estuvo publicado 35, y los veinte punteros de más eran las melodías del
-juego leídas como si fueran código—, y esa tabla de saltos es también la
-primera trampa del trazado: si no se declara como datos, el trazador se mete
-dentro y empieza a desensamblar direcciones como si fueran instrucciones.
+con `0xE5C0` haciendo «HL = tabla + A×2, HL = (HL)». Son **quince comandos**, y
+esa tabla de saltos es también la primera trampa del trazado: si no se
+declara como datos, el trazador se mete dentro y empieza a desensamblar
+direcciones como si fueran instrucciones.
 
 ## Cada objeto lleva su rutina
 
@@ -96,10 +95,9 @@ y se rellenan jugando, así que los destinos no se pueden leer del binario: hay
 que capturarlos con el juego en marcha. Haciéndolo salen ocho rutinas, y los IX
 capturados van de 8 en 8.
 
-La misma medida en la parte de a pie daba pasos de **46**, y aquí estuvo
-publicado que eran entidades casi seis veces mayores, prueba de dos motores
-distintos. La medida era buena; la lectura, no. Ese `jp (hl)` —el de 0xC544— no
-despacha entidades sino los **comandos del intérprete de sonido**, y los objetos
+La misma medida en la parte de a pie da pasos de **46**. Ese `jp (hl)` —el de
+0xC544— no despacha entidades: despacha los **comandos del intérprete de
+sonido**, y los objetos
 de 46 bytes son sus tres canales: la rutina que arranca un sonido recibe el
 número de canal y lo multiplica por 46 (`ld de,0002eh`) para llegar a su estado.
 Está contado entero en [Hallazgos](HALLAZGOS.html).
@@ -137,42 +135,41 @@ alcanzaba 1444**. Las 45 que se le escapaban pasaron a ser puntos de entrada,
 cada una con su cuenta de muestras al lado.
 
 En la segunda parte, mucho menos explorada porque hay que superar siete zonas
-para llegar a ella, salieron 159 direcciones sin trazar, y esta página llegó a
-publicar dos de ellas como las rutinas que más trabajan de todo el juego:
+para llegar a ella, hay 159 direcciones sin trazar. Dos merecen contarse
+aparte, porque enseñan la trampa de muestrear el contador de programa cuando
+varias direcciones de la cinta sirven a programas distintos según el momento:
 
 ```
-0xD48C   139.323 muestras   figuraba como "tabla" de 489 bytes
-0xC865    27.928 muestras   figuraba como "datos sin clasificar"
+0xD48C   139.323 muestras (ventana mal puesta, ver abajo)
+0xC865    27.928 muestras
 ```
 
-**La primera está retirada, y cómo se cayó vale más que lo que afirmaba.**
-0xD48C no es código. Se desensambla a `nop / rst 38h / nop / rst 38h`, el
-desensamblador se rinde en un tramo con un *illegal sequence*, no lo llama nadie
-en el listado, y muestreando el contador de programa en 130 segundos de partida
-comprobada —259.149 muestras en dos ventanas— **no cae ni una ahí**.
+**0xD48C no es código.** Se desensambla a `nop / rst 38h / nop / rst 38h`, el
+desensamblador se rinde en un tramo con un *illegal sequence*, y no lo llama
+nadie en el listado. Muestreando el contador de programa en 130 segundos de
+partida con la ventana bien puesta —después de que la carga de cinta termine
+de verdad, no cuando debería haber terminado— no cae ni una muestra ahí: son
+259.149 muestras en dos ventanas, cero en esa dirección. Sus 489 bytes son
+datos: 21 valores distintos, 199 de ellos 0xFF, y el resto bytes con pocos
+bits puestos, colocados por parejas —`40 ff / 01 ff / 41 ff / 00 ff / 40 f9`—,
+la pinta que tiene un dibujo con máscara en una conversión que desplaza sus
+sprites a mano.
 
-Lo que falló fue la ventana. Aquella medida se abrió en t=1775, «cuando termina
-la carga», y la carga no había terminado: muestreado en t=1775 el contador de
-programa está en 0xF87E, 0xF88D, 0xF887 —dentro del cargador de cinta, y sólo en
-45 direcciones distintas—. La cinta seguía girando, y media memoria desde 0x61D0
-hacia arriba era todavía el juego de naves de debajo.
+Lo que exige cuidado es la ventana. En t=1775 —«cuando termina la carga»— la
+carga no ha terminado de verdad: el contador de programa está en 0xF87E,
+0xF88D, 0xF887, dentro del cargador de cinta, y sólo en 45 direcciones
+distintas. La cinta sigue girando, y media memoria desde 0x61D0 hacia arriba
+es todavía el juego de naves de debajo. Cinco programas ocupan las **mismas
+direcciones** en momentos distintos —el logo de TOPO, la pantalla de carga,
+la ROM del BASIC, el juego de naves y la segunda parte—, así que las muestras
+hay que partirlas en ventanas con un punto de referencia claro —el salto del
+cargador al juego en 0xBD85, o la segunda carga— y acertar tanto el principio
+de la ventana como el final.
 
-Que es justo la trampa contra la que avisa el párrafo siguiente, pisada de
-cabeza. Cinco programas ocupan las **mismas direcciones** en momentos distintos,
-así que las muestras hay que partirlas en ventanas —el salto del cargador al
-juego en 0xBD85, y la segunda carga— o el logo de TOPO, la pantalla de carga y
-la ROM del BASIC acaban pareciendo código dentro de la tilería. Y no basta con
-acertar el *final* de la ventana: el principio también hay que medirlo.
-
-Los 489 bytes vuelven a ser datos, y de lo que parecen no se dice más de lo que
-se ha medido: 21 valores distintos, 199 de ellos 0xFF, y el resto bytes con
-pocos bits puestos, colocados por parejas —`40 ff / 01 ff / 41 ff / 00 ff /
-40 f9`—, que es la pinta que tiene un dibujo con máscara en una conversión que
-desplaza sus sprites a mano.
-
-La segunda sí aguanta, pero no estaba donde se dijo: la rutina empieza en
-**0xC864** y 0xC865 es el segundo byte de esa misma instrucción, que es por lo
-que un breakpoint puesto allí no saltaba nunca. Y hoy se sabe qué es: el
-manejador del comando 0x8C del intérprete de sonido, el que llama a una frase de
-la música. Con 208 apariciones en la partitura, es con diferencia el comando más
-frecuente, así que las 27.928 muestras cuadran.
+**0xC865 no es una dirección real: es el segundo byte** de la instrucción que
+empieza en **0xC864**, y por eso un breakpoint puesto en 0xC865 no salta
+nunca —los puntos de interrupción sólo disparan donde empieza la
+instrucción—. 0xC864 sí es código: el manejador del comando 0x8C del
+intérprete de sonido, el que llama a una frase de la música. Con 208
+apariciones en la partitura es con diferencia el comando más frecuente, así
+que sus 27.928 muestras cuadran.

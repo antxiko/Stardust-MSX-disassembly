@@ -64,21 +64,26 @@ ejecuta de verdad, y el presupuesto de bytes se suma sobre los bloques de la
 cinta y no sobre el mapa de memoria: si se sumara sobre la memoria, los bytes
 que se pisan se contarían mal.
 
+Esto no es un tecnicismo: una dirección sin un instante al lado no significa
+nada aquí, porque varios programas comparten las mismas direcciones en
+momentos distintos. Muestreando el contador de programa de una partida real
+salen 122 direcciones con pinta de código ejecutándose dentro de la tilería
+que no lo son: 66 son del logo de TOPO, 9 de la pantalla de carga, y 56 caen
+por debajo de 0x8000, que es la ROM del BASIC hasta que el cargador mapea RAM
+encima.
+
 ## Cuánto se trajo del Spectrum
 
-Aquí hubo un cuadro de porcentajes que hubo que retirar, porque la herramienta
-que los calculaba estaba rota: localizaba cada sección del otro binario por sus
-primeros 32 bytes y se quedaba con la **primera** coincidencia, sin exigir que
-fuera única ni que el desplazamiento encajara con el del resto. Como las dos
-versiones comparten el dibujo, esas agujas caían dentro de la tilería.
+La herramienta de cotejo (`tools/coteja_spectrum.py`) **alinea los dos
+binarios enteros**: indexa las ventanas del binario de Spectrum, cuenta qué
+desplazamientos aparecen una y otra vez, y con los dominantes extrae las
+rachas máximas de bytes idénticos. Cada tramo que da por común trae su
+prueba: dónde empieza en cada binario, cuánto mide y con qué desplazamiento.
+Buscar cada sección por sus primeros 32 bytes y quedarse con la primera
+coincidencia no vale: como las dos versiones comparten el dibujo, esas agujas
+caen dentro de la tilería.
 
-Reescrita, la herramienta ya no busca sección por sección: **alinea los dos
-binarios enteros**. Indexa las ventanas del binario de Spectrum, cuenta qué
-desplazamientos aparecen una y otra vez, y con los dominantes extrae las rachas
-máximas de bytes idénticos. Cada tramo que se da por común trae su prueba: dónde
-empieza en cada binario, cuánto mide y con qué desplazamiento.
-
-Y lo que sale reformula la idea que uno se hace de esta conversión:
+Lo que sale reformula la idea que uno se hace de esta conversión:
 
 ```
 25.015 bytes idénticos al Spectrum      53,6 % del bloque
@@ -86,7 +91,7 @@ Y lo que sale reformula la idea que uno se hace de esta conversión:
    de esos, DATOS:   24.934 bytes       99,7 %
 ```
 
-**El código no se compartió.** Se trajeron el dibujo y los datos byte a byte
+**El código no se comparte.** Se trajeron el dibujo y los datos byte a byte
 —y en la misma dirección, con desplazamiento cero: los gráficos ocupan
 0x6037–0xA55F y 0xA561–0xBD84 en las dos máquinas— y el código se reescribió.
 Los dos únicos tramos de código que coinciden, de 55 y 24 bytes, son tiras
@@ -99,9 +104,9 @@ Arévalo, los mismos del original.
 
 De los nombres del fichero de control del Spectrum, **20 de 138** quedan
 respaldados por bytes idénticos. Entre ellos los datos de las siete zonas, la
-geometría de los tiles —«111 tiles at 4x32 bytes per tile», que es exactamente
-la que habíamos medido aquí— y el mensaje `DEMO`, justo donde lo habíamos
-encontrado buscando la cadena.
+geometría de los tiles —«111 tiles at 4x32 bytes per tile», que coincide
+exactamente con la medida de este proyecto— y el mensaje `DEMO`, en la misma
+cadena.
 
 De la **parte de a pie** el cotejo no puede decir nada, y no por la herramienta:
 los autores del desensamblado de Spectrum avisan en su README de que *«the

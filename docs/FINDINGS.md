@@ -211,13 +211,10 @@ own loader, the ship survived sixteen minutes straight.
 
 #### And the first one jumps into a routine the game ships and never calls
 
-This page used to say that patch "turns a conditional jump into an
-unconditional one, skipping a check". That was false, and the line right above
-it said so: the new displacement is `EC`, that is **−20**. The jump doesn't go
-forward skipping anything, it goes **backwards**, to 0xC070 − 20 = **0xC05C**.
+The patch's displacement is `EC`, that is **−20**: the jump doesn't skip
+anything by going forward, it goes **backwards**, to 0xC070 − 20 = **0xC05C**.
 
-And at 0xC05C there were, until now, seven bytes declared "filler or
-remainder". They are not:
+At 0xC05C there are seven bytes, and they are not filler:
 
     c05c:  ld a,003h        ; the shield
     c05e:  ld (0c188h),a    ; back to three
@@ -280,18 +277,16 @@ bytes out of 29,861, in thirty short runs, and they are the variables the second
 part had already written by the time the dump was taken —among them the three
 46-byte sound-channel states at 0xD068, 0xD096 and 0xD0C4.
 
-This used to be written down here as an open contradiction, because a
-breakpoint on 0xF7F6 never fired while replaying a recorded playthrough. The
-explanation turned out to be mundane: that recording *begins* at the instant the
-loader is already running —its first frame has the program counter at 0xF849,
-inside the routine— so a breakpoint on the entry point has nothing left to
-catch. The 0xF89F sitting on the stack could only have been put there by the
-`push hl` at 0xF7F9.
+Replaying a recorded playthrough, a breakpoint on 0xF7F6 never fires: the
+recording *begins* at the instant the loader is already running —its first
+frame has the program counter at 0xF849, inside the routine— so the entry
+point has nothing left to catch. The 0xF89F sitting on the stack is put there
+by the `push hl` at 0xF7F9.
 
 ### Why the second part loads exactly at 0x61D0
 
-The load address of the on-foot stage's block looked arbitrary until the font
-turned up. That stage's two text printers —the one for the DEMO sign and the
+The load address of the on-foot stage's block is not arbitrary: the font
+fixes it. That stage's two text printers —the one for the DEMO sign and the
 menu, which paints double-height through the checkerboard, and the frame one,
 which writes straight to video memory— use the same ASCII font, indexed as
 `0x5F00 + code×8`. The font is left in place by the ship block, and the
@@ -301,6 +296,23 @@ The arithmetic closes on its own: the last character the font needs is `Y`
 (code 89), and 0x5F00 + 90×8 = **0x61D0 exactly**. The second part's block
 loads at the first free byte after the `Y` glyph: not one byte earlier, so as
 not to eat the inherited font.
+
+### Where the second part starts executing
+
+0x61D0 is only where the block is *loaded*. The program starts executing at
+**0xA279**, and the loader itself takes it there, as soon as the tape load
+succeeds:
+
+```
+f7b0: ld a,001h / ld (0a529h),a
+f7b5: jp 0a279h            <- the second part starts here
+```
+
+0xA279 disassembles to a textbook program start: it disables interrupts, sets
+up its own stack with `ld sp,05b32h`, programs the graphics chip and writes
+`JP 0xC46E` into 0xFD9F, which is **H.TIMI, the MSX interrupt hook**. That
+same address, 0xC46E, is identified separately from the shape of its
+epilogue: two independent routes agreeing.
 
 ## Two engines, one shared library
 
@@ -336,10 +348,8 @@ The foot part doesn't treat its enemies that way: they live in tables of
 turret's two shots at 0xAD04— and carry no routine pointer: fixed loops move
 them, one per species.
 
-This page used to say "the IX values go up in 46s: entities almost six times
-bigger", from mistaking what its `jp (hl)` at 0xC544 dispatches for the enemies.
-The measurement was good, the reading wasn't. And now we also know what they
-really are: **the sound interpreter's three channels**.
+What the `jp (hl)` at 0xC544 dispatches isn't enemies: it is **the sound
+interpreter's three channels**.
 
 The code says so, in the simplest way: the routine that starts a sound takes a
 channel number, **multiplies it by 46** and adds a base to reach that channel's
@@ -360,19 +370,15 @@ machine with no hardware sprites: the image is shifted bit by bit with an
 unrolled run of `adc hl,hl`, a hole is opened with AND, and it is painted with
 OR.
 
-(This page used to say that "comparing 40 bytes of the sprite routine of one
-part against the other, only six differ, and three of those are `and (hl)`
-against `or (hl)`". The measurement was right and the pairing was not: it was
-comparing the **pattern** run of one half against the **mask** run of the other,
-which are not twins but the two halves of the same routine. Paired properly the
-result is **26 bytes identical out of 28**, and the only difference is one
-jump's operand.)
+Paired properly —the **pattern** run of one half against the **pattern** run
+of the other, not against the **mask** run, which is the other half of the
+same routine— the result is **26 bytes identical out of 28**, and the only
+difference is one jump's operand.
 
 #### And it isn't just the sprites: they share a whole library
 
-That last paragraph fell short. Looking at the rest of the service routines, it
-turns out **they don't merely resemble each other: they are the same routines,
-copied and relocated**. Five are identical byte for byte:
+The rest of the service routines **don't merely resemble each other: they are
+the same routines, copied and relocated**. Five are identical byte for byte:
 
     buffer_dir      0xC541 / 0xAACD   18 of 18 bytes
     solapa_eje      0xCD7A / 0xAEC2   12 of 12
@@ -390,12 +396,6 @@ twenty-first is **a single loose byte**, the bottom clipping limit, `0x50` in
 the ship stage and `0x4F` in the on-foot one. Out of the whole routine, that is
 the only thing that really changes. The glyph painter, 144 bytes, gives the same
 shape: 13 differences, six addresses and that same byte again.
-
-(This was published as "eleven of its 74 bytes differ". Those 74 were the
-**first** 74: the routine is 198. Measured whole, the conclusion doesn't just
-survive, it gets stronger, because the ten extra bytes are five more addresses.
-But the figure was wrong, and it spoke of "the whole routine" having looked at a
-third of it.)
 
 In `borra_buffer` the four differences are that the `di` sits before the
 `ld hl,0 / add hl,sp` in one part and after it in the other. In the random
@@ -460,29 +460,28 @@ for byte except for one jump's destination:
     mask    16 bits   0xC590 / 0xAB1C   18 of 20
     pattern 16 bits   0xC5B5 / 0xAB41   18 of 20
 
-#### Six bytes that were counted as filler
+#### The glyph painter's ladder starts six bytes before its declared range
 
 In the lettering painter the patch arithmetic is `n·2 + 4` instead of
 `(n−1)·3 + 7`, because its rungs are two bytes and its shortcut six (it is the
 same formula written differently: `n·2 + 4` is `(n−1)·2 + 6`). Written that way
 it says where the run begins: with n=1 the jump goes to 0xC5B5 + 6 = **0xC5BB**.
 
-At 0xC5BB there was no run: there was a range declared "filler or remainder".
-The run was recorded as starting at 0xC5C1 —its fourth rung— and the six bytes
-in front of it, `ed 6a` three times, were orphaned. With them, the ladder has the
+At 0xC5BB there is a run, not filler: the six bytes in front of its fourth
+rung, `ed 6a` three times, are the ladder starting, and with them it has the
 same seven rungs as the other three.
 
-The interesting part is **why it had gone unseen**, because the measurement was
-not at fault: the program-counter dump had those three rungs at 40, 155 and 226
-samples, more than plenty of addresses that had been declared. The data was
-there. What was missing was **anybody crossing the measurements against the
-ranges declared as data**: the guard that exists crosses data zones against the
-*trace*, and the tracer didn't reach there either.
+Seeing it takes crossing two things no tool crosses on its own: the
+program-counter dump, which carries those three rungs at 40, 155 and 226
+samples —more than plenty of already-declared addresses—, and the ranges
+declared as data. The guard that exists crosses data zones against the
+*trace*, and the tracer doesn't reach this ladder; the cross-check has to be
+done by hand.
 
-Doing that cross-check by hand turned up two more ranges, and both were code:
-the seven bytes where the magazine's POKE lands —told above— and eight more at
-0xE03D which turned out to be an object behaviour, installed as a pointer from
-two places in the block itself. Fifteen bytes sitting in the wrong column.
+That cross-check turns up two more ranges, and both are code: the seven bytes
+where the magazine's POKE lands —told above— and eight more at 0xE03D, an
+object behaviour installed as a pointer from two places in the block itself.
+Fifteen bytes in the wrong column.
 
 ## The craft of drawing on an MSX
 
@@ -556,9 +555,9 @@ value.
 
 #### And there is a third opcode, which is an impossible jump
 
-This page used to say there were two opcodes. There are **three**, and the
-missing one is the cleverest of them. The instruction right before the patched
-jump is an `and a`, which **clears the carry by definition**:
+The background is painted with **three** opcodes, not two, and the third is
+the cleverest of them. The instruction right before the patched jump is an
+`and a`, which **clears the carry by definition**:
 
     a98a: and a                <- carry is 0, always
     a98b: ld b,(iy+004h)
@@ -573,14 +572,10 @@ One routine writes it, and reaching that routine takes three things at once:
 the scroll at the very top (row 0x47), **all six targets destroyed**, and the
 player positioned between 0x50 and 0x5F. That is, the end of the stage.
 
-And that explains why the 4712-pass measurement never saw that value,
-without either statement ceasing to be true: **that measurement's window
-stopped short of the stage's ending**, so those three conditions were never
-met inside it. The third opcode's only use in the whole game is the closing
-travelling shot, and it has been watched executing: it is told in
+The 4712-pass measurement over the bulk of the game never sees that third
+value because those three conditions aren't met until the very end: the third
+opcode's only use in the whole game is the closing travelling shot, told in
 [How the game ends](#how-the-game-ends-and-a-pointer-table-that-was-coordinates).
-The measurement was sound; what fell short was concluding that only two values
-were possible.
 
 ### The same lettering, sharp or see-through
 
@@ -917,13 +912,10 @@ The arithmetic closes to the byte. The highest value in the map is 44, and
 seen reading when the video port was measured: the pool is 45 tiles, no more,
 no less.
 
-The tiles are **32×32 pixels** (128 bytes: 4 per row, 32 rows), and that
-corrects a published figure: this page used to say the cells were 32×16 and
-the tower 1248 pixels tall. The cell height had been **derived, not measured**
-—another inherited figure, like the buffer axes— and three independent routes
-disprove it: the 128-byte tile, `consulta_mapa` dividing Y by 32, and the fine
-scroll, which takes sixteen 2-pixel steps between one row and the next. The
-tower is **192×2496 pixels**, twice as tall as published.
+The tiles are **32×32 pixels** (128 bytes: 4 per row, 32 rows), and with that
+the whole tower measures **192×2496 pixels**. Three independent routes confirm
+it: the 128-byte tile, `consulta_mapa` dividing Y by 32, and the fine scroll,
+which takes sixteen 2-pixel steps between one row and the next.
 
 With the map and the pool, the whole tower can be drawn — it is in
 [The game](THE-GAME.html#zone-8-the-on-foot-tower), next to the other seven
@@ -939,15 +931,15 @@ later, `(row 56, fine 2)`. Every step on firm ground also saves a
 **checkpoint** (position in 0xA6E9, camera in 0xC466/67), which is where death
 sends you back to.
 
-### The player's death was somewhere else
+### The player's death
 
-The player dies stepping into the void, and the routine that seemed to explain
-it —a "fine" variant of the map query, with sub-cell logic— turned out **not
-to be his**. That variant (0xB1BE) answers whether a position falls *well
-centred* inside an empty cell, and only the **flying enemies** use it, to
-decide which hole in the wall to nest in. Measured over the whole recorded
-game: 2934 passes through it, and the return address on the stack was **always
-the same caller**, the flyers' loop. Not once the player.
+The player dies stepping into the void. The query that decides it isn't the
+"fine" variant of the map check, with sub-cell logic: that one (0xB1BE)
+answers whether a position falls *well centred* inside an empty cell, and only
+the **flying enemies** use it, to decide which hole in the wall to nest in —
+measured over the whole recorded game: 2934 passes through it, and the return
+address on the stack always the same caller, the flyers' loop, not once the
+player.
 
 The player is in no object table: he lives in two bytes (0xA6EB, with Y pinned
 at 0x68: moving up or down doesn't move him, it moves the world) and has **his
@@ -978,10 +970,10 @@ the counter spent, game over; otherwise the **respawn** returns you to the
 last position stepped on firm ground, with the checkpoint camera, the shield
 back at three and the enemy tables emptied.
 
-That "two" has a catch, and this page used to say "three": there are **two
-initialisations**, and the second one wins. The menu leaves a three in the
-counter (0xA30B), but the start of play overwrites it with a two (0xA3CB,
-`ld a,002h`). That is why the first death of any game finds the counter at two.
+That "two" has a catch: there are **two initialisations**, and the second one
+wins. The menu leaves a three in the counter (0xA30B), but the start of play
+overwrites it with a two (0xA3CB, `ld a,002h`). That is why the first death of
+any game finds the counter at two.
 
 #### The dying state: no timer, just a slow loop
 
@@ -1011,9 +1003,9 @@ program pass through the happy-ending routine, not through running out of
 lives.
 
 **And the life counter never went down, because that game was played with a
-cheat.** This page used to say it climbed from two to six because the player was
-earning lives faster than he lost them. He lost none. The trainer patches **one
-single byte**, the operand of the `sub 001h` right behind the funnel:
+cheat**: it doesn't climb from two to six by earning lives faster than losing
+them, it climbs because none are lost. The trainer patches **one single
+byte**, the operand of the `sub 001h` right behind the funnel:
 
     a528:  D6 01     sub 001h      <- what the tape carries
     a528:  D6 00     sub 000h      <- what the recorded game had
@@ -1030,9 +1022,6 @@ first time that jump has been seen taken.** With a detail thrown in: the
 subtraction is stored *before* the jump, so the life counter is left holding
 **255**. There is no clamp and no check, and it doesn't matter, because there is
 no coming back from there.
-
-(This page used to say "twenty deaths, 19 by contact", from measuring a time
-window that stopped before the end of the game.)
 
 But the recording holds **another 44 deaths that aren't the player's**: they
 belong to the **attract-mode demo**, which runs exactly the same game code and
@@ -1128,13 +1117,11 @@ has **fifteen entries**, 0x80 to 0x8E, and dies there: the limit is set by the
 interpreter itself, whose call command reads the music's phrases from 0xE7C1,
 which is 0xE7A3 + 15×2.
 
-This page used to say there were **35** opcodes, and that these scripts
-governed the enemies, and both were readings too far. Right behind the fifteen
-command pointers come another twenty that look like the same table continuing
-and are **another table**: the music's phrases. Counted as a single table of
-35, they sent the disassembler off to read the game's melodies as if they were
-routines — twenty published "routines" that did not exist. How that was
-undone, figures and all, is in [Open questions](OPEN-QUESTIONS.html).
+Right behind the fifteen command pointers come another twenty that look like
+the same table continuing and are **another table**: the music's phrases.
+Read as if they were a single table of 35 entries, those twenty pointers send
+the disassembler off to read the game's melodies as if they were routines.
+Told with figures in [Open questions](OPEN-QUESTIONS.html).
 
 That table is also the first trap in tracing: left undeclared as data, the
 tracer walks in and disassembles addresses as though they were instructions.
@@ -1155,12 +1142,10 @@ order, below is a note— and each one can be read off its routine:
     0x86  tempo to 1       0x8D  return
                            0x8E  transpose
 
-**Thirteen used to be listed here.** The missing ones were 0x84 and 0x8E,
-which were precisely the two nobody knew what they did: the count said fifteen
-and the table showed thirteen. Both have been settled by reading their
-routines.
+Thirteen of the fifteen read off their own routine at a glance. The other
+two —0x84 and 0x8E— take settling:
 
-The **0x8E** wasn't storing "a byte" anywhere: it is the voice's **transpose**.
+The **0x8E** doesn't store "a byte" anywhere: it is the voice's **transpose**.
 It writes its argument into a three-byte table, one per channel, and the note
 reader adds it to the note number before going to look up the period:
 
@@ -1189,7 +1174,7 @@ Not one opens a block or lands where nothing is sounding, and five chained
 behind another 0x84 is just what you would expect from something that
 prolongs: they stack up to lengthen further.
 
-It also turned out that **duration is multiplied by the tempo, and the tempo is
+And there is more: **duration is multiplied by the tempo, and the tempo is
 a division**: the duration command leaves `argument × tempo` in the counter, and
 the tempo command computes `6000 / (argument × 8)` using a 16-bit division
 routine that was sitting right next to it, unnamed. So the score's durations
@@ -1220,9 +1205,8 @@ loop back and keep playing.
 
 #### The music is one piece, in three voices
 
-This page used to say there were "two long songs, of 378 and 149 bytes", and
-the split was wrong. The routine that starts the music installs **three scripts
-at once, one per channel**:
+The routine that starts the music installs **three scripts at once, one per
+channel**, not two separate songs:
 
     channel 0   0xEB52   248 bytes, and repeats when done
     channel 1   0xEC4A   129 bytes, and repeats when done
@@ -1278,10 +1262,10 @@ terminator.
 The note table, incidentally, checks itself: with the MSX sound chip's clock the
 first period yields **32.70 Hz, theoretical C1**, and of the 84 pairs twelve
 positions apart, 76 come out at a ratio of 2.00 within one per cent —the
-definition of an octave. The eight that miss are the highest, where the period is
-already a two-digit integer and rounding shows. Eight full octaves, C1 to B8.
-(This used to say "a ratio of exactly 2", which was overstating it: on the exact
-ratio the count drops to 43 of 84, because the period is a whole number.)
+definition of an octave. On the exact ratio the count drops to 43 of 84,
+because the period is a whole number; the eight that miss even the 1% margin
+are the highest, where the period is already a two-digit integer and rounding
+shows. Eight full octaves, C1 to B8.
 
 There is no table ordering them. Every place in the game that wants a sound
 carries the address written out in full, and there are **44 such calls** spread
@@ -1387,31 +1371,21 @@ started in four minutes of play, **150 go to channel 2** —55%— which is why 
 music leaves it empty. But 63 go to channel 1 and 58 to channel 0, landing on top
 of the music. It isn't reserved; it is just the busiest.
 
-### What this page used to say about the music, and why it doesn't
+### The 754 bytes at 0xAB0E are artwork, not shared music
 
-It used to claim here that the music tables had been carried across whole, with
-754 bytes identical to the ZX Spectrum version's at 0xAB0E. **That is
-withdrawn.**
+0xAB0E falls inside the range this project declares as sprites
+(0xA560–0xBA20), and read with the sound interpreter's grammar those 754
+bytes don't hold up as a score: 306 of them are values above 0x7F that **do
+not exist as commands** in a language whose orders run from 0x80 to 0x8E. Run
+the same count over 754 bytes of the real music area and it returns seven.
+Whatever those bytes are —and the sprite range says artwork— they are not a
+score.
 
-The match came from the same cross-check tool whose search turned out to be
-unsound, and 0xAB0E falls inside the range this project declares as sprites
-(0xA560–0xBA20). So the "finding" amounted to locating artwork where code was
-being looked for, which is exactly the fault that contaminated the whole trace.
-
-**And now it can be shut for good, from a second direction.** With the sound
-language decoded, the bytes at 0xAB0E can simply be read as if they were music,
-and they aren't: 306 of those 754 bytes are values above 0x7F that **do not exist
-as commands** in a language whose orders run from 0x80 to 0x8E. Run the same
-count over 754 bytes of the real music area and it returns seven. Whatever those
-bytes are —and the sprite range says artwork— they are not a score.
-
-The question the retraction left hanging —do the two halves share their sound?—
-does have an answer now, and it came from the binary rather than from a
-cross-check: the on-foot half carries **the entire sound subsystem of the ship
-game, relocated**. The note table is the same 192 bytes to the byte, the routine
-that blits the registers to the chip is the same eighteen bytes, and all twenty
-phrase pointers sit at a constant offset. So yes, they share it —just not in the
-place, or for the reason, that the withdrawn claim said.
+What the two halves do share, straight from the binary, is **the entire
+sound subsystem of the ship game, relocated**. The note table is the same 192
+bytes to the byte, the routine that blits the registers to the chip is the
+same eighteen instructions, and all twenty phrase pointers sit at a constant
+offset.
 
 ## The ending
 
@@ -1420,8 +1394,8 @@ happening.
 
 ### How the game ends, and a pointer table that was coordinates
 
-Pulling on the thread of the third opcode brings up the sequence Stardust ends
-with, which sat in the stretch given as unexplored. Three things in a row.
+The sequence Stardust ends with is three things in a row, chained from the
+third background opcode.
 
 **A tracking shot that accelerates.** The camera rises one cell row sixteen
 times, repainting each time, and then enters a loop that moves it *A* times per
@@ -1449,11 +1423,10 @@ bottom. **The row always decreases, without a single exception across the 78
 steps**, and the column drifts left until the last step is (0, 0). Something
 that lifts off from the centre, climbs, and recedes out of the corner.
 
-And that list **was published as a "pointer table into the graphics"**. The trap
-is understandable: read as little-endian words, the pairs give 0x78BA, 0x78B8,
-0x78B6… which is literally "words descending by two", and since they land inside
-the graphics range they looked like they pointed there. What descended by two
-wasn't a sorted table: it was a drawing climbing up the screen.
+That list is easy to misread: as little-endian words, the pairs give 0x78BA,
+0x78B8, 0x78B6… "words descending by two" that land inside the graphics range
+and look like they point there. They point at nothing: what descends by two
+is a drawing climbing up the screen.
 
 And it can be looked at, which is the check that counts in this project:
 drawing those 720 bytes with the geometry the copy routine states —40 rows of
@@ -1476,12 +1449,10 @@ Three stretches flush against each other without a byte to spare, and with that
 three "tables" that had been classified by their entropy disappear: they were
 pieces of the same script, cut in the wrong places.
 
-#### And what was read here has now been watched
+#### The sequence, watched happening
 
-All of the above came out of the listing, and this page used to say the sequence
-had **never been seen to happen**, because the recorded playthrough didn't get
-that far. It did. Putting a breakpoint on every routine in the chain and
-replaying the game, all five turn up with their timestamps:
+Putting a breakpoint on every routine in the chain and replaying the recorded
+game, the whole sequence turns up, with its timestamps:
 
     t=3060.95   the end-of-stage gate: scroll at the top, all six targets
                 destroyed and the player in the middle band
@@ -1491,10 +1462,9 @@ replaying the game, all five turn up with their timestamps:
     t=3107.67   the 200 particles, initialised
     t=3113.31   the explosion, 110 passes
 
-And that takes another claim down with it: that the background's third opcode
-—the one that paints every cell in a single pass— had never been seen used. It
-is used right here, in the tracking shot, and that is its only use in the whole
-game.
+The background's third opcode —the one that paints every cell in a single
+pass— is used right here, in the tracking shot, and that is its only use in
+the whole game.
 
 ![The tracking shot: the tower repainted in one pass, ship lifting off](imagenes/final_travelling.png)
 

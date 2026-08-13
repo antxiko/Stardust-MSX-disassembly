@@ -73,9 +73,9 @@ copia-pega. Un 0xFF acaba el nivel.
 Al expandirlos, las siete zonas dan **exactamente 450 bytes**. Que siete flujos
 distintos caigan en el mismo tamaño es la señal de que el descompresor lee bien.
 Y 450 = 6 × 75: el ancho no se elige, sale de que el buffer de pantalla mide 24
-caracteres de ancho y cada tile mide cuatro. (Esto estuvo publicado como 10 × 45
-por leer al revés los ejes del buffer; con el ancho bueno los mapas salen
-simétricos y con las estructuras enteras.)
+caracteres de ancho y cada tile mide cuatro —los ejes del buffer son fáciles de
+leer al revés, y con el ancho bueno los mapas salen simétricos y con las
+estructuras enteras—.
 
 Cada byte es un índice de tile, y van de 0 a 110 cuando hay exactamente 111
 tiles. La zona 7 usa el 110, el último. Otra comprobación que sale sola.

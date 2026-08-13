@@ -1,8 +1,8 @@
 # Stardust (Topo Soft, 1987, MSX) — a commented disassembly
 
 A 1987 cassette tape, taken apart block by block. All **93,861 bytes** on it are
-bounded and owned — and inside it turned out to be **a ZX Spectrum conversion
-that brought the tape system across with it**.
+bounded and owned, and inside it is **a ZX Spectrum conversion that brought
+the tape system across with it**.
 
 ✅ **The disassembly is finished**: every byte on the tape has an owner, all
 five blocks reassemble byte for byte, and the listing's **335 routines** are
@@ -55,11 +55,11 @@ explanation. It exists because reproducibility cannot see misinterpretation — 
 graphics were marked as code, the bytes would still come out identical and only
 the listing would lie.
 
-That danger isn't theoretical here: **it happened**. At one point coverage
-jumped from 25% to 75.8% in one go and looked like a triumph. It was
-contamination — the tracer had wandered into the colour tables and the level
-data — and what caught it was having data zones identified by other means to
-check against. It's written up on the how-it-was-done page.
+And that danger is real, not theoretical: `tools/check_datos_como_codigo.py`
+crosses every declared data zone against what the tracer believes, precisely
+because contamination like that can inflate coverage from 25% to 75.8% in one
+go — the tracer wandered into the colour tables and the level data — and
+look like a triumph. It's written up on the how-it-was-done page.
 
 And **17 tests**, dedicated to checking that what the documentation says is what
 the game does.

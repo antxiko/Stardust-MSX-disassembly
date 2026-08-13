@@ -64,26 +64,22 @@ really runs, and the byte budget is summed over the tape's blocks rather than
 over the memory map: summing over memory would count the bytes that overlap
 wrongly.
 
-This is not a technicality. It is the trap this disassembly fell into more than
-once — an address without an instant attached to it means nothing here. Sampling
-the program counter of a real playthrough, 122 addresses looked like code
-executing inside the tileset, and not one of them was: 66 belonged to the TOPO
-logo, 9 to the loading screen, and 56 were below 0x8000, which is the BASIC ROM
-until the loader maps RAM over it.
+This is not a technicality: an address without an instant attached to it means
+nothing here, because several programs share the same addresses at different
+moments. Sampling the program counter of a real playthrough turns up 122
+addresses that look like code executing inside the tileset and are not: 66
+belong to the TOPO logo, 9 to the loading screen, and 56 sit below 0x8000,
+which is the BASIC ROM until the loader maps RAM over it.
 
 ## How much came across from the Spectrum
 
-There was a table of percentages here that had to be withdrawn, because the tool
-producing them was unsound: it located each section of the other binary by its
-first 32 bytes and kept the **first** match, without requiring that match to be
-unique or the resulting offset to agree with the rest. Since both versions share
-the artwork, those needles landed inside the tileset.
-
-Rewritten, the tool no longer searches section by section: it **aligns the two
-binaries whole**. It indexes the windows of the Spectrum binary, counts which
-offsets keep coming up, and from the dominant ones extracts the maximal runs of
-identical bytes. Every stretch it calls shared comes with its evidence: where it
-starts in each binary, how long it is, and at what offset.
+The cross-check tool (`tools/coteja_spectrum.py`) **aligns the two binaries
+whole**: it indexes the windows of the Spectrum binary, counts which offsets
+keep coming up, and from the dominant ones extracts the maximal runs of
+identical bytes. Every stretch it calls shared comes with its evidence: where
+it starts in each binary, how long it is, and at what offset. Locating each
+section by its first 32 bytes and keeping the first match doesn't work: since
+both versions share the artwork, those needles land inside the tileset.
 
 And what comes out reframes how you picture this conversion:
 
@@ -93,7 +89,7 @@ And what comes out reframes how you picture this conversion:
    of those, DATA:   24,934 bytes           99.7%
 ```
 
-**The code was not shared.** The artwork and the data were carried across byte
+**The code is not shared.** The artwork and the data were carried across byte
 for byte —and to the same address, at offset zero: the graphics occupy
 0x6037–0xA55F and 0xA561–0xBD84 on both machines— and the code was rewritten.
 The only two stretches of code that do match, 55 and 24 bytes, are unrolled runs
@@ -106,8 +102,8 @@ original.
 
 Of the names in the Spectrum control file, **20 out of 138** are backed by
 identical bytes. Among them the data for the seven zones, the tile geometry
-—"111 tiles at 4x32 bytes per tile", exactly what had been measured here— and
-the `DEMO` message, right where it had been found by searching for the string.
+—"111 tiles at 4x32 bytes per tile", exactly matching this project's own
+measurement— and the `DEMO` message, in the same string.
 
 About the **on-foot part** the cross-check can say nothing, and not because of
 the tool: the authors of the Spectrum disassembly warn in their README that "the

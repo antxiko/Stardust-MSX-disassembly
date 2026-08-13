@@ -210,13 +210,10 @@ cargador del juego, la nave aguantó dieciséis minutos seguidos sin morir.
 
 #### Y el primero salta a una rutina que el juego trae de fábrica y no usa
 
-Aquí estuvo escrito que ese parche «convierte un salto condicional en
-incondicional, saltándose una comprobación». Era falso, y el propio renglón de
-arriba lo desmentía: el desplazamiento nuevo es `EC`, o sea **−20**. El salto no
-va hacia delante saltándose nada, **va hacia atrás**, a 0xC070 − 20 = **0xC05C**.
+El desplazamiento del parche es `EC`, o sea **−20**: el salto no se salta nada
+por delante, **va hacia atrás**, a 0xC070 − 20 = **0xC05C**.
 
-Y en 0xC05C había, hasta ahora, siete bytes declarados como «relleno o resto».
-No lo son:
+En 0xC05C hay siete bytes, y no son relleno:
 
     c05c:  ld a,003h        ; el escudo
     c05e:  ld (0c188h),a    ; a tres
@@ -280,18 +277,16 @@ Lo que queda en memoria después coincide con el bloque de la cinta al **99,78 %
 parte ya había escrito cuando se hizo el volcado —entre ellas los tres estados
 de canal de sonido, de 46 bytes, en 0xD068, 0xD096 y 0xD0C4.
 
-Esto figuró aquí una temporada como contradicción abierta, porque al reproducir
-una partida grabada un punto de interrupción en 0xF7F6 no saltaba nunca. La
-explicación resultó ser de lo más prosaica: esa grabación *empieza* con el
-cargador ya en marcha —su primer fotograma tiene el contador de programa en
-0xF849, dentro de la rutina—, así que un punto de interrupción en la entrada ya
-no tiene nada que cazar. El 0xF89F que había en la pila solo puede haberlo
-puesto el `push hl` de 0xF7F9.
+Reproduciendo una partida grabada, un punto de interrupción en 0xF7F6 no salta
+nunca: la grabación *empieza* con el cargador ya en marcha —su primer fotograma
+tiene el contador de programa en 0xF849, dentro de la rutina—, así que la
+entrada ya no tiene nada que cazar. El 0xF89F que hay en la pila lo pone el
+`push hl` de 0xF7F9.
 
 ### Por qué la segunda parte carga justo en 0x61D0
 
-La dirección de carga del bloque de la fase de a pie parecía arbitraria hasta
-que salió la fuente. Los dos rotuladores de esa fase —el del rótulo DEMO y el
+La dirección de carga del bloque de la fase de a pie no es arbitraria: la fija
+la fuente de letras. Los dos rotuladores de esa fase —el del rótulo DEMO y el
 menú, que pinta a doble altura con el damero, y el del marco, que escribe
 directo a la memoria de vídeo— usan la misma fuente ASCII, indexada como
 `0x5F00 + código×8`. La fuente la deja cargada el bloque de naves, y la fase de
@@ -301,6 +296,23 @@ La cuenta cierra sola: el último carácter que la fuente necesita es la `Y`
 (código 89), y 0x5F00 + 90×8 = **0x61D0 exacto**. El bloque de la segunda parte
 carga en el primer byte libre después del glifo de la `Y`: ni un byte antes,
 para no comerse la fuente heredada.
+
+### Dónde empieza a ejecutarse la segunda parte
+
+0x61D0 es solo donde el bloque se *carga*. El programa empieza a ejecutarse en
+**0xA279**, y hasta ahí lleva el propio cargador, en cuanto la carga de cinta
+termina bien:
+
+```
+f7b0: ld a,001h / ld (0a529h),a
+f7b5: jp 0a279h            <- aquí empieza la segunda parte
+```
+
+0xA279 es un arranque de programa de manual: corta las interrupciones, se
+monta su propia pila con `ld sp,05b32h`, programa el chip gráfico y escribe
+`JP 0xC46E` en 0xFD9F, que es **H.TIMI, el gancho de interrupción del MSX**.
+Esa misma dirección, 0xC46E, se identifica por separado por la forma de su
+epílogo: dos caminos independientes que dan lo mismo.
 
 ## Dos motores, una misma biblioteca
 
@@ -336,10 +348,8 @@ objeto** —los andantes en 0xACE4, cuatro como máximo; los voladores en 0xACF9
 los dos tiros de la torreta en 0xAD04— y no llevan rutina apuntada, los mueven
 bucles fijos, uno por especie.
 
-Aquí estuvo publicado "los IX van de 46 en 46: entidades casi seis veces
-mayores", por tomar por enemigos lo que despacha el `jp (hl)` de 0xC544. La
-medida era buena y la lectura no. Y ahora, además, se sabe qué son de verdad:
-**los tres canales del intérprete de sonido**.
+Lo que despacha el `jp (hl)` de 0xC544 no son enemigos: son **los tres canales
+del intérprete de sonido**.
 
 Lo dice el propio código, y de la forma más simple: la rutina que arranca un
 sonido recibe el número de canal, lo **multiplica por 46** y le suma una base
@@ -360,18 +370,15 @@ Lo que sí comparten es el oficio de dibujar. Es la técnica del Spectrum, que n
 tiene sprites por hardware: se desplaza el dibujo bit a bit con una tira
 desenrollada de `adc hl,hl`, se abre hueco con AND y se pinta con OR.
 
-(Aquí estuvo publicado que «comparando 40 bytes de la rutina de sprites de una
-parte con la de la otra solo difieren seis, y tres de ellos son `and (hl)`
-contra `or (hl)`». La medida era buena y el emparejamiento no: comparaba la tira
-del **dibujo** de una mitad con la de la **máscara** de la otra, que no son
-gemelas sino las dos mitades de la misma rutina. Emparejadas como toca salen
-**26 bytes iguales de 28**, y la única diferencia es el operando de un salto.)
+Emparejando la tira del **dibujo** de una mitad con la de la **misma tira** de
+la otra —no con la de la **máscara**, que es la otra mitad de la misma
+rutina— salen **26 bytes iguales de 28**, y la única diferencia es el operando
+de un salto.
 
 #### Y no son solo los sprites: comparten una biblioteca entera
 
-Eso de arriba se quedó corto. Mirando el resto de rutinas de servicio aparece
-que **no es que se parezcan: son las mismas rutinas, copiadas y reubicadas**.
-Cinco son idénticas byte a byte:
+El resto de rutinas de servicio **no es que se parezcan: son las mismas
+rutinas, copiadas y reubicadas**. Cinco son idénticas byte a byte:
 
     buffer_dir      0xC541 / 0xAACD   18 de 18 bytes
     solapa_eje      0xCD7A / 0xAEC2   12 de 12
@@ -389,12 +396,6 @@ y el veintiuno es **un byte suelto**, el del recorte por abajo, `0x50` en la
 fase de naves y `0x4F` en la de a pie. De toda la rutina, eso es lo único que
 cambia de verdad. El rotulador, 144 bytes, da lo mismo: 13 diferencias, seis
 direcciones y otra vez ese byte.
-
-(Esto estuvo publicado como «de sus 74 bytes difieren once». Los 74 eran los 74
-**primeros**: la rutina son 198. Medida entera, la conclusión no sólo aguanta,
-sale reforzada, porque los diez bytes que aparecen de más son cinco direcciones
-más. Pero la cifra estaba mal y hablaba de «toda la rutina» habiendo mirado un
-tercio.)
 
 En `borra_buffer` las cuatro diferencias son que el `di` está antes del
 `ld hl,0 / add hl,sp` en una parte y después en la otra. En el generador de
@@ -460,30 +461,27 @@ byte salvo el destino de un salto:
     máscara 16 bits   0xC590 / 0xAB1C   18 de 20
     dibujo  16 bits   0xC5B5 / 0xAB41   18 de 20
 
-#### Seis bytes que estaban contados como relleno
+#### La escalera del rotulador empieza seis bytes antes de lo declarado
 
 En el rotulador la cuenta del parche es `n·2 + 4` en vez de `(n−1)·3 + 7`,
 porque sus peldaños son de dos bytes y su atajo de seis (es la misma fórmula
 escrita de otra manera: `n·2 + 4` es `(n−1)·2 + 6`). Y escrita así dice dónde
 empieza la tira: con n=1 el salto va a 0xC5B5 + 6 = **0xC5BB**.
 
-En 0xC5BB no había una tira: había un rango declarado como «relleno o resto».
-La tira figuraba empezando en 0xC5C1 —su cuarto peldaño— y los seis bytes de
-delante, `ed 6a` tres veces, estaban huérfanos. Con ellos, la escalera tiene los
+En 0xC5BB hay una tira, no relleno: los seis bytes de delante de su cuarto
+peldaño, `ed 6a` tres veces, son la escalera empezando, y con ellos tiene los
 mismos siete peldaños que las otras tres.
 
-Lo interesante es **por qué no se había visto**, porque no fue culpa de la
-medición: el volcado del contador de programa traía esos tres peldaños con 40,
-155 y 226 muestras, más que muchas direcciones que sí se habían declarado. El
-dato estaba. Lo que no había era **nadie cruzando las medidas con los rangos
-declarados como datos**: el guardián que existe cruza las zonas de datos contra
-el *trazado*, y el trazador tampoco llegaba ahí.
+Verlo exige cruzar dos cosas que ninguna herramienta cruza sola: el volcado
+del contador de programa, que trae esos tres peldaños con 40, 155 y 226
+muestras —más que muchas direcciones ya declaradas—, y los rangos declarados
+como datos. El guardián que hay cruza las zonas de datos contra el *trazado*,
+y el trazador no llega a esta escalera; hace falta el cruce a mano.
 
-Hecho ese cruce a mano aparecieron otros dos rangos, y los dos eran código: los
-siete bytes donde aterriza el POKE de la revista —contados arriba— y ocho bytes
-más en 0xE03D que resultaron ser un comportamiento de objeto, instalado como
-puntero desde dos sitios del propio bloque. Quince bytes que estaban en la
-columna equivocada.
+Ese cruce saca dos rangos más, y los dos son código: los siete bytes donde
+aterriza el POKE de la revista —contados arriba— y ocho bytes más en 0xE03D,
+un comportamiento de objeto instalado como puntero desde dos sitios del
+propio bloque. Quince bytes en la columna que no tocaba.
 
 ## El oficio de dibujar en un MSX
 
@@ -506,16 +504,16 @@ el código (las tres llamadas de 0xF3DC, contiguas y cerrando al byte) y lo
 confirma el emulador, donde esa rutina hizo **3.252.480 escrituras** con el
 puntero recorriendo exactamente 0x4000-0x4EFF.
 
-**Los ejes estuvieron publicados al revés**, y merece contarse porque el error
-se propagó. El `ld b,028h` del volcado se leyó como «40 columnas», pero es el
-bucle interior y recorre el buffer a saltos de 24: recoge 40 bytes de una misma
-columna. Quien cuenta columnas es el exterior, `ld c,018h`, que avanza de uno en
-uno 24 veces.
+**Los ejes son fáciles de leer al revés**, y el error se propaga si se hace: el
+`ld b,028h` del volcado parece decir «40 columnas», pero es el bucle interior y
+recorre el buffer a saltos de 24, o sea que recoge 40 bytes de una misma
+columna. Quien cuenta columnas es el exterior, `ld c,018h`, que avanza de uno
+en uno 24 veces.
 
-Lo caza dibujarlo: de 24 en 24 sale la tabla de récords legible; de 40 en 40,
-ruido. Y encaja con lo que se ve jugando, que es de donde salió la duda: 24
-bytes son 192 píxeles, más estrecho que la pantalla —por eso el marco de los
-lados no se mueve—, y lo que sobra está a lo alto, que es por donde scrollea.
+Lo confirma dibujarlo: de 24 en 24 sale la tabla de récords legible; de 40 en
+40, ruido. Y encaja con lo que se ve jugando: 24 bytes son 192 píxeles, más
+estrecho que la pantalla —por eso el marco de los lados no se mueve—, y lo que
+sobra está a lo alto, que es por donde scrollea.
 
 ### Un solo plano, y por qué parece que hay dos
 
@@ -555,9 +553,9 @@ cada opcode, ni un cuadro con otro valor.
 
 #### Y hay un tercer opcode, que es un salto imposible
 
-Aquí estuvo publicado que los opcodes eran dos. Son **tres**, y el que faltaba
-es el más listo de los tres. La instrucción de justo antes del salto parcheado
-es un `and a`, que **pone el carry a cero por definición**:
+El fondo se pinta con **tres** opcodes, no dos, y el tercero es el más listo de
+los tres. La instrucción de justo antes del salto parcheado es un `and a`, que
+**pone el carry a cero por definición**:
 
     a98a: and a                <- el carry queda a 0, siempre
     a98b: ld b,(iy+004h)
@@ -573,14 +571,10 @@ la vez: el scroll arriba del todo (fila 0x47), **los seis objetivos
 destruidos** y el jugador colocado entre 0x50 y 0x5F. O sea el remate de la
 fase.
 
-Y eso explica por qué la medida de los 4712 pases no vio nunca ese valor,
-sin que ninguna de las dos cosas deje de ser cierta: **la ventana de aquella
-medida se quedaba antes del remate de la fase**, así que esas tres condiciones
-no se cumplían ni una vez dentro de ella. El único uso del tercer opcode en
-toda la partida es el travelling del final, y se ha visto ejecutarse: está
-contado en [Cómo termina el juego](#como-termina-el-juego-y-una-tabla-de-punteros-que-eran-coordenadas).
-La medida era buena; lo que se quedaba corto era la conclusión de que solo
-hubiera dos valores posibles.
+La medida de 4712 pases sobre el grueso de la partida no ve nunca ese tercer
+valor porque esas tres condiciones no se cumplen hasta el final: el único uso
+del tercer opcode en toda la partida es el travelling del remate, contado en
+[Cómo termina el juego](#como-termina-el-juego-y-una-tabla-de-punteros-que-eran-coordenadas).
 
 ### La misma letra, nítida o transparente
 
@@ -641,18 +635,16 @@ En la cinta esos operandos son `00 00`, así que el listado en frío enseña dos
 rutina de la BIOS que no pinta nada—. En marcha son siempre las mismas dos
 direcciones, en el orden que decida un `ex de,hl`.
 
-Conviene mirarlo dos veces antes de dar algo por huérfano: esas dos rutinas
-figuraban como «no las llama nadie», y es verdad que ningún `call` las nombra,
-pero sus direcciones **sí** están escritas en el binario, una sola vez cada una,
-como operandos de un `ld`.
+Conviene mirarlo dos veces antes de dar algo por huérfano: ningún `call` nombra
+esas dos rutinas, pero sus direcciones **sí** están escritas en el binario, una
+sola vez cada una, como operandos de un `ld`.
 
-Y tirando de ahí apareció un descuadre en lo publicado. **Los textos de los
-créditos no son 429 bytes, son 234.** El rango declarado empezaba 192 bytes
-antes de tiempo y se comía **la tabla de fotogramas del logo**: 96 pares (fila de
-la cima, altura) que describen el rebote —la altura crece de 1 a 16, el logo baja
-hasta la fila 186 aplastándose, y vuelve— con un `0xFF` cerrando la lista. Dónde
-empieza el texto de verdad lo dice el propio código, y el binario lo confirma:
-antes del `CONVERSION POR` hay pares crecientes que no son texto ni lo parecen.
+**Los textos de los créditos no son 429 bytes, son 234.** Delante de ellos va
+**la tabla de fotogramas del logo**: 96 pares (fila de la cima, altura) que
+describen el rebote —la altura crece de 1 a 16, el logo baja hasta la fila 186
+aplastándose, y vuelve— con un `0xFF` cerrando la lista. Dónde empieza el texto
+de verdad lo dice el propio código, y el binario lo confirma: antes del
+`CONVERSION POR` hay pares crecientes que no son texto ni lo parecen.
 
 ### Los créditos pasan con un scroll que no mueve el dibujo
 
@@ -915,13 +907,10 @@ Las cuentas cierran al byte. El valor más alto del mapa es 44, y 0x87F3 +
 45×128 − 1 = **0x9E72, exactamente el último byte** que se había visto leer al
 blitter midiendo el puerto de vídeo: el pozo son 45 tiles justos.
 
-Los tiles son de **32×32 píxeles** (128 bytes: 4 por fila, 32 filas), y eso
-corrige un dato publicado: aquí decía que las celdas eran de 32×16 y la torre
-de 1248 píxeles de alto. El alto de celda estaba **derivado, no medido** —otra
-cifra heredada, como la de los ejes del buffer— y lo desmienten tres caminos
+Los tiles son de **32×32 píxeles** (128 bytes: 4 por fila, 32 filas), y con
+eso la torre entera mide **192×2496 píxeles**. Lo confirman tres caminos
 independientes: el tile de 128 bytes, la división entre 32 de `consulta_mapa`,
-y el scroll fino, que da dieciséis pasos de 2 píxeles entre fila y fila. La
-torre es de **192×2496 píxeles**, el doble de alta de lo publicado.
+y el scroll fino, que da dieciséis pasos de 2 píxeles entre fila y fila.
 
 Con el mapa y el pozo, la torre se dibuja entera — está en
 [El juego](EL-JUEGO.html#la-zona-8-la-torre-de-a-pie), junto a los mapas de
@@ -938,15 +927,14 @@ paso siguiente `(fila 56, fino 2)`. Cada paso sobre suelo firme guarda además
 un **checkpoint** (posición en 0xA6E9, cámara en 0xC466/67), que es adonde te
 devuelve la muerte.
 
-### La muerte del jugador estaba en otra parte
+### La muerte del jugador
 
-El jugador muere al pisar el vacío, y la rutina que parecía explicarlo —una
-variante «fina» de la consulta del mapa, con lógica de sub-celda— resultó **no
-ser suya**. Esa variante (0xB1BE) responde si una posición cae *bien centrada*
-dentro de una celda vacía, y la usan solo los **enemigos voladores** para
-decidir en qué hueco del muro anidar. Se midió sobre la partida entera: 2934
-pasadas por ella, y el retorno apilado fue **siempre el mismo llamador**, el
-bucle de los voladores. Ni una vez el jugador.
+El jugador muere al pisar el vacío. La consulta que lo decide no es la
+variante «fina» del mapa, con lógica de sub-celda: esa (0xB1BE) responde si
+una posición cae *bien centrada* dentro de una celda vacía, y la usan solo los
+**enemigos voladores** para decidir en qué hueco del muro anidar —medido sobre
+la partida entera: 2934 pasadas por ella, y el retorno apilado siempre el
+mismo llamador, el bucle de los voladores, ni una vez el jugador.
 
 El jugador no está en ninguna tabla de objetos: vive en dos bytes (0xA6EB, con
 la Y clavada en 0x68: subir y bajar no le mueve a él, mueve el mundo) y tiene
@@ -976,11 +964,10 @@ con el contador agotado, game over; si quedan, el **respawn** te devuelve a la
 última posición pisada en firme con la cámara del checkpoint, el escudo a
 tres y las tablas de enemigos vaciadas.
 
-Lo de las dos vidas tiene truco, y aquí estuvo publicado "tres": hay **dos
-inicializaciones**, y la que manda es la segunda. El menú deja un tres en el
-contador (0xA30B), pero el arranque de la partida lo pisa con un dos (0xA3CB,
-`ld a,002h`). Por eso la primera muerte de cualquier partida encuentra el
-contador a dos.
+Lo de las dos vidas tiene truco: hay **dos inicializaciones**, y la que manda
+es la segunda. El menú deja un tres en el contador (0xA30B), pero el arranque
+de la partida lo pisa con un dos (0xA3CB, `ld a,002h`). Por eso la primera
+muerte de cualquier partida encuentra el contador a dos.
 
 #### El estado de agonía: no hay temporizador, hay un bucle lento
 
@@ -1008,10 +995,10 @@ descuento y el mismo respawn. La partida va del segundo 2.464 al 3.124 —once
 minutos— y **acaba pasándose el juego**: el emulador ve pasar el programa por
 la rutina del final feliz, no por la de quedarse sin vidas.
 
-**Y el contador de vidas nunca bajó, porque esa partida se jugó con truco.** Se
-publicó aquí que subía de dos a seis porque el jugador ganaba vidas más deprisa
-de lo que las perdía, y no: no perdió ninguna. El trainer parchea **un solo
-byte**, el operando del `sub 001h` que hay justo detrás del embudo:
+**Y el contador de vidas nunca bajó, porque esa partida se jugó con truco**: no
+sube de dos a seis por ganar vidas más deprisa de lo que se pierden, sino
+porque no se pierde ninguna. El trainer parchea **un solo byte**, el operando
+del `sub 001h` que hay justo detrás del embudo:
 
     a528:  D6 01     sub 001h      <- lo que trae la cinta
     a528:  D6 00     sub 000h      <- lo que tenía la partida grabada
@@ -1026,9 +1013,6 @@ sexta salta el acarreo: el `jp c` se toma y el juego se acaba. **Es la primera
 vez que se ve tomar ese salto.** Con un detalle de propina: la resta se guarda
 *antes* del salto, así que el contador de vidas se queda en **255**. No hay tope
 ni comprobación, y da igual, porque de ahí no se vuelve.
-
-(Aquí estuvo publicado "veinte muertes, 19 por contacto", por medir una
-ventana de tiempo que se cortaba antes del final de la partida.)
 
 Pero la cinta grabada contiene **otras 44 muertes que no son del jugador**: son
 de la **demo de atracción**, que ejecuta exactamente el mismo código de juego
@@ -1122,13 +1106,12 @@ y `0xE5C0` es exactamente «HL = tabla + A×2, HL = (HL)». La tabla de saltos d
 fija el propio intérprete, cuyo comando de llamada lee las frases de la música
 desde 0xE7C1, que es 0xE7A3 + 15×2.
 
-Aquí estuvo publicado que los opcodes eran **35** y que estos guiones
-gobernaban a los enemigos, y las dos cosas eran lecturas de más. Detrás de los
-quince punteros de comando vienen pegados otros veinte que parecen continuar
-la tabla y son **otra tabla**: la de las frases de la música. Contados como
-una sola de 35, mandaron al desensamblador a leer las melodías del juego como
-si fueran rutinas — veinte «rutinas» publicadas que no existían. Cómo se
-deshizo, con sus cifras, está en [Preguntas abiertas](PREGUNTAS-ABIERTAS.html).
+Detrás de los quince punteros de comando vienen pegados otros veinte que
+parecen continuar la tabla y son **otra tabla**: la de las frases de la
+música. Leídos como si fueran una sola tabla de 35 entradas, esos veinte
+punteros llevan al desensamblador a leer las melodías del juego como si
+fueran rutinas. Contado con sus cifras en
+[Preguntas abiertas](PREGUNTAS-ABIERTAS.html).
 
 Esa tabla es también la primera trampa del trazado: si no se declara como
 datos, el trazador se mete dentro y desensambla direcciones como si fueran
@@ -1150,11 +1133,10 @@ orden, por debajo es una nota—, y cada uno se lee de su rutina:
     0x86  tempo a 1        0x8D  vuelve
                            0x8E  transposición
 
-**Aquí estuvieron listados trece.** Faltaban el 0x84 y el 0x8E, que eran
-justamente los dos que no se sabía qué hacían; la cuenta decía quince y la
-tabla enseñaba trece. Los dos se han resuelto leyendo sus rutinas:
+Trece de los quince se leen de un vistazo en su propia rutina. Los otros
+dos —el 0x84 y el 0x8E— hace falta resolverlos:
 
-El **0x8E** no guardaba «un byte» en ninguna parte: es la **transposición** de
+El **0x8E** no guarda «un byte» en ninguna parte: es la **transposición** de
 la voz. Escribe su argumento en una tabla de tres bytes, uno por canal, y el
 lector de notas lo suma al número de nota antes de ir a buscar el periodo:
 
@@ -1183,7 +1165,7 @@ Ni uno abre bloque ni cae donde no hay nada sonando, y cinco encadenados
 detrás de otro 0x84 es justo lo que se espera de algo que prolonga: se apilan
 para alargar más.
 
-También salió que **la duración se multiplica por el tempo, y el tempo es una
+Y algo más: **la duración se multiplica por el tempo, y el tempo es una
 división**: el comando de duración deja `argumento × tempo` en el contador, y
 el de tempo calcula `6000 / (argumento × 8)` con una rutina de división de 16
 bits que estaba ahí al lado sin nombre. Así que las duraciones de la partitura
@@ -1215,9 +1197,8 @@ la vuelta y siguen sonando en bucle.
 
 #### La música es una sola, a tres voces
 
-Aquí estuvo publicado que había "dos canciones largas, de 378 y 149 bytes", y
-estaba mal partido. La rutina que arranca la música instala **tres guiones de
-golpe, uno por canal**:
+La rutina que arranca la música instala **tres guiones de golpe, uno por
+canal**, no dos canciones sueltas:
 
     canal 0   0xEB52   248 bytes, y al acabar repite
     canal 1   0xEC4A   129 bytes, y al acabar repite
@@ -1251,12 +1232,12 @@ diecisiete de las veinte frases.
 
 Hay además un bloque de 149 bytes, justo detrás de la tercera voz: cincuenta y
 seis llamadas a sólo **dos** frases, y la que repite veinticuatro veces seguidas
-no tiene ni una nota, o sea que es percusión por el canal de ruido. Aquí figuró
-como "la otra canción", y hay que rebajarlo: **no es una de las tres voces** —la
-tercera empieza un byte antes, y es un terminador—, y quién lo hace sonar sigue
-sin localizarse. Queda como un bloque escrito en el lenguaje del intérprete y sin
-dueño conocido —y lo de «sin dueño» ya es una medida y no un encogimiento de
-hombros—. El valor 0xECCC **no aparece ni una sola vez** en los tres bloques de
+no tiene ni una nota, o sea que es percusión por el canal de ruido. **No es una
+de las tres voces** —la tercera empieza un byte antes, y es un terminador—, y
+quién lo hace sonar sigue sin localizarse. Queda como un bloque escrito en el
+lenguaje del intérprete y sin dueño conocido —y lo de «sin dueño» ya es una
+medida y no un encogimiento de hombros—. El valor 0xECCC **no aparece ni una
+sola vez** en los tres bloques de
 la cinta. El control dice que la búsqueda vale: 0xECCB aparece exactamente una
 vez, en 0xE181, que es justo la instrucción que se lo entrega al canal 2, y sus
 vecinos 0xED61 y 0xED6B también aparecen, cargados desde 0xF4FE y 0xF506.
@@ -1272,10 +1253,10 @@ conversión la apagara dejando el puntero un byte corto, encima del terminador.
 La tabla de notas, de paso, se comprueba sola: con el reloj del chip de sonido
 del MSX, el primer periodo da **32,70 Hz, que es el do1 teórico**, y de los 84
 pares separados doce posiciones, 76 dan razón 2,00 con un margen del uno por
-ciento —la definición de octava—. Los ocho que fallan son los más agudos, donde
-el periodo ya es un entero de dos cifras y el redondeo se nota. Ocho octavas
-justas, de do1 a si8. (Aquí decía "razón exactamente 2" y era pasarse: con la
-razón exacta la cuenta baja a 43 de 84, porque el periodo es un número entero.)
+ciento —la definición de octava—. Con la razón exacta la cuenta baja a 43 de
+84, porque el periodo es un número entero; los ocho que fallan del todo son
+los más agudos, donde el periodo ya vale dos cifras y el redondeo se nota.
+Ocho octavas justas, de do1 a si8.
 
 No hay ninguna tabla que los ordene. Cada sitio del juego que quiere sonar algo
 lleva la dirección escrita a pelo, y hay **44 de esas llamadas** repartidas por
@@ -1384,31 +1365,21 @@ lanzados en cuatro minutos de partida, **150 van al canal 2** —el 55 %—, que
 justo por lo que la música lo deja vacío. Pero 63 van al canal 1 y 58 al 0,
 pisando la música. No está reservado; es que es el más concurrido.
 
-### Lo que decía aquí sobre la música, y por qué ya no
+### Los 754 bytes de 0xAB0E son dibujo, no música compartida
 
-Aquí se afirmaba que las tablas de música se habían portado enteras, con 754
-bytes idénticos a los de la versión de Spectrum en 0xAB0E. **Se retira.**
-
-Esa coincidencia la daba la misma herramienta de cotejo cuya búsqueda resultó
-estar mal, y 0xAB0E cae dentro del rango que este proyecto declara como sprites
-(0xA560-0xBA20). O sea que el «hallazgo» consistía en encontrar dibujo donde se
-buscaba código, que es exactamente el fallo que contaminó el trazado entero.
-
-**Y ahora se puede cerrar del todo, por una segunda vía.** Con el lenguaje del
-sonido ya descifrado, los bytes de 0xAB0E se pueden leer como si fueran música,
-y no lo son: 306 de esos 754 bytes son valores por encima de 0x7F que **no
-existen como comandos** en un lenguaje cuyas órdenes van de 0x80 a 0x8E. Haciendo
-la misma cuenta sobre 754 bytes de la zona de música de verdad salen siete. Sean
-lo que sean esos bytes —y el rango de sprites dice que dibujo—, no son una
+0xAB0E cae dentro del rango que este proyecto declara como sprites
+(0xA560-0xBA20), y leídos con la gramática del intérprete de sonido esos 754
+bytes no cuadran como partitura: 306 de ellos son valores por encima de 0x7F
+que **no existen como comandos** en un lenguaje cuyas órdenes van de 0x80 a
+0x8E. Sobre 754 bytes de música de verdad esa misma cuenta da siete. Sean lo
+que sean esos bytes —y el rango de sprites dice que dibujo—, no son una
 partitura.
 
-La pregunta que la retirada dejaba en el aire —si las dos partes comparten el
-sonido— sí tiene respuesta ahora, y ha salido del binario y no de un cotejo: la
-parte de a pie se lleva **el subsistema de sonido entero del juego de naves,
-reubicado**. La tabla de notas son los mismos 192 bytes clavados, la rutina que
-vuelca los registros al chip son los mismos dieciocho, y los veinte punteros de
-frase están todos a un desplazamiento constante. Así que sí lo comparten, pero ni
-en el sitio ni por el motivo que decía la afirmación retirada.
+Lo que sí comparten las dos partes, y se lee directo del binario, es **el
+subsistema de sonido entero del juego de naves, reubicado**. La tabla de
+notas son los mismos 192 bytes clavados, la rutina que vuelca los registros al
+chip son las mismas dieciocho instrucciones, y los veinte punteros de frase
+están todos a un desplazamiento constante.
 
 ## El final
 
@@ -1417,8 +1388,8 @@ ocurrir.
 
 ### Cómo termina el juego, y una tabla de punteros que eran coordenadas
 
-Tirando del hilo del tercer opcode aparece la secuencia con la que Stardust
-acaba, que estaba en el tramo dado por no explorado. Son tres cosas seguidas.
+La secuencia con la que Stardust acaba son tres cosas seguidas, encadenadas
+desde el tercer opcode del fondo.
 
 **Un travelling que acelera.** La cámara sube una fila de celda dieciséis
 veces, repintando cada vez, y después entra en un bucle que la desplaza *A*
@@ -1447,12 +1418,10 @@ abajo del todo. **La fila baja siempre, sin una sola excepción en los 78
 pasos**, y la columna se va hacia la izquierda hasta que el último paso es
 (0, 0). Algo que despega del centro, sube y se aleja por la esquina.
 
-Y esa lista **estuvo publicada como una «tabla de punteros a los gráficos»**.
-Se entiende el engaño: leídas como palabras little-endian, las parejas dan
-0x78BA, 0x78B8, 0x78B6… que es literalmente «palabras descendiendo de dos en
-dos», y como caen dentro del rango de los gráficos parecían apuntar ahí. Lo
-que descendía de dos en dos no era una tabla ordenada: era el dibujo subiendo
-por la pantalla.
+Esa lista es fácil de leer mal: leídas como palabras little-endian, las
+parejas dan 0x78BA, 0x78B8, 0x78B6… «palabras descendiendo de dos en dos» que
+caen dentro del rango de los gráficos y parecen apuntar ahí. No apuntan a
+nada: lo que desciende de dos en dos es el dibujo subiendo por la pantalla.
 
 Y se puede mirar, que es la comprobación que vale en este proyecto: dibujando
 esos 720 bytes con la geometría que dice la rutina de copia —40 filas de 18
@@ -1475,12 +1444,10 @@ sprites de la fase. Tres tramos pegados sin un byte de holgura, y con eso
 desaparecen de la clasificación tres «tablas» que se habían medido por su
 entropía: eran trozos del mismo guion, cortados por donde no era.
 
-#### Y esto, que estaba leído, ahora está visto
+#### La secuencia, vista ocurrir
 
-Todo lo anterior salió del listado, y aquí llegó a estar publicado que la
-secuencia **no se había visto ocurrir**, porque la partida grabada no llegaba
-hasta ahí. Sí llegaba. Poniendo un punto de interrupción en cada rutina de la
-cadena y reproduciendo la partida, salen las cinco con su hora:
+Poniendo un punto de interrupción en cada rutina de la cadena y reproduciendo
+la partida grabada, la secuencia entera se ve ocurrir, con su hora:
 
     t=3060,95   la puerta del remate: scroll arriba del todo, los seis
                 objetivos muertos y el jugador en la franja central
@@ -1490,10 +1457,8 @@ cadena y reproduciendo la partida, salen las cinco con su hora:
     t=3107,67   las 200 partículas, inicializadas
     t=3113,31   la explosión, 110 pasadas
 
-Y con eso cae de paso otra afirmación que estaba en las notas: que el tercer
-opcode del fondo —el que pinta todas las celdas de una pasada— nunca se había
-visto usar. Se usa aquí, en el travelling, y es su único uso en toda la
-partida.
+El tercer opcode del fondo —el que pinta todas las celdas de una pasada— se
+usa aquí, en el travelling, y es su único uso en toda la partida.
 
 ![El travelling: la torre repintada de una pasada, con la nave despegando](../imagenes/final_travelling.png)
 

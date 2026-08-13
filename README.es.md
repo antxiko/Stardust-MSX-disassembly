@@ -1,8 +1,8 @@
 # Stardust (Topo Soft, 1987, MSX) — desensamblado comentado
 
 Una cinta de cassette de 1987, desmontada bloque a bloque. Los **93 861 bytes**
-que trae están acotados y con dueño, y por dentro resultó ser **una conversión
-del ZX Spectrum que se trajo hasta el sistema de grabación**.
+que trae están acotados y con dueño, y por dentro es **una conversión del ZX
+Spectrum que se trajo hasta el sistema de grabación**.
 
 ✅ **El desensamblado está terminado**: cada byte de la cinta tiene dueño, los
 cinco bloques reensamblan byte a byte y las **335 rutinas** del listado están
@@ -62,11 +62,11 @@ nombre y explicación. Existe porque la reproducibilidad no ve los errores de
 interpretación: si unos gráficos se marcaran como código, los bytes seguirían
 saliendo idénticos y el único que mentiría sería el listado.
 
-Aquí ese peligro no es teórico: **pasó**. En un momento del trabajo la cobertura
-saltó del 25 % al 75,8 % de golpe y parecía un éxito. Era contaminación —el
-trazador se había metido en las tablas de color y en los datos de nivel— y lo
-que la cazó fue tener zonas de datos identificadas por otras vías con las que
-contrastar. Está contado en la página de cómo se hizo.
+Y aquí ese peligro es real, no teórico: `tools/check_datos_como_codigo.py`
+cruza cada zona declarada como datos contra lo que cree el trazador,
+precisamente porque una contaminación así puede hinchar la cobertura del
+25 % al 75,8 % de golpe —el trazador metido en las tablas de color y en los
+datos de nivel— y parecer un éxito. Está contado en la página de cómo se hizo.
 
 Y **17 tests**, dedicados a comprobar que lo que dice la documentación es lo que
 hace el juego.
