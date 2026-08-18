@@ -681,9 +681,8 @@ written into the binary anyway, once each, as the operands of an `ld`.
 
 The credits text is 234 bytes, `0xF1E7-0xF2D1`. The 193 in front of it,
 `0xF126-0xF1E7`, are the logo's frame table: 96 pairs of top-row and height
-that describe the bounce
-— the height grows from 1 to 16, the logo drops to row 186 squashing flat,
-and comes back up — with an `0xFF` closing the list. Where the real text
+that describe the bounce — the height grows from 1 to 16, the logo drops to
+row 186 squashing flat, and comes back up — with an `0xFF` closing the list. Where the real text
 starts is stated by the code itself, and the binary confirms it: right
 before `CONVERSION POR` there are climbing pairs that aren't text and don't
 even look like it.
@@ -1403,8 +1402,8 @@ next to a note change. Pointing the same tool at the *other* music in that
 stage gives 0.0%, which is exactly the check that the earlier hit rate
 wasn't a fluke.
 
-Two things have to be right for this measurement. A
-frame doesn't last exactly 1/50 of a second: a breakpoint on the ROM's
+Two things have to be right for this measurement. A frame doesn't last
+exactly 1/50 of a second: a breakpoint on the ROM's
 interrupt vector gives 1,003 firings in twenty seconds, that's 50.15 Hz,
 and using 50.00 the comparison drifts almost two frames in six hundred and
 drops to 98.2% over something that has nothing to do with the music at all.

@@ -674,10 +674,11 @@ Conviene mirarlo dos veces antes de dar algo por huérfano: ningún `call`
 nombra directamente esas dos rutinas, pero sus direcciones sí están escritas
 en el binario, una sola vez cada una, como operandos de un `ld`.
 
-Los textos de los créditos son 234 bytes, `0xF1E7-0xF2D1`. Los 193 de delante,
-`0xF126-0xF1E7`, son la tabla de fotogramas del logo: 96 pares de fila-de-la-cima
-y altura que describen el rebote entero —la altura crece de 1 a 16, el logo baja hasta la
-fila 186 aplastándose, y vuelve a subir— con un `0xFF` cerrando la lista.
+Los textos de los créditos son 234 bytes, `0xF1E7-0xF2D1`. Los 193 de
+delante, `0xF126-0xF1E7`, son la tabla de fotogramas del logo: 96 pares de
+fila-de-la-cima y altura que describen el rebote entero —la altura crece de 1
+a 16, el logo baja hasta la fila 186 aplastándose, y vuelve a subir— con un
+`0xFF` cerrando la lista.
 Dónde empieza el texto de verdad lo dice el propio código, y el binario lo
 confirma: justo antes del `CONVERSION POR` hay pares crecientes que no son
 texto, ni lo parecen si te fijas.
@@ -1397,7 +1398,8 @@ fallos pegados siempre a un cambio de nota. Apuntando la misma herramienta a
 la otra música de esa fase, sale un 0,0 % — que es justo la comprobación de
 que el acierto anterior no era casualidad.
 
-Para que esta medida valga hay que acertar en dos cosas. Un cuadro no dura 1/50 de segundo exacto: un punto de
+Para que esta medida valga hay que acertar en dos cosas. Un cuadro no dura 1/50
+de segundo exacto: un punto de
 interrupción en el vector de la ROM da 1.003 pasadas en veinte segundos, o
 sea 50,15 Hz, y usando 50,00 la comparación se desliza casi dos cuadros en
 seiscientos y cae al 98,2 % por algo que no tiene nada que ver con la

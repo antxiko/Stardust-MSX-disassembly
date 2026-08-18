@@ -5,7 +5,7 @@ que trae están acotados y con dueño, y por dentro es una conversión del ZX
 Spectrum que se trajo hasta el sistema de grabación, no solo los gráficos.
 
 ✅ **El desensamblado está terminado**: cada byte de la cinta tiene dueño,
-los cinco bloques reensamblan byte a byte y las 335 rutinas del listado
+los cinco listados reensamblan byte a byte y las 335 rutinas del listado
 están comentadas con su evidencia. Y «terminado» no quiere decir agotado —
 las preguntas que siguen abiertas, con sus cifras, están en
 [la página de preguntas abiertas](https://antxiko.github.io/Stardust-MSX-disassembly/es/PREGUNTAS-ABIERTAS.html).
@@ -18,7 +18,7 @@ las preguntas que siguen abiertas, con sus cifras, están en
 ## Qué es esto
 
 *Stardust* es un matamarcianos vertical que Topo Soft publicó para MSX en
-1987. Este repositorio contiene el código de sus cinco bloques, comentado,
+1987. Este repositorio contiene el código de sus siete bloques de cinta, comentado,
 más las herramientas para reconstruirlo y comprobarlo.
 
 Y lo que hace a este juego distinto de los demás de la casa es que es una

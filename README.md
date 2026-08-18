@@ -5,7 +5,7 @@ are bounded and owned, and inside it is a ZX Spectrum conversion that
 brought the tape system across with it, not just the graphics.
 
 ✅ **The disassembly is finished**: every byte on the tape has an owner,
-all five blocks reassemble byte for byte, and the listing's 335 routines
+the five listings reassemble byte for byte, and the listing's 335 routines
 are commented, evidence included. And "finished" doesn't mean exhausted —
 the questions still open, figures and all, are on
 [the open-questions page](https://antxiko.github.io/Stardust-MSX-disassembly/OPEN-QUESTIONS.html).
@@ -19,7 +19,7 @@ the questions still open, figures and all, are on
 ## What this is
 
 *Stardust* is a vertical shoot'em up Topo Soft published for the MSX in
-1987. This repository holds the code of its five blocks, commented, along
+1987. This repository holds the code of its seven tape blocks, commented, along
 with the tools to rebuild and verify it.
 
 What makes this one different from the rest of the label's output is that
