@@ -7187,8 +7187,10 @@ DATA_variables_de_la_cuenta_atras:
 	defb 0ffh,0ffh	; bc2a
 	defb 0ffh,0ffh	; bc2c
 	defb 0ffh,0ffh	; bc2e
-	defb 000h,000h	; bc30
-	defb 000h,000h	; bc32
+	defb 000h	; bc30
+	defb 000h	; bc31
+	defb 000h	; bc32
+	defb 000h	; bc33
 	defb 000h	; bc34
 
 ; ======================================================================

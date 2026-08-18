@@ -118,7 +118,7 @@ D 0x67E4 0x68FF datos_nivel_7 Level 7 Data
 # y la etiqueta lleva detras la medida de la que sale: la racha media de bits
 # iguales, la entropia y cuantos valores distintos usa. Lo que no se ha podido
 # clasificar con confianza pone "datos sin clasificar", que es lo que hay.
-D 0x5FFD 0x6150 graficos_5FFD Graficos (339 B; racha 4.22, entropia 4.33, 50 valores: rachas mas largas que el azar)
+D 0x5FFD 0x6000 sin_identificar_5FFD Tres bytes entre el bloque anterior y el charset. El rango llegaba hasta 0x6150 y se pisaba con el charset de 0x6000, que son 59 caracteres de 8x8 = 472 bytes exactos hasta 0x61D8 (tools/render_graficos.py los dibuja desde ahi); la racha y la entropia que decia la descripcion eran las del hueco entero, antes de que se identificara el charset
 D 0x68FF 0x69A8 relleno_68FF Relleno (169 B; 169 de 169 bytes son 0x00)
 # (0xC05C-0xC063 estuvo aqui como "relleno o resto" y son SIETE BYTES DE CODIGO:
 #  la rutina a la que salta el poke de inmortalidad de la revista. Ver la

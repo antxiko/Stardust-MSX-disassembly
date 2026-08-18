@@ -72,7 +72,7 @@ de golpe —con el trazador metido en las tablas de color y en los datos de
 nivel— y parecer un éxito cuando no lo es. Está contado en la página de
 cómo se hizo.
 
-Y hay 17 tests dedicados solo a comprobar que lo que dice la documentación
+Y hay 69 tests dedicados solo a comprobar que lo que dice la documentación
 es lo que hace el juego de verdad.
 
 ## Empezar

@@ -754,45 +754,78 @@ DATA_area_de_trabajo_5C31:
 	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ff1  ............
 
 ; ----------------------------------------------------------------------
-; DATOS graficos_5FFD: Graficos (339 B; racha 4.22, entropia 4.33, 50 valores:
-;   rachas mas largas que el azar)
-;   0x5ffd..0x6150  (339 bytes)
-DATA_graficos_5FFD:
-	defb 0ffh,000h,0ffh,000h,000h,000h,000h,000h,000h,000h,000h,018h,018h,018h,018h,018h	; 5ffd  ................
-	defb 000h,018h,000h,000h,03ch,030h,030h,030h,030h,030h,03ch,000h,040h,060h,030h,018h	; 600d  ....<00000<.@`0.
-	defb 00ch,006h,000h,000h,03ch,00ch,00ch,00ch,00ch,00ch,03ch,000h,010h,038h,06ch,0c6h	; 601d  ....<.....<..8l.
-	defb 000h,000h,000h,006h,039h,02dh,075h,075h,075h,073h,000h,018h,000h,008h,038h,070h	; 602d  ....9-uuus....8p
-	defb 071h,07fh,000h,00ch,018h,018h,018h,018h,018h,00ch,000h,030h,018h,018h,018h,018h	; 603d  q..........0....
-	defb 018h,030h,000h,000h,066h,018h,07eh,07eh,018h,066h,000h,000h,018h,018h,07eh,07eh	; 604d  .0..f.~~.f....~~
-	defb 018h,018h,000h,000h,000h,000h,000h,00ch,00ch,018h,000h,000h,000h,000h,07eh,07eh	; 605d  ..............~~
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,018h,018h,000h,001h,003h,006h,00ch,018h	; 606d  ................
-	defb 030h,060h,000h,03fh,023h,075h,079h,071h,071h,07fh,000h,018h,008h,01ch,01ch,01ch	; 607d  0`.?#uyqq.......
-	defb 01ch,01ch,000h,03eh,002h,03eh,070h,070h,071h,07fh,000h,03eh,022h,00eh,007h,007h	; 608d  ...>.>ppq..>"...
-	defb 047h,07fh,000h,044h,044h,07ch,00eh,00eh,00eh,00eh,000h,03fh,020h,03eh,007h,047h	; 609d  G..DD|.....? >.G
-	defb 047h,07fh,000h,01fh,030h,07fh,071h,071h,071h,07fh,000h,07ch,044h,01eh,007h,007h	; 60ad  G...0.qqq..|D...
-	defb 007h,007h,000h,01eh,012h,03fh,071h,071h,071h,07fh,000h,03eh,022h,03eh,007h,007h	; 60bd  .....?qqq..>">..
-	defb 007h,007h,000h,000h,018h,018h,000h,018h,018h,000h,000h,000h,018h,018h,000h,018h	; 60cd  ................
-	defb 018h,030h,000h,000h,000h,000h,000h,000h,000h,000h,07fh,000h,07eh,07eh,000h,07eh	; 60dd  .0..........~~.~
-	defb 07eh,000h,000h,000h,000h,000h,000h,000h,000h,000h,0ffh,07fh,047h,007h,00eh,008h	; 60ed  ~...........G...
-	defb 000h,00ch,000h,03ch,042h,0bdh,0a1h,0b1h,0bdh,042h,03ch,01eh,012h,03fh,071h,071h	; 60fd  ...<B....B<..?qq
-	defb 071h,071h,000h,03ch,024h,03eh,072h,072h,072h,07eh,000h,03fh,021h,070h,070h,070h	; 610d  qq.<$>rrr~.?!ppp
-	defb 071h,07fh,000h,03fh,021h,021h,071h,071h,071h,07fh,000h,03fh,021h,03ch,070h,070h	; 611d  q..?!!qqq..?!<pp
-	defb 071h,07fh,000h,01fh,011h,03ch,070h,070h,070h,070h,000h,03fh,021h,020h,077h,071h	; 612d  q....<pppp.?! wq
-	defb 071h,07fh,000h,012h,012h,03fh,071h,071h,071h,071h,000h,008h,008h,008h,01ch,01ch	; 613d  q....?qqqq......
-	defb 01ch,01ch,000h	; 614d
+; DATOS sin_identificar_5FFD: Tres bytes entre el bloque anterior y el
+;   charset. El rango llegaba hasta 0x6150 y se pisaba con el charset de
+;   0x6000, que son 59 caracteres de 8x8 = 472 bytes exactos hasta 0x61D8
+;   (tools/render_graficos.py los dibuja desde ahi); la racha y la entropia
+;   que decia la descripcion eran las del hueco entero, antes de que se
+;   identificara el charset
+;   0x5ffd..0x6000  (3 bytes)
+DATA_sin_identificar_5FFD:
+	defb 0ffh,000h,0ffh	; 5ffd
 
 ; ----------------------------------------------------------------------
 ; DATOS charset: Charset: 59 caracteres de 8x8
-;   0x6150..0x61d8  (136 bytes)
-DATA_6150:
-	defb 002h,002h,002h,007h,047h,047h,07fh,000h,026h,02ch,038h,078h,07ch,076h,073h,000h	; 6150  ....GG..&,8x|vs.
-	defb 020h,020h,020h,070h,070h,071h,07fh,000h,03fh,025h,025h,071h,071h,071h,071h,000h	; 6160     ppq..?%%qqqq.
-	defb 03dh,025h,075h,075h,075h,075h,077h,000h,03fh,021h,071h,071h,071h,071h,07fh,000h	; 6170  =%uuuuw.?!qqqq..
-	defb 01fh,011h,03fh,070h,070h,070h,070h,000h,03fh,021h,021h,071h,075h,073h,07fh,000h	; 6180  ..?pppp.?!!qus..
-	defb 01fh,011h,03fh,072h,071h,071h,071h,000h,03eh,020h,03eh,007h,007h,047h,07fh,000h	; 6190  ..?rqqq.> >..G..
-	defb 07fh,008h,01ch,01ch,01ch,01ch,01ch,000h,021h,021h,071h,071h,071h,071h,07fh,000h	; 61a0  ........!!qqqq..
-	defb 041h,041h,062h,072h,074h,034h,03ch,000h,021h,021h,021h,071h,075h,075h,03ah,000h	; 61b0  AAbrt4<.!!!quu:.
-	defb 043h,066h,03ch,018h,03ch,076h,063h,000h,022h,022h,03eh,008h,01ch,01ch,01ch,000h	; 61c0  Cf<.<vc."">.....
+;   0x6000..0x61d8  (472 bytes)
+DATA_charset:
+	defb 000h,000h,000h,000h,000h,000h,000h,000h	; 6000  ........
+	defb 018h,018h,018h,018h,018h,000h,018h,000h	; 6008  ........
+	defb 000h,03ch,030h,030h,030h,030h,030h,03ch	; 6010  .<00000<
+	defb 000h,040h,060h,030h,018h,00ch,006h,000h	; 6018  .@`0....
+	defb 000h,03ch,00ch,00ch,00ch,00ch,00ch,03ch	; 6020  .<.....<
+	defb 000h,010h,038h,06ch,0c6h,000h,000h,000h	; 6028  ..8l....
+	defb 006h,039h,02dh,075h,075h,075h,073h,000h	; 6030  .9-uuus.
+	defb 018h,000h,008h,038h,070h,071h,07fh,000h	; 6038  ...8pq..
+	defb 00ch,018h,018h,018h,018h,018h,00ch,000h	; 6040  ........
+	defb 030h,018h,018h,018h,018h,018h,030h,000h	; 6048  0.....0.
+	defb 000h,066h,018h,07eh,07eh,018h,066h,000h	; 6050  .f.~~.f.
+	defb 000h,018h,018h,07eh,07eh,018h,018h,000h	; 6058  ...~~...
+	defb 000h,000h,000h,000h,00ch,00ch,018h,000h	; 6060  ........
+	defb 000h,000h,000h,07eh,07eh,000h,000h,000h	; 6068  ...~~...
+	defb 000h,000h,000h,000h,000h,018h,018h,000h	; 6070  ........
+	defb 001h,003h,006h,00ch,018h,030h,060h,000h	; 6078  .....0`.
+	defb 03fh,023h,075h,079h,071h,071h,07fh,000h	; 6080  ?#uyqq..
+	defb 018h,008h,01ch,01ch,01ch,01ch,01ch,000h	; 6088  ........
+	defb 03eh,002h,03eh,070h,070h,071h,07fh,000h	; 6090  >.>ppq..
+	defb 03eh,022h,00eh,007h,007h,047h,07fh,000h	; 6098  >"...G..
+	defb 044h,044h,07ch,00eh,00eh,00eh,00eh,000h	; 60a0  DD|.....
+	defb 03fh,020h,03eh,007h,047h,047h,07fh,000h	; 60a8  ? >.GG..
+	defb 01fh,030h,07fh,071h,071h,071h,07fh,000h	; 60b0  .0.qqq..
+	defb 07ch,044h,01eh,007h,007h,007h,007h,000h	; 60b8  |D......
+	defb 01eh,012h,03fh,071h,071h,071h,07fh,000h	; 60c0  ..?qqq..
+	defb 03eh,022h,03eh,007h,007h,007h,007h,000h	; 60c8  >">.....
+	defb 000h,018h,018h,000h,018h,018h,000h,000h	; 60d0  ........
+	defb 000h,018h,018h,000h,018h,018h,030h,000h	; 60d8  ......0.
+	defb 000h,000h,000h,000h,000h,000h,000h,07fh	; 60e0  ........
+	defb 000h,07eh,07eh,000h,07eh,07eh,000h,000h	; 60e8  .~~.~~..
+	defb 000h,000h,000h,000h,000h,000h,000h,0ffh	; 60f0  ........
+	defb 07fh,047h,007h,00eh,008h,000h,00ch,000h	; 60f8  .G......
+	defb 03ch,042h,0bdh,0a1h,0b1h,0bdh,042h,03ch	; 6100  <B....B<
+	defb 01eh,012h,03fh,071h,071h,071h,071h,000h	; 6108  ..?qqqq.
+	defb 03ch,024h,03eh,072h,072h,072h,07eh,000h	; 6110  <$>rrr~.
+	defb 03fh,021h,070h,070h,070h,071h,07fh,000h	; 6118  ?!pppq..
+	defb 03fh,021h,021h,071h,071h,071h,07fh,000h	; 6120  ?!!qqq..
+	defb 03fh,021h,03ch,070h,070h,071h,07fh,000h	; 6128  ?!<ppq..
+	defb 01fh,011h,03ch,070h,070h,070h,070h,000h	; 6130  ..<pppp.
+	defb 03fh,021h,020h,077h,071h,071h,07fh,000h	; 6138  ?! wqq..
+	defb 012h,012h,03fh,071h,071h,071h,071h,000h	; 6140  ..?qqqq.
+	defb 008h,008h,008h,01ch,01ch,01ch,01ch,000h	; 6148  ........
+	defb 002h,002h,002h,007h,047h,047h,07fh,000h	; 6150  ....GG..
+	defb 026h,02ch,038h,078h,07ch,076h,073h,000h	; 6158  &,8x|vs.
+	defb 020h,020h,020h,070h,070h,071h,07fh,000h	; 6160     ppq..
+	defb 03fh,025h,025h,071h,071h,071h,071h,000h	; 6168  ?%%qqqq.
+	defb 03dh,025h,075h,075h,075h,075h,077h,000h	; 6170  =%uuuuw.
+	defb 03fh,021h,071h,071h,071h,071h,07fh,000h	; 6178  ?!qqqq..
+	defb 01fh,011h,03fh,070h,070h,070h,070h,000h	; 6180  ..?pppp.
+	defb 03fh,021h,021h,071h,075h,073h,07fh,000h	; 6188  ?!!qus..
+	defb 01fh,011h,03fh,072h,071h,071h,071h,000h	; 6190  ..?rqqq.
+	defb 03eh,020h,03eh,007h,007h,047h,07fh,000h	; 6198  > >..G..
+	defb 07fh,008h,01ch,01ch,01ch,01ch,01ch,000h	; 61a0  ........
+	defb 021h,021h,071h,071h,071h,071h,07fh,000h	; 61a8  !!qqqq..
+	defb 041h,041h,062h,072h,074h,034h,03ch,000h	; 61b0  AAbrt4<.
+	defb 021h,021h,021h,071h,075h,075h,03ah,000h	; 61b8  !!!quu:.
+	defb 043h,066h,03ch,018h,03ch,076h,063h,000h	; 61c0  Cf<.<vc.
+	defb 022h,022h,03eh,008h,01ch,01ch,01ch,000h	; 61c8  "">.....
 	defb 07fh,042h,00ch,01ch,038h,071h,07fh,000h	; 61d0  .B..8q..
 
 ; ----------------------------------------------------------------------
@@ -11657,9 +11690,9 @@ L_DABD:
 	ret			;dac4
 
 ; ----------------------------------------------------------------------
-; DATOS textos_del_juego: Textos del juego: menu, redefinir teclas, records y
-;   mensajes
-;   0xdac5..0xdf0f  (1098 bytes)
+; DATOS textos_del_juego (tramo): Textos del juego: menu, redefinir teclas,
+;   records y mensajes
+;   0xdac5..0xdcb1  (492 bytes)  de 0xdac5..0xdf0f (1098 bytes)
 DATA_textos_del_juego:
 	defb 000h,00dh,001h,00ah,046h,045h,04ch,049h,043h,049h,044h,041h,044h,045h,053h,00dh	; dac5  ....FELICIDADES.
 	defb 00dh,00dh,048h,041h,053h,020h,043h,04fh,04eh,053h,045h,047h,055h,049h,044h,04fh	; dad5  ..HAS CONSEGUIDO
@@ -11691,45 +11724,89 @@ DATA_textos_del_juego:
 	defb 046h,020h,033h,000h,046h,020h,034h,000h,046h,020h,035h,000h,045h,053h,043h,000h	; dc75  F 3.F 4.F 5.ESC.
 	defb 054h,041h,042h,000h,053h,054h,04fh,050h,000h,042h,053h,000h,053h,045h,04ch,045h	; dc85  TAB.STOP.BS.SELE
 	defb 043h,054h,000h,045h,04eh,054h,045h,052h,000h,053h,050h,041h,043h,045h,000h,048h	; dc95  CT.ENTER.SPACE.H
-	defb 04fh,04dh,045h,000h,049h,04eh,053h,000h,044h,045h,04ch,000h,040h,0f2h,040h,0f4h	; dca5  OME.INS.DEL.@.@.
-	defb 020h,0f4h,010h,0f4h,001h,0f8h,020h,0f3h,010h,0f3h,000h,000h,000h,000h,000h,000h	; dcb5   ..... .........
-	defb 000h,053h,054h,041h,052h,044h,055h,053h,054h,000h,04ah,04fh,059h,053h,054h,049h	; dcc5  .STARDUST.JOYSTI
-	defb 043h,04bh,000h,054h,045h,043h,04ch,041h,044h,04fh,000h,052h,045h,044h,045h,046h	; dcd5  CK.TECLADO.REDEF
-	defb 049h,04eh,049h,052h,020h,054h,045h,043h,04ch,041h,053h,000h,04ah,055h,047h,041h	; dce5  INIR TECLAS.JUGA
-	defb 052h,000h,03ch,03eh,03eh,03eh,03eh,03eh,03eh,03eh,000h,03ch,03eh,03eh,03eh,03eh	; dcf5  R.<>>>>>>>.<>>>>
-	defb 03eh,03eh,000h,04ah,041h,056h,049h,045h,052h,020h,020h,031h,030h,030h,030h,030h	; dd05  >>.JAVIER  10000
-	defb 030h,000h,04ah,055h,041h,04eh,020h,043h,020h,020h,030h,038h,030h,030h,030h,030h	; dd15  0.JUAN C  080000
-	defb 000h,04dh,041h,052h,054h,041h,020h,020h,020h,030h,036h,030h,030h,030h,030h,000h	; dd25  .MARTA   060000.
-	defb 04dh,041h,052h,049h,041h,020h,020h,020h,030h,035h,030h,030h,030h,030h,000h,020h	; dd35  MARIA   050000. 
-	defb 020h,020h,020h,020h,020h,020h,020h,030h,034h,030h,030h,030h,030h,000h,020h,054h	; dd45         040000. T
-	defb 04fh,050h,04fh,020h,020h,020h,030h,033h,030h,030h,030h,030h,000h,020h,053h,04fh	; dd55  OPO   030000. SO
-	defb 046h,054h,020h,020h,020h,030h,032h,030h,030h,030h,030h,000h,020h,020h,020h,020h	; dd65  FT   020000.    
-	defb 020h,020h,020h,020h,030h,031h,030h,030h,030h,030h,000h,030h,030h,030h,030h,030h	; dd75      010000.00000
-	defb 030h,000h,001h,00bh,042h,020h,052h,020h,041h,020h,056h,020h,04fh,00dh,00dh,00dh	; dd85  0...B R A V O...
-	defb 00dh,001h,007h,048h,041h,053h,020h,043h,04fh,04eh,053h,045h,047h,055h,049h,044h	; dd95  ...HAS CONSEGUID
-	defb 04fh,020h,055h,04eh,041h,00dh,00dh,001h,009h,044h,045h,020h,04ch,041h,053h,020h	; dda5  O UNA....DE LAS 
-	defb 04dh,045h,04ah,04fh,052h,045h,053h,00dh,00dh,001h,006h,050h,055h,04eh,054h,055h	; ddb5  MEJORES....PUNTU
-	defb 041h,043h,049h,04fh,04eh,045h,053h,020h,020h,044h,045h,020h,048h,04fh,059h,00dh	; ddc5  ACIONES  DE HOY.
-	defb 00dh,00dh,001h,007h,045h,053h,043h,052h,049h,042h,045h,020h,020h,054h,055h,020h	; ddd5  ....ESCRIBE  TU 
-	defb 04eh,04fh,04dh,042h,052h,045h,00dh,00dh,00dh,00dh,001h,00dh,000h,044h,045h,04dh	; dde5  NOMBRE.......DEM
-	defb 04fh,000h,000h,042h,04fh,04eh,055h,053h,020h,035h,030h,030h,030h,000h,0d8h,061h	; ddf5  O..BONUS 5000..a
-	defb 0a1h,0d7h,062h,0f1h,0d4h,063h,071h,0d4h,064h,0a1h,0dbh,065h,0f1h,0eah,066h,071h	; de05  ..b..cq.d..e..fq
-	defb 0e4h,067h,0a1h,003h,000h,000h,003h,000h,080h,003h,080h,080h,003h,098h,000h,003h	; de15  .g..............
-	defb 083h,083h,003h,015h,015h,003h,014h,014h,003h,006h,005h,003h,0ach,009h,003h,001h	; de25  ................
-	defb 002h,003h,01eh,021h,003h,01dh,01eh,003h,004h,004h,003h,003h,003h,003h,010h,011h	; de35  ...!............
-	defb 003h,0aeh,005h,003h,0aeh,0afh,003h,002h,000h,003h,000h,001h,003h,006h,026h,003h	; de45  ..............&.
-	defb 025h,005h,003h,008h,027h,003h,024h,009h,004h,013h,019h,013h,003h,000h,015h,003h	; de55  %...'.$.........
-	defb 015h,000h,003h,026h,025h,003h,027h,024h,003h,002h,017h,003h,017h,001h,003h,022h	; de65  ...&%.'$......."
-	defb 001h,003h,005h,006h,003h,025h,026h,003h,00eh,00fh,004h,091h,089h,092h,004h,080h	; de75  .....%&.........
-	defb 086h,080h,004h,098h,089h,099h,003h,03bh,03bh,003h,024h,027h,003h,025h,004h,003h	; de85  .......;;.$'.%..
-	defb 004h,026h,003h,024h,003h,003h,003h,027h,003h,091h,092h,003h,008h,003h,003h,003h	; de95  .&.$...'........
-	defb 009h,003h,006h,004h,003h,004h,005h,003h,0ach,0adh,004h,0ach,08dh,0adh,004h,000h	; dea5  ................
-	defb 093h,094h,003h,095h,096h,004h,0ach,09bh,0adh,004h,081h,089h,080h,004h,091h,080h	; deb5  ................
-	defb 092h,004h,096h,080h,095h,003h,00dh,001h,003h,00ch,001h,003h,032h,032h,003h,036h	; dec5  ............22.6
-	defb 036h,003h,04ah,04bh,003h,052h,053h,003h,00eh,003h,003h,003h,00fh,003h,010h,004h	; ded5  6.JK.RS.........
-	defb 003h,004h,011h,003h,01ah,01ah,003h,04ch,04dh,003h,048h,049h,003h,050h,051h,003h	; dee5  .......LM.HI.PQ.
-	defb 04eh,058h,003h,058h,04fh,003h,05ah,058h,003h,058h,05bh,003h,059h,059h,004h,02eh	; def5  NX.XO.ZX.X[.YY..
-	defb 018h,02fh,004h,060h,061h,062h,004h,068h,069h,06ah	; df05  ./.`ab.hij
+	defb 04fh,04dh,045h,000h,049h,04eh,053h,000h,044h,045h,04ch,000h	; dca5  OME.INS.DEL.
+
+; ----------------------------------------------------------------------
+; DATOS tabla_de_teclas: Tabla de teclas: 7 entradas de (mascara, valor de
+;   puerto)
+;   0xdcb1..0xdcbf  (14 bytes)
+DATA_tabla_de_teclas:
+	defb 040h,0f2h	; dcb1
+	defb 040h,0f4h	; dcb3
+	defb 020h,0f4h	; dcb5
+	defb 010h,0f4h	; dcb7
+	defb 001h,0f8h	; dcb9
+	defb 020h,0f3h	; dcbb
+	defb 010h,0f3h	; dcbd
+
+; ----------------------------------------------------------------------
+; DATOS textos_del_juego (tramo): Textos del juego: menu, redefinir teclas,
+;   records y mensajes
+;   0xdcbf..0xde03  (324 bytes)  de 0xdac5..0xdf0f (1098 bytes)
+DATA_textos_del_juego_DCBF:
+	defb 000h,000h,000h,000h,000h,000h,000h,053h,054h,041h,052h,044h,055h,053h,054h,000h	; dcbf  .......STARDUST.
+	defb 04ah,04fh,059h,053h,054h,049h,043h,04bh,000h,054h,045h,043h,04ch,041h,044h,04fh	; dccf  JOYSTICK.TECLADO
+	defb 000h,052h,045h,044h,045h,046h,049h,04eh,049h,052h,020h,054h,045h,043h,04ch,041h	; dcdf  .REDEFINIR TECLA
+	defb 053h,000h,04ah,055h,047h,041h,052h,000h,03ch,03eh,03eh,03eh,03eh,03eh,03eh,03eh	; dcef  S.JUGAR.<>>>>>>>
+	defb 000h,03ch,03eh,03eh,03eh,03eh,03eh,03eh,000h,04ah,041h,056h,049h,045h,052h,020h	; dcff  .<>>>>>>.JAVIER 
+	defb 020h,031h,030h,030h,030h,030h,030h,000h,04ah,055h,041h,04eh,020h,043h,020h,020h	; dd0f   100000.JUAN C  
+	defb 030h,038h,030h,030h,030h,030h,000h,04dh,041h,052h,054h,041h,020h,020h,020h,030h	; dd1f  080000.MARTA   0
+	defb 036h,030h,030h,030h,030h,000h,04dh,041h,052h,049h,041h,020h,020h,020h,030h,035h	; dd2f  60000.MARIA   05
+	defb 030h,030h,030h,030h,000h,020h,020h,020h,020h,020h,020h,020h,020h,030h,034h,030h	; dd3f  0000.        040
+	defb 030h,030h,030h,000h,020h,054h,04fh,050h,04fh,020h,020h,020h,030h,033h,030h,030h	; dd4f  000. TOPO   0300
+	defb 030h,030h,000h,020h,053h,04fh,046h,054h,020h,020h,020h,030h,032h,030h,030h,030h	; dd5f  00. SOFT   02000
+	defb 030h,000h,020h,020h,020h,020h,020h,020h,020h,020h,030h,031h,030h,030h,030h,030h	; dd6f  0.        010000
+	defb 000h,030h,030h,030h,030h,030h,030h,000h,001h,00bh,042h,020h,052h,020h,041h,020h	; dd7f  .000000...B R A 
+	defb 056h,020h,04fh,00dh,00dh,00dh,00dh,001h,007h,048h,041h,053h,020h,043h,04fh,04eh	; dd8f  V O......HAS CON
+	defb 053h,045h,047h,055h,049h,044h,04fh,020h,055h,04eh,041h,00dh,00dh,001h,009h,044h	; dd9f  SEGUIDO UNA....D
+	defb 045h,020h,04ch,041h,053h,020h,04dh,045h,04ah,04fh,052h,045h,053h,00dh,00dh,001h	; ddaf  E LAS MEJORES...
+	defb 006h,050h,055h,04eh,054h,055h,041h,043h,049h,04fh,04eh,045h,053h,020h,020h,044h	; ddbf  .PUNTUACIONES  D
+	defb 045h,020h,048h,04fh,059h,00dh,00dh,00dh,001h,007h,045h,053h,043h,052h,049h,042h	; ddcf  E HOY.....ESCRIB
+	defb 045h,020h,020h,054h,055h,020h,04eh,04fh,04dh,042h,052h,045h,00dh,00dh,00dh,00dh	; dddf  E  TU NOMBRE....
+	defb 001h,00dh,000h,044h,045h,04dh,04fh,000h,000h,042h,04fh,04eh,055h,053h,020h,035h	; ddef  ...DEMO..BONUS 5
+	defb 030h,030h,030h,000h	; ddff
+
+; ----------------------------------------------------------------------
+; DATOS tabla_de_zonas: Tabla de zonas: 7 entradas de (puntero, color de
+;   SCREEN 2)
+;   0xde03..0xde18  (21 bytes)
+DATA_tabla_de_zonas:
+	defb 0d8h,061h,0a1h	; de03
+	defb 0d7h,062h,0f1h	; de06
+	defb 0d4h,063h,071h	; de09
+	defb 0d4h,064h,0a1h	; de0c
+	defb 0dbh,065h,0f1h	; de0f
+	defb 0eah,066h,071h	; de12
+	defb 0e4h,067h,0a1h	; de15
+
+; ----------------------------------------------------------------------
+; DATOS diccionario_de_frases: Diccionario de frases del descompresor de
+;   niveles
+;   0xde18..0xde9a  (130 bytes)
+DATA_diccionario_de_frases:
+	defb 003h,000h,000h,003h,000h,080h,003h,080h,080h,003h,098h,000h,003h,083h,083h,003h	; de18  ................
+	defb 015h,015h,003h,014h,014h,003h,006h,005h,003h,0ach,009h,003h,001h,002h,003h,01eh	; de28  ................
+	defb 021h,003h,01dh,01eh,003h,004h,004h,003h,003h,003h,003h,010h,011h,003h,0aeh,005h	; de38  !...............
+	defb 003h,0aeh,0afh,003h,002h,000h,003h,000h,001h,003h,006h,026h,003h,025h,005h,003h	; de48  ...........&.%..
+	defb 008h,027h,003h,024h,009h,004h,013h,019h,013h,003h,000h,015h,003h,015h,000h,003h	; de58  .'.$............
+	defb 026h,025h,003h,027h,024h,003h,002h,017h,003h,017h,001h,003h,022h,001h,003h,005h	; de68  &%.'$......."...
+	defb 006h,003h,025h,026h,003h,00eh,00fh,004h,091h,089h,092h,004h,080h,086h,080h,004h	; de78  ..%&............
+	defb 098h,089h,099h,003h,03bh,03bh,003h,024h,027h,003h,025h,004h,003h,004h,026h,003h	; de88  ....;;.$'.%...&.
+	defb 024h,003h	; de98
+
+; ----------------------------------------------------------------------
+; DATOS textos_del_juego (tramo): Textos del juego: menu, redefinir teclas,
+;   records y mensajes
+;   0xde9a..0xdf0f  (117 bytes)  de 0xdac5..0xdf0f (1098 bytes)
+DATA_textos_del_juego_DE9A:
+	defb 003h,003h,027h,003h,091h,092h,003h,008h,003h,003h,003h,009h,003h,006h,004h,003h	; de9a  ..'.............
+	defb 004h,005h,003h,0ach,0adh,004h,0ach,08dh,0adh,004h,000h,093h,094h,003h,095h,096h	; deaa  ................
+	defb 004h,0ach,09bh,0adh,004h,081h,089h,080h,004h,091h,080h,092h,004h,096h,080h,095h	; deba  ................
+	defb 003h,00dh,001h,003h,00ch,001h,003h,032h,032h,003h,036h,036h,003h,04ah,04bh,003h	; deca  .......22.66.JK.
+	defb 052h,053h,003h,00eh,003h,003h,003h,00fh,003h,010h,004h,003h,004h,011h,003h,01ah	; deda  RS..............
+	defb 01ah,003h,04ch,04dh,003h,048h,049h,003h,050h,051h,003h,04eh,058h,003h,058h,04fh	; deea  ..LM.HI.PQ.NX.XO
+	defb 003h,05ah,058h,003h,058h,05bh,003h,059h,059h,004h,02eh,018h,02fh,004h,060h,061h	; defa  .ZX.X[.YY.../.`a
+	defb 062h,004h,068h,069h,06ah	; df0a
 
 ; ======================================================================
 ; CODIGO 0xdf0f..0xe14e  (575 bytes)

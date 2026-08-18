@@ -64,7 +64,7 @@ precisely because contamination like that can inflate coverage from 25% to
 data — and look like a triumph when it isn't one. It's written up on the
 how-it-was-done page.
 
-And there are 17 tests dedicated purely to checking that what the
+And there are 69 tests dedicated purely to checking that what the
 documentation says is actually what the game does.
 
 ## Getting started

@@ -95,7 +95,7 @@ D 0xB720 0xB9B0 textos_de_la_segunda_parte Textos de la segunda parte: menu, red
 #       (en blanco) 040000 · TOPO 030000 · SOFT 020000 · (en blanco) 010000
 #   JAVIER y JUAN C son los dos Arevalo, que firman los graficos.
 D 0xBC24 0xBC35 variables_de_la_cuenta_atras Variables de la cuenta atras: los 6 objetivos (2 B cada uno, 0xBC24-0xBC2F), filas de torre pintadas (0xBC30), punta de la torre en VRAM (0xBC31/32), objetivos restantes (0xBC33, que 0xA415 pone a 6) y un byte sin dueno (0xBC34)
-F 0xBC24 2
+F 0xBC24 2,2,2,2,2,2,1
 D 0xBDAA 0xBDAC relleno_BDAA Relleno o resto (2 B; 2 bytes)
 D 0xBFEB 0xC001 relleno_BFEB Relleno (22 B; 22 de 22 bytes son 0xFF)
 D 0xC459 0xC46A variables_C459 Variables (17 B): eran 5 B de "relleno o resto" mas 12 que el

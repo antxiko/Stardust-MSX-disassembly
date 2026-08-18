@@ -260,54 +260,87 @@ def emit_data(data, org, a, b, dataranges, notes, names):
     Antes se volcaba el tramo entero del trazador de 16 en 16 bytes con las
     cabeceras de todos sus rangos amontonadas delante: las filas cruzaban las
     fronteras entre una tabla y la siguiente y no habia manera de ver donde
-    acababa cada una. Ahora cada rango sale como un bloque aparte, con su
-    cabecera, su etiqueta y el volcado alineado a su primer byte.
+    acababa cada una.
+
+    Reparte los bytes por FRONTERAS: en cada trozo manda el rango mas pequeno
+    que lo cubre, de modo que una tabla declarada DENTRO de otra zona mas
+    amplia sale con su cabecera y su etiqueta en su sitio, y la zona que la
+    contiene sale partida en dos. Ningun rango declarado se queda sin publicar
+    -antes los anidados se perdian con solo un aviso por consola- y ninguna
+    cabecera dice un tamano que no es el del trozo que lleva debajo.
     """
     out = []
-    hit = sorted((s, e, nm, d) for s, (e, nm, d) in dataranges.items()
-                 if s < b and e > a)
-    # Trozos que cubren [a,b) exactamente una vez: cada rango recortado al
-    # tramo, y los huecos entre rangos como "sin identificar" (que es lo que
-    # son: no forman parte de la tabla de al lado).
-    trozos, cur = [], a
-    for s, e, nm, d in hit:
-        s, e = max(s, a), min(e, b)
-        if s > cur:
-            trozos.append((cur, s, None, ""))
-            cur = s
-        if e > cur:
-            trozos.append((cur, e, nm, d))
-            cur = e
+    hit = [(s, e, nm, d) for s, (e, nm, d) in dataranges.items()
+           if s < b and e > a]
+    cortes = {a, b}
+    for s, e, _nm, _d in hit:
+        if a < s < b:
+            cortes.add(s)
+        if a < e < b:
+            cortes.add(e)
+    puntos = sorted(cortes)
+    trozos = []
+    for p, q in zip(puntos, puntos[1:]):
+        # El dueno del trozo es el rango mas pequeno que lo cubre entero: asi
+        # una tabla metida dentro de una zona mayor gana a la zona.
+        duenos = [(e - s, s, e, nm, d) for s, e, nm, d in hit if s <= p and e >= q]
+        if duenos:
+            _t, s, e, nm, d = min(duenos)
+            trozos.append([p, q, nm, d, (s, e)])
         else:
-            print(f"  aviso: el rango de datos {nm} ({s:#06x}..{e:#06x}) no "
-                  f"aporta bytes propios; repasa sus limites en el .notes")
-    if cur < b:
-        trozos.append((cur, b, None, ""))
-    for s, e, nm, d in trozos:
-        out += emit_data_range(data, org, s, e, nm, d, notes, names)
+            trozos.append([p, q, None, "", None])
+    # Trozos seguidos del mismo rango: uno solo (no hay por que partirlo).
+    unidos = []
+    for t in trozos:
+        if unidos and unidos[-1][4] == t[4] and unidos[-1][1] == t[0]:
+            unidos[-1][1] = t[1]
+        else:
+            unidos.append(t)
+    for p, q, nm, d, rango in unidos:
+        out += emit_data_range(data, org, p, q, nm, d, notes, names, rango)
     return out
 
 
-def emit_data_range(data, org, a, b, nm, desc, notes, names):
-    """Un solo bloque de datos: cabecera, etiqueta y volcado con su anchura."""
+def emit_data_range(data, org, a, b, nm, desc, notes, names, rango=None):
+    """Un solo bloque de datos: cabecera, etiqueta y volcado con su anchura.
+
+    `rango` son los limites declarados en las notas. Si lo que se vuelca aqui
+    es solo una parte de ellos -porque otra tabla se declara dentro, o porque
+    el trazador corta la zona-, la cabecera lo dice: el tamano que se anuncia
+    es siempre el de los bytes que van debajo.
+    """
+    parcial = rango is not None and (rango[0] != a or rango[1] != b)
     out = ["", "; " + "-" * 70]
     if nm:
         cab = f"; DATOS {nm}: {desc}" if desc else f"; DATOS {nm}"
+        if parcial:
+            cab = (f"; DATOS {nm} (tramo): {desc}" if desc
+                   else f"; DATOS {nm} (tramo)")
         out += textwrap.wrap(cab, 78, subsequent_indent=";   ",
                              break_long_words=False, break_on_hyphens=False)
-        out.append(f";   {a:#06x}..{b:#06x}  ({b - a} bytes)")
+        linea = f";   {a:#06x}..{b:#06x}  ({b - a} bytes)"
+        if parcial:
+            linea += (f"  de {rango[0]:#06x}..{rango[1]:#06x} "
+                      f"({rango[1] - rango[0]} bytes)")
+        out.append(linea)
     else:
         out.append(f"; DATOS sin identificar  {a:#06x}..{b:#06x}  ({b - a} bytes)")
     out += banner(notes.blocks.get(a), a)
     # Etiqueta del bloque: la de las notas si hay una en su primer byte; si no,
-    # la DATA_ que lleva el nombre de su uso.
+    # la DATA_ que lleva el nombre de su uso. Los tramos que no empiezan donde
+    # empieza el rango llevan la direccion detras, para no dar dos nombres
+    # iguales a dos sitios distintos.
     if a in names and a not in _EMITTED:
         cmt = notes.labels.get(a, (None, ""))[1]
         out.append(f"{names[a]}:" + (f"\t\t; {cmt}" if cmt else ""))
         _EMITTED.add(a)
     elif a not in _EMITTED and a not in names:
-        out.append(_DATANAMES.setdefault(a, f"DATA_{a:04X}") + ":")
-    tramos = notes.fmt.get(a) or [(16, False)]
+        et = _DATANAMES.get(rango[0]) if rango else None
+        if et and rango[0] != a:
+            et = f"{et}_{a:04X}"
+        out.append((et or f"DATA_{a:04X}") + ":")
+    tramos = notes.fmt.get(a) or (notes.fmt.get(rango[0]) if rango else None) \
+        or [(16, False)]
     # Una etiqueta -o una cabecera B- puede caer dentro de una fila: hay que
     # partir la fila para que quede exactamente en su direccion.
     i, k = a, 0
