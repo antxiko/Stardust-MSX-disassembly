@@ -90,61 +90,74 @@
 # Los mismos que src/juego.nocode, aqui en el formato que lee el
 # presupuesto. Cada uno esta avalado o por una medida hecha sobre este
 # binario, o por aparecer identico byte a byte en la version de Spectrum.
-D 0xED75 0xEE24 variables a cero del interprete de guiones (175 B): las lee y
+D 0xED75 0xEE24 variables_del_interprete Variables a cero del interprete de guiones (175 B): las lee y
 #   escribe con ld a,(nn) desde catorce sitios; el trazador las contaba como
 #   codigo porque 0x00 desensambla a nop
-D 0xE7A3 0xE7C1 tabla de saltos de los QUINCE opcodes del interprete (0x80-0x8E): 15 punteros de 2 B, indexada por el despachador de 0xE230 con `sub 080h`. Aqui puso 35 y estaba mal; el limite lo fija el CALL del propio interprete (ver el bloque de la musica mas abajo)
-D 0xE7C1 0xE7E9 tabla de las VEINTE frases de musica: 20 punteros de 2 B que lee el comando 0x8C (0xE560: `ld hl,0e7c1h`), no el despachador de opcodes
-D 0xE7E9 0xED75 las CANCIONES y las FRASES, escritas en el lenguaje del propio interprete (1420 B): ver el bloque de abajo. NO es codigo
-D 0x47A0 0x48A0 el logo STARDUST del menu/atraccion: bitmap de 128x16 px, 16 B por fila; lo copia el animador del arranque (ld hl,047a0h en 0xF037, 16 ldi por fila)
-D 0x48A0 0x51A0 patrones del MARCO de la pantalla de juego -el cuadro decorado con el HUD que rodea el area de juego- (0x900 B): L_EF28 los copia a la VRAM 0x0000 (fuente ld de,048a0h en 0xEF10) en dos filas de caracter por tercio mas 24 tiras de 8 B y 24 de 0x18 B. Quien recoloca esos 288 caracteres en el borde es la tabla de NOMBRES del SCREEN 2, y el juego NO la monta: LA HEREDA de la pantalla de carga (la rutina 0x9BDB del bloque [09] la rellena sumando ocho; la carga del bloque [10] machaca esa rutina en RAM pero la VRAM sobrevive). Contrastado contra la VRAM real en marcha: 768/768 nombres identicos al patron del 9BDB, 97,4% de los 4608 bytes de patrones/colores identicos (el resto es lo que el juego pinta encima), y dibujado desde la cinta con ese mapeo sale el marco entero (tools/render_marco.py -> docs/imagenes/marco.png). Doble papel: en marcha 0x47A0-0x4B3F es el final de la banda B del buffer y 0x4B40-0x4EFF la banda C entera
-D 0x51A0 0x5AA0 colores del MARCO de la pantalla de juego (los mismos 0x900 B, segunda llamada a L_EF28 con destino VRAM 0x2000). Aqui vivian los rangos "colores de tiles" medidos por su firma de nibble: la firma era verdad, pero son los colores del marco, no de los tiles del juego
-D 0x5AA0 0x5C31 tabla (401 B; racha 7.98, entropia 1.05, 4 valores: pocos valores para ser un dibujo)
-D 0x5C31 0x5FFD area de trabajo, que en la cinta llega a ceros y por eso parecia relleno (972 B): los 510 primeros bytes son la tabla de 85 entradas de 6 que indexa 0xC464, y el arranque los limpia con el `ldir` de 0xBDC2 (ver el bloque de abajo)
-D 0x61D8 0x62D7 Level 1 Data
-D 0x62D7 0x63D4 Level 2 Data
-D 0x63D4 0x64D4 Level 3 Data
-D 0x64D4 0x65DB Level 4 Data
-D 0x65DB 0x66EA Level 5 Data
-D 0x66EA 0x67E4 Level 6 Data
-D 0x67E4 0x68FF Level 7 Data
+D 0xE7A3 0xE7C1 tabla_de_opcodes Tabla de saltos de los QUINCE opcodes del interprete (0x80-0x8E): 15 punteros de 2 B, indexada por el despachador de 0xE230 con `sub 080h`. Aqui puso 35 y estaba mal; el limite lo fija el CALL del propio interprete (ver el bloque de la musica mas abajo)
+F 0xE7A3 w1
+D 0xE7C1 0xE7E9 punteros_de_frases Tabla de las VEINTE frases de musica: 20 punteros de 2 B que lee el comando 0x8C (0xE560: `ld hl,0e7c1h`), no el despachador de opcodes
+F 0xE7C1 w10
+D 0xE7E9 0xED75 canciones_y_frases Las CANCIONES y las FRASES, escritas en el lenguaje del propio interprete (1420 B): ver el bloque de abajo. NO es codigo
+D 0x47A0 0x48A0 logo_stardust El logo STARDUST del menu/atraccion: bitmap de 128x16 px, 16 B por fila; lo copia el animador del arranque (ld hl,047a0h en 0xF037, 16 ldi por fila)
+D 0x48A0 0x51A0 patrones_del_marco Patrones del MARCO de la pantalla de juego -el cuadro decorado con el HUD que rodea el area de juego- (0x900 B): L_EF28 los copia a la VRAM 0x0000 (fuente ld de,048a0h en 0xEF10) en dos filas de caracter por tercio mas 24 tiras de 8 B y 24 de 0x18 B. Quien recoloca esos 288 caracteres en el borde es la tabla de NOMBRES del SCREEN 2, y el juego NO la monta: LA HEREDA de la pantalla de carga (la rutina 0x9BDB del bloque [09] la rellena sumando ocho; la carga del bloque [10] machaca esa rutina en RAM pero la VRAM sobrevive). Contrastado contra la VRAM real en marcha: 768/768 nombres identicos al patron del 9BDB, 97,4% de los 4608 bytes de patrones/colores identicos (el resto es lo que el juego pinta encima), y dibujado desde la cinta con ese mapeo sale el marco entero (tools/render_marco.py -> docs/imagenes/marco.png). Doble papel: en marcha 0x47A0-0x4B3F es el final de la banda B del buffer y 0x4B40-0x4EFF la banda C entera
+F 0x48A0 8
+D 0x51A0 0x5AA0 colores_del_marco Colores del MARCO de la pantalla de juego (los mismos 0x900 B, segunda llamada a L_EF28 con destino VRAM 0x2000). Aqui vivian los rangos "colores de tiles" medidos por su firma de nibble: la firma era verdad, pero son los colores del marco, no de los tiles del juego
+F 0x51A0 8
+D 0x5AA0 0x5C31 tabla_5AA0 Tabla (401 B; racha 7.98, entropia 1.05, 4 valores: pocos valores para ser un dibujo)
+D 0x5C31 0x5FFD area_de_trabajo_5C31 Area de trabajo, que en la cinta llega a ceros y por eso parecia relleno (972 B): los 510 primeros bytes son la tabla de 85 entradas de 6 que indexa 0xC464, y el arranque los limpia con el `ldir` de 0xBDC2 (ver el bloque de abajo)
+D 0x61D8 0x62D7 datos_nivel_1 Level 1 Data
+D 0x62D7 0x63D4 datos_nivel_2 Level 2 Data
+D 0x63D4 0x64D4 datos_nivel_3 Level 3 Data
+D 0x64D4 0x65DB datos_nivel_4 Level 4 Data
+D 0x65DB 0x66EA datos_nivel_5 Level 5 Data
+D 0x66EA 0x67E4 datos_nivel_6 Level 6 Data
+D 0x67E4 0x68FF datos_nivel_7 Level 7 Data
 
 # ------------------------------------- lo que quedaba sin explicar
 # Cada uno de estos rangos esta clasificado MIDIENDO, con tools/clasifica_huecos.py,
 # y la etiqueta lleva detras la medida de la que sale: la racha media de bits
 # iguales, la entropia y cuantos valores distintos usa. Lo que no se ha podido
 # clasificar con confianza pone "datos sin clasificar", que es lo que hay.
-D 0x5FFD 0x6150 graficos (339 B; racha 4.22, entropia 4.33, 50 valores: rachas mas largas que el azar)
-D 0x68FF 0x69A8 relleno (169 B; 169 de 169 bytes son 0x00)
+D 0x5FFD 0x6150 graficos_5FFD Graficos (339 B; racha 4.22, entropia 4.33, 50 valores: rachas mas largas que el azar)
+D 0x68FF 0x69A8 relleno_68FF Relleno (169 B; 169 de 169 bytes son 0x00)
 # (0xC05C-0xC063 estuvo aqui como "relleno o resto" y son SIETE BYTES DE CODIGO:
 #  la rutina a la que salta el poke de inmortalidad de la revista. Ver la
 #  seccion del poke mas abajo.)
-D 0xC184 0xC189 relleno o resto (5 B; 5 bytes)
+D 0xC184 0xC189 relleno_C184 Relleno o resto (5 B; 5 bytes)
 # El area de trabajo de los objetos, partida por lo que dicen sus rutinas de
 # alta (el tope sale de un `cp` y el tamano de entrada, de como indexan). Cada
 # tabla acaba justo donde empieza el contador de la siguiente; ver la seccion
 # "el mapa de RAM de los objetos" mas abajo.
-D 0xC8D7 0xC920 instalaciones de la zona (73 B): el contador en 0xC8D7 y NUEVE entradas de 8 bytes desde 0xC8D8, las que crea el constructor del nivel y gobierna recorre_instalaciones
-D 0xC920 0xC939 la rejilla 5x5 de la zona (25 B): un byte por celda, que es a la vez el dibujo y el estado de lo que hay en ella
-D 0xC939 0xC952 los tiros enemigos (25 B): contador en 0xC939 y seis entradas de 4 bytes, el tope que comprueba alta_enemigo
-D 0xC952 0xC977 los disparos del jugador (37 B): contador en 0xC952 y nueve entradas de 4 bytes, el tope que comprueba alta_objeto_c952
-D 0xC977 0xC97A las dos variables de mueve_tabla (3 B): en 0xC977 la direccion en la que acaba la tabla que esta recorriendo y en 0xC979 cual es (4 la del jugador, 5 la enemiga)
-D 0xC97A 0xC98F la tabla del alta de 0xC882 (21 B): contador y cuatro entradas de 5 bytes
-D 0xC98F 0xC998 la tabla de alta_objeto_c990 (9 B): contador y dos entradas de 4 bytes
-D 0xC998 0xC9A3 la tabla que compacta 0xDFB1 (11 B): contador y dos entradas de 5 bytes
-D 0xC9A3 0xCA5F variables y area de trabajo (188 B); en 0xC9A3 el fotograma de la nave en los cinco bits bajos y su rumbo en los tres altos
-D 0xCA96 0xCB7A tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
+D 0xC8D7 0xC920 instalaciones_de_la_zona Instalaciones de la zona (73 B): el contador en 0xC8D7 y NUEVE entradas de 8 bytes desde 0xC8D8, las que crea el constructor del nivel y gobierna recorre_instalaciones
+F 0xC8D7 1,8
+D 0xC920 0xC939 rejilla_de_la_zona La rejilla 5x5 de la zona (25 B): un byte por celda, que es a la vez el dibujo y el estado de lo que hay en ella
+F 0xC920 5
+D 0xC939 0xC952 tiros_enemigos Los tiros enemigos (25 B): contador en 0xC939 y seis entradas de 4 bytes, el tope que comprueba alta_enemigo
+F 0xC939 1,4
+D 0xC952 0xC977 disparos_del_jugador Los disparos del jugador (37 B): contador en 0xC952 y nueve entradas de 4 bytes, el tope que comprueba alta_objeto_c952
+F 0xC952 1,4
+D 0xC977 0xC97A variables_de_mueve_tabla Las dos variables de mueve_tabla (3 B): en 0xC977 la direccion en la que acaba la tabla que esta recorriendo y en 0xC979 cual es (4 la del jugador, 5 la enemiga)
+D 0xC97A 0xC98F tabla_del_alta_C882 La tabla del alta de 0xC882 (21 B): contador y cuatro entradas de 5 bytes
+F 0xC97A 1,5
+D 0xC98F 0xC998 tabla_de_alta_objeto_C990 La tabla de alta_objeto_c990 (9 B): contador y dos entradas de 4 bytes
+F 0xC98F 1,4
+D 0xC998 0xC9A3 tabla_que_compacta_DFB1 La tabla que compacta 0xDFB1 (11 B): contador y dos entradas de 5 bytes
+F 0xC998 1,5
+D 0xC9A3 0xCA5F variables_y_area_de_trabajo Variables y area de trabajo (188 B); en 0xC9A3 el fotograma de la nave en los cinco bits bajos y su rumbo en los tres altos
+D 0xCA96 0xCB7A tabla_CA96 Tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
 # 0xDA72-0xDAC4 ESTUVO AQUI como tres rangos de datos -16 B de "tabla", 1 B
 # suelto y 86 B "sin clasificar"- y son 83 bytes de CODIGO seguido. Se retiran y
 # 0xDA72 pasa a src/juego.entries. Ver el comentario de ahi.
-D 0xE14E 0xE15A relleno (12 B; 12 de 12 bytes son 0x00)
-D 0xE5E2 0xE6D2 tabla de instrumentos del interprete de sonido: 16 entradas de 15 bytes. El comando L_E4A6 lee el numero de instrumento del guion y copia la entrada (HL = 0xE5E2 + n*15) al estado del canal (ix+0x16 en adelante). Cierra al byte por los dos lados: el codigo de al lado acaba en el ret de 0xE5E1, y 0xE5E2 + 16*15 = 0xE6D2, donde empieza la tabla siguiente
-D 0xF120 0xF126 el estado del animador del logo (6 B): (ix+000/001) la fila de la cima de este fotograma y la del anterior, (ix+002/003) la altura de los dos, (ix+004) cuantas filas hay que borrar y (ix+005) -que el codigo nombra ademas como 0xF125- el contador de filas montadas. Los seis llegan a cero de la cinta y los fija anima_logo, con `ld ix,0f120h` en 0xEE57
-D 0xF126 0xF1E7 la tabla de fotogramas del logo del arranque (193 B): 96 pares (fila de la cima, altura) y el 0xFF de 0xF1E6 que cierra el recorrido. La apunta `ld hl,0f126h` en 0xEE5B y la recorre de dos en dos el bucle de presentacion. Describe el rebote: la altura crece de 1 a 16, el logo baja hasta la fila 186 aplastandose, y vuelve
-D 0xF393 0xF394 relleno o resto (1 B; 1 bytes)
-D 0xF77D 0xF77E relleno o resto (1 B; 1 bytes)
-D 0xF7C7 0xF7F6 tabla (47 B; racha 1.95, entropia 3.71, 15 valores: pocos valores para ser un dibujo)
-D 0xF8C8 0xFDE7 relleno de la grabacion del master (1311 B): RAM sin inicializar volcada tal cual. Son 00/FF alternados de dos en dos, con una marca y un volteo de fase cada 128 bytes EXACTOS (0xF9A8, 0xFA28, 0xFAA8... el aspecto de una DRAM recien encendida) y una decena de bytes sueltos que la maquina del master ya habia tocado. Remata el bloque justo debajo del buzon de POKEs de 0xFDE8. Medido DOS veces (tools/omsx_f972.tcl): 350 s de partida de naves, y la partida COMPLETA de Araubi (2275 s, multicarga y fase a pie incluidas). En los 38 minutos, las unicas escrituras al tramo son las CUATRO del arranque que instalan los ganchos H.KEYI/H.TIMI (PCs 0xBD98/0xBD9D/0xBDA3, todas en t=449, el final de la carga), y las unicas lecturas los fetches de esos ganchos (0xFD9A/0xFD9F). Nadie usa el resto ni una vez
+D 0xE14E 0xE15A relleno_E14E Relleno (12 B; 12 de 12 bytes son 0x00)
+D 0xE5E2 0xE6D2 tabla_de_instrumentos Tabla de instrumentos del interprete de sonido: 16 entradas de 15 bytes. El comando L_E4A6 lee el numero de instrumento del guion y copia la entrada (HL = 0xE5E2 + n*15) al estado del canal (ix+0x16 en adelante). Cierra al byte por los dos lados: el codigo de al lado acaba en el ret de 0xE5E1, y 0xE5E2 + 16*15 = 0xE6D2, donde empieza la tabla siguiente
+F 0xE5E2 15
+D 0xF120 0xF126 estado_del_animador_del_logo El estado del animador del logo (6 B): (ix+000/001) la fila de la cima de este fotograma y la del anterior, (ix+002/003) la altura de los dos, (ix+004) cuantas filas hay que borrar y (ix+005) -que el codigo nombra ademas como 0xF125- el contador de filas montadas. Los seis llegan a cero de la cinta y los fija anima_logo, con `ld ix,0f120h` en 0xEE57
+D 0xF126 0xF1E7 fotogramas_del_logo La tabla de fotogramas del logo del arranque (193 B): 96 pares (fila de la cima, altura) y el 0xFF de 0xF1E6 que cierra el recorrido. La apunta `ld hl,0f126h` en 0xEE5B y la recorre de dos en dos el bucle de presentacion. Describe el rebote: la altura crece de 1 a 16, el logo baja hasta la fila 186 aplastandose, y vuelve
+F 0xF126 2
+D 0xF393 0xF394 relleno_F393 Relleno o resto (1 B; 1 bytes)
+D 0xF77D 0xF77E relleno_F77D Relleno o resto (1 B; 1 bytes)
+D 0xF7C7 0xF7F6 tabla_F7C7 Tabla (47 B; racha 1.95, entropia 3.71, 15 valores: pocos valores para ser un dibujo)
+D 0xF8C8 0xFDE7 relleno_del_master Relleno de la grabacion del master (1311 B): RAM sin inicializar volcada tal cual. Son 00/FF alternados de dos en dos, con una marca y un volteo de fase cada 128 bytes EXACTOS (0xF9A8, 0xFA28, 0xFAA8... el aspecto de una DRAM recien encendida) y una decena de bytes sueltos que la maquina del master ya habia tocado. Remata el bloque justo debajo del buzon de POKEs de 0xFDE8. Medido DOS veces (tools/omsx_f972.tcl): 350 s de partida de naves, y la partida COMPLETA de Araubi (2275 s, multicarga y fase a pie incluidas). En los 38 minutos, las unicas escrituras al tramo son las CUATRO del arranque que instalan los ganchos H.KEYI/H.TIMI (PCs 0xBD98/0xBD9D/0xBDA3, todas en t=449, el final de la carga), y las unicas lecturas los fetches de esos ganchos (0xFD9A/0xFD9F). Nadie usa el resto ni una vez
 
 # ------------------------------------------------- los graficos, identificados
 # Las geometrias salen de tools/ExtractImages.cpp del desensamblado de la
@@ -153,10 +166,14 @@ D 0xF8C8 0xFDE7 relleno de la grabacion del master (1311 B): RAM sin inicializar
 # cierra -0x6DE0 + 111*128 = 0xA560, justo donde empiezan los sprites- y, sobre
 # todo, dibujados salen graficos reconocibles en vez de ruido. Se rehace con
 # tools/render_graficos.py.
-D 0x6000 0x61D8 charset: 59 caracteres de 8x8
-D 0x69A8 0x6DE0 graficos de los centinelas: 15 de 24x24
-D 0x6DE0 0xA560 tiles de los niveles: 111 de 32x32, 128 bytes cada uno
-D 0xA560 0xBA20 sprites: 83 de 16x16 con mascara, 64 bytes cada uno
+D 0x6000 0x61D8 charset Charset: 59 caracteres de 8x8
+F 0x6000 8
+D 0x69A8 0x6DE0 graficos_de_los_centinelas Graficos de los centinelas: 15 de 24x24
+F 0x69A8 3
+D 0x6DE0 0xA560 tiles_de_los_niveles Tiles de los niveles: 111 de 32x32, 128 bytes cada uno
+F 0x6DE0 4
+D 0xA560 0xBA20 sprites Sprites: 83 de 16x16 con mascara, 64 bytes cada uno
+F 0xA560 2
 
 # --- LO QUE DEJO AL DESCUBIERTO QUITAR LAS ENTRADAS DEL COTEJO ---------------
 #
@@ -206,9 +223,10 @@ D 0xA560 0xBA20 sprites: 83 de 16x16 con mascara, 64 bytes cada uno
 #
 # Esto no los identifica. Lo que hace es cerrar una via con un motivo, en vez de
 # dejarla como "sin probar".
-D 0xCA5F 0xCA84 datos muertos: residuo de la grabacion (37 B). Tienen estructura -valores pequenos, 0 a 10, con pinta de variables- pero NADIE los toca: sin referencias directas ni punteros en el binario, y medido con watchpoints de lectura Y escritura sobre la partida COMPLETA de 38 minutos (las siete zonas y la multicarga) mas 350 s de otra partida: cero disparos (tools/omsx_f972.tcl con STARDUST_INI/FIN_R, dump/ca5f y dump/ca5f_araubi). Que fueron antes de morir no se sabe
-D 0xCA84 0xCA96 variables del juego (18 B), con nombre: 0xCA84-0xCA8B la fuente de 8 bytes del escritor de pantalla 0xC6E9 (patrones 00/FF/55/AA, cargada en 0xC6DC); 0xCA8C/8D variables del subsistema de 0xD6xx (los tiles especiales); 0xCA8E variable del arranque (0xBE2C); 0xCA8F/90 el PUNTERO-SEMILLA del generador de azar (ld hl,(0ca8fh) en 0xC840, dentro del RNG L_C83F, el gemelo del 0xAD28 de a pie); 0xCA91/92 variables de estado (0xCA92 la incrementa el alta de objetos en 0xC0F5); 0xCA93-0xCA95 el arranque de la fuente del rotulador 0xC5A8 (cargada en 0xC55B)
-D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
+D 0xCA5F 0xCA84 datos_muertos_CA5F Datos muertos: residuo de la grabacion (37 B). Tienen estructura -valores pequenos, 0 a 10, con pinta de variables- pero NADIE los toca: sin referencias directas ni punteros en el binario, y medido con watchpoints de lectura Y escritura sobre la partida COMPLETA de 38 minutos (las siete zonas y la multicarga) mas 350 s de otra partida: cero disparos (tools/omsx_f972.tcl con STARDUST_INI/FIN_R, dump/ca5f y dump/ca5f_araubi). Que fueron antes de morir no se sabe
+D 0xCA84 0xCA96 variables_del_juego Variables del juego (18 B), con nombre: 0xCA84-0xCA8B la fuente de 8 bytes del escritor de pantalla 0xC6E9 (patrones 00/FF/55/AA, cargada en 0xC6DC); 0xCA8C/8D variables del subsistema de 0xD6xx (los tiles especiales); 0xCA8E variable del arranque (0xBE2C); 0xCA8F/90 el PUNTERO-SEMILLA del generador de azar (ld hl,(0ca8fh) en 0xC840, dentro del RNG L_C83F, el gemelo del 0xAD28 de a pie); 0xCA91/92 variables de estado (0xCA92 la incrementa el alta de objetos en 0xC0F5); 0xCA93-0xCA95 el arranque de la fuente del rotulador 0xC5A8 (cargada en 0xC55B)
+D 0xDCB1 0xDCBF tabla_de_teclas Tabla de teclas: 7 entradas de (mascara, valor de puerto)
+F 0xDCB1 2
 #   Cada entrada son dos bytes: la MASCARA del bit dentro de la fila, y el valor
 #   que hay que escribir en el puerto 0xAA del PPI para seleccionar esa fila,
 #   que es 0xF0 or fila. Las siete van en el mismo orden en que el juego las
@@ -258,7 +276,7 @@ D 0xDCB1 0xDCBF tabla de teclas: 7 entradas de (mascara, valor de puerto)
 #   lista es, contando desde SHIFT, "SPACE". Igual salen 'A' en el indice 22,
 #   'Q' en el 38, 'P' en el 37 y 'O' en el 36.
 
-D 0xDAC5 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
+D 0xDAC5 0xDF0F textos_del_juego Textos del juego: menu, redefinir teclas, records y mensajes
 #   (1098 B, 63 % imprimible).
 #
 #   OJO CON DONDE EMPIEZA. Este rango arrancaba en 0xDAD9, y eso partia una
@@ -284,14 +302,16 @@ D 0xDAC5 0xDF0F textos del juego: menu, redefinir teclas, records y mensajes
 #   pantalla de entrada de record (B R A V O / HAS CONSEGUIDO UNA / DE LAS
 #   MEJORES / PUNTUACIONES DE HOY / ESCRIBE TU NOMBRE); y DEMO y BONUS 5000.
 #   Que no se ejecute nunca cuadra con que sea texto y no codigo.
-D 0xE6D2 0xE6E3 tabla del comando L_E4EF del interprete: entradas de 6 bytes (HL = 0xE6D2 + n*6) que se copian al bloque de 0xEDFF+4, el canal de efectos. Hasta la tabla de notas caben dos entradas enteras y cinco bytes de una tercera; cuantas usa el juego no esta medido
+D 0xE6D2 0xE6E3 tabla_del_comando_E4EF Tabla del comando L_E4EF del interprete: entradas de 6 bytes (HL = 0xE6D2 + n*6) que se copian al bloque de 0xEDFF+4, el canal de efectos. Hasta la tabla de notas caben dos entradas enteras y cinco bytes de una tercera; cuantas usa el juego no esta medido
+F 0xE6D2 6
 #   Se probo que fueran guiones para el interprete de 0xE203 -tienen pinta:
 #   registros cortos separados por 0xFF y 0xFE- pero NO se sostiene. Los cuatro
 #   `ld bc,0xE6xx` que parecian arrancarlos aqui caen dentro de los sprites, y
 #   el quinto, el de 0xC7B7, es desalineamiento: el listado trazado lee ahi
 #   `ld c,001h` en 0xC7B6. No hay ni una referencia buena. Queda sin identificar.
 
-D 0xE6E3 0xE7A3 tabla de periodos del PSG: 96 notas cromaticas = OCHO OCTAVAS justas (192 B). Aqui se publico 81 y se quedaba corta: 0xE6E3 + 96*2 = 0xE7A3 cierra al byte contra la tabla de opcodes, y los 30 bytes que sobraban son los 15 periodos mas agudos, decrecientes (0x20, 0x1e, 0x1c...). Lo confirma la musica, que usa la nota 84
+D 0xE6E3 0xE7A3 tabla_de_periodos Tabla de periodos del PSG: 96 notas cromaticas = OCHO OCTAVAS justas (192 B). Aqui se publico 81 y se quedaba corta: 0xE6E3 + 96*2 = 0xE7A3 cierra al byte contra la tabla de opcodes, y los 30 bytes que sobraban son los 15 periodos mas agudos, decrecientes (0x20, 0x1e, 0x1c...). Lo confirma la musica, que usa la nota 84
+F 0xE6E3 w8
 #   Son 81 palabras de 16 bits, estrictamente decrecientes, de 3421 a 34. La
 #   prueba de que es una escala cromatica es que cada entrada vale EXACTAMENTE
 #   el doble que la que esta doce posiciones mas alla -razon 2,0000 en las 69
@@ -316,7 +336,7 @@ D 0xE6E3 0xE7A3 tabla de periodos del PSG: 96 notas cromaticas = OCHO OCTAVAS ju
 # verdad lo dice el propio codigo, `ld ix,0f1e7h` en 0xEE8C, y el binario: en
 # 0xF1E7 empieza `0d 01 09 "CONVERSION PO..."` y lo de antes son pares
 # crecientes (00 01, 00 01, 00 02...) que no son ni texto ni lo parecen.
-D 0xF1E7 0xF2D1 textos de la pantalla de creditos (234 B; leidos del binario:
+D 0xF1E7 0xF2D1 textos_de_los_creditos Textos de la pantalla de creditos (234 B; leidos del binario:
 #   CONVERSION POR / CARLOS ARIAS / GRAFICOS / JUAN CARLOS Y JAVIER AREVALO /
 #   ...ADEMAS DE... / JULIO MARTIN / MUSICA COMPUESTA POR / GOMINOLAS /
 #   BASADO EN UNA IDEA ORIGINAL / JOSE MANUEL MU&OZ / TOPO SOFT.
@@ -335,7 +355,7 @@ D 0xF1E7 0xF2D1 textos de la pantalla de creditos (234 B; leidos del binario:
 # (Aqui hubo un tercero, 0xC5BB-0xC5C1, "relleno o resto". No lo era: son los
 # tres primeros peldanos de la tira de desplazamiento del dibujo de 16 bits.
 # Ver la seccion del pintor de sprites.)
-D 0xD3AD 0xD3CF tabla (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valores para ser un dibujo)
+D 0xD3AD 0xD3CF tabla_D3AD Tabla (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valores para ser un dibujo)
 # (0xE03D-0xE045 estuvo aqui como "tabla" y son OCHO BYTES DE CODIGO: un
 #  comportamiento de objeto que el bloque instala como puntero desde 0xE033 y
 #  0xE086. Ver obj_E03D en src/juego.entries.)
@@ -408,9 +428,10 @@ D 0xD3AD 0xD3CF tabla (34 B; racha 3.63, entropia 3.17, 16 valores: pocos valore
 #   - cada byte es un indice de tile, y van de 0 a 110 cuando hay exactamente
 #     111 tiles. La zona 7 usa el 110, el ultimo.
 # Se rehace con tools/descomprime_nivel.py y se dibuja con render_niveles.py.
-D 0xDE03 0xDE18 tabla de zonas: 7 entradas de (puntero, color de SCREEN 2)
+D 0xDE03 0xDE18 tabla_de_zonas Tabla de zonas: 7 entradas de (puntero, color de SCREEN 2)
+F 0xDE03 3
 #   Los colores ciclan 0xA1, 0xF1, 0x71 -tinta 10, 15 y 7 sobre fondo negro-.
-D 0xDE18 0xDE9A diccionario de frases del descompresor de niveles
+D 0xDE18 0xDE9A diccionario_de_frases Diccionario de frases del descompresor de niveles
 #   Cada frase: un byte de longitud -incluyendose- y luego sus tokens.
 
 # --- LO QUE DICE EL COTEJO CON EL SPECTRUM, YA CON EL BUSCADOR ARREGLADO ------
@@ -458,7 +479,7 @@ D 0xDE18 0xDE9A diccionario de frases del descompresor de niveles
 # otro binario, su desensamblado y el nuestro por separado.
 #
 # El limite de abajo es el final de los sprites: 0xA560 + 83*64 = 0xBA20.
-D 0xBA20 0xBD85 la DEMO: los mandos grabados, un byte por fotograma (869 B = 17,4 s)
+D 0xBA20 0xBD85 mandos_de_la_demo La DEMO: los mandos grabados, un byte por fotograma (869 B = 17,4 s)
 
 
 # La rutina que lee esa grabacion, y que confirma AQUI lo que decia la etiqueta

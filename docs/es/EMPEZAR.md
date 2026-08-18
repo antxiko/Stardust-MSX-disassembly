@@ -49,6 +49,19 @@ Esa separación es justo lo que evita que el listado y su comprobación
 diverjan con el tiempo: el fichero que se publica es el mismo que se
 verifica.
 
+### Como salen los bloques de datos
+
+Cada rango de datos declarado en las notas sale como un bloque aparte: su
+cabecera diciendo para que sirve, su etiqueta y el volcado alineado a su primer
+byte, de modo que se ve de un golpe donde acaba una tabla y empieza la
+siguiente. Una linea opcional le da al bloque la anchura de fila de su
+estructura real: los 59 caracteres del charset de ocho en ocho -un glifo por
+fila-, los tiles de los niveles de cuatro -una fila de un tile de 32x32-, los
+centinelas de tres, la imagen de la escena final de dieciocho (que es su propia
+fila), la tabla de instrumentos de quince bytes por instrumento, y las tablas de
+contador mas registros con el contador solo en la primera fila. Las tablas de
+punteros salen en `defw`, con el destino nombrado al lado cuando lo tiene.
+
 ## Las herramientas que más se usan
 
 | | |

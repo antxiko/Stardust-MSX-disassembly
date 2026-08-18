@@ -20,6 +20,10 @@ Formato del fichero .notes (todo opcional, una directiva por linea):
         -> bloque de cabecera antes de esa direccion (se puede repetir)
     D 0x4000 0x4800 fuente  Tabla de patrones de la fuente (256 glifos x 8)
         -> marca un rango de datos con nombre y descripcion
+    F 0x47c3 w10        Anchura de fila del bloque de datos que empieza ahi:
+    F 0x4787 2          un numero = bytes por linea, wN = N palabras (defw), y
+    F 0x4000 2,w4,6     varios tramos separados por comas (el ultimo se repite)
+                        -> el volcado sale en filas del tamano de su estructura
 """
 import tempfile
 import json
@@ -27,8 +31,13 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 
-# El temporal del sistema: en Windows no hay /tmp.
+# El trozo que se le pasa a z80dasm va al directorio de trabajo del proyecto y
+# NO al temporal del sistema: z80dasm crea SU temporal al lado del fichero de
+# entrada, y bajo make el TEMP del entorno acaba siendo el de Windows, donde no
+# se puede escribir -fallaba con "Cannot create temporary file" y el listado
+# salia entero como datos, sin una sola instruccion-.
 TMP = tempfile.gettempdir()
 
 BIOS = {}
@@ -41,9 +50,26 @@ def load_bios(path):
             BIOS.setdefault(int(m.group(2), 16), (m.group(1), (m.group(3) or "").strip()))
 
 
+def parse_fmt(spec):
+    """Anchura de fila de un bloque de datos, tal como la declara la directiva F.
+
+    "8" -> filas de ocho bytes; "w4" -> filas de cuatro palabras (defw);
+    "2,w4,6" -> una fila de dos bytes, otra de cuatro palabras y el resto de
+    seis en seis. El ultimo tramo se repite hasta acabar el bloque.
+    """
+    tramos = []
+    for it in spec.lower().split(","):
+        it = it.strip()
+        pal = it.startswith("w")
+        n = it[1:] if pal else it
+        tramos.append((int(n) if n else 8, pal))
+    return tramos or [(16, False)]
+
+
 class Notes:
     def __init__(self):
         self.labels, self.line, self.blocks, self.data = {}, {}, {}, []
+        self.fmt = {}
 
     @classmethod
     def load(cls, path):
@@ -68,6 +94,9 @@ class Notes:
                 p = rest.split(None, 3)
                 n.data.append((int(p[0], 0), int(p[1], 0), p[2],
                                p[3].strip() if len(p) > 3 else ""))
+            elif k == "F":
+                p = rest.split()
+                n.fmt[int(p[0], 0)] = parse_fmt(p[1])
         return n
 
 
@@ -81,6 +110,8 @@ _BANNERED = set()
 # datos (o al principio de una region, donde z80dasm no la emite): sin esto el
 # listado no reensambla, que es justo el criterio que valida el desensamblado.
 _EMITTED = set()
+# Etiqueta DATA_ de cada bloque de datos declarado.
+_DATANAMES = {}
 
 
 def banner(lines, addr):
@@ -101,6 +132,8 @@ def banner(lines, addr):
 
 def main():
     binpath, org, tracepath, notespath, symspath, outpath, title = sys.argv[1:8]
+    global TMP
+    TMP = os.path.dirname(os.path.abspath(tracepath))
     org = int(org, 0)
     data = open(binpath, "rb").read()
     tr = json.load(open(tracepath))
@@ -116,6 +149,22 @@ def main():
         names[a] = nm
 
     dataranges = {a: (b, nm, desc) for a, b, nm, desc in notes.data}
+    # Etiqueta de cada bloque de datos: DATA_ y el nombre de su rango en las
+    # notas, que es lo que dice PARA QUE sirve. El prefijo lo distingue de una
+    # etiqueta de codigo, y con el nombre dentro los punteros que apuntan al
+    # bloque se leen solos. Si el nombre no vale como etiqueta -o esta repetido,
+    # o ya lo usa otra- se cae a la direccion.
+    repes = {}
+    for a_, _b, nm_, _d in notes.data:
+        repes[nm_] = repes.get(nm_, 0) + 1
+    usadas_et = set(names.values())
+    for a_, _b, nm_, _d in notes.data:
+        et = "DATA_" + nm_ if re.fullmatch(r"[A-Za-z_]\w*", nm_ or "") else ""
+        if not et or repes[nm_] > 1 or et in usadas_et:
+            et = f"DATA_{a_:04X}"
+        if a_ not in names:
+            _DATANAMES[a_] = et
+            usadas_et.add(et)
 
     out = []
     out.append(f"; {'='*74}")
@@ -206,43 +255,111 @@ def main():
 
 
 def emit_data(data, org, a, b, dataranges, notes, names):
-    out = ["", f"; {'-'*70}"]
-    hit = [(s, e, nm, d) for s, (e, nm, d) in dataranges.items() if s < b and e > a]
-    if hit:
-        for s, e, nm, d in sorted(hit):
-            out.append(f"; DATOS {nm}: {d}")
-            out.append(f";   {s:#06x}..{e:#06x}  ({e-s} bytes)")
-    else:
-        out.append(f"; DATOS sin identificar  {a:#06x}..{b:#06x}  ({b-a} bytes)")
-    out.append(f"; {'-'*70}")
-    out += banner(notes.blocks.get(a), a)
-    for i in range(a, b, 16):
-        row = data[i - org:min(i + 16, b) - org]
-        # Una etiqueta puede caer dentro de una fila del volcado; en ese caso hay
-        # que partir la fila para que quede exactamente en su direccion.
-        for off in range(len(row)):
-            addr = i + off
-            if addr in names and addr not in _EMITTED:
-                if off:
-                    head = row[:off]
-                    out.append(f"\tdefb {','.join(f'0{c:02x}h' for c in head)}"
-                               f"\t; {i:04x}")
-                    row = row[off:]
-                cmt = notes.labels.get(addr, (None, ""))[1]
-                out.append(f"{names[addr]}:" + (f"\t\t; {cmt}" if cmt else ""))
-                _EMITTED.add(addr)
-                i = addr
-                break
-        txt = "".join(chr(c) if 32 <= c < 127 else "." for c in row)
-        out.append(f"\tdefb {','.join(f'0{c:02x}h' for c in row)}\t; {i:04x}  {txt}")
+    """Vuelca un tramo de datos PARTIDO por los rangos declarados en las notas.
+
+    Antes se volcaba el tramo entero del trazador de 16 en 16 bytes con las
+    cabeceras de todos sus rangos amontonadas delante: las filas cruzaban las
+    fronteras entre una tabla y la siguiente y no habia manera de ver donde
+    acababa cada una. Ahora cada rango sale como un bloque aparte, con su
+    cabecera, su etiqueta y el volcado alineado a su primer byte.
+    """
+    out = []
+    hit = sorted((s, e, nm, d) for s, (e, nm, d) in dataranges.items()
+                 if s < b and e > a)
+    # Trozos que cubren [a,b) exactamente una vez: cada rango recortado al
+    # tramo, y los huecos entre rangos como "sin identificar" (que es lo que
+    # son: no forman parte de la tabla de al lado).
+    trozos, cur = [], a
+    for s, e, nm, d in hit:
+        s, e = max(s, a), min(e, b)
+        if s > cur:
+            trozos.append((cur, s, None, ""))
+            cur = s
+        if e > cur:
+            trozos.append((cur, e, nm, d))
+            cur = e
+        else:
+            print(f"  aviso: el rango de datos {nm} ({s:#06x}..{e:#06x}) no "
+                  f"aporta bytes propios; repasa sus limites en el .notes")
+    if cur < b:
+        trozos.append((cur, b, None, ""))
+    for s, e, nm, d in trozos:
+        out += emit_data_range(data, org, s, e, nm, d, notes, names)
     return out
+
+
+def emit_data_range(data, org, a, b, nm, desc, notes, names):
+    """Un solo bloque de datos: cabecera, etiqueta y volcado con su anchura."""
+    out = ["", "; " + "-" * 70]
+    if nm:
+        cab = f"; DATOS {nm}: {desc}" if desc else f"; DATOS {nm}"
+        out += textwrap.wrap(cab, 78, subsequent_indent=";   ",
+                             break_long_words=False, break_on_hyphens=False)
+        out.append(f";   {a:#06x}..{b:#06x}  ({b - a} bytes)")
+    else:
+        out.append(f"; DATOS sin identificar  {a:#06x}..{b:#06x}  ({b - a} bytes)")
+    out += banner(notes.blocks.get(a), a)
+    # Etiqueta del bloque: la de las notas si hay una en su primer byte; si no,
+    # la DATA_ que lleva el nombre de su uso.
+    if a in names and a not in _EMITTED:
+        cmt = notes.labels.get(a, (None, ""))[1]
+        out.append(f"{names[a]}:" + (f"\t\t; {cmt}" if cmt else ""))
+        _EMITTED.add(a)
+    elif a not in _EMITTED and a not in names:
+        out.append(_DATANAMES.setdefault(a, f"DATA_{a:04X}") + ":")
+    tramos = notes.fmt.get(a) or [(16, False)]
+    # Una etiqueta -o una cabecera B- puede caer dentro de una fila: hay que
+    # partir la fila para que quede exactamente en su direccion.
+    i, k = a, 0
+    while i < b:
+        ancho, palabras = tramos[min(k, len(tramos) - 1)]
+        k += 1
+        fin = min(i + ancho * (2 if palabras else 1), b)
+        corte = next((x for x in range(i + 1, fin)
+                      if (x in names and x not in _EMITTED)
+                      or x in notes.blocks), None)
+        if corte:
+            fin = corte
+        out += fila_datos(data, org, i, fin, palabras, names)
+        i = fin
+        if i < b:
+            out += banner(notes.blocks.get(i), i)
+            if i in names and i not in _EMITTED:
+                cmt = notes.labels.get(i, (None, ""))[1]
+                out.append(f"{names[i]}:" + (f"\t\t; {cmt}" if cmt else ""))
+                _EMITTED.add(i)
+    return out
+
+
+def fila_datos(data, org, i, fin, palabras, names):
+    """Una fila del volcado. En defw se anota a donde apunta, si se sabe."""
+    row = data[i - org:fin - org]
+    if palabras and len(row) >= 2:
+        vals = [row[2 * k] | (row[2 * k + 1] << 8) for k in range(len(row) // 2)]
+        cmt = f"; {i:04x}"
+        dest = [names.get(v) or _DATANAMES.get(v) for v in vals]
+        if len(vals) <= 4 and any(dest):
+            cmt += "  -> " + " ".join(d or f"{v:#06x}"
+                                     for v, d in zip(vals, dest))
+        out = [f"\tdefw {','.join(f'0{v:04x}h' for v in vals)}\t{cmt}"]
+        if len(row) % 2:                 # byte suelto al final del rango
+            out.append(f"\tdefb 0{row[-1]:02x}h\t; {i + len(vals) * 2:04x}")
+        return out
+    txt = "".join(chr(c) if 32 <= c < 127 else "." for c in row)
+    cmt = f"; {i:04x}" + (f"  {txt}" if len(row) >= 8 else "")
+    return [f"\tdefb {','.join(f'0{c:02x}h' for c in row)}\t{cmt}"]
 
 
 def emit_code(data, org, a, b, names, notes):
     tmp = f"{TMP}/_mkasm_chunk.bin"
     open(tmp, "wb").write(data[a - org:b - org])
+    # TMP/TEMP saneados para z80dasm: bajo el make de msys llegan como "/tmp",
+    # que el CRT nativo de Windows no sabe usar, y el tmpfile() interno de
+    # z80dasm acaba intentando crear en la raiz del disco (Permission denied).
+    dtmp = os.path.dirname(tmp) or "."
     r = subprocess.run(["z80dasm", "-a", "-l", "-g", hex(a), tmp],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True,
+                       env=dict(os.environ, TMP=dtmp, TEMP=dtmp))
     os.unlink(tmp)
     if r.returncode != 0:
         return [f"; !! z80dasm fallo en {a:#06x}: {r.stderr}"]

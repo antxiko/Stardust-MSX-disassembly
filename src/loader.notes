@@ -11,4 +11,4 @@
 # Ojo a un detalle: el LDIR copia 300 bytes (0x12C) desde 0xD33A, pero de aqui
 # al final del bloque solo hay 277. Los 23 que faltan se los lleva de lo que
 # hubiera en RAM detras.
-D 0xD33A 0xD44F codigo que se ejecuta recolocado en la pagina 1 (0x4000)
+D 0xD33A 0xD44F codigo_recolocado Codigo que se ejecuta recolocado en la pagina 1 (0x4000)

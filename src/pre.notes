@@ -9,9 +9,12 @@
 # y las cuentas cierran solas: 0x9C40 + 6144 = 0xB440, y 0xB440 + 6144 = 0xCC40,
 # que es el final exacto del bloque. Dibujada con tools/render_carga.py sale la
 # ilustracion firmada CANO, que es la prueba de que el reparto es este.
-D 0x9C40 0xB440 patrones de la pantalla de carga: 6144 bytes a la VRAM 0x0000
-D 0xB440 0xCC40 colores de la pantalla de carga: 6144 bytes a la VRAM 0x2000
+D 0x9C40 0xB440 patrones_de_la_carga Patrones de la pantalla de carga: 6144 bytes a la VRAM 0x0000
+F 0x9C40 8
+D 0xB440 0xCC40 colores_de_la_carga Colores de la pantalla de carga: 6144 bytes a la VRAM 0x2000
+F 0xB440 8
 # Y entre el codigo y los patrones quedan unos pocos bytes: los 8 de la tabla de
 # registros del VDP que programa la rutina de 0x9BA3, y el relleno hasta 0x9C40.
-D 0x9BB6 0x9BBE los 8 valores que se escriben en los registros 0 a 7 del VDP
-D 0x9C35 0x9C40 relleno hasta el principio de los patrones
+D 0x9BB6 0x9BBE registros_del_vdp Los 8 valores que se escriben en los registros 0 a 7 del VDP
+F 0x9BB6 1
+D 0x9C35 0x9C40 relleno_9C35 Relleno hasta el principio de los patrones

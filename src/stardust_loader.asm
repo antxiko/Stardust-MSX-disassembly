@@ -20,7 +20,7 @@ L_D2F0:
 	ld hl,0d33ah		;d2f4
 	ld de,04000h		;d2f7
 	ld bc,0012ch		;d2fa
-	ldir			;d2fd
+	ldir		;d2fd
 	jp 04000h		;d2ff
 L_D302:
 	ld hl,04000h		;d302
@@ -41,12 +41,12 @@ L_D317:
 	call 00024h		;d31a   ; BIOS ENASLT - Switches to specified slot and page definitively
 	pop hl			;d31d
 	ld (hl),020h		;d31e
-	ld a,(hl)		;d320
-	cp 020h			;d321
+	ld a,(hl)			;d320
+	cp 020h		;d321
 	jr nz,L_D32C		;d323
 	ld (hl),0fah		;d325
-	ld a,(hl)		;d327
-	cp 0fah			;d328
+	ld a,(hl)			;d327
+	cp 0fah		;d328
 	jr z,L_D337		;d32a
 L_D32C:
 	pop bc			;d32c
@@ -63,9 +63,10 @@ L_D337:
 	ret			;d339
 
 ; ----------------------------------------------------------------------
-; DATOS codigo: que se ejecuta recolocado en la pagina 1 (0x4000)
+; DATOS codigo_recolocado: Codigo que se ejecuta recolocado en la pagina 1
+;   (0x4000)
 ;   0xd33a..0xd44f  (277 bytes)
-; ----------------------------------------------------------------------
+DATA_codigo_recolocado:
 	defb 021h,0c0h,0dah,011h,0e8h,0fdh,001h,05eh,000h,0edh,0b0h,031h,050h,046h,0ddh,021h	; d33a  !......^...1PF.!
 	defb 08ch,09bh,011h,0b4h,030h,03eh,000h,037h,0cdh,05ch,040h,03eh,082h,0d3h,099h,0a7h	; d34a  ....0>.7.\@>....
 	defb 0a7h,03eh,081h,0d3h,099h,0cdh,08ch,09bh,03eh,0c2h,0d3h,099h,0a7h,0a7h,03eh,081h	; d35a  .>......>.....>.
@@ -83,4 +84,4 @@ L_D337:
 	defb 040h,0d0h,03eh,016h,03dh,020h,0fdh,0a7h,004h,000h,0c8h,03eh,000h,0dbh,0a2h,02fh	; d41a  @.>.= .....>.../
 	defb 0a9h,0e6h,080h,0cah,0e8h,040h,079h,02fh,04fh,0edh,05fh,0e6h,00fh,0d3h,099h,03eh	; d42a  .....@y/O._....>
 	defb 087h,0d3h,099h,037h,0c9h,01eh,013h,03eh,009h,0d3h,0abh,03eh,001h,0d3h,099h,03eh	; d43a  ...7...>...>...>
-	defb 087h,0d3h,099h,0c9h,068h	; d44a  ....h
+	defb 087h,0d3h,099h,0c9h,068h	; d44a

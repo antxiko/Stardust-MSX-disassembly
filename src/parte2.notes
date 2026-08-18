@@ -5,33 +5,39 @@
 # y la etiqueta lleva detras la medida de la que sale: la racha media de bits
 # iguales, la entropia y cuantos valores distintos usa. Lo que no se ha podido
 # clasificar con confianza pone "datos sin clasificar", que es lo que hay.
-D 0x61D0 0x61D8 ocho bytes sin identificar, lo que queda de lo que se llamo "tabla de punteros a los graficos" (ver el bloque de la escena final)
-D 0x61D8 0x6285 el GUION DE LA ESCENA FINAL (173 B): 78 pasos de (columna, fila) con marcadores por encima de 0xC0 que cambian el fotograma, y 0xC0 como terminador. Lo recorre el bucle de 0xBE47
-D 0x6285 0x6555 la IMAGEN de la escena final (720 B): 40 filas de 18 bytes que copia_al_buffer lleva a la banda C del buffer, centradas (18 + 6 = 24, el ancho). 0x6285 + 0x2D0 = 0x6555, justo donde arranca el pool de sprites
+D 0x61D0 0x61D8 ocho_bytes_sin_identificar Ocho bytes sin identificar, lo que queda de lo que se llamo "tabla de punteros a los graficos" (ver el bloque de la escena final)
+D 0x61D8 0x6285 guion_de_la_escena_final El GUION DE LA ESCENA FINAL (173 B): 78 pasos de (columna, fila) con marcadores por encima de 0xC0 que cambian el fotograma, y 0xC0 como terminador. Lo recorre el bucle de 0xBE47
+F 0x61D8 2
+D 0x6285 0x6555 imagen_de_la_escena_final La IMAGEN de la escena final (720 B): 40 filas de 18 bytes que copia_al_buffer lleva a la banda C del buffer, centradas (18 + 6 = 24, el ancho). 0x6285 + 0x2D0 = 0x6555, justo donde arranca el pool de sprites
+F 0x6285 18
 #   descendiendo de dos en dos -78BA, 78B8, 78B6...- de las que el 76 % apunta
 #   dentro de 0x682E-0x7C78, declarado graficos. 24 de las 37 diferencias entre
 #   palabras consecutivas son exactamente 2. Es la misma tabla que sigue debajo,
 #   que estaba cortada demasiado tarde.
-D 0x6555 0x6644 EL POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
-D 0x6644 0x682E pool de sprites de la fase (tramo): las entradas 3 a 11 del pool de 64 B de 0x6555, dibujadas limpias con la geometria de 16x16 con mascara. Los recortes que habia aqui (dos rangos sin clasificar y una "tabla" de 9 B) eran cortes arbitrarios en mitad de los sprites
-D 0x682E 0x7C78 pool de sprites de la fase (continuacion): entradas de 64 B; los frames del derrumbe del protagonista (0x50 en adelante) caen aqui, en 0x6555 + 0x50*64 = 0x7955
-D 0x7C9D 0x840B graficos: el final del pool de sprites (hasta 0x7D54), el slot de trabajo 0x60 del derrumbe (0x7D55-0x7D94) y graficos hasta el mapa de 0x840B
-D 0x840B 0x85DF el MAPA de la fase, que es dos mapas en uno (468 B: 78 filas de 6 celdas de 32x32 px, 280 con suelo). Cada byte es el INDICE DE TILE del pozo de 0x87F3 con el que se dibuja la celda (redibuja_fondo: origen = 0x87F3 + valor*128) y a la vez la COLISION (consulta_mapa acaba en and a: 0 = vacio, y sus seis llamadores solo miran el flag Z). La partida recorre las filas 71 a 0. OJO: estuvo publicado como celdas de 32x16 y torre de 1248 px; el alto se habia derivado en vez de medirse, y es 32 px (tile de 128 B = 4 B x 32 filas, consulta_mapa divide Y entre 32, y el fino 0xAD2C da 16 pasos de 2 px por fila). La torre es 192x2496
-D 0x85DF 0x87F3 ceros bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
-D 0x87F3 0x8A78 graficos: el arranque del pozo de tiles del blitter (el pozo entero son 45 TILES de 32x32, 128 B cada uno, 0x87F3-0x9E72: 0x87F3 + 45*128 - 1 = 0x9E72, y el valor maximo del mapa es 44 — cierra al byte con lo medido en el puerto 0x98). El tile 0 (0x87F3-0x8872) es la TRAMA DEL FONDO de las celdas vacias, y esta viva: los rotadores 0xB140/0xB167 la desplazan una fila de pixel por cada 2 px de scroll, el parallax a mitad de velocidad. Los tiles 0x28/0x29 son el cartel-flecha de la base y el 0x2A la roseta que corona la fila 0
-D 0x8A78 0x984E graficos (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
+D 0x6555 0x6644 pool_de_sprites EL POOL DE SPRITES de la fase: entradas de 64 bytes (16x16 con mascara, dibujo y mascara intercalados por linea, el mismo formato que los sprites de naves). Lo fija el codigo del derrumbe: HL = frame*64 + 0x6555, copiado al slot de trabajo 0x60 en 0x7D55 = 0x6555 + 0x60*64. Dibujadas las primeras 24 entradas salen los bichos andantes limpios, con sus poses
+F 0x6555 2
+D 0x6644 0x682E pool_de_sprites_tramo Pool de sprites de la fase (tramo): las entradas 3 a 11 del pool de 64 B de 0x6555, dibujadas limpias con la geometria de 16x16 con mascara. Los recortes que habia aqui (dos rangos sin clasificar y una "tabla" de 9 B) eran cortes arbitrarios en mitad de los sprites
+F 0x6644 2
+D 0x682E 0x7C78 pool_de_sprites_continuacion Pool de sprites de la fase (continuacion): entradas de 64 B; los frames del derrumbe del protagonista (0x50 en adelante) caen aqui, en 0x6555 + 0x50*64 = 0x7955
+F 0x682E 2
+D 0x7C9D 0x840B graficos_final_del_pool Graficos: el final del pool de sprites (hasta 0x7D54), el slot de trabajo 0x60 del derrumbe (0x7D55-0x7D94) y graficos hasta el mapa de 0x840B
+D 0x840B 0x85DF mapa_de_la_fase El MAPA de la fase, que es dos mapas en uno (468 B: 78 filas de 6 celdas de 32x32 px, 280 con suelo). Cada byte es el INDICE DE TILE del pozo de 0x87F3 con el que se dibuja la celda (redibuja_fondo: origen = 0x87F3 + valor*128) y a la vez la COLISION (consulta_mapa acaba en and a: 0 = vacio, y sus seis llamadores solo miran el flag Z). La partida recorre las filas 71 a 0. OJO: estuvo publicado como celdas de 32x16 y torre de 1248 px; el alto se habia derivado en vez de medirse, y es 32 px (tile de 128 B = 4 B x 32 filas, consulta_mapa divide Y entre 32, y el fino 0xAD2C da 16 pasos de 2 px por fila). La torre es 192x2496
+F 0x840B 6
+D 0x85DF 0x87F3 ceros_bajo_la_zona Ceros bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
+D 0x87F3 0x8A78 graficos_pozo_de_tiles Graficos: el arranque del pozo de tiles del blitter (el pozo entero son 45 TILES de 32x32, 128 B cada uno, 0x87F3-0x9E72: 0x87F3 + 45*128 - 1 = 0x9E72, y el valor maximo del mapa es 44 — cierra al byte con lo medido en el puerto 0x98). El tile 0 (0x87F3-0x8872) es la TRAMA DEL FONDO de las celdas vacias, y esta viva: los rotadores 0xB140/0xB167 la desplazan una fila de pixel por cada 2 px de scroll, el parallax a mitad de velocidad. Los tiles 0x28/0x29 son el cartel-flecha de la base y el 0x2A la roseta que corona la fila 0
+D 0x8A78 0x984E graficos_8A78 Graficos (3542 B; racha 1.51, entropia 5.00, 153 valores: mas
 #   tramado aun que el rango de aqui abajo). Se contaban como CODIGO: el trazador
 #   entraba por el `jp nz,8A78` fantasma de 0x6209, leido a caballo entre dos
 #   entradas de la tabla de punteros. Una partida completa hasta el final del
 #   juego no ejecuto ni una de sus 3542 direcciones.
-D 0x984E 0x9FF3 graficos tramados (1957 B; rachas cortas y muchos valores, firma del damero)
+D 0x984E 0x9FF3 graficos_tramados Graficos tramados (1957 B; rachas cortas y muchos valores, firma del damero)
 #   OJO CON EL FINAL. Este rango llego a estar declarado hasta 0xA2D2 y se
 #   tragaba dos cosas: el ARRANQUE del programa (0xA279) y la partida grabada de
 #   la demo (0x9FF3). El corte se ve a simple vista en los bytes:
 #       9FE3  55 55 55 55 AA AA AA AA 55 55 55 55 AA AA AA AA   <- dibujo
 #       9FF3  00 00 00 00 00 00 00 00 ...                       <- ya no
 
-D 0x9FF3 0xA279 la partida grabada de la DEMO de la fase a pie (646 B)
+D 0x9FF3 0xA279 partida_grabada_de_la_demo La partida grabada de la DEMO de la fase a pie (646 B)
 #   La fase de a pie tiene su propia demo, con su propia partida grabada, su
 #   propio lector y su propio puntero. No reutiliza nada de la parte de naves,
 #   y no podria: aquella tiene su grabacion en 0xBA20 y su lector en 0xC1AF, y
@@ -60,15 +66,15 @@ D 0x9FF3 0xA279 la partida grabada de la DEMO de la fase a pie (646 B)
 #   del arranque, y los ultimos 23 bytes son ceros -fotogramas sin pulsar nada-.
 #   Si alguien mide la duracion real de la demo y no da 12,9 s, este es el sitio
 #   donde mirar.
-D 0xA5F0 0xA5F1 relleno o resto (1 B; 1 bytes)
+D 0xA5F0 0xA5F1 relleno_A5F0 Relleno o resto (1 B; 1 bytes)
 # 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 # 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
-D 0xACA2 0xAD31 variables del juego (143 B): 0xACE3 contador y 0xACE4-0xACF7 la tabla de enemigos ANDANTES (4 entradas de 5 B: X, Y, rumbo/flags, animacion, extra — los "contadores de cuadro" 0xACE7/0xACEC/0xACF6 son el campo +3 de los objetos 0/1/3, y 0xACE9, que "solo cambiaba al andar", es la X del objeto 1); 0xACF8 contador y 0xACF9 la tabla de los VOLADORES (5 B); 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar, 0xAD2A/0xAD2C la camara (fila del mapa + scroll fino; 0xAD2B no lo toca nadie), 0xAD2D-0xAD2F trabajo del redibujado
-D 0xB13E 0xB140 relleno o resto (2 B; 2 bytes)
+D 0xACA2 0xAD31 variables_del_juego_ACA2 Variables del juego (143 B): 0xACE3 contador y 0xACE4-0xACF7 la tabla de enemigos ANDANTES (4 entradas de 5 B: X, Y, rumbo/flags, animacion, extra — los "contadores de cuadro" 0xACE7/0xACEC/0xACF6 son el campo +3 de los objetos 0/1/3, y 0xACE9, que "solo cambiaba al andar", es la X del objeto 1); 0xACF8 contador y 0xACF9 la tabla de los VOLADORES (5 B); 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar, 0xAD2A/0xAD2C la camara (fila del mapa + scroll fino; 0xAD2B no lo toca nadie), 0xAD2D-0xAD2F trabajo del redibujado
+D 0xB13E 0xB140 relleno_B13E Relleno o resto (2 B; 2 bytes)
 # 0xB2A6-0xB3AB ESTUVO AQUI como 262 B "sin clasificar" y son CUATRO RUTINAS.
 # Se retira y pasa a src/parte2.entries.
-D 0xB51B 0xB65B relleno (320 B; 320 de 320 bytes son 0xFF)
-D 0xB720 0xB9B0 textos de la segunda parte: menu, redefinir teclas, records y mensajes (656 B, 75 % imprimible)
+D 0xB51B 0xB65B relleno_B51B Relleno (320 B; 320 de 320 bytes son 0xFF)
+D 0xB720 0xB9B0 textos_de_la_segunda_parte Textos de la segunda parte: menu, redefinir teclas, records y mensajes (656 B, 75 % imprimible)
 #   No hay que interpretarlo, se lee tal cual: los siete rotulos de redefinir
 #   (ABAJO, ARRIBA, DERECHA, IZQUIERDA, DISPARO, PARAR, ABANDONAR), el mapa de
 #   teclado con los nombres de las especiales, el juego de caracteres para
@@ -88,17 +94,18 @@ D 0xB720 0xB9B0 textos de la segunda parte: menu, redefinir teclas, records y me
 #       JAVIER 100000 · JUAN C 080000 · MARTA 060000 · MARIA 050000
 #       (en blanco) 040000 · TOPO 030000 · SOFT 020000 · (en blanco) 010000
 #   JAVIER y JUAN C son los dos Arevalo, que firman los graficos.
-D 0xBC24 0xBC35 variables de la cuenta atras: los 6 objetivos (2 B cada uno, 0xBC24-0xBC2F), filas de torre pintadas (0xBC30), punta de la torre en VRAM (0xBC31/32), objetivos restantes (0xBC33, que 0xA415 pone a 6) y un byte sin dueno (0xBC34)
-D 0xBDAA 0xBDAC relleno o resto (2 B; 2 bytes)
-D 0xBFEB 0xC001 relleno (22 B; 22 de 22 bytes son 0xFF)
-D 0xC459 0xC46A variables (17 B): eran 5 B de "relleno o resto" mas 12 que el
+D 0xBC24 0xBC35 variables_de_la_cuenta_atras Variables de la cuenta atras: los 6 objetivos (2 B cada uno, 0xBC24-0xBC2F), filas de torre pintadas (0xBC30), punta de la torre en VRAM (0xBC31/32), objetivos restantes (0xBC33, que 0xA415 pone a 6) y un byte sin dueno (0xBC34)
+F 0xBC24 2
+D 0xBDAA 0xBDAC relleno_BDAA Relleno o resto (2 B; 2 bytes)
+D 0xBFEB 0xC001 relleno_BFEB Relleno (22 B; 22 de 22 bytes son 0xFF)
+D 0xC459 0xC46A variables_C459 Variables (17 B): eran 5 B de "relleno o resto" mas 12 que el
 #   trazador contaba como codigo. Son una sola cosa: el listado las lee y escribe
 #   con direccionamiento absoluto desde 35 sitios (0xC462 desde ocho, 0xC468
 #   desde siete...). Dieciseis llegan a cero de la cinta y 0xC468 a 0x10, que es
 #   justo lo que hacia que el trazador lo leyera como un `djnz` y saltara a
 #   0xC46A. De ahi salia el codigo de mas abajo, por un camino que no existe.
 #   El limite de arriba lo pone el `jp L_C42A` de 0xC456, que ocupa hasta 0xC458.
-D 0xC46A 0xC46E los CUATRO COLORES de la fase (E1/B1/A1/71, tinta sobre negro): el arranque del nivel elige uno AL AZAR (call azar / and 3 en 0xA48F, HL = 0xC46A + n en 0xA494) y L_D31C lo aplica. Por eso la fase de a pie no siempre se ve del mismo color. (Estuvo como "sin clasificar: no se referencian desde ningun sitio", y la referencia existia: el ld de,0c46ah de 0xA494)
+D 0xC46A 0xC46E colores_de_la_fase Los CUATRO COLORES de la fase (E1/B1/A1/71, tinta sobre negro): el arranque del nivel elige uno AL AZAR (call azar / and 3 en 0xA48F, HL = 0xC46A + n en 0xA494) y L_D31C lo aplica. Por eso la fase de a pie no siempre se ve del mismo color. (Estuvo como "sin clasificar: no se referencian desde ningun sitio", y la referencia existia: el ld de,0c46ah de 0xA494)
 # 0xC804-0xC83D ESTUVO AQUI como 58 B "sin clasificar" y es CODIGO. Se retira y
 # pasa a src/parte2.entries.
 # Estos 263 bytes estuvieron declarados como "graficos" a partir de su perfil
@@ -108,16 +115,21 @@ D 0xC46A 0xC46E los CUATRO COLORES de la fase (E1/B1/A1/71, tinta sobre negro): 
 # y el 0x89 (0xC804) hace `ld de,00006h / call mul_a_de / ld de,0c9e7h`. La
 # aritmetica cierra sola: 0xC8F7 + 16*15 = 0xC9E7, justo la base del otro.
 D 0xC8F7 0xC9E7 instrumentos Tabla de instrumentos: 16 entradas de 15 B que el comando 0x87 copia a (ix+016), las dos fases de la envolvente de volumen y las tres de la de tono. La musica pide hasta el instrumento 15, o sea que las dieciseis hacen falta
+F 0xC8F7 15
 D 0xC9E7 0xC9FE efectos_ruido Tabla de efectos de ruido: entradas de 6 B que el comando 0x89 copia a 0xD0F6-0xD0FB. Caben TRES enteras y una cuarta a la que le falta el sexto byte, que ya es el primero de la tabla de notas. Ese byte prestado SI se copia -el bucle de op_efecto es de seis fijos, `ld d,006h`-, pero es inerte: cae en la espera de la segunda fase de la envolvente, y esa fase tiene cero pasos. La musica de este bloque pide la 0 y la 3, o sea que usa justamente la truncada
-D 0xC9FE 0xCABE la TABLA DE NOTAS del interprete de sonido: 96 periodos de 16 bits, ocho octavas de do1 a si8. Es BYTE A BYTE la misma que la del juego de naves (0xE6E3), los 192 bytes. Estuvo dentro del rango declarado como graficos, que llegaba hasta 0xCAA0 y se pasaba
-D 0xCABE 0xCADC la tabla de saltos de los QUINCE opcodes del interprete: 15 punteros de 2 B. Son los del juego de naves (0xE7A3) reubicados unos 0x1CEB, con una holgura de un byte segun el opcode porque el codigo no es copia exacta
-D 0xCADC 0xCB04 la tabla de las VEINTE frases de musica: 20 punteros de 2 B. Los veinte son EXACTAMENTE los del juego de naves (0xE7C1) menos 0x1CE5, sin una sola excepcion
-D 0xCB04 0xD068 LA MUSICA DE LA FASE DE A PIE, 1380 B escritos en el lenguaje del interprete de sonido. El trazador se los tragaba como CODIGO -1318 de 1380, el 95,5 %- por una semilla mala en 0xCC3E, que cae dentro de un guion. Es el mismo error que se corrigio en el juego de naves y que aqui no se habia aplicado. PRUEBA de que es musica: recorriendo la zona con el lector del lenguaje salen 38 bloques, CERO bytes fuera del lenguaje, y el recorrido cierra clavado en 0xD068, que es donde empiezan los estados de canal. Si el numero de argumentos de un solo comando estuviera mal, no cerraria. Aqui habia cinco trozos declarados sueltos como "tabla" y "relleno" (0xCB0F, 0xCB26, 0xCBDB, 0xCC99, 0xCDC0) que eran cachos de esta misma musica
-D 0xD068 0xD117 variables a cero (175 B), y los primeros 138 tienen nombre: son los TRES ESTADOS DE CANAL del interprete de sonido, de 46 B cada uno (0xD068, 0xD096, 0xD0C4), que es lo que resolvio el enigma de los "objetos de 46 bytes". Los 37 restantes (0xD0F2-0xD117) son las variables globales del interprete y las que el listado lee con ld a,(nn). Confirmado ademas desde fuera: al volcar la memoria justo tras la multicarga, los bytes que ya no coinciden con la cinta se agolpan aqui. El trazador contaba todo esto como codigo
+F 0xC9E7 6
+D 0xC9FE 0xCABE tabla_de_notas La TABLA DE NOTAS del interprete de sonido: 96 periodos de 16 bits, ocho octavas de do1 a si8. Es BYTE A BYTE la misma que la del juego de naves (0xE6E3), los 192 bytes. Estuvo dentro del rango declarado como graficos, que llegaba hasta 0xCAA0 y se pasaba
+F 0xC9FE w8
+D 0xCABE 0xCADC tabla_de_opcodes La tabla de saltos de los QUINCE opcodes del interprete: 15 punteros de 2 B. Son los del juego de naves (0xE7A3) reubicados unos 0x1CEB, con una holgura de un byte segun el opcode porque el codigo no es copia exacta
+F 0xCABE w1
+D 0xCADC 0xCB04 punteros_de_frases La tabla de las VEINTE frases de musica: 20 punteros de 2 B. Los veinte son EXACTAMENTE los del juego de naves (0xE7C1) menos 0x1CE5, sin una sola excepcion
+F 0xCADC w10
+D 0xCB04 0xD068 musica_de_la_fase LA MUSICA DE LA FASE DE A PIE, 1380 B escritos en el lenguaje del interprete de sonido. El trazador se los tragaba como CODIGO -1318 de 1380, el 95,5 %- por una semilla mala en 0xCC3E, que cae dentro de un guion. Es el mismo error que se corrigio en el juego de naves y que aqui no se habia aplicado. PRUEBA de que es musica: recorriendo la zona con el lector del lenguaje salen 38 bloques, CERO bytes fuera del lenguaje, y el recorrido cierra clavado en 0xD068, que es donde empiezan los estados de canal. Si el numero de argumentos de un solo comando estuviera mal, no cerraria. Aqui habia cinco trozos declarados sueltos como "tabla" y "relleno" (0xCB0F, 0xCB26, 0xCBDB, 0xCC99, 0xCDC0) que eran cachos de esta misma musica
+D 0xD068 0xD117 variables_del_interprete Variables a cero (175 B), y los primeros 138 tienen nombre: son los TRES ESTADOS DE CANAL del interprete de sonido, de 46 B cada uno (0xD068, 0xD096, 0xD0C4), que es lo que resolvio el enigma de los "objetos de 46 bytes". Los 37 restantes (0xD0F2-0xD117) son las variables globales del interprete y las que el listado lee con ld a,(nn). Confirmado ademas desde fuera: al volcar la memoria justo tras la multicarga, los bytes que ya no coinciden con la cinta se agolpan aqui. El trazador contaba todo esto como codigo
 #   porque 0x00 desensambla a nop. El listado las lee con ld a,(nn) desde once
 #   sitios (0xD0FC desde 0xC69F/0xC7B0/0xC805, 0xD10C desde tres mas...).
-D 0xD13A 0xD13C relleno o resto (2 B; 2 bytes)
-D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valores para ser un dibujo)
+D 0xD13A 0xD13C relleno_D13A Relleno o resto (2 B; 2 bytes)
+D 0xD348 0xD35B tabla_D348 Tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valores para ser un dibujo)
 
 # --- LOS BORDES DE LAS RUTINAS QUE APARECIERON JUGANDO -----------------------
 # Al comprobar con el replay que varios rangos declarados como datos se
@@ -137,9 +149,10 @@ D 0xD348 0xD35B tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valore
 # Se etiquetan midiendo, con tools/clasifica_huecos.py, y la etiqueta lleva
 # detras la medida de la que sale. Los cuatro primeros caen ademas ENTRE rangos
 # de graficos ya declarados, que es donde cabe esperarlos.
-D 0xC001 0xC3DC graficos (987 B; racha 10.91, entropia 1.35, 29 valores: rachas mas largas que el azar)
-D 0x7C78 0x7C9D pool de sprites de la fase (cola de la entrada 0x48)
-D 0xA6E9 0xA6EE relleno o resto (5 B; 5 bytes)
+D 0xC001 0xC3DC graficos_C001 Graficos (987 B; racha 10.91, entropia 1.35, 29 valores: rachas mas largas que el azar)
+D 0x7C78 0x7C9D pool_de_sprites_cola Pool de sprites de la fase (cola de la entrada 0x48)
+F 0x7C78 2
+D 0xA6E9 0xA6EE relleno_A6E9 Relleno o resto (5 B; 5 bytes)
 
 # --- EL ROTULO DEMO DE LA FASE DE A PIE --------------------------------------
 #
@@ -962,7 +975,7 @@ C 0xA528 El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acar
 # la de naves al 99,8 %, la de los records de a pie al 99,4 % y este jingle
 # al 100,0 %.
 
-D 0xD48C 0xD675 489 bytes al final del bloque que NO son codigo, y estuvieron publicados como "la rutina mas caliente de la segunda parte, 139.323 muestras". Se desensambla a `nop / rst 38h / nop / rst 38h...`, no lo llama nadie, y muestreando el PC en 130 s de partida limpia -259.149 muestras en dos ventanas- NO CAE NI UNA AQUI. La medida vieja se hizo abriendo la ventana en t=1775 "cuando la carga termina", y la carga no habia terminado: a t=1775 el PC esta en 0xF87E/0xF88D/0xF887, dentro del cargador de cinta, con solo 45 direcciones distintas. QUE SON, dicho sin pasarse: datos de poca variedad -21 valores distintos, 199 de los 489 bytes son 0xFF, y el resto tienen pocos bits puestos-, que es la pinta de un dibujo con mascara, el idioma de esta conversion. No se afirma mas porque no se ha medido mas
+D 0xD48C 0xD675 datos_finales_del_bloque 489 bytes al final del bloque que NO son codigo, y estuvieron publicados como "la rutina mas caliente de la segunda parte, 139.323 muestras". Se desensambla a `nop / rst 38h / nop / rst 38h...`, no lo llama nadie, y muestreando el PC en 130 s de partida limpia -259.149 muestras en dos ventanas- NO CAE NI UNA AQUI. La medida vieja se hizo abriendo la ventana en t=1775 "cuando la carga termina", y la carga no habia terminado: a t=1775 el PC esta en 0xF87E/0xF88D/0xF887, dentro del cargador de cinta, con solo 45 direcciones distintas. QUE SON, dicho sin pasarse: datos de poca variedad -21 valores distintos, 199 de los 489 bytes son 0xFF, y el resto tienen pocos bits puestos-, que es la pinta de un dibujo con mascara, el idioma de esta conversion. No se afirma mas porque no se ha medido mas
 # --- LOS "OBJETOS" DE LA FASE ERAN LOS COMANDOS DEL SONIDO (2026-08-11) ------
 #
 # Diez entradas de este bloque figuraban como `obj_XXXX  comportamiento de

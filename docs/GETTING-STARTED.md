@@ -50,6 +50,19 @@ That separation is exactly what keeps the listing and its verification
 from drifting apart over time: the file that gets published is the same
 one that gets checked.
 
+### How the data blocks are laid out
+
+Every data range declared in the notes comes out as a block of its own: its own
+heading saying what it is for, its own label, and the dump aligned to its first
+byte, so where one table ends and the next begins is visible at a glance. An
+optional line gives the block the row width of its real structure: the 59
+characters of the charset eight bytes at a time -one glyph per row-, the level
+tiles four -one row of a 32x32 tile-, the sentinels three, the final scene's
+picture eighteen (its own row length), the instrument table fifteen bytes per
+instrument, and the tables of counter-plus-records with the counter alone on the
+first row. Tables of pointers come out as `defw`, with the destination named
+next to them where it has a name.
+
 ## The tools you'll reach for most
 
 | | |
