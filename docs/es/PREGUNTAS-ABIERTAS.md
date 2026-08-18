@@ -1,7 +1,7 @@
 # Preguntas abiertas
 
 Los siete criterios de este desensamblado están cumplidos: cada byte de la
-cinta tiene dueño, los cinco bloques reensamblan byte a byte, y las 335
+cinta tiene dueño, los cinco listados reensamblan byte a byte, y las 335
 rutinas del listado tienen escrito qué hacen y con qué evidencia. Pero eso no
 lo convierte en una lista de deberes tachados: esta página cuenta con
 exactitud qué significa cada cifra, y qué queda todavía por saber sobre el
@@ -17,7 +17,7 @@ segunda carga, así que merecería la pena mirarla.
 Hay además 149 bytes en 0xECCC que no tienen dueño. Es un bloque escrito en
 el lenguaje del intérprete de sonido, con pinta de percusión —56 llamadas a
 dos frases— pero nada apunta hacia él: el valor 0xECCC no aparece ni una vez
-en los tres bloques de la cinta, y ninguna frase llega tan arriba. La
+en toda la cinta, y ninguna frase llega tan arriba. La
 historia entera, con su control, está en
 [Hallazgos](HALLAZGOS.html#el-sonido-es-un-lenguaje).
 
@@ -142,26 +142,3 @@ dentro de un dibujo.
 9840  A5 AA AA 17 55 69 55 0E
 9848  A5 AA AA 17 55 E9 50 0B      <- ese E9
 ```
-
-## Lo que no se ha comprobado
-
-Sigue sin saberse cuántos finales distintos hay, como se decía arriba:
-nadie ha buscado si la puntuación o el marcador cambian algo más en el
-remate. El cotejo con la versión de Spectrum tampoco puede decir nada sobre
-la segunda parte, porque el snapshot con el que se compara se capturó en el
-menú de la primera, así que la fase de a pie del original ni siquiera está
-ahí. Y que las 335 rutinas tengan comentario no significa que estén todas
-comprobadas en marcha: unas cuantas se sostienen solo sobre la lectura del
-listado, y donde eso pasa, queda dicho.
-
-## Por qué se publica así
-
-Porque un desensamblado que dice claramente dónde está cada afirmación —y de
-qué clase de evidencia cuelga— es útil de verdad, mientras que uno que
-aparenta saber más de lo que sabe es peor que nada: manda a quien venga
-detrás a buscar en el sitio equivocado.
-
-El criterio de toda la serie es el mismo: cada afirmación tiene que poder
-contrastarse con el binario, incluidas las afirmaciones sobre lo que
-todavía no se sabe. Por eso las cifras de cobertura salen siempre del
-trazador, y nunca de una impresión.

@@ -21,11 +21,15 @@ Formato del fichero .notes (todo opcional, una directiva por linea):
     D 0x4000 0x4800 fuente  Tabla de patrones de la fuente (256 glifos x 8)
         -> marca un rango de datos con nombre y descripcion
 """
+import tempfile
 import json
 import os
 import re
 import subprocess
 import sys
+
+# El temporal del sistema: en Windows no hay /tmp.
+TMP = tempfile.gettempdir()
 
 BIOS = {}
 
@@ -235,7 +239,7 @@ def emit_data(data, org, a, b, dataranges, notes, names):
 
 
 def emit_code(data, org, a, b, names, notes):
-    tmp = "/tmp/_mkasm_chunk.bin"
+    tmp = f"{TMP}/_mkasm_chunk.bin"
     open(tmp, "wb").write(data[a - org:b - org])
     r = subprocess.run(["z80dasm", "-a", "-l", "-g", hex(a), tmp],
                        capture_output=True, text=True)

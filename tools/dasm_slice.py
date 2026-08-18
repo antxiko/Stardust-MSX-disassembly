@@ -10,9 +10,13 @@ El layout se describe en un .toml-ligero (una seccion por linea):
 donde los offsets son relativos al inicio del binario (ya sin cabecera BIN),
 tipo es 'code' o 'data'.
 """
+import tempfile
 import subprocess
 import sys
 import os
+
+# El temporal del sistema: en Windows no hay /tmp.
+TMP = tempfile.gettempdir()
 
 Z80DASM = "z80dasm"
 
@@ -56,7 +60,7 @@ def main(binpath, layoutpath, symfile, outpath):
         if s["kind"] == "data" or not blob:
             body = f"\torg {s['org']:#06x}\n" + hexdump(blob, s["org"])
         else:
-            tmp = f"/tmp/_slice_{s['name']}.bin"
+            tmp = f"{TMP}/_slice_{s['name']}.bin"
             open(tmp, "wb").write(blob)
             cmd = [Z80DASM, "-a", "-l", "-t", "-g", hex(s["org"]), tmp]
             if symfile and os.path.exists(symfile):

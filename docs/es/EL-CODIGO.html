@@ -82,7 +82,7 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 </style>
 <div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html" style=color:var(--tinta)>El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="PREGUNTAS-ABIERTAS.html">Preguntas abiertas</a><a href="../THE-CODE.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
 <h1 id="el-codigo">El código</h1>
-<p>Los cinco bloques de la cinta suman <b>93 861 bytes</b>, y de ellos <b>20 076</b> son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno — todo con su nombre puesto, eso sí.</p>
+<p>Los siete bloques de la cinta suman <b>93 861 bytes</b>, y de ellos <b>20 076</b> son código que el trazador alcanza siguiendo el flujo. El resto son gráficos, tablas, buffers y relleno — todo con su nombre puesto, eso sí.</p>
 <p>Esa cifra es baja a propósito. Solo cuenta el código al que se llega de verdad, siguiendo llamadas y saltos desde un punto de entrada conocido, y hay más código en la cinta del que eso cubre — pero mientras no se sepa por dónde se entra, no se cuenta, porque darlo por trazado es justo el error que hubo que deshacer aquí en su día.</p>
 <h2 id="como-se-dibuja-la-pantalla">Cómo se dibuja la pantalla</h2>
 <p>Aquí está la diferencia grande con el original. El Spectrum escribe directamente en su memoria de pantalla, que es RAM normal; el MSX tiene la memoria de vídeo detrás del chip gráfico, así que hay que mandársela por un puerto. Por eso esta versión lleva un buffer intermedio que el original no necesita para nada.</p>

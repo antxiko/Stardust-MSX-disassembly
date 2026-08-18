@@ -82,7 +82,7 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 </style>
 <div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html" style=color:var(--tinta)>The code</a><a href="FINDINGS.html">Findings</a><a href="OPEN-QUESTIONS.html">Open questions</a><a href="es/EL-CODIGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
 <h1 id="the-code">The code</h1>
-<p>The tape&#x27;s five blocks come to <b>93,861 bytes</b>, and <b>20,076</b> of them are code the tracer reaches by following the flow. The rest is graphics, tables, buffers and padding — all of it named, though.</p>
+<p>The tape&#x27;s seven blocks come to <b>93,861 bytes</b>, and <b>20,076</b> of them are code the tracer reaches by following the flow. The rest is graphics, tables, buffers and padding — all of it named, though.</p>
 <p>That figure is deliberately low. It only counts code genuinely arrived at by following calls and jumps from a known entry point, and there&#x27;s more code on the tape than that covers — but until it&#x27;s known how it gets entered, it doesn&#x27;t get counted, because taking it as traced is exactly the mistake that had to be undone here in the first place.</p>
 <h2 id="how-the-screen-gets-drawn">How the screen gets drawn</h2>
 <p>Here&#x27;s the big difference from the original. The Spectrum writes straight into its screen memory, which is ordinary RAM; the MSX keeps its video memory behind the graphics chip, so it has to be sent out through a port. Which is why this version carries an intermediate buffer the original never needed at all.</p>

@@ -1,7 +1,7 @@
 # Open questions
 
 The seven criteria this disassembly set for itself are met: every byte on
-the tape has an owner, all five blocks reassemble byte for byte, and the
+the tape has an owner, the five listings reassemble byte for byte, and the
 listing's 335 routines have what they do written down, with the evidence.
 That doesn't turn it into a checked-off to-do list, though — this page sets
 out exactly what each figure means, and what's still left to learn about
@@ -17,7 +17,7 @@ tape load, so it would be worth a look.
 There are also 149 bytes at 0xECCC with no owner at all. It's a block
 written in the sound interpreter's language, looking like percussion — 56
 calls to two phrases — but nothing points at it: the value 0xECCC doesn't
-appear once in the tape's three blocks, and no phrase reaches that high.
+appear once anywhere on the tape, and no phrase reaches that high.
 The whole story, with its control, is in
 [Findings](FINDINGS.html#sound-is-a-language).
 
@@ -141,26 +141,3 @@ inside a drawing.
 9840  A5 AA AA 17 55 69 55 0E
 9848  A5 AA AA 17 55 E9 50 0B      <- that E9
 ```
-
-## What hasn't been checked
-
-How many distinct endings there are still isn't known, as said above:
-nobody's looked for whether the score or the scoreboard change anything
-else in the finale. The cross-check against the Spectrum version can't say
-anything about the second part either, because the snapshot it compares
-against was captured in the first part's menu, so the original's on-foot
-stage isn't even in there. And all 335 routines having a comment doesn't
-mean every one of them has been checked running: a few rest on reading the
-listing alone, and where that's the case, it's said.
-
-## Why it is published like this
-
-Because a disassembly that says clearly where every claim stands — and what
-kind of evidence it hangs from — is genuinely useful, while one that
-pretends to know more than it does is worse than nothing: it sends whoever
-comes next looking in the wrong place.
-
-The criterion across the whole series is the same one: every claim has to
-be checkable against the binary, including claims about what still isn't
-known. Which is why the coverage figures always come straight out of the
-tracer, never out of an impression.

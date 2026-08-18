@@ -1,6 +1,6 @@
 # The code
 
-The tape's five blocks come to **93,861 bytes**, and **20,076** of them are
+The tape's seven blocks come to **93,861 bytes**, and **20,076** of them are
 code the tracer reaches by following the flow. The rest is graphics,
 tables, buffers and padding — all of it named, though.
 

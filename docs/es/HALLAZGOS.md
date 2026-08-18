@@ -82,7 +82,7 @@ ROM de en medio.
 Ya hemos visto que el cargador reimplementa LD-BYTES, la rutina con la que
 la ROM del Spectrum lee de cinta. Pues la rutina con la que el propio juego
 se carga a sí mismo la segunda parte no es una copia de aquella — se buscó su
-firma byte a byte en los tres bloques y no aparece por ningún lado — pero
+firma byte a byte en toda la cinta y no aparece por ningún lado — pero
 viene del mismo sitio, y lo lleva escrito en sus constantes: tres números,
 cada uno en su sitio y en el mismo orden que en el original.
 
@@ -273,7 +273,7 @@ misma que el cargador de cinta ya había reimplementado por su cuenta:
                                               ; donde el Spectrum usaba un puerto
 
 Y tampoco es una copia de la del cargador: se buscó su firma byte a byte en
-los tres bloques y no aparece en ninguno.
+toda la cinta y no aparece.
 
 ¿Cómo se zanjó esto? Partiendo de un savestate cogido justo en la pantalla de
 FELICIDADES y muestreando el contador de programa cada dos milisegundos
@@ -646,7 +646,7 @@ Y de paso, la propia rutina confirma dónde está la fuente: indexa con
 justo donde viven los 59 caracteres. El paso entre líneas de pantalla es 24,
 que es el alto del buffer contado por columnas.
 
-### Dos `call 0000h` que no existen, y 192 bytes que no eran texto
+### Dos `call 0000h` que no existen, y 193 bytes que no eran texto
 
 Lo primero que hace el juego, antes que nada, es el logo STARDUST
 rebotando. Y esa animación esconde la razón por la que un desensamblador en
@@ -674,9 +674,9 @@ Conviene mirarlo dos veces antes de dar algo por huérfano: ningún `call`
 nombra directamente esas dos rutinas, pero sus direcciones sí están escritas
 en el binario, una sola vez cada una, como operandos de un `ld`.
 
-Y los textos de los créditos no son 429 bytes, son 234. Delante de ellos va
-la tabla de fotogramas del logo: 96 pares de fila-de-la-cima y altura que
-describen el rebote entero —la altura crece de 1 a 16, el logo baja hasta la
+Los textos de los créditos son 234 bytes, `0xF1E7-0xF2D1`. Los 193 de delante,
+`0xF126-0xF1E7`, son la tabla de fotogramas del logo: 96 pares de fila-de-la-cima
+y altura que describen el rebote entero —la altura crece de 1 a 16, el logo baja hasta la
 fila 186 aplastándose, y vuelve a subir— con un `0xFF` cerrando la lista.
 Dónde empieza el texto de verdad lo dice el propio código, y el binario lo
 confirma: justo antes del `CONVERSION POR` hay pares crecientes que no son
@@ -1316,7 +1316,7 @@ de ruido. No es una de las tres voces —la tercera empieza un byte antes, y
 es un terminador— y quién lo hace sonar sigue sin localizarse. Queda como un
 bloque escrito en el lenguaje del intérprete y sin dueño conocido, y lo de
 «sin dueño» ya es una medida, no un simple encogimiento de hombros: el valor
-0xECCC no aparece ni una sola vez en los tres bloques de la cinta. El
+0xECCC no aparece ni una sola vez en toda la cinta. El
 control dice que la búsqueda vale de verdad: 0xECCB sí aparece, exactamente
 una vez, en 0xE181, justo la instrucción que se lo entrega al canal 2, y sus
 vecinos 0xED61 y 0xED6B también aparecen, cargados desde 0xF4FE y 0xF506.
@@ -1369,16 +1369,12 @@ Medido de verdad, es exactamente lo que pasa: en toda una captura hay un
 único sitio escribiendo en el puerto de sonido, y los once registros
 reciben el mismo número exacto de escrituras al byte.
 
-Ese detalle importa más de lo que parece a primera vista, porque invalidó el
-primer intento de medida. Como los registros salen en orden, el byte bajo
-del periodo de una nota llega antes que el alto. Si recompones el periodo en
-cada escritura por separado, la mitad de las veces se junta un byte bajo
-nuevo con el alto de la nota anterior, y salen periodos que el juego nunca
-llegó a pedir. De ahí venía una cifra que esta página nunca llegó a
-publicar —«solo el 19,3 % de los tonos son notas de la tabla»— y que
-contando solo cuando el par está completo, sobre música limpia, se convierte
-en 23 periodos distintos, 6.020 escrituras y ninguna fuera de la tabla: el
-100,0 %.
+Ese detalle importa a la hora de medir. Como los registros salen en orden, el
+byte bajo del periodo de una nota llega antes que el alto; si se recompone el
+periodo en cada escritura por separado, la mitad de las veces se junta un byte
+bajo nuevo con el alto de la nota anterior y salen periodos que el juego nunca
+pidió. Contando solo cuando el par está completo, sobre música limpia: 23
+periodos distintos, 6.020 escrituras y ninguna fuera de la tabla, el 100,0 %.
 
 Y después vino la prueba de verdad. La lectura se ejecutó cuadro a cuadro y
 se confrontó con lo que el emulador veía entrar de verdad en el chip;
@@ -1401,8 +1397,7 @@ fallos pegados siempre a un cambio de nota. Apuntando la misma herramienta a
 la otra música de esa fase, sale un 0,0 % — que es justo la comprobación de
 que el acierto anterior no era casualidad.
 
-Dos trampas costaron llegar a este resultado, y las dos merecen quedar
-escritas. Un cuadro no dura 1/50 de segundo exacto: un punto de
+Para que esta medida valga hay que acertar en dos cosas. Un cuadro no dura 1/50 de segundo exacto: un punto de
 interrupción en el vector de la ROM da 1.003 pasadas en veinte segundos, o
 sea 50,15 Hz, y usando 50,00 la comparación se desliza casi dos cuadros en
 seiscientos y cae al 98,2 % por algo que no tiene nada que ver con la

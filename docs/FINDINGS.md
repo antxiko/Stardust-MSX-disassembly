@@ -83,7 +83,7 @@ first.
 We already know the loader reimplements LD-BYTES, the routine the ZX
 Spectrum's ROM uses to read from tape. Well, the routine the game uses to
 load its own second part isn't a copy of that one — its signature was
-searched for byte by byte across the three blocks and turns up nowhere — but
+searched for byte by byte across the whole tape and turns up nowhere — but
 it comes from the same place, and it says so right there in its constants:
 three numbers, each in its own spot and in the same order as the original.
 
@@ -277,7 +277,7 @@ reimplemented on its own account:
                                               ; VDP where the Spectrum used a port
 
 And it isn't a copy of the loader's version either: its signature was
-searched byte by byte across the three blocks and turns up in none of them.
+searched byte by byte across the whole tape and turns up nowhere.
 
 So how was this settled? Starting from a savestate grabbed right on the
 FELICIDADES screen and sampling the program counter every two milliseconds
@@ -652,7 +652,7 @@ Along the way, the routine confirms where the font lives: it indexes with
 right where the 59 characters live. And the stride between screen lines is
 24, the buffer's height when read by columns.
 
-### Two `call 0000h` that don't exist, and 192 bytes that were not text
+### Two `call 0000h` that don't exist, and 193 bytes that were not text
 
 The very first thing the game does, before anything else, is bounce the
 STARDUST logo. And that animation is exactly why a cold disassembler can't
@@ -679,8 +679,9 @@ Worth checking twice before writing anything off as orphaned: no `call`
 names either of these two routines directly, but their addresses are
 written into the binary anyway, once each, as the operands of an `ld`.
 
-And the credits text isn't 429 bytes, it's 234. In front of it sits the
-logo's frame table: 96 pairs of top-row and height that describe the bounce
+The credits text is 234 bytes, `0xF1E7-0xF2D1`. The 193 in front of it,
+`0xF126-0xF1E7`, are the logo's frame table: 96 pairs of top-row and height
+that describe the bounce
 — the height grows from 1 to 16, the logo drops to row 186 squashing flat,
 and comes back up — with an `0xFF` closing the list. Where the real text
 starts is stated by the code itself, and the binary confirms it: right
@@ -1321,7 +1322,7 @@ channel. It isn't one of the three voices — the third one starts a byte
 earlier, and is a terminator — and who actually plays it still hasn't been
 tracked down. It stays a block written in the interpreter's language with
 no known owner, and "no owner" here is already a measurement, not a shrug:
-the value 0xECCC doesn't appear once in the tape's three blocks. The
+the value 0xECCC doesn't appear once anywhere on the tape. The
 control says the search is sound: 0xECCB does appear, exactly once, at
 0xE181, precisely the instruction that hands it to channel 2, and its
 neighbours 0xED61 and 0xED6B turn up too, loaded from 0xF4FE and 0xF506.
@@ -1374,15 +1375,12 @@ Measured for real, that's exactly what happens: across a whole capture
 there's a single place writing to the sound port, and all eleven registers
 get the same number of writes to the byte.
 
-That detail matters more than it looks, because it broke the first attempt
-at measuring this. Since the registers come out in order, the low byte of
-a note's period arrives before the high byte. If you rebuild the period on
-every single write, half the time you glue a new low byte onto the
-*previous* note's high byte, and out come periods the game never actually
-asked for. That's where a figure came from that this page never actually
-published — "only 19.3% of the tones are notes from the table" — and
-counting only once the pair is complete, over clean music, that becomes 23
-distinct periods, 6,020 writes, and not one outside the table: 100.0%.
+That detail matters when measuring. Since the registers come out in order,
+the low byte of a note's period arrives before the high byte; rebuilding the
+period on every single write glues a new low byte onto the *previous* note's
+high byte half the time, and out come periods the game never asked for.
+Counting only once the pair is complete, over clean music: 23 distinct
+periods, 6,020 writes, and not one outside the table — 100.0%.
 
 And then came the real test. The reading got run frame by frame and
 checked against what the emulator actually saw enter the chip — frame by
@@ -1405,7 +1403,7 @@ next to a note change. Pointing the same tool at the *other* music in that
 stage gives 0.0%, which is exactly the check that the earlier hit rate
 wasn't a fluke.
 
-Two traps cost getting to this result, and both are worth writing down. A
+Two things have to be right for this measurement. A
 frame doesn't last exactly 1/50 of a second: a breakpoint on the ROM's
 interrupt vector gives 1,003 firings in twenty seconds, that's 50.15 Hz,
 and using 50.00 the comparison drifts almost two frames in six hundred and

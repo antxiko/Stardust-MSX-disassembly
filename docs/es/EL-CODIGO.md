@@ -1,6 +1,6 @@
 # El código
 
-Los cinco bloques de la cinta suman **93 861 bytes**, y de ellos **20 076**
+Los siete bloques de la cinta suman **93 861 bytes**, y de ellos **20 076**
 son código que el trazador alcanza siguiendo el flujo. El resto son
 gráficos, tablas, buffers y relleno — todo con su nombre puesto, eso sí.
 
