@@ -3468,3 +3468,49 @@ C 0xE333 Y el periodo igual, pero a doce bits: (ix+00A/00B) mas (ix+02B/02C), co
 C 0xE343 Cuarenta y seis bytes mas alla esta el canal siguiente
 C 0xE34D Los tres canales
 C 0xE351 Y detras empieza otro recorrido de tres, este sobre 0xEDFF
+#
+# EL `cpl` DE 0xC691 NO CAMBIA NADA. Cae entre el `pop de` y el `ldir` de
+# baja_tile_especial, y a partir de ahi la rutina no vuelve a leer A; tampoco
+# toca el acarreo, que es lo unico que le importa al `sbc hl,de` de 0xC699 -y
+# que viene a cero del `add hl,de` de 0xC68F-. Complementa un registro que ya
+# no pinta nada.
+C 0xC678 Una entrada menos en la cuenta de tiles especiales
+C 0xC67F B son las que quedan por recorrer: si la que se va es la ultima, no hay nada que compactar, y este `ret` es lo que evita un `ldir` de 65536 bytes
+C 0xC681 Por ocho: los bytes que ocupan las entradas de detras
+C 0xC688 Origen la entrada siguiente, destino esta misma
+C 0xC691 Complementa A, que ya no lee nadie, y deja el acarreo como estaba
+C 0xC693 Las de detras suben ocho bytes
+C 0xC696 E IX retrocede otros ocho, para que el recorrido no se salte la que acaba de ocupar el hueco
+C 0xCD52 El primer sprite, arriba a la izquierda
+C 0xCD57 0x10 en L: dieciseis pixeles a la derecha
+C 0xCD63 0x10 en H: dieciseis filas abajo
+C 0xCD6F Y los dos a la vez, la esquina que faltaba: cuatro sprites de 16x16 hacen la figura de 32x32
+C 0xCFF9 La columna de la celda, ocho pixeles por unidad...
+C 0xD000 ...y la fila, que la instalacion lleva en (ix+007)
+C 0xD003 Cajas de 4 por 0x14 contra 2 y 2
+C 0xD009 Contra la tabla de los disparos del jugador
+C 0xD011 Le ha dado: al disparo se le marca el 0x80 de la explosion
+C 0xD016 Y suena el impacto, en el canal 0
+C 0xD01C La instalacion pasa al estado de 0xD933, que es el que la retira
+C 0xD02B Su celda del mapa pasa a 0x0C
+C 0xD02D El `pop hl` se come la vuelta del recorrido: esta entrada ya no sigue el cuadro
+C 0xD02E Y el premio, a las decenas del marcador
+L 0xD75B bucle_fin_de_zona El cuadro del remate de zona: el mismo encadenado que bucle_partida pero SIN repinta_fondo ni gobierna_instalaciones ni disparo, con una espera de 1500 por vuelta y con bonus_zona al final. De aqui no se sale por abajo -acaba en `jp` a si mismo-: quien saca es bonus_zona, desapilando la vuelta
+C 0xD75B El contador de cuadros sigue subiendo aunque la partida ya no este en su bucle
+C 0xD762 Se borra el buffer y NADIE vuelve a pintar el fondo, porque repinta_fondo no esta en esta lista: la zona se acaba sobre negro
+C 0xD765 1500 vueltas de espera por cuadro, que es lo que hace que el remate se vea despacio
+C 0xD76E La bandera del escudo se repone cada cuadro, igual que en el bucle normal
+C 0xD788 La pausa tambien funciona aqui
+C 0xD78B Y la nave sigue viva mientras la agonia no llegue a 0x2D
+C 0xD793 Si quedaba una tanda de instalaciones, sigue bajando
+C 0xD79B El remate, que es quien decide cuando se acaba esto
+C 0xD7A1 Y si no ha decidido, otra vuelta
+C 0xD7A4 Mientras quede algo en pantalla no empieza el cobro: solo esperar
+C 0xD7AA El contador que lleva el guion del remate
+C 0xD7B1 Los diecinueve primeros cuadros son espera a secas
+C 0xD7B5 Del 0x14 al 0x27, veinte cuadros rotulando el BONUS
+C 0xD7B9 Y por encima del 0x28, el final del todo
+C 0xD7BB En el 0x28 clavado se cobra, y el contador vuelve al 0x27 para volver a caer aqui el cuadro siguiente: asi se queda dando vueltas mientras haya que pagar
+C 0xD7BF Cien puntos por vuelta, a las centenas del marcador
+C 0xD7C7 Y el rotulo baja una unidad...
+C 0xD7CE ...hasta el '0' de ASCII, que es donde se acaba de cobrar

@@ -8956,28 +8956,28 @@ L_C66D:
 	djnz L_C619		;c675
 	ret			;c677
 baja_tile_especial:		; Da de baja una entrada de la tabla de tiles especiales: resta uno al contador, compacta con un `ldir` de (B-1)*8 bytes y retrocede IX ocho para que el recorrido no se salte la entrada que ocupa el hueco. El `dec b / ret z` de 0xC67F es lo que evita el `ldir` de 65536 bytes cuando la que se va es la ultima
-	ld a,(0ca92h)		;c678
+	ld a,(0ca92h)		;c678   ; Una entrada menos en la cuenta de tiles especiales
 	dec a			;c67b
 	ld (0ca92h),a		;c67c
-	dec b			;c67f
+	dec b			;c67f   ; B son las que quedan por recorrer: si la que se va es la ultima, no hay nada que compactar, y este `ret` es lo que evita un `ldir` de 65536 bytes
 	ret z			;c680
-	ld a,b			;c681
+	ld a,b			;c681   ; Por ocho: los bytes que ocupan las entradas de detras
 	add a,a			;c682
 	add a,a			;c683
 	add a,a			;c684
 	ld c,a			;c685
 	ld b,000h		;c686
-	push ix		;c688
+	push ix		;c688   ; Origen la entrada siguiente, destino esta misma
 	pop hl			;c68a
 	push hl			;c68b
 	ld de,00008h		;c68c
 	add hl,de			;c68f
 	pop de			;c690
-	cpl			;c691
+	cpl			;c691   ; Complementa A, que ya no lee nadie, y deja el acarreo como estaba
 	push de			;c692
-	ldir		;c693
+	ldir		;c693   ; Las de detras suben ocho bytes
 	pop hl			;c695
-	ld de,00008h		;c696
+	ld de,00008h		;c696   ; E IX retrocede otros ocho, para que el recorrido no se salte la que acaba de ocupar el hueco
 	sbc hl,de		;c699
 	push hl			;c69b
 	pop ix		;c69c
@@ -9943,10 +9943,10 @@ alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope
 	scf			;cd50
 	ret			;cd51
 pinta_figura32:		; Pinta una figura de 32x32 con cuatro sprites consecutivos: A en HL, A+1 a 16 pixeles a la derecha, A+2 dieciseis filas abajo y A+3 en la esquina
-	push hl			;cd52
+	push hl			;cd52   ; El primer sprite, arriba a la izquierda
 	push af			;cd53
 	call pinta_sprite		;cd54
-	ld bc,00010h		;cd57
+	ld bc,00010h		;cd57   ; 0x10 en L: dieciseis pixeles a la derecha
 	pop af			;cd5a
 	inc a			;cd5b
 	pop hl			;cd5c
@@ -9954,7 +9954,7 @@ pinta_figura32:		; Pinta una figura de 32x32 con cuatro sprites consecutivos: A 
 	add hl,bc			;cd5e
 	push af			;cd5f
 	call pinta_sprite		;cd60
-	ld bc,01000h		;cd63
+	ld bc,01000h		;cd63   ; 0x10 en H: dieciseis filas abajo
 	pop af			;cd66
 	inc a			;cd67
 	pop hl			;cd68
@@ -9962,7 +9962,7 @@ pinta_figura32:		; Pinta una figura de 32x32 con cuatro sprites consecutivos: A 
 	add hl,bc			;cd6a
 	push af			;cd6b
 	call pinta_sprite		;cd6c
-	ld bc,01010h		;cd6f
+	ld bc,01010h		;cd6f   ; Y los dos a la vez, la esquina que faltaba: cuatro sprites de 16x16 hacen la figura de 32x32
 	pop af			;cd72
 	inc a			;cd73
 	pop hl			;cd74
@@ -10306,29 +10306,29 @@ L_CFEE:
 	scf			;cff7
 	ret			;cff8
 choca_y_revienta:		; Contacto del objeto de IX contra la tabla de 0xC953: al chocar marca al otro con el 0x80 de la explosion, suena 0xEA52, mete al de IX en el estado 0xD933, escribe 0x0C por el puntero de (ix+005/006), se salta la vuelta con `pop hl` y premia 160 puntos
-	ld a,(ix+000h)		;cff9
+	ld a,(ix+000h)		;cff9   ; La columna de la celda, ocho pixeles por unidad...
 	add a,a			;cffc
 	add a,a			;cffd
 	add a,a			;cffe
 	ld l,a			;cfff
-	ld h,(ix+007h)		;d000
-	ld de,00414h		;d003
+	ld h,(ix+007h)		;d000   ; ...y la fila, que la instalacion lleva en (ix+007)
+	ld de,00414h		;d003   ; Cajas de 4 por 0x14 contra 2 y 2
 	ld bc,00202h		;d006
-	ld iy,0c953h		;d009
+	ld iy,0c953h		;d009   ; Contra la tabla de los disparos del jugador
 	call choca_con_tabla		;d00d
 	ret c			;d010
-	ld (iy+002h),080h		;d011
+	ld (iy+002h),080h		;d011   ; Le ha dado: al disparo se le marca el 0x80 de la explosion
 	xor a			;d015
-	ld de,0ea52h		;d016
+	ld de,0ea52h		;d016   ; Y suena el impacto, en el canal 0
 	call arranca_guion_libre		;d019
-	ld hl,0d933h		;d01c
+	ld hl,0d933h		;d01c   ; La instalacion pasa al estado de 0xD933, que es el que la retira
 	ld (ix+003h),l		;d01f
 	ld (ix+004h),h		;d022
 	ld l,(ix+005h)		;d025
 	ld h,(ix+006h)		;d028
-	ld (hl),00ch		;d02b
-	pop hl			;d02d
-	ld hl,0dd84h		;d02e
+	ld (hl),00ch		;d02b   ; Su celda del mapa pasa a 0x0C
+	pop hl			;d02d   ; El `pop hl` se come la vuelta del recorrido: esta entrada ya no sigue el cuadro
+	ld hl,0dd84h		;d02e   ; Y el premio, a las decenas del marcador
 	ld b,010h		;d031
 	call premia		;d033
 	ret			;d036
@@ -11346,15 +11346,15 @@ L_D740:
 	inc a			;d754
 	ld (0e157h),a		;d755
 	call hud_vidas_zona		;d758
-L_D75B:
-	ld a,(0ca8eh)		;d75b
+bucle_fin_de_zona:		; El cuadro del remate de zona: el mismo encadenado que bucle_partida pero SIN repinta_fondo ni gobierna_instalaciones ni disparo, con una espera de 1500 por vuelta y con bonus_zona al final. De aqui no se sale por abajo -acaba en `jp` a si mismo-: quien saca es bonus_zona, desapilando la vuelta
+	ld a,(0ca8eh)		;d75b   ; El contador de cuadros sigue subiendo aunque la partida ya no este en su bucle
 	inc a			;d75e
 	ld (0ca8eh),a		;d75f
-	call borra_buffer		;d762
-	ld bc,005dch		;d765
+	call borra_buffer		;d762   ; Se borra el buffer y NADIE vuelve a pintar el fondo, porque repinta_fondo no esta en esta lista: la zona se acaba sobre negro
+	ld bc,005dch		;d765   ; 1500 vueltas de espera por cuadro, que es lo que hace que el remate se vea despacio
 	call espera_bc		;d768
 	call pinta_escudo		;d76b
-	ld a,001h		;d76e
+	ld a,001h		;d76e   ; La bandera del escudo se repone cada cuadro, igual que en el bucle normal
 	ld (0d3c2h),a		;d770
 	call mueve_estrellas		;d773
 	call mueve_perseguidor		;d776
@@ -11363,36 +11363,36 @@ L_D75B:
 	call mueve_bandada		;d77f
 	call traza_estela		;d782
 	call mueve_objetos		;d785
-	call pausa		;d788
-	ld a,(0c188h)		;d78b
+	call pausa		;d788   ; La pausa tambien funciona aqui
+	ld a,(0c188h)		;d78b   ; Y la nave sigue viva mientras la agonia no llegue a 0x2D
 	cp 02dh		;d78e
 	call c,va_a_nave_estado		;d790
-	ld a,(0ca91h)		;d793
+	ld a,(0ca91h)		;d793   ; Si quedaba una tanda de instalaciones, sigue bajando
 	cp 080h		;d796
 	call nz,avanza_instalaciones		;d798
-	call bonus_zona		;d79b
+	call bonus_zona		;d79b   ; El remate, que es quien decide cuando se acaba esto
 	call vuelca_pantalla		;d79e
-	jp L_D75B		;d7a1
+	jp bucle_fin_de_zona		;d7a1   ; Y si no ha decidido, otra vuelta
 bonus_zona:		; El remate de la zona, dentro del bucle de 0xD75B: mientras zona_despejada diga que queda algo en pantalla no hace mas que esperar 1000 vueltas, y en cuanto la zona esta limpia el contador de 0xDDF7 lleva el guion -19 cuadros de espera, 20 rotulando "BONUS xx00" (0xDDF8) en 0x40C7, y en el paso 0x28 se queda dando vueltas cobrando-. Cada vuelta del cobro paga 100 puntos, suena 0xEB2C y baja una unidad los dos digitos de 0xDDFE/0xDDFF, que L_D740 dejo en (zona + 0x32) y '0': la zona 1 cobra "30" y paga 3000, y la 7 cobra "90" y paga 9000. Cuando el contador llega a 0x50 desapila la vuelta y se va a carga_zona, o a 0xF71C -la multicarga- si la zona ya es la 8
-	call zona_despejada		;d7a4
+	call zona_despejada		;d7a4   ; Mientras quede algo en pantalla no empieza el cobro: solo esperar
 	jp nz,espera_1000		;d7a7
-	ld a,(0ddf7h)		;d7aa
+	ld a,(0ddf7h)		;d7aa   ; El contador que lleva el guion del remate
 	inc a			;d7ad
 	ld (0ddf7h),a		;d7ae
-	cp 014h		;d7b1
+	cp 014h		;d7b1   ; Los diecinueve primeros cuadros son espera a secas
 	jr c,espera_1000		;d7b3
-	cp 028h		;d7b5
+	cp 028h		;d7b5   ; Del 0x14 al 0x27, veinte cuadros rotulando el BONUS
 	jr c,L_D7F9		;d7b7
-	jr nz,L_D803		;d7b9
-	dec a			;d7bb
+	jr nz,L_D803		;d7b9   ; Y por encima del 0x28, el final del todo
+	dec a			;d7bb   ; En el 0x28 clavado se cobra, y el contador vuelve al 0x27 para volver a caer aqui el cuadro siguiente: asi se queda dando vueltas mientras haya que pagar
 	ld (0ddf7h),a		;d7bc
-	ld hl,0dd83h		;d7bf
+	ld hl,0dd83h		;d7bf   ; Cien puntos por vuelta, a las centenas del marcador
 	ld b,001h		;d7c2
 	call premia		;d7c4
-	ld a,(0ddffh)		;d7c7
+	ld a,(0ddffh)		;d7c7   ; Y el rotulo baja una unidad...
 	dec a			;d7ca
 	ld (0ddffh),a		;d7cb
-	cp 030h		;d7ce
+	cp 030h		;d7ce   ; ...hasta el '0' de ASCII, que es donde se acaba de cobrar
 	ld a,(0ddfeh)		;d7d0
 	jr nc,L_D7E1		;d7d3
 	ld a,039h		;d7d5
