@@ -8048,90 +8048,103 @@ nave_pinta:		; El remate del cuadro de la nave: saca el numero de sprite de los 
 	call pinta_sprite		;c0d5
 	call tiro_alcanza_nave		;c0d8   ; El contacto contra los tiros enemigos, lo ultimo del cuadro de la nave
 	ret			;c0db
-alta_tile_especial:		; Mete una entrada en la tabla de los tiles especiales (0xCB3A, contador 0xCA92, tope 8): columna en (ix+001), indice de tile en (ix+002) y puntero al byte del mapa en (ix+005/006); la rutina de gobierno la pone luego el despachador de 0xC116 segun el indice, con 0xC678 de serie
-	ex af,af'			;c0dc
-	ld a,(0ca92h)		;c0dd
-	cp 008h		;c0e0
-	ret nc			;c0e2
-	ld ix,0cb3ah		;c0e3
+
+; ----------------------------------------------------------------------
+; EL ALTA DE UN TILE ESPECIAL
+;
+; La entrada son ocho bytes: (ix+000) la fila, (ix+001) la columna en
+; pixeles, (ix+002) el indice de tile -que es el dibujo y el estado a la
+; vez-, (ix+003/004) la rutina de gobierno, (ix+005/006) el puntero al
+; byte del mapa y (ix+007) un byte suelto que cada tile usa a su aire.
+;
+; La rutina de gobierno DE SERIE es 0xC678, que es baja_tile_especial:
+; el indice que el despachador no reconozca ocupa una entrada y se va
+; en el cuadro siguiente sin llegar a hacer nada.
+; ----------------------------------------------------------------------
+alta_tile_especial:		; Mete una entrada en la tabla de los tiles especiales (0xCB3A, contador 0xCA92, tope 8): columna en (ix+001), indice de tile en (ix+002) y puntero al byte del mapa en (ix+005/006); la rutina de gobierno la pone luego el despachador de 0xC116 segun el indice, con 0xC678 de serie, que es baja_tile_especial: el indice que el despachador no reconozca ocupa una entrada y se va en el cuadro siguiente sin hacer nada
+	ex af,af'			;c0dc   ; Entra con el indice de tile en A, el numero de byte dentro de la fila del mapa en B -6 el primero, 1 el ultimo- y el puntero a ese byte en HL; el indice se aparca en A' hasta 0xC109
+	ld a,(0ca92h)		;c0dd   ; Cuantos tiles especiales hay vivos
+	cp 008h		;c0e0   ; Tope OCHO, y cierra al byte: 0xCB3A + 8*8 = 0xCB7A, donde acaba el rango
+	ret nc			;c0e2   ; Lleno: el tile no llega a nacer
+	ld ix,0cb3ah		;c0e3   ; La base de la tabla
 	and a			;c0e7
-	jr z,L_C0F4		;c0e8
+	jr z,alta_tile_rellena		;c0e8   ; Si no hay ninguna ocupada, IX ya esta en la entrada libre
 	ld c,a			;c0ea
-	ld de,00008h		;c0eb
-L_C0EE:
-	add ix,de		;c0ee
+	ld de,00008h		;c0eb   ; Ocho bytes por entrada, como las instalaciones, frente a los cinco de las tablas de disparos
+busca_hueco_tile:		; Avanza IX ocho bytes por cada entrada ocupada, hasta la primera libre
+	add ix,de		;c0ee   ; Se avanza a mano, sumando ocho tantas veces como entradas ocupadas: la libre es siempre la ultima
 	dec c			;c0f0
-	jp nz,L_C0EE		;c0f1
-L_C0F4:
-	inc a			;c0f4
+	jp nz,busca_hueco_tile		;c0f1
+alta_tile_rellena:		; La entrada libre, ya localizada: aqui se rellenan sus ocho bytes
+	inc a			;c0f4   ; Una mas
 	ld (0ca92h),a		;c0f5
-	ld (ix+000h),000h		;c0f8
-	ld (ix+007h),000h		;c0fc
-	ld a,006h		;c100
+	ld (ix+000h),000h		;c0f8   ; (ix+000) es la FILA, y todo tile especial nace en la 0: entra por arriba, y recorre_tiles_especiales la sube una por cuadro hasta el 0x60, cuando lo da de baja
+	ld (ix+007h),000h		;c0fc   ; (ix+007) es el byte suelto de la entrada, a cero al nacer: tile_43 lo usa de fase para su parpadeo
+	ld a,006h		;c100   ; 6 - B convierte el contador del bucle del llamador -6, 5, 4, 3, 2, 1- en el numero de columna, de 0 a 5
 	sub b			;c102
-	rrca			;c103
+	rrca			;c103   ; Tres `rrca` sobre un valor de 0 a 5 son un por 32: las seis columnas del mapa caen en los pixeles 0, 32, 64, 96, 128 y 160, que son los 192 de ancho del buffer repartidos de 32 en 32
 	rrca			;c104
 	rrca			;c105
-	ld (ix+001h),a		;c106
-	ex af,af'			;c109
-	ld (ix+002h),a		;c10a
-	ld de,0c678h		;c10d
-	ld (ix+003h),e		;c110
+	ld (ix+001h),a		;c106   ; (ix+001) es la COLUMNA en pixeles
+	ex af,af'			;c109   ; Vuelve el indice de tile
+	ld (ix+002h),a		;c10a   ; (ix+002) guarda el indice, que aqui es el dibujo y el estado a la vez
+	ld de,0c678h		;c10d   ; La rutina de gobierno de serie es 0xC678, o sea baja_tile_especial
+	ld (ix+003h),e		;c110   ; Y va en (ix+003/004), que es de donde recorre_tiles_especiales la saca para su `jp (hl)` de 0xCB99
 	ld (ix+004h),d		;c113
-	cp 030h		;c116
-	jr c,L_C17D		;c118
-	jr nz,L_C122		;c11a
-	ld de,0c189h		;c11c
-	jp L_C177		;c11f
-L_C122:
+	cp 030h		;c116   ; Aqui empieza el despachador: diez `cp` contra el indice, en orden creciente
+	jr c,alta_tile_apunta		;c118   ; Por debajo de 0x30 no hay caso, y se queda con la baja de serie
+	jr nz,caso_tile_31		;c11a
+	ld de,0c189h		;c11c   ; El 0x30 y el 0x31 comparten rutina, y son el unico destino repetido de los diez
+	jp alta_tile_gobierno		;c11f
+caso_tile_31:
 	cp 031h		;c122
-	jr nz,L_C12C		;c124
+	jr nz,caso_tile_32		;c124
 	ld de,0c189h		;c126
-	jp L_C177		;c129
-L_C12C:
-	cp 032h		;c12c
-	jr nz,L_C136		;c12e
+	jp alta_tile_gobierno		;c129
+caso_tile_32:
+	cp 032h		;c12c   ; 0x32: tile_32, el que suelta objetos
+	jr nz,caso_tile_37		;c12e
 	ld de,0e091h		;c130
-	jp L_C177		;c133
-L_C136:
-	cp 037h		;c136
-	jr nz,L_C140		;c138
+	jp alta_tile_gobierno		;c133
+caso_tile_37:
+	cp 037h		;c136   ; 0x37: tile_37, el que crece hasta el 0x3B
+	jr nz,caso_tile_3B		;c138
 	ld de,0dfd4h		;c13a
-	jp L_C177		;c13d
-L_C140:
-	cp 03bh		;c140
-	jr nz,L_C14A		;c142
+	jp alta_tile_gobierno		;c13d
+caso_tile_3B:
+	cp 03bh		;c140   ; 0x3B: tile_3B, el que suelta enemigos apuntados
+	jr nz,caso_tile_3C		;c142
 	ld de,0e002h		;c144
-	jp L_C177		;c147
-L_C14A:
-	cp 03ch		;c14a
-	jr nz,L_C154		;c14c
+	jp alta_tile_gobierno		;c147
+caso_tile_3C:
+	cp 03ch		;c14a   ; 0x3C: tile_3C
+	jr nz,caso_tile_43		;c14c
 	ld de,0e02ah		;c14e
-	jp L_C177		;c151
-L_C154:
-	cp 043h		;c154
-	jr nz,L_C15E		;c156
+	jp alta_tile_gobierno		;c151
+caso_tile_43:
+	cp 043h		;c154   ; 0x43: tile_43, el aparato que parpadea
+	jr nz,caso_tile_45		;c156
 	ld de,0d6c5h		;c158
-	jp L_C177		;c15b
-L_C15E:
-	cp 045h		;c15e
-	jr nz,L_C167		;c160
+	jp alta_tile_gobierno		;c15b
+caso_tile_45:
+	cp 045h		;c15e   ; 0x45: tile_45, el que suelta al perseguidor
+	jr nz,caso_tile_46		;c160
 	ld de,0ce73h		;c162
-	jr L_C177		;c165
-L_C167:
-	cp 046h		;c167
-	jr nz,L_C170		;c169
+	jr alta_tile_gobierno		;c165
+caso_tile_46:
+	cp 046h		;c167   ; 0x46: tile_46, la onda expansiva
+	jr nz,caso_tile_5D		;c169
 	ld de,0d314h		;c16b
-	jr L_C177		;c16e
-L_C170:
-	cp 05dh		;c170
-	jr nz,L_C17D		;c172
+	jr alta_tile_gobierno		;c16e
+caso_tile_5D:
+	cp 05dh		;c170   ; 0x5D: tile_5D, el que cierra la zona 7 y congela el scroll
+	jr nz,alta_tile_apunta		;c172
 	ld de,0da3dh		;c174
-L_C177:
-	ld (ix+003h),e		;c177
-	ld (ix+004h),d		;c17a
-L_C17D:
-	ld (ix+005h),l		;c17d
+alta_tile_gobierno:		; Pisa la baja de serie con la rutina del caso que haya salido; entran aqui los diez
+	ld (ix+003h),e		;c177   ; El unico sitio que pisa la baja de serie con la rutina del caso elegido
+	ld (ix+004h),d		;c17a   ; Los diez casos entran aqui, ocho por `jp` y dos por `jr`
+alta_tile_apunta:		; El remate comun: (ix+005/006) queda apuntando al byte del mapa que trajo HL
+	ld (ix+005h),l		;c17d   ; (ix+005/006) es el puntero al byte del mapa, y por ahi escribe el tile su propio dibujo
 	ld (ix+006h),h		;c180
 	ret			;c183
 
@@ -8147,24 +8160,24 @@ DATA_relleno_C184:
 
 
 tile_30_31:		; El comportamiento de los tiles 0x30 y 0x31, los dos unicos que el despachador manda a la misma rutina (`ld de,0c189h` en 0xC11C y en 0xC126): siete bytes que solo encadenan impacto_objeto -quien lo revienta y paga los 200 puntos- y contacto_instalacion, que con la caja de choca_con_nave3 va derecho a mata_nave. Ni se anima ni dispara: es el tile que solo esta ahi para matar al que lo roce
-	call impacto_objeto		;c189
-	call contacto_instalacion		;c18c
+	call impacto_objeto		;c189   ; impacto_objeto es quien lo revienta si le dan, y quien le instala tile_estalla
+	call contacto_instalacion		;c18c   ; Y contacto_instalacion es la caja que mata a la nave que lo roce
 	ret			;c18f
 tile_estalla:		; El derrumbe de un tile especial: el estado que impacto_objeto le instala al reventarlo, con (ix+002) puesto a 0x28 (`ld hl,0c190h` en 0xD201). Cada cuadro escribe (ix+002) en la celda del mapa que apunta (ix+005/006) y lo sube uno, o sea que la celda recorre los tiles 0x28, 0x29, 0x2A y 0x2B -que dibujados son el boquete abriendose-; al llegar a 0x2C echa a suertes entre 0x2C y 0x2D (`call azar / and 001h / add a,e`), lo pinta un cuadro mas y se da de baja dejando ese crater en el mapa. Cinco cuadros clavados
-	ld a,(ix+002h)		;c190
-	ld l,(ix+005h)		;c193
+	ld a,(ix+002h)		;c190   ; El estado, que impacto_objeto dejo en 0x28
+	ld l,(ix+005h)		;c193   ; El puntero al byte del mapa que guardo el alta
 	ld h,(ix+006h)		;c196
-	ld (hl),a			;c199
-	inc a			;c19a
+	ld (hl),a			;c199   ; Escribe el estado EN LA CELDA: lo que se ve es el estado
+	inc a			;c19a   ; Y lo sube uno: 0x28, 0x29, 0x2A, 0x2B
 	ld (ix+002h),a		;c19b
-	cp 02ch		;c19e
-	ret c			;c1a0
-	jp nz,baja_tile_especial		;c1a1
+	cp 02ch		;c19e   ; Cuatro cuadros hasta llegar al 0x2C
+	ret c			;c1a0   ; Todavia no
+	jp nz,baja_tile_especial		;c1a1   ; Pasado el 0x2C ya no queda nada que pintar: se da de baja
 	ld e,a			;c1a4
-	call azar		;c1a5
-	and 001h		;c1a8
+	call azar		;c1a5   ; En el 0x2C justo, el crater se echa a suertes
+	and 001h		;c1a8   ; Un solo bit: 0x2C o 0x2D
 	add a,e			;c1aa
-	ld (ix+002h),a		;c1ab
+	ld (ix+002h),a		;c1ab   ; Se guarda para que el cuadro siguiente lo escriba en la celda y salga por el `jp nz` de 0xC1A1
 	ret			;c1ae
 lee_mando_demo:		; Saca el siguiente byte de la partida grabada de la demo (puntero en 0xE158) y avanza: la demo entra por el mismo sitio que el jugador
 	ld ix,(0e158h)		;c1af   ; El puntero de la partida grabada
@@ -8229,149 +8242,161 @@ L_C207:
 	rrca			;c211
 	rrca			;c212
 	ret			;c213
-mueve_bandada:		; Recorre la tabla de 0xC97B (contador en 0xC97A): a los vivos les mira el contador de (ix+004) -y al agotarse suena 0xEB42- y a los marcados con 0xFF en (ix+002) les pinta la explosion, fotograma a fotograma hasta el 0x21
-	ld ix,0c97bh		;c214
-	ld a,(0c97ah)		;c218
+
+; ----------------------------------------------------------------------
+; LA BANDADA, CUATRO ENTRADAS DE CINCO BYTES EN 0xC97B
+;
+; (ix+000) columna, (ix+001) fila, (ix+002) estado, (ix+003) contador y
+; (ix+004) retardo. El estado 0xFF quiere decir "explotando", y entonces
+; (ix+003) deja de ser contador y pasa a ser el numero de sprite.
+;
+; Estando vivo, (ix+002) lleva el rumbo en los bits 0-2 y el contador de
+; giro de gira_rumbo en los 3-4, que son los mismos cinco bits que le
+; valen de numero de sprite sumandoles 0x21.
+; ----------------------------------------------------------------------
+mueve_bandada:		; Recorre la tabla de 0xC97B (contador en 0xC97A): a los vivos les replantea el rumbo una vez de cada seis y los mueve cuatro pixeles por cuadro, y a los marcados con 0xFF en (ix+002) les pinta la explosion, cuatro fotogramas del 0x1D al 0x20. El retardo de (ix+004) manda mientras dura: por encima de 0x10 el enemigo espera sin moverse ni pintarse, y por debajo baja de tres en tres sumandose a la fila, que es la entrada en escena. El arranca_guion_libre de 0xC24B pide que un dec deje ese retardo en cero justo, y con los dos valores que el juego pasa -0 y 0x1B- eso no llega a ocurrir
+	ld ix,0c97bh		;c214   ; La tabla de la bandada
+	ld a,(0c97ah)		;c218   ; Cuantas hay vivas
 	and a			;c21b
-	ret z			;c21c
+	ret z			;c21c   ; Ninguna, no hay nada que mover
 	ld b,a			;c21d
-L_C21E:
-	push bc			;c21e
-	ld a,(ix+002h)		;c21f
-	inc a			;c222
-	jr nz,L_C23F		;c223
-	ld a,(ix+003h)		;c225
-	ld l,(ix+000h)		;c228
+bandada_una:		; Una vuelta del recorrido, un enemigo
+	push bc			;c21e   ; B lleva la cuenta de las que faltan, y 0xC322 la vuelve a mirar para saber si la que se va es la ultima
+	ld a,(ix+002h)		;c21f   ; El estado
+	inc a			;c222   ; El 0xFF marca "explotando"
+	jr nz,bandada_viva		;c223
+	ld a,(ix+003h)		;c225   ; Explotando, (ix+003) ya no es un contador: es el numero de sprite
+	ld l,(ix+000h)		;c228   ; L la columna, H la fila
 	ld h,(ix+001h)		;c22b
 	call pinta_sprite		;c22e
-	inc (ix+003h)		;c231
+	inc (ix+003h)		;c231   ; Un fotograma por cuadro
 	ld a,(ix+003h)		;c234
-	cp 021h		;c237
-	jp nz,L_C311		;c239
-	jp L_C31C		;c23c
-L_C23F:
-	ld a,(ix+004h)		;c23f
+	cp 021h		;c237   ; 0x1D, 0x1E, 0x1F y 0x20: cuatro cuadros de explosion, y en el 0x21 se acaba
+	jp nz,bandada_siguiente		;c239
+	jp bandada_baja		;c23c   ; Y se da de baja
+bandada_viva:		; El enemigo que no esta explotando: primero el retardo de entrada
+	ld a,(ix+004h)		;c23f   ; El retardo de entrada, que hace dos cosas segun cuanto valga
 	dec (ix+004h)		;c242
-	jr nz,L_C251		;c245
+	jr nz,bandada_mueve		;c245   ; Si el `dec` lo deja en cero justo, suena; con los dos valores que el juego pasa -0 y 0x1B- eso no llega a ocurrir nunca
 	xor a			;c247
 	ld de,0eb42h		;c248
-	call arranca_guion_libre		;c24b
-	jp L_C311		;c24e
-L_C251:
-	cp 010h		;c251
-	jp nc,L_C311		;c253
-	inc (ix+004h)		;c256
-	ld b,(ix+001h)		;c259
+	call arranca_guion_libre		;c24b   ; El mismo 0xEB42 que arranca alta_bandada cuando el retardo nace a cero
+	jp bandada_siguiente		;c24e   ; Y ese cuadro no se mueve
+bandada_mueve:		; Ya se mueve: rumbo hacia la nave, giro y paso
+	cp 010h		;c251   ; A es el valor de ANTES del `dec`
+	jp nc,bandada_siguiente		;c253   ; De 0x10 para arriba el retardo solo cuenta atras: el enemigo esta esperando su turno, ni se mueve ni se pinta
+	inc (ix+004h)		;c256   ; Por debajo deshace el `dec`, porque de 0x0F para abajo quien manda es el `dec` de tres en tres de 0xC2AB
+	ld b,(ix+001h)		;c259   ; B la fila y C la columna del enemigo...
 	ld c,(ix+000h)		;c25c
-	ld de,(0c184h)		;c25f
-	call rumbo_hacia		;c263
-	call borde_pantalla		;c266
-	call rumbo_a_mascara2		;c269
-	ld l,(ix+000h)		;c26c
+	ld de,(0c184h)		;c25f   ; ...y DE la de la nave, E la columna y D la fila
+	call rumbo_hacia		;c263   ; La mascara de por donde se va a la nave, en el mismo reparto de bits que el mando
+	call borde_pantalla		;c266   ; Y se le quitan los lados si esta pegado a un borde
+	call rumbo_a_mascara2		;c269   ; La tabla de 0xC9AC convierte esa mascara en un rumbo de 0 a 7
+	ld l,(ix+000h)		;c26c   ; Este par no lo lee nadie: 0xC291 lo vuelve a cargar y por el camino solo hay `rrca` y registros
 	ld h,(ix+001h)		;c26f
-	rrca			;c272
+	rrca			;c272   ; Tres `rrca` suben el rumbo pedido a los bits 5-7, que es donde gira_rumbo lo busca
 	rrca			;c273
 	rrca			;c274
 	ld c,a			;c275
-	ld a,(ix+003h)		;c276
+	ld a,(ix+003h)		;c276   ; Estando vivo, (ix+003) es un contador de cuadros
 	inc a			;c279
-	cp 006h		;c27a
+	cp 006h		;c27a   ; El `cp` va antes del `ld` a proposito: las banderas sobreviven a la escritura
 	ld (ix+003h),a		;c27c
 	ld a,(ix+002h)		;c27f
-	jr nz,L_C291		;c282
+	jr nz,bandada_paso		;c282   ; El rumbo se replantea UNA VEZ DE CADA SEIS; los otros cinco cuadros el enemigo tira con el que ya tenia
 	ld (ix+003h),000h		;c284
-	and 01fh		;c288
-	or c			;c28a
+	and 01fh		;c288   ; Se conservan el rumbo actual y el contador de giro...
+	or c			;c28a   ; ...y se les engancha el rumbo pedido
 	call gira_rumbo		;c28b
 	ld (ix+002h),a		;c28e
-L_C291:
-	ld l,(ix+000h)		;c291
+bandada_paso:		; El paso propiamente dicho, cuatro pixeles por eje segun el rumbo ya girado
+	ld l,(ix+000h)		;c291   ; La posicion, ahora si
 	ld h,(ix+001h)		;c294
-	and 007h		;c297
-	ld bc,00404h		;c299
+	and 007h		;c297   ; Solo el rumbo, sin el contador de giro
+	ld bc,00404h		;c299   ; Cuatro pixeles por cuadro en cada eje, los mismos que la nave
 	call aplica_rumbo		;c29c
-	call recorta_x_objeto		;c29f
-	ld a,(ix+004h)		;c2a2
+	call recorta_x_objeto		;c29f   ; Si el paso lateral se sale, se deshace
+	ld a,(ix+004h)		;c2a2   ; Y aqui esta la entrada en escena: mientras el retardo no sea cero...
 	and a			;c2a5
-	jp z,L_C2B4		;c2a6
-	add a,h			;c2a9
+	jp z,bandada_guarda		;c2a6
+	add a,h			;c2a9   ; ...se le suma A LA FILA, o sea que el enemigo baja de golpe...
 	ld h,a			;c2aa
-	dec (ix+004h)		;c2ab
+	dec (ix+004h)		;c2ab   ; ...y el retardo baja de tres en tres. Desde 0x0F son cinco cuadros -15, 12, 9, 6 y 3, o sea 45 filas- y despues ya se mueve solo con su rumbo
 	dec (ix+004h)		;c2ae
 	dec (ix+004h)		;c2b1
-L_C2B4:
-	ld (ix+000h),l		;c2b4
+bandada_guarda:		; La posicion nueva a la entrada, y de ahi al dibujo y a los contactos
+	ld (ix+000h),l		;c2b4   ; La posicion nueva, a la entrada
 	ld (ix+001h),h		;c2b7
 	ld a,h			;c2ba
-	cp 0e0h		;c2bb
-	jp nc,L_C31C		;c2bd
+	cp 0e0h		;c2bb   ; Fila 0xE0 o mas: se ha salido por abajo, y con filas de un byte eso es tambien la resta que se pasa de cero
+	jp nc,bandada_baja		;c2bd   ; Y se va de la tabla
 	ld a,(ix+002h)		;c2c0
-	and 01fh		;c2c3
-	add a,021h		;c2c5
+	and 01fh		;c2c3   ; Los cinco bits bajos: rumbo en 0-2 y contador de giro en 3-4
+	add a,021h		;c2c5   ; El pozo de sprites del enemigo empieza en 0x21, tres grupos de ocho igual que el de la nave
 	call pinta_sprite		;c2c7
 	ld a,(ix+002h)		;c2ca
-	bit 3,a		;c2cd
-	jr z,L_C2EA		;c2cf
-	and 007h		;c2d1
+	bit 3,a		;c2cd   ; El bit 3 solo esta puesto si gira_rumbo dijo "ya apunta a donde queria" (0xC7A4): el enemigo solo pare estando encarado
+	jr z,bandada_contactos		;c2cf
+	and 007h		;c2d1   ; El rumbo, que va a A' para que alta_enemigo se lo de a la cria
 	ex af,af'			;c2d3
 	call azar		;c2d4
-	and 007h		;c2d7
-	jr nz,L_C2EA		;c2d9
-	ld a,(ix+000h)		;c2db
+	and 007h		;c2d7   ; Y aun asi, una vez de cada ocho
+	jr nz,bandada_contactos		;c2d9
+	ld a,(ix+000h)		;c2db   ; La cria nace en el centro del enemigo, cuatro pixeles en cada eje
 	add a,004h		;c2de
 	ld c,a			;c2e0
 	ld a,(ix+001h)		;c2e1
 	add a,004h		;c2e4
 	ld b,a			;c2e6
-	call alta_enemigo		;c2e7
-L_C2EA:
-	call disparo_derriba_bandada		;c2ea
-	ld a,(0c188h)		;c2ed
+	call alta_enemigo		;c2e7   ; alta_enemigo tiene ademas su propia tirada por zona: puede no salir
+bandada_contactos:		; Los dos contactos: el disparo del jugador contra el, y el contra la nave
+	call disparo_derriba_bandada		;c2ea   ; Aqui se mira si le ha dado un disparo del jugador
+	ld a,(0c188h)		;c2ed   ; Si la nave no esta viva no hay contacto que mirar
 	cp 004h		;c2f0
-	jr nc,L_C311		;c2f2
+	jr nc,bandada_siguiente		;c2f2
 	ld l,(ix+000h)		;c2f4
 	ld h,(ix+001h)		;c2f7
-	call choca_con_nave2		;c2fa
-	jr c,L_C311		;c2fd
-	ld (ix+002h),0ffh		;c2ff
-	ld (ix+003h),01dh		;c303
+	call choca_con_nave2		;c2fa   ; La caja pequena, 2x3 contra 0x0C x 0x0A
+	jr c,bandada_siguiente		;c2fd   ; Carry es "no se tocan"
+	ld (ix+002h),0ffh		;c2ff   ; Se marca explotando...
+	ld (ix+003h),01dh		;c303   ; ...con el primer fotograma de la explosion
 	xor a			;c307
-	ld de,0ea52h		;c308
+	ld de,0ea52h		;c308   ; El mismo golpe que paga disparo_derriba_bandada
 	call arranca_guion_libre		;c30b
-	call mata_nave		;c30e
-L_C311:
-	ld de,00005h		;c311
+	call mata_nave		;c30e   ; Y se lleva a la nave por delante
+bandada_siguiente:		; A la entrada de detras, cinco bytes mas alla
+	ld de,00005h		;c311   ; A la entrada siguiente, cinco bytes mas alla
 	add ix,de		;c314
-L_C316:
-	pop bc			;c316
+bandada_vuelta:		; El cierre de la vuelta; se llega aqui con IX movido o sin mover segun haya habido baja
+	pop bc			;c316   ; Cuando ha habido baja se llega aqui con IX SIN mover, porque el `ldir` de 0xC33A ha traido la entrada de detras a este mismo sitio
 	dec b			;c317
-	jp nz,L_C21E		;c318
+	jp nz,bandada_una		;c318
 	ret			;c31b
-L_C31C:
-	ld hl,0c97ah		;c31c
+bandada_baja:		; Saca al enemigo de la tabla y sube las de detras con un ldir
+	ld hl,0c97ah		;c31c   ; Una menos
 	dec (hl)			;c31f
-	pop bc			;c320
+	pop bc			;c320   ; Recupera cuantas quedaban sin gastar el `pop` que espera en 0xC316
 	push bc			;c321
 	ld a,b			;c322
-	cp 001h		;c323
-	jr z,L_C316		;c325
-	push ix		;c327
+	cp 001h		;c323   ; Si esta era la ultima del recorrido, no hay nada detras que compactar
+	jr z,bandada_vuelta		;c325
+	push ix		;c327   ; DE = la entrada que se va, que es el destino del `ldir`
 	pop de			;c329
 	push de			;c32a
-	inc de			;c32b
+	inc de			;c32b   ; Cinco `inc`: el origen es la entrada de detras
 	inc de			;c32c
 	inc de			;c32d
 	inc de			;c32e
 	inc de			;c32f
-	ld hl,0c98fh		;c330
+	ld hl,0c98fh		;c330   ; 0xC98F es el final de la tabla -0xC97B + 4*5- y a la vez el contador de la tabla siguiente
 	and a			;c333
-	sbc hl,de		;c334
+	sbc hl,de		;c334   ; Cuantos bytes hay detras de la entrada que se va
 	ld b,h			;c336
 	ld c,l			;c337
 	ex de,hl			;c338
 	pop de			;c339
-	ldir		;c33a
-	jp L_C316		;c33c
+	ldir		;c33a   ; Las de detras suben cinco bytes, y por eso IX no se toca: la que ocupa el hueco se recorre en la vuelta siguiente
+	jp bandada_vuelta		;c33c
 mueve_estrellas:		; Las 48 estrellas de 0xCB09: baja una fila cada cuadro con vuelta en 0xA0 (la altura del buffer) y, si la celda esta ocupada, busca hasta 8 posiciones arriba o abajo -a saltos de 24, o sea en la misma columna- antes de rendirse. Por eso no se pintan encima del decorado
 	ld de,0cb09h		;c33f
 	ld c,030h		;c342
@@ -9135,46 +9160,46 @@ L_C78E:
 	pop hl			;c790
 	jp L_C705		;c791
 gira_rumbo:		; Acerca el rumbo actual (bits 0-2) al pedido (bits 5-7) un octavo por vez y por el lado corto, con los bits 3-4 haciendo de espera para que el giro no sea instantaneo
-	ld b,a			;c794
-	and 007h		;c795
+	ld b,a			;c794   ; Entra con el rumbo actual en los bits 0-2, el contador de giro en los 3-4 y el rumbo pedido en los 5-7
+	and 007h		;c795   ; E = rumbo actual
 	ld e,a			;c797
 	ld a,b			;c798
-	rlca			;c799
+	rlca			;c799   ; Tres `rlca` bajan el rumbo pedido a los bits 0-2
 	rlca			;c79a
 	rlca			;c79b
 	and 007h		;c79c
-	sub e			;c79e
+	sub e			;c79e   ; La diferencia entre los dos rumbos, en octavos de vuelta
 	and 007h		;c79f
-	jr nz,L_C7A7		;c7a1
+	jr nz,gira_rumbo_lado		;c7a1   ; Si es cero ya esta encarado
 	ld a,e			;c7a3
-	or 008h		;c7a4
+	or 008h		;c7a4   ; Y entonces devuelve el rumbo CON EL BIT 3 PUESTO, que es la marca de "encarado" que mira mueve_bandada en 0xC2CD; los bits 5-7 se pierden por el camino
 	ret			;c7a6
-L_C7A7:
-	cp 005h		;c7a7
-	jr c,L_C7B6		;c7a9
-	ld c,0ffh		;c7ab
+gira_rumbo_lado:		; Los dos rumbos no coinciden: de 1 a 4 de diferencia se gira en sentido creciente y de 5 a 7 en el decreciente
+	cp 005h		;c7a7   ; De 1 a 4 el camino corto es en el sentido de la tabla y de 5 a 7 al reves: eso es girar por el lado corto
+	jr c,gira_rumbo_creciente		;c7a9
+	ld c,0ffh		;c7ab   ; C = -1, sentido decreciente
 	ld a,b			;c7ad
-	and 018h		;c7ae
-	jr z,L_C7C3		;c7b0
+	and 018h		;c7ae   ; Los bits 3-4 son el contador de giro, y solo pasa por tres valores: 0x00, 0x08 -que es el de encarado- y 0x10
+	jr z,gira_un_octavo		;c7b0   ; Para girar en este sentido tiene que valer 0x00
 	ld a,b			;c7b2
-	sub 008h		;c7b3
+	sub 008h		;c7b3   ; Si no, le resta ocho y el cuadro se gasta en eso
 	ret			;c7b5
-L_C7B6:
-	ld c,001h		;c7b6
+gira_rumbo_creciente:		; El sentido creciente, que pide el contador de giro en 0x10
+	ld c,001h		;c7b6   ; C = +1, sentido creciente
 	ld a,b			;c7b8
 	and 018h		;c7b9
 	cp 010h		;c7bb
-	jr z,L_C7C3		;c7bd
+	jr z,gira_un_octavo		;c7bd   ; Y para este otro tiene que valer 0x10
 	ld a,b			;c7bf
-	add a,008h		;c7c0
+	add a,008h		;c7c0   ; Si no, le suma ocho: arrancar a girar cuesta un cuadro y cambiar el sentido del giro, dos
 	ret			;c7c2
-L_C7C3:
+gira_un_octavo:		; El giro de verdad: el rumbo, un octavo arriba o abajo, dejando los demas bits como estaban
 	ld a,e			;c7c3
-	add a,c			;c7c4
+	add a,c			;c7c4   ; El rumbo, un octavo arriba o abajo
 	and 007h		;c7c5
 	ld e,a			;c7c7
 	ld a,b			;c7c8
-	and 0f8h		;c7c9
+	and 0f8h		;c7c9   ; El contador de giro y el rumbo pedido se quedan como estaban: solo cambian los bits 0-2
 	or e			;c7cb
 	ret			;c7cc
 rumbo_a_mascara:		; Traduce el rumbo A a su mascara de movimiento por la tabla de 0xC9A4
@@ -9190,32 +9215,32 @@ L_C7D6:
 	ret			;c7db
 aplica_rumbo:		; Mueve la posicion HL segun la mascara de rumbo que saca de la tabla 0xC9A4: bit 0 suma B a la fila y bit 1 la resta, bits 2 y 3 hacen lo mismo con la columna y C. Es el mismo esquema que el aplica_rumbo de la fase de a pie
 	push hl			;c7dc
-	call rumbo_a_mascara		;c7dd
-	ld de,00000h		;c7e0
+	call rumbo_a_mascara		;c7dd   ; El rumbo A pasa por la tabla de 0xC9A4 y sale hecho mascara
+	ld de,00000h		;c7e0   ; DE es el paso: D en filas y E en columnas
 	pop hl			;c7e3
-	rrca			;c7e4
-	jr nc,L_C7E8		;c7e5
+	rrca			;c7e4   ; Bit 0 de la mascara: la fila crece B
+	jr nc,rumbo_bit1		;c7e5   ; Con el bit a cero, ese eje no se toca
 	ld d,b			;c7e7
-L_C7E8:
-	rrca			;c7e8
-	jr nc,L_C7F1		;c7e9
-	push af			;c7eb
+rumbo_bit1:
+	rrca			;c7e8   ; Bit 1: la fila decrece B
+	jr nc,rumbo_bit2		;c7e9
+	push af			;c7eb   ; El `neg` se come A, que es la mascara a medio gastar: de ahi el push y el pop
 	ld a,b			;c7ec
 	neg		;c7ed
 	ld d,a			;c7ef
 	pop af			;c7f0
-L_C7F1:
-	rrca			;c7f1
-	jr nc,L_C7F5		;c7f2
+rumbo_bit2:
+	rrca			;c7f1   ; Bit 2: la columna crece C
+	jr nc,rumbo_bit3		;c7f2
 	ld e,c			;c7f4
-L_C7F5:
-	rrca			;c7f5
-	jr nc,L_C7FC		;c7f6
+rumbo_bit3:
+	rrca			;c7f5   ; Bit 3: la columna decrece C
+	jr nc,rumbo_suma_ejes		;c7f6
 	ld a,c			;c7f8
 	neg		;c7f9
 	ld e,a			;c7fb
-L_C7FC:
-	ld a,h			;c7fc
+rumbo_suma_ejes:		; Suma el paso a la posicion, cada eje por su lado y a ocho bits
+	ld a,h			;c7fc   ; Los dos ejes se suman por separado y a ocho bits: no hay `add hl,de` porque la columna no se lleva a la fila
 	add a,d			;c7fd
 	ld h,a			;c7fe
 	ld a,l			;c7ff
@@ -9272,32 +9297,32 @@ L_C83B:
 	ret			;c83e
 azar:		; El generador de azar: identico al de la segunda parte (lee la ROM del BIOS como tabla de entropia), semilla en 0xCA8F sembrada con ld a,r en el arranque
 	push hl			;c83f
-	ld hl,(0ca8fh)		;c840
+	ld hl,(0ca8fh)		;c840   ; La semilla es un PUNTERO, no un numero
 	ld a,h			;c843
-	and 01fh		;c844
-	or 020h		;c846
+	and 01fh		;c844   ; Se le fuerzan los bits altos: H acaba entre 0x20 y 0x3F...
+	or 020h		;c846   ; ...o sea que HL siempre cae en 0x2000-0x3FFF, ocho kilobytes de ROM haciendo de tabla de entropia
 	ld h,a			;c848
-	ld a,000h		;c849
-	xor (hl)			;c84b
+	ld a,000h		;c849   ; El acumulador arranca a cero
+	xor (hl)			;c84b   ; Tres bytes seguidos de la ROM, en xor
 	inc hl			;c84c
 	xor (hl)			;c84d
 	inc hl			;c84e
 	xor (hl)			;c84f
 	inc hl			;c850
-	add a,h			;c851
+	add a,h			;c851   ; Y encima los dos bytes del puntero, uno sumando y otro restando
 	sub l			;c852
-	ld (0ca8fh),hl		;c853
-	pop hl			;c856
+	ld (0ca8fh),hl		;c853   ; La semilla avanza TRES bytes por llamada, y el `and 01fh / or 020h` de la vuelta siguiente la vuelve a meter en el rango
+	pop hl			;c856   ; HL se salva porque medio bloque llama a azar teniendo la posicion en HL
 	ret			;c857
 borra_buffer:		; Borra los 3840 bytes del buffer con la PILA: SP al final (0x4F00) y 80 vueltas de 24 `push de` con DE=0, que son 3840 bytes justos. Salva SP en HL y va con las interrupciones cortadas, porque mientras tanto no hay pila
-	di			;c858
-	ld hl,00000h		;c859
+	di			;c858   ; Sin pila no puede haber interrupcion
+	ld hl,00000h		;c859   ; El SP se salva en HL con el truco de `ld hl,0 / add hl,sp`
 	add hl,sp			;c85c
-	ld sp,04f00h		;c85d
-	ld b,050h		;c860
-	ld de,00000h		;c862
-L_C865:
-	push de			;c865
+	ld sp,04f00h		;c85d   ; La pila crece hacia abajo, asi que arranca en el final del buffer...
+	ld b,050h		;c860   ; ...y son ochenta vueltas
+	ld de,00000h		;c862   ; Lo que se escribe: dos ceros por `push`
+borra_buffer_vuelta:		; Una vuelta son veinticuatro push, o sea dos filas del buffer
+	push de			;c865   ; Veinticuatro `push` son 48 bytes, o sea DOS filas del buffer por vuelta; ochenta vueltas son las 160 filas, 3840 bytes de 0x4EFF a 0x4000
 	push de			;c866
 	push de			;c867
 	push de			;c868
@@ -9321,11 +9346,11 @@ L_C865:
 	push de			;c87a
 	push de			;c87b
 	push de			;c87c
-	djnz L_C865		;c87d
-	ld sp,hl			;c87f
-	ei			;c880
+	djnz borra_buffer_vuelta		;c87d
+	ld sp,hl			;c87f   ; El SP, a su sitio
+	ei			;c880   ; Las interrupciones se encienden aunque estuvieran apagadas al entrar
 	ret			;c881
-alta_bandada:		; Mete un objeto en la tabla de 0xC97B (contador 0xC97A, tope 4, entradas de 5 B) con rumbo inicial 0x14 y el A' de entrada como RETARDO en (ix+004): si es cero suena 0xEB42 al nacer y, si no, el sonido lo dispara mueve_bandada cuando la cuenta se agota. Vuelve con carry si ha entrado
+alta_bandada:		; Mete un objeto en la tabla de 0xC97B (contador 0xC97A, tope 4, entradas de 5 B) con rumbo inicial 0x14 y el A' de entrada como RETARDO en (ix+004): si es cero suena 0xEB42 al nacer. El OTRO valor que el juego pasa, 0x1B desde tile_32, no llega a sonar nunca: el sonido de mueve_bandada (0xC24B) pide que un dec deje el retardo en cero justo, y de 0x0F para abajo baja de tres en tres -15, 12, 9, 6, 3, 0- sin pasar por el 1. Vuelve con carry si ha entrado
 	ld hl,0c97ah		;c882
 	ld a,(hl)			;c885
 	cp 004h		;c886
@@ -10336,49 +10361,49 @@ L_D0F1:
 	ld a,e			;d103
 	add a,039h		;d104
 	jp pinta_sprite		;d106
-poda_rumbo_nave:		; Quita del rumbo pedido -en el A alternativo- las direcciones que la nave no puede tomar por donde esta: X=0 la izquierda, X=0xB0 la derecha, Y=0x38 arriba y Y=0xB0 abajo
-	ld hl,(0c184h)		;d109
-	ex af,af'			;d10c
-	ld a,l			;d10d
+poda_rumbo_nave:		; Quita del mando -que entra y sale en el A principal, con el alternativo de aparcamiento mientras trabaja con la posicion- las direcciones que la nave no puede tomar por donde esta: X=0 la izquierda, X=0xB0 la derecha, Y=0x38 arriba y Y=0xB0 abajo
+	ld hl,(0c184h)		;d109   ; La posicion de la nave: L la columna, H la fila
+	ex af,af'			;d10c   ; El mando entra en el A principal y se aparca en A'; el principal se usa para la posicion, y por los `ex` de 0xD12A y 0xD12E el mando tambien vuelve en el principal
+	ld a,l			;d10d   ; La columna
 	and a			;d10e
-	jr nz,L_D115		;d10f
-	ex af,af'			;d111
-	and 0f7h		;d112
-	ex af,af'			;d114
-L_D115:
-	cp 0b0h		;d115
-	jr nz,L_D11D		;d117
+	jr nz,poda_derecha		;d10f
+	ex af,af'			;d111   ; Trae el mando un momento...
+	and 0f7h		;d112   ; Columna 0: se apaga el bit 3, la izquierda
+	ex af,af'			;d114   ; ...y lo devuelve, que la columna todavia hace falta
+poda_derecha:
+	cp 0b0h		;d115   ; Sigue la columna
+	jr nz,poda_arriba		;d117
 	ex af,af'			;d119
-	and 0fbh		;d11a
+	and 0fbh		;d11a   ; Columna 0xB0: se apaga el bit 2, la derecha
 	ex af,af'			;d11c
-L_D11D:
-	ld a,h			;d11d
-	cp 038h		;d11e
-	jr nz,L_D126		;d120
+poda_arriba:
+	ld a,h			;d11d   ; Y ahora la fila
+	cp 038h		;d11e   ; El techo del area
+	jr nz,poda_abajo		;d120
 	ex af,af'			;d122
-	and 0fdh		;d123
+	and 0fdh		;d123   ; Fila 0x38: se apaga el bit 1, arriba
 	ex af,af'			;d125
-L_D126:
-	cp 0b0h		;d126
-	jr nz,L_D12E		;d128
+poda_abajo:
+	cp 0b0h		;d126   ; El suelo
+	jr nz,poda_rumbo_sale		;d128
 	ex af,af'			;d12a
-	and 0feh		;d12b
-	ret			;d12d
-L_D12E:
-	ex af,af'			;d12e
+	and 0feh		;d12b   ; Fila 0xB0: se apaga el bit 0, abajo
+	ret			;d12d   ; Sale sin `ex` de vuelta a proposito: el `and` ya se ha hecho sobre el A principal
+poda_rumbo_sale:
+	ex af,af'			;d12e   ; Y por el otro lado hay que traerlo
 	ret			;d12f
-recorta_a_area:		; Deshace el movimiento si se sale: con L >= 0xB1 repone la X de 0xC184, y con la Y fuera de la banda 0x38..0xB1 repone la de 0xC185
-	ld a,l			;d130
-	cp 0b1h		;d131
-	jr c,L_D139		;d133
-	ld a,(0c184h)		;d135
+recorta_a_area:		; Deshace el movimiento si se sale: con L >= 0xB1 repone la X de 0xC184, y con la Y fuera de la banda 0x38..0xB0 repone la de 0xC185
+	ld a,l			;d130   ; La columna del paso nuevo
+	cp 0b1h		;d131   ; Tiene que ser menor que 0xB1, o sea de 0 a 0xB0
+	jr c,recorta_fila		;d133
+	ld a,(0c184h)		;d135   ; Si se ha pasado, se repone la que habia
 	ld l,a			;d138
-L_D139:
-	ld a,h			;d139
-	sub 038h		;d13a
+recorta_fila:		; La otra mitad del recorte, la de la fila
+	ld a,h			;d139   ; La fila
+	sub 038h		;d13a   ; Restarle 0x38 y compararla contra 0x79 comprueba de una vez las dos puntas de la banda 0x38-0xB0: por debajo de 0x38 la resta da la vuelta y sale un numero grande, que tampoco pasa
 	cp 079h		;d13c
 	ret c			;d13e
-	ld a,(0c185h)		;d13f
+	ld a,(0c185h)		;d13f   ; Y se repone la que habia
 	ld h,a			;d142
 	ret			;d143
 borde_pantalla:		; Poda el rumbo en los bordes laterales: con X < 3 quita el bit de izquierda y con X >= 174 el de derecha, sobre el A alternativo
@@ -11679,7 +11704,7 @@ tile_5D_espera:		; El 0x5D esperando: cada cuadro repone (ix+000) a cero para no
 	ld a,01fh		;da95
 	ld (0c9a3h),a		;da97
 	jp baja_tile_especial		;da9a
-arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB1. Los dos sprites NO son la misma clase de cosa, aunque caigan en el mismo tramo: el 8 es la nave del jugador quieta y mirando hacia arriba -gira_rumbo remata con `or 008h`, o sea que los reposos de los ocho rumbos son 0x08 a 0x0F, y el rumbo 0 es arriba-, y por eso el relevo es continuo, con tile_5D_espera exigiendo justamente 0xC9A3 == 8 antes de disparar la escena; el 0x18, en cambio, no es ningun fotograma de vuelo -la aritmetica de gira_rumbo no lo alcanza nunca- sino CUATRO BARRAS HORIZONTALES blancas con trama de ajedrez entre ellas, un haz rayado del ancho de la nave, y el unico sitio de todo el bloque que lo pinta es esta rutina. O sea que lo que baja es el HAZ y lo que se arrastra es la NAVE
+arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB0. Los dos sprites NO son la misma clase de cosa, aunque caigan en el mismo tramo: el 8 es la nave del jugador quieta y mirando hacia arriba -gira_rumbo remata con `or 008h`, o sea que los reposos de los ocho rumbos son 0x08 a 0x0F, y el rumbo 0 es arriba-, y por eso el relevo es continuo, con tile_5D_espera exigiendo justamente 0xC9A3 == 8 antes de disparar la escena; el 0x18, en cambio, no es ningun fotograma de vuelo -la aritmetica de gira_rumbo no lo alcanza nunca- sino CUATRO BARRAS HORIZONTALES blancas con trama de ajedrez entre ellas, un haz rayado del ancho de la nave, y el unico sitio de todo el bloque que lo pinta es esta rutina. O sea que lo que baja es el HAZ y lo que se arrastra es la NAVE
 	ld hl,(0c184h)		;da9d
 	push hl			;daa0
 	ld a,008h		;daa1
@@ -12076,52 +12101,52 @@ tile_est6:		; El 0x32 animandose: suena 0xEA98 y sube su tile de 0x32 a 0x35; al
 	ld (ix+004h),h		;e0f4
 	ret			;e0f7
 dispara:		; Mete disparos en la tabla del jugador (0xC953) en la posicion de la nave mas 0x0404, y solo en el FLANCO de subida del gatillo: guarda el estado en 0xE14F y se va si no esta pulsado o si ya lo estaba. Con la mejora de 0xE14E encendida suelta CUATRO, en los rumbos base, +4, +6 y +2
-	bit 4,a		;e0f8
-	ld bc,(0e14fh)		;e0fa
-	ld b,a			;e0fe
+	bit 4,a		;e0f8   ; El bit 4 del mando es el gatillo
+	ld bc,(0e14fh)		;e0fa   ; C recoge de 0xE14F si estaba pulsado en el cuadro anterior; B se pisa acto seguido
+	ld b,a			;e0fe   ; El mando, a salvo en B
 	ld a,001h		;e0ff
-	jr nz,L_E105		;e101
+	jr nz,dispara_apunta_gatillo		;e101
 	ld a,000h		;e103
-L_E105:
-	ld (0e14fh),a		;e105
+dispara_apunta_gatillo:
+	ld (0e14fh),a		;e105   ; El estado de este cuadro queda apuntado para el siguiente
 	ld a,b			;e108
-	ret z			;e109
-	ld a,c			;e10a
+	ret z			;e109   ; Las banderas siguen siendo las del `bit 4` de 0xE0F8: sin gatillo no hay nada que hacer
+	ld a,c			;e10a   ; Y si ya estaba pulsado tampoco: se dispara en el FLANCO, un tiro por pulsacion
 	and a			;e10b
 	ld a,b			;e10c
 	ret nz			;e10d
 	push af			;e10e
 	push hl			;e10f
-	ld a,(0c9a3h)		;e110
+	ld a,(0c9a3h)		;e110   ; El rumbo de la nave son los tres bits bajos de 0xC9A3
 	and 007h		;e113
-	ld bc,00404h		;e115
+	ld bc,00404h		;e115   ; El disparo sale del centro de la nave, cuatro pixeles en cada eje
 	add hl,bc			;e118
-	ld b,h			;e119
+	ld b,h			;e119   ; alta_objeto_c952 quiere la posicion en BC...
 	ld c,l			;e11a
-	ex af,af'			;e11b
-	call alta_objeto_c952		;e11c
-	add a,004h		;e11f
-	and 007h		;e121
+	ex af,af'			;e11b   ; ...y el rumbo en A'
+	call alta_objeto_c952		;e11c   ; El primer disparo, el unico que sale siempre
+	add a,004h		;e11f   ; alta_en_tabla acaba con el `ex af,af'` de 0xCCC8, asi que vuelve con el rumbo en el A principal: por eso se le puede sumar aqui mismo
+	and 007h		;e121   ; Rumbo +4, o sea el contrario
 	ex af,af'			;e123
-	ld a,(0e14eh)		;e124
+	ld a,(0e14eh)		;e124   ; La mejora del disparo cuadruple, que enciende inst_bonus
 	and a			;e127
-	jr z,L_E148		;e128
-	ld a,0c9h		;e12a
+	jr z,dispara_remata		;e128   ; Apagada: un solo tiro
+	ld a,0c9h		;e12a   ; 0xC9 es un `ret`, y va al segundo byte de arranca_guion_libre para que los tres extra no suenen. Esta contado entero unas lineas mas arriba
 	ld (0e190h),a		;e12c
-	call alta_objeto_c952		;e12f
-	add a,002h		;e132
+	call alta_objeto_c952		;e12f   ; El segundo disparo, en el rumbo contrario
+	add a,002h		;e132   ; Y +2 mas, que desde el de partida son +6
 	and 007h		;e134
 	ex af,af'			;e136
-	call alta_objeto_c952		;e137
-	add a,004h		;e13a
+	call alta_objeto_c952		;e137   ; El tercero
+	add a,004h		;e13a   ; Otros +4, que desde el de partida son +2
 	and 007h		;e13c
 	ex af,af'			;e13e
-	call alta_objeto_c952		;e13f
-	ld a,(0e1bdh)		;e142
+	call alta_objeto_c952		;e13f   ; El cuarto: los cuatro salen a noventa grados unos de otros
+	ld a,(0e1bdh)		;e142   ; Repone el byte parcheado copiandolo de arranca_guion, la rutina gemela de al lado
 	ld (0e190h),a		;e145
-L_E148:
-	call arranca_estela		;e148
-	pop hl			;e14b
+dispara_remata:		; La estela y la vuelta, por donde pasan tanto el disparo suelto como los cuatro
+	call arranca_estela		;e148   ; Y con gatillo hay estela: dispara es quien la llama
+	pop hl			;e14b   ; La nave y su mando, como estaban
 	pop af			;e14c
 	ret			;e14d
 
