@@ -10333,57 +10333,57 @@ choca_y_revienta:		; Contacto del objeto de IX contra la tabla de 0xC953: al cho
 	call premia		;d033
 	ret			;d036
 disparo_derriba_objeto:		; Lo mismo para los objetos de la tabla 0xC990, con la posicion en (ix+002/003): explosion en (ix+000/001) y 140 puntos
-	ld l,(ix+002h)		;d037
+	ld l,(ix+002h)		;d037   ; La posicion del objeto...
 	ld h,(ix+003h)		;d03a
-	ld iy,0c953h		;d03d
-	ld de,0040ch		;d041
+	ld iy,0c953h		;d03d   ; ...contra la tabla de los disparos del jugador
+	ld de,0040ch		;d041   ; Cajas de 4 por 0x0C con correcciones de 2 y 2
 	ld bc,00202h		;d044
 	call choca_con_tabla		;d047
 	ret c			;d04a
-	xor a			;d04b
+	xor a			;d04b   ; Le ha dado: suena el impacto en el canal 0...
 	ld de,0ea52h		;d04c
 	call arranca_guion_libre		;d04f
-	ld (ix+000h),080h		;d052
+	ld (ix+000h),080h		;d052   ; ...el objeto pasa al estado de explosion con su primer fotograma...
 	ld (ix+001h),01dh		;d056
-	ld (iy+002h),080h		;d05a
-	ld hl,0dd84h		;d05e
+	ld (iy+002h),080h		;d05a   ; ...el disparo tambien estalla...
+	ld hl,0dd84h		;d05e   ; ...y 140 puntos a las decenas
 	ld b,00eh		;d061
 	call premia		;d063
 	ret			;d066
 tiro_alcanza_nave:		; El contacto al reves: la nave (0xC184) contra la tabla que llena alta_enemigo (0xC93A), caja 4x0x0A. Marca al culpable con 0x80 y se va por impacto_simple. Es la ultima instruccion de actualiza_nave
-	ld hl,(0c184h)		;d067
-	ld iy,0c93ah		;d06a
+	ld hl,(0c184h)		;d067   ; Aqui es al reves: la nave...
+	ld iy,0c93ah		;d06a   ; ...contra la tabla de los tiros enemigos
 	ld de,0040ah		;d06e
 	ld bc,00203h		;d071
 	call choca_con_tabla		;d074
 	ret c			;d077
-	ld (iy+002h),080h		;d078
-	call impacto_simple		;d07c
+	ld (iy+002h),080h		;d078   ; El tiro estalla...
+	call impacto_simple		;d07c   ; ...y a la nave le cuesta un punto de escudo
 	ret			;d07f
 disparo_derriba_tiro:		; Lo mismo contra un TIRO enemigo: le mete 0x7C en (ix+000h), marca el disparo del jugador y paga 53 puntos, que son los mismos 53 que cobra su gemela de la fase de a pie
-	ld l,(ix+002h)		;d080
+	ld l,(ix+002h)		;d080   ; La posicion del objeto contra los disparos del jugador otra vez, pero con cajas mas estrechas
 	ld h,(ix+003h)		;d083
 	ld iy,0c953h		;d086
 	ld de,00408h		;d08a
 	ld bc,00200h		;d08d
 	call choca_con_tabla		;d090
 	ret c			;d093
-	ld (ix+000h),07ch		;d094
+	ld (ix+000h),07ch		;d094   ; Al tiro que persigue se le escribe el 0x7C, que es su marca de explotando
 	ld (iy+002h),080h		;d098
-	ld hl,0dd85h		;d09c
+	ld hl,0dd85h		;d09c   ; Y 53 puntos a las unidades: es lo que menos paga de todo el bloque
 	ld b,035h		;d09f
 	call premia		;d0a1
 	ret			;d0a4
 choca_con_nave2:		; El otro contacto con la nave, con la caja pequena: solapa_eje con 2x3 contra 0x0C x 0x0A, frente al 4x5 contra 0x18x6 de choca_con_nave
-	push hl			;d0a5
-	ld a,(0c185h)		;d0a6
+	push hl			;d0a5   ; La posicion que traen, que hace falta entera para el segundo eje
+	ld a,(0c185h)		;d0a6   ; La fila de la nave, esta vez SIN el suelo de 0x20 que pone choca_con_nave
 	ld l,a			;d0a9
-	ld bc,00203h		;d0aa
+	ld bc,00203h		;d0aa   ; Cajas de 0x0C por 0x0A con correcciones de 2 y 3
 	ld de,00c0ah		;d0ad
 	call solapa_eje		;d0b0
 	pop hl			;d0b3
 	ret c			;d0b4
-	ld h,l			;d0b5
+	ld h,l			;d0b5   ; Y el eje de las columnas
 	ld a,(0c184h)		;d0b6
 	ld l,a			;d0b9
 	jp solapa_eje		;d0ba
@@ -10405,12 +10405,12 @@ choca_con_nave3:		; La tercera caja de contacto con la nave, 5x3 contra 0x16x0A,
 	ld l,a			;d0d8
 	jp solapa_eje		;d0d9
 pinta_escudo:		; Repinta el indicador que va pegado a la nave eligiendo color de marca -0x11 o 0x71- y sprite -0x39 o 0x3A- segun la bandera 0xD3C2. (Aqui puso que la ALTERNABA "cuadro a cuadro con el `xor 001h`" y no es cierto: el `xor` de 0xD0F5 se queda en E y NO se vuelve a escribir. Quien pone 0xD3C2 a 1 es el bucle principal, cada cuadro, y quien lo pone a 0 son los contactos de 0xD23A y 0xD2B2; el parpadeo existe, pero no lo hace esta rutina)
-	jp L_D0DF		;d0dc
+	jp L_D0DF		;d0dc   ; Tres bytes de trampolin, que el cierre de zona parchea con un `ret` para apagar el indicador
 L_D0DF:
-	ld a,(0c188h)		;d0df
+	ld a,(0c188h)		;d0df   ; Con la nave explotando no hay escudo que pintar
 	cp 004h		;d0e2
 	ret nc			;d0e4
-	ld hl,(0c184h)		;d0e5
+	ld hl,(0c184h)		;d0e5   ; La posicion de la nave, con el mismo suelo de 0x20 en la fila que usa choca_con_nave
 	ld a,h			;d0e8
 	sub 038h		;d0e9
 	cp 020h		;d0eb
@@ -10418,15 +10418,15 @@ L_D0DF:
 	ld a,020h		;d0ef
 L_D0F1:
 	ld h,a			;d0f1
-	ld a,(0d3c2h)		;d0f2
+	ld a,(0d3c2h)		;d0f2   ; La bandera del escudo, del reves: el `xor` deja Z cuando estaba encendida
 	xor 001h		;d0f5
 	ld e,a			;d0f7
 	push hl			;d0f8
-	ld hl,02f78h		;d0f9
+	ld hl,02f78h		;d0f9   ; La celda del HUD donde va la marca
 	call z,pinta_marca_hud		;d0fc
 	call nz,marca_hud_enciende		;d0ff
 	pop hl			;d102
-	ld a,e			;d103
+	ld a,e			;d103   ; Y el sprite que se pinta pegado a la nave, 0x39 o 0x3A por la misma bandera
 	add a,039h		;d104
 	jp pinta_sprite		;d106
 poda_rumbo_nave:		; Quita del mando -que entra y sale en el A principal, con el alternativo de aparcamiento mientras trabaja con la posicion- las direcciones que la nave no puede tomar por donde esta: X=0 la izquierda, X=0xB0 la derecha, Y=0x38 arriba y Y=0xB0 abajo

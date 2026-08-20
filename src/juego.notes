@@ -3616,3 +3616,27 @@ C 0xD2A3 Contra la nave
 C 0xD2A7 El `ccf` pone el acarreo del derecho y el `rla` lo mete por el bit 0: asi 0xD3C9 lleva los ocho ultimos cuadros
 C 0xD2B0 Sin contacto, aqui se acaba
 C 0xD2B1 Y con contacto se apaga la bandera del escudo, que el bucle principal repone cada cuadro
+C 0xD037 La posicion del objeto...
+C 0xD03D ...contra la tabla de los disparos del jugador
+C 0xD041 Cajas de 4 por 0x0C con correcciones de 2 y 2
+C 0xD04B Le ha dado: suena el impacto en el canal 0...
+C 0xD052 ...el objeto pasa al estado de explosion con su primer fotograma...
+C 0xD05A ...el disparo tambien estalla...
+C 0xD05E ...y 140 puntos a las decenas
+C 0xD067 Aqui es al reves: la nave...
+C 0xD06A ...contra la tabla de los tiros enemigos
+C 0xD078 El tiro estalla...
+C 0xD07C ...y a la nave le cuesta un punto de escudo
+C 0xD080 La posicion del objeto contra los disparos del jugador otra vez, pero con cajas mas estrechas
+C 0xD094 Al tiro que persigue se le escribe el 0x7C, que es su marca de explotando
+C 0xD09C Y 53 puntos a las unidades: es lo que menos paga de todo el bloque
+C 0xD0A5 La posicion que traen, que hace falta entera para el segundo eje
+C 0xD0A6 La fila de la nave, esta vez SIN el suelo de 0x20 que pone choca_con_nave
+C 0xD0AA Cajas de 0x0C por 0x0A con correcciones de 2 y 3
+C 0xD0B5 Y el eje de las columnas
+C 0xD0DC Tres bytes de trampolin, que el cierre de zona parchea con un `ret` para apagar el indicador
+C 0xD0DF Con la nave explotando no hay escudo que pintar
+C 0xD0E5 La posicion de la nave, con el mismo suelo de 0x20 en la fila que usa choca_con_nave
+C 0xD0F2 La bandera del escudo, del reves: el `xor` deja Z cuando estaba encendida
+C 0xD0F9 La celda del HUD donde va la marca
+C 0xD103 Y el sprite que se pinta pegado a la nave, 0x39 o 0x3A por la misma bandera
