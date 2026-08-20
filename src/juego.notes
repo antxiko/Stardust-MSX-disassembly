@@ -3376,3 +3376,38 @@ C 0xCE3B Toca a la nave: el 0x80 de explotando y el primer fotograma...
 C 0xCE43 ...y se la lleva por delante
 C 0xCE46 Cuatro bytes por entrada
 C 0xCE51 La baja: uno menos en el contador y las de detras suben con un `ldir`
+#
+# ============================================================================
+# SEPTIMA TANDA: LA VIDA EXTRA, Y EL SILENCIO QUE VIENE CON ELLA
+# ============================================================================
+#
+# EL PREMIO SALE DE MIRAR UN SOLO DIGITO. suma_puntos se guarda 0xDD81 -las
+# decenas de millar de los seis digitos de 0xDD80- antes de sumar y lo vuelve
+# a leer despues: si ha cambiado, es que el marcador ha cruzado un multiplo de
+# 10.000, y ahi esta el premio. No hay contador de premios ni umbral guardado
+# en ninguna parte; el marcador ES el contador.
+#
+# Y EL PREMIO NO ES SIEMPRE UNA VIDA. Con el escudo por debajo de 2 lo que se
+# repone es el escudo (0xD40C); solo con el escudo entero se da la vida, y
+# hasta nueve, que es lo que cabe en el indicador de un digito.
+#
+# EL EFECTO RARO: DESPUES DEL AVISO NO SUENA NADA MAS HASTA LA ZONA SIGUIENTE.
+# Detras de arrancar los tres canales del aviso, 0xD404 llama a sonido_off, que
+# mete un `ret` en la cabecera de arranca_guion y arranca_guion_libre. Los tres
+# guiones ya arrancados siguen sonando -el interprete no se para-, pero desde
+# ese momento NADIE puede arrancar un sonido nuevo, y quien lo reabre es
+# carga_zona con sonido_reset. Leido del codigo, no medido en el emulador.
+C 0xD3CF Las decenas de millar de los seis digitos, ANTES de sumar
+C 0xD3D3 Una vuelta por cada punto que haya que sumar, que es lo que trae B
+C 0xD3D5 El digito, uno mas
+C 0xD3D6 Pasado el '9' de ASCII...
+C 0xD3DA ...vuelve al '0' y el acarreo se lo lleva el de la izquierda, que es la suma decimal hecha a mano
+C 0xD3E1 Sin acarreo, la vuelta se acaba aqui
+C 0xD3E5 Y el marcador se repinta entero
+C 0xD3E9 Las decenas de millar otra vez, ahora
+C 0xD3EC Si no ha cambiado no hay premio: el marcador no ha cruzado ningun multiplo de 10.000
+C 0xD3EE Los tres canales del aviso, uno detras de otro; el bit 7 de A los hace volver sin `ei`
+C 0xD404 Y detras cierra el sonido: hasta que carga_zona lo reabra no se puede arrancar nada nuevo, aunque los tres guiones del aviso sigan sonando
+C 0xD407 Con el escudo por debajo de 2 el premio es reponerlo...
+C 0xD40F ...y solo con el escudo entero, una vida
+C 0xD413 Hasta nueve, que es lo que cabe en el indicador de un digito

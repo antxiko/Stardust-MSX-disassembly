@@ -10836,29 +10836,29 @@ DATA_tabla_D3AD:
 
 
 suma_puntos:		; Suma al marcador de 0xDD80 en ASCII con acarreo decimal a mano (inc a / cp 03ah / sub 00ah) de derecha a izquierda, y repinta con hud_imprime
-	ld a,(0dd81h)		;d3cf
+	ld a,(0dd81h)		;d3cf   ; Las decenas de millar de los seis digitos, ANTES de sumar
 	push af			;d3d2
 L_D3D3:
-	push hl			;d3d3
+	push hl			;d3d3   ; Una vuelta por cada punto que haya que sumar, que es lo que trae B
 L_D3D4:
 	ld a,(hl)			;d3d4
-	inc a			;d3d5
-	cp 03ah		;d3d6
+	inc a			;d3d5   ; El digito, uno mas
+	cp 03ah		;d3d6   ; Pasado el '9' de ASCII...
 	jr c,L_D3E1		;d3d8
-	sub 00ah		;d3da
+	sub 00ah		;d3da   ; ...vuelve al '0' y el acarreo se lo lleva el de la izquierda, que es la suma decimal hecha a mano
 	ld (hl),a			;d3dc
 	dec hl			;d3dd
 	jp L_D3D4		;d3de
 L_D3E1:
-	ld (hl),a			;d3e1
+	ld (hl),a			;d3e1   ; Sin acarreo, la vuelta se acaba aqui
 	pop hl			;d3e2
 	djnz L_D3D3		;d3e3
-	call hud_imprime		;d3e5
+	call hud_imprime		;d3e5   ; Y el marcador se repinta entero
 	pop de			;d3e8
-	ld a,(0dd81h)		;d3e9
-	cp d			;d3ec
+	ld a,(0dd81h)		;d3e9   ; Las decenas de millar otra vez, ahora
+	cp d			;d3ec   ; Si no ha cambiado no hay premio: el marcador no ha cruzado ningun multiplo de 10.000
 	ret z			;d3ed
-	ld a,080h		;d3ee
+	ld a,080h		;d3ee   ; Los tres canales del aviso, uno detras de otro; el bit 7 de A los hace volver sin `ei`
 	ld de,0eaaah		;d3f0
 	call arranca_guion		;d3f3
 	inc a			;d3f6
@@ -10867,13 +10867,13 @@ L_D3E1:
 	inc a			;d3fd
 	ld de,0eae5h		;d3fe
 	call arranca_guion		;d401
-	call sonido_off		;d404
-	ld a,(0c188h)		;d407
+	call sonido_off		;d404   ; Y detras cierra el sonido: hasta que carga_zona lo reabra no se puede arrancar nada nuevo, aunque los tres guiones del aviso sigan sonando
+	ld a,(0c188h)		;d407   ; Con el escudo por debajo de 2 el premio es reponerlo...
 	cp 002h		;d40a
 	jp c,repone_escudo		;d40c
-	ld hl,0e156h		;d40f
+	ld hl,0e156h		;d40f   ; ...y solo con el escudo entero, una vida
 	ld a,(hl)			;d412
-	cp 009h		;d413
+	cp 009h		;d413   ; Hasta nueve, que es lo que cabe en el indicador de un digito
 	ret nc			;d415
 	inc (hl)			;d416
 	jp hud_vidas_zona		;d417
