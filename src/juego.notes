@@ -1591,7 +1591,7 @@ L 0xC006 pausa Si la tecla PARAR (la sexta de 0xDCB1) esta pulsada, espera a que
 # la zona ha terminado (0xCB39), mira ABANDONAR, pasa por la pausa, y comprueba
 # si la nave ha llegado al final de su agonia -0xC188 en 0x2D- para restar una
 # vida de 0xE156 y volver al menu cuando no quedan.
-L 0xCD20 alta_objeto_c990 Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope 2, entradas de 4 B) con el rumbo sacado del azar, y solo suena 0xEB42 si el A' de entrada era cero
+L 0xCD20 alta_objeto_c990 Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope 2, entradas de 4 B). Lo que sale del azar no es un rumbo sino el DIBUJO: los dos bits altos de (ix+001), que mueve_objetos convierte en uno de los cuatro sprites 0x4F a 0x52 (0xCE1D). Los seis bits bajos se los queda el A' de entrada, que es la velocidad de filas con sesgo de 4 o, por encima de 0x10, un retardo de entrada. Solo suena 0xEB42 al nacer si ese A' era cero
 L 0xD0BD choca_con_nave3 La tercera caja de contacto con la nave, 5x3 contra 0x16x0A, y la unica que ademas se asegura antes de que la nave siga viva (0xC188 por debajo de 4)
 
 # ============================================================================
@@ -3177,7 +3177,7 @@ C 0xCD27 Sube el contador, y el valor viejo es el indice
 C 0xCD2B Por cuatro: entradas de cuatro bytes
 C 0xCD31 El primer byte a cero
 C 0xCD34 El valor de entrada viene en A' y se guarda en D, que hace falta al final
-C 0xCD36 Los dos bits altos del azar encima del rumbo. El `add a,004h` y el `sub 004h` se anulan -mientras el valor de entrada no pase de 0x3B, el `or` es una suma-, asi que lo que queda escrito es el valor de entrada con dos bits de azar en los altos
+C 0xCD36 Los dos bits altos del azar -el dibujo- encima del valor de entrada. El `add a,004h` y el `sub 004h` son el SESGO DE CUATRO con que se guarda la velocidad de filas: aqui se anulan porque el valor de entrada llega sin sesgar, pero mueve_objetos lee y escribe ese byte con el mismo par de operaciones (0xCDBB y 0xCDF2)
 C 0xCD43 Columna y fila
 C 0xCD46 Si el valor de entrada no era cero, se va con carry y sin sonar...
 C 0xCD4A ...y si era cero suena, en el canal 0 porque A vale cero desde el `and a`
@@ -3319,3 +3319,60 @@ C 0xD925 Que es como alta_enemigo espera el rumbo, en A'
 C 0xD926 Y el enemigo entra en la tabla de los tiros enemigos, con su tirada de dificultad por zona: si la zona es baja, muchas veces no entra
 C 0xD929 No ha entrado: la celda se queda en 10 y no se nota nada
 C 0xD930 Ha entrado: la celda pasa a 11 -otro dibujo- justo a tiempo de que pinta_rejilla la saque, y el cuadro siguiente vuelve a 10
+#
+# ============================================================================
+# SEXTA TANDA: EL MOTOR DE LA TABLA DE 0xC990, Y EL SESGO DE CUATRO
+# ============================================================================
+#
+# UN BYTE PARA TRES COSAS. (ix+001) de esta tabla lleva a la vez el dibujo y la
+# velocidad de filas, y lo consigue con un truco que se repite en las cuatro
+# rutinas que lo tocan: la velocidad va guardada SUMADA 4. Como
+# persigue_a_cuadros satura a mas menos cuatro, sumarle 4 la deja entre 0 y 8,
+# que cabe en los seis bits bajos sin tocar los dos altos, y ademas sin signo.
+# Por eso todo el que lee ese byte empieza con `add a,004h` y todo el que lo
+# escribe acaba con `sub 004h` (0xCDBB, 0xCDED, 0xCDF2, 0xCE1B y el 0xCD36 del
+# alta). Y por eso funciona incluso con la velocidad mas negativa: -4 mas 4 es
+# cero, y el `sub 004h` de la escritura se lleva por delante los bits altos,
+# que el `add a,004h` de la lectura vuelve a poner en su sitio.
+#
+# Y EL MISMO BYTE, CUANDO ES GRANDE, ES UN RETARDO. Por encima de 0x14 -ya
+# deshecho el sesgo- no puede ser una velocidad, asi que es la cuenta atras de
+# entrada: el objeto ni se mueve ni se pinta, y al pasar EXACTAMENTE por 0x14
+# suena el 0xEB42 con que nacen los que no traen retardo. Como baja de uno en
+# uno, ese sonido si llega a sonar siempre; no como el de la bandada, que baja
+# de tres en tres y se salta su propia condicion.
+#
+# Igual que en el tiro que persigue, el otro byte hace de marca: la velocidad
+# en columnas satura a mas menos cuatro, asi que un 0x80 en (ix+000) no puede
+# ser velocidad -es "explotando"-, y entonces (ix+001) deja de ser todo lo
+# anterior para ser el numero de sprite, del 0x1D al 0x20.
+C 0xCD86 IX en la primera entrada...
+C 0xCD8A ...y el contador dice cuantas hay
+C 0xCD91 La velocidad en columnas y la de filas, esta ultima con el dibujo en sus dos bits altos
+C 0xCD97 Y la posicion
+C 0xCD9E Un 0x80 no puede ser velocidad: es la marca de "explotando"
+C 0xCDA2 Y entonces (ix+001) es el numero de sprite
+C 0xCDA8 Un fotograma por cuadro...
+C 0xCDAE ...del 0x1D al 0x20, los cuatro de siempre; en el 0x21 se da de baja
+C 0xCDB6 La nave, que es el objetivo
+C 0xCDBB Deshecho el sesgo de cuatro
+C 0xCDBF De 0x14 para arriba no es velocidad sino retardo de entrada: el objeto ni se mueve ni se pinta
+C 0xCDC3 Y al pasar justo por 0x14 suena, el mismo 0xEB42 con que nacen los que no traen retardo
+C 0xCDCC El retardo baja de uno en uno, asi que ese 0x14 no se lo salta nunca
+C 0xCDD2 Por debajo de 8, deshacer el sesgo es restar cuatro...
+C 0xCDD6 ...y de 8 para arriba se restan seis, o sea dos de velocidad menos de los que traia
+C 0xCDDB Corrige la velocidad hacia la nave y aplica el movimiento
+C 0xCDDF Pasada la fila 0xE0 se ha ido por arriba y se da de baja
+C 0xCDE3 La velocidad en columnas, tal cual...
+C 0xCDE6 ...y la de filas con el sesgo repuesto y los dos bits del dibujo intactos
+C 0xCDF7 La posicion nueva
+C 0xCDFD Una vez de cada 32 suelta un enemigo, igual que el nido...
+C 0xCE05 ...desde su centro, cuatro pixeles por eje...
+C 0xCE0C ...y apuntado a la nave
+C 0xCE18 Los dos bits altos, bajados a los dos de abajo con dos `rlca`: el dibujo es uno de los cuatro sprites 0x4F a 0x52, y lo eligio el azar al nacer
+C 0xCE26 Se le puede disparar
+C 0xCE29 Con la nave explotando no hay contacto que mirar
+C 0xCE3B Toca a la nave: el 0x80 de explotando y el primer fotograma...
+C 0xCE43 ...y se la lleva por delante
+C 0xCE46 Cuatro bytes por entrada
+C 0xCE51 La baja: uno menos en el contador y las de detras suben con un `ldir`

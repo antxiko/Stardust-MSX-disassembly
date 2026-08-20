@@ -9907,7 +9907,7 @@ L_CD12:
 	add hl,bc			;cd1e
 L_CD1F:
 	ret			;cd1f
-alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope 2, entradas de 4 B) con el rumbo sacado del azar, y solo suena 0xEB42 si el A' de entrada era cero
+alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope 2, entradas de 4 B). Lo que sale del azar no es un rumbo sino el DIBUJO: los dos bits altos de (ix+001), que mueve_objetos convierte en uno de los cuatro sprites 0x4F a 0x52 (0xCE1D). Los seis bits bajos se los queda el A' de entrada, que es la velocidad de filas con sesgo de 4 o, por encima de 0x10, un retardo de entrada. Solo suena 0xEB42 al nacer si ese A' era cero
 	ld hl,0c98fh		;cd20   ; El contador de la tabla
 	ld a,(hl)			;cd23
 	cp 002h		;cd24   ; Dos a la vez como mucho
@@ -9923,7 +9923,7 @@ alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope
 	inc hl			;cd33
 	ex af,af'			;cd34   ; El valor de entrada viene en A' y se guarda en D, que hace falta al final
 	ld d,a			;cd35
-	add a,004h		;cd36   ; Los dos bits altos del azar encima del rumbo. El `add a,004h` y el `sub 004h` se anulan -mientras el valor de entrada no pase de 0x3B, el `or` es una suma-, asi que lo que queda escrito es el valor de entrada con dos bits de azar en los altos
+	add a,004h		;cd36   ; Los dos bits altos del azar -el dibujo- encima del valor de entrada. El `add a,004h` y el `sub 004h` son el SESGO DE CUATRO con que se guarda la velocidad de filas: aqui se anulan porque el valor de entrada llega sin sesgar, pero mueve_objetos lee y escribe ese byte con el mismo par de operaciones (0xCDBB y 0xCDF2)
 	ld e,a			;cd38
 	call azar		;cd39
 	and 0c0h		;cd3c
@@ -9983,54 +9983,54 @@ L_CD82:
 	cp l			;cd84
 	ret			;cd85
 mueve_objetos:		; Recorre la tabla de 0xC990 (contador en 0xC98F, entradas de 4 B): mueve cada objeto hacia la nave, lo pinta, y al chocar lo pasa al estado 0x80 -la explosion, sprites 0x1D a 0x20- tras el cual lo borra compactando la tabla con un ldir
-	ld ix,0c990h		;cd86
-	ld a,(0c98fh)		;cd8a
+	ld ix,0c990h		;cd86   ; IX en la primera entrada...
+	ld a,(0c98fh)		;cd8a   ; ...y el contador dice cuantas hay
 	and a			;cd8d
 	ret z			;cd8e
 	ld b,a			;cd8f
 L_CD90:
 	push bc			;cd90
-	ld c,(ix+000h)		;cd91
+	ld c,(ix+000h)		;cd91   ; La velocidad en columnas y la de filas, esta ultima con el dibujo en sus dos bits altos
 	ld b,(ix+001h)		;cd94
-	ld l,(ix+002h)		;cd97
+	ld l,(ix+002h)		;cd97   ; Y la posicion
 	ld h,(ix+003h)		;cd9a
 	ld a,c			;cd9d
-	cp 080h		;cd9e
+	cp 080h		;cd9e   ; Un 0x80 no puede ser velocidad: es la marca de "explotando"
 	jr nz,L_CDB6		;cda0
-	ld a,(ix+001h)		;cda2
+	ld a,(ix+001h)		;cda2   ; Y entonces (ix+001) es el numero de sprite
 	call pinta_sprite		;cda5
-	inc (ix+001h)		;cda8
+	inc (ix+001h)		;cda8   ; Un fotograma por cuadro...
 	ld a,(ix+001h)		;cdab
-	cp 021h		;cdae
+	cp 021h		;cdae   ; ...del 0x1D al 0x20, los cuatro de siempre; en el 0x21 se da de baja
 	jp c,L_CE46		;cdb0
 	jp L_CE51		;cdb3
 L_CDB6:
-	ld de,(0c184h)		;cdb6
+	ld de,(0c184h)		;cdb6   ; La nave, que es el objetivo
 	ld a,b			;cdba
-	add a,004h		;cdbb
+	add a,004h		;cdbb   ; Deshecho el sesgo de cuatro
 	and 03fh		;cdbd
-	cp 014h		;cdbf
+	cp 014h		;cdbf   ; De 0x14 para arriba no es velocidad sino retardo de entrada: el objeto ni se mueve ni se pinta
 	jr c,L_CDD2		;cdc1
-	jr nz,L_CDCC		;cdc3
+	jr nz,L_CDCC		;cdc3   ; Y al pasar justo por 0x14 suena, el mismo 0xEB42 con que nacen los que no traen retardo
 	xor a			;cdc5
 	ld de,0eb42h		;cdc6
 	call arranca_guion_libre		;cdc9
 L_CDCC:
-	dec (ix+001h)		;cdcc
+	dec (ix+001h)		;cdcc   ; El retardo baja de uno en uno, asi que ese 0x14 no se lo salta nunca
 	jp L_CE46		;cdcf
 L_CDD2:
-	cp 008h		;cdd2
+	cp 008h		;cdd2   ; Por debajo de 8, deshacer el sesgo es restar cuatro...
 	jr c,L_CDD8		;cdd4
-	sub 002h		;cdd6
+	sub 002h		;cdd6   ; ...y de 8 para arriba se restan seis, o sea dos de velocidad menos de los que traia
 L_CDD8:
 	sub 004h		;cdd8
 	ld b,a			;cdda
-	call persigue_a_cuadros		;cddb
+	call persigue_a_cuadros		;cddb   ; Corrige la velocidad hacia la nave y aplica el movimiento
 	ld a,h			;cdde
-	cp 0e0h		;cddf
+	cp 0e0h		;cddf   ; Pasada la fila 0xE0 se ha ido por arriba y se da de baja
 	jr nc,L_CE51		;cde1
-	ld (ix+000h),c		;cde3
-	ld a,b			;cde6
+	ld (ix+000h),c		;cde3   ; La velocidad en columnas, tal cual...
+	ld a,b			;cde6   ; ...y la de filas con el sesgo repuesto y los dos bits del dibujo intactos
 	add a,004h		;cde7
 	ld c,a			;cde9
 	ld a,(ix+001h)		;cdea
@@ -10039,44 +10039,44 @@ L_CDD8:
 	or c			;cdf1
 	sub 004h		;cdf2
 	ld (ix+001h),a		;cdf4
-	ld (ix+002h),l		;cdf7
+	ld (ix+002h),l		;cdf7   ; La posicion nueva
 	ld (ix+003h),h		;cdfa
-	call azar		;cdfd
+	call azar		;cdfd   ; Una vez de cada 32 suelta un enemigo, igual que el nido...
 	and 01fh		;ce00
 	jr nz,L_CE18		;ce02
 	push hl			;ce04
-	ld bc,00404h		;ce05
+	ld bc,00404h		;ce05   ; ...desde su centro, cuatro pixeles por eje...
 	add hl,bc			;ce08
 	ld b,h			;ce09
 	ld c,l			;ce0a
 	push bc			;ce0b
-	call rumbo_hacia		;ce0c
+	call rumbo_hacia		;ce0c   ; ...y apuntado a la nave
 	call rumbo_a_mascara2		;ce0f
 	ex af,af'			;ce12
 	pop bc			;ce13
 	call alta_enemigo		;ce14
 	pop hl			;ce17
 L_CE18:
-	ld a,(ix+001h)		;ce18
+	ld a,(ix+001h)		;ce18   ; Los dos bits altos, bajados a los dos de abajo con dos `rlca`: el dibujo es uno de los cuatro sprites 0x4F a 0x52, y lo eligio el azar al nacer
 	add a,004h		;ce1b
 	and 0c0h		;ce1d
 	rlca			;ce1f
 	rlca			;ce20
 	add a,04fh		;ce21
 	call pinta_sprite		;ce23
-	call disparo_derriba_objeto		;ce26
-	ld a,(0c188h)		;ce29
+	call disparo_derriba_objeto		;ce26   ; Se le puede disparar
+	ld a,(0c188h)		;ce29   ; Con la nave explotando no hay contacto que mirar
 	cp 004h		;ce2c
 	jr nc,L_CE46		;ce2e
 	ld l,(ix+002h)		;ce30
 	ld h,(ix+003h)		;ce33
 	call choca_con_nave2		;ce36
 	jr c,L_CE46		;ce39
-	ld (ix+000h),080h		;ce3b
+	ld (ix+000h),080h		;ce3b   ; Toca a la nave: el 0x80 de explotando y el primer fotograma...
 	ld (ix+001h),01dh		;ce3f
-	call mata_nave		;ce43
+	call mata_nave		;ce43   ; ...y se la lleva por delante
 L_CE46:
-	ld de,00004h		;ce46
+	ld de,00004h		;ce46   ; Cuatro bytes por entrada
 	add ix,de		;ce49
 L_CE4B:
 	pop bc			;ce4b
@@ -10084,7 +10084,7 @@ L_CE4B:
 	jp nz,L_CD90		;ce4d
 	ret			;ce50
 L_CE51:
-	ld hl,0c98fh		;ce51
+	ld hl,0c98fh		;ce51   ; La baja: uno menos en el contador y las de detras suben con un `ldir`
 	dec (hl)			;ce54
 	pop bc			;ce55
 	push bc			;ce56
