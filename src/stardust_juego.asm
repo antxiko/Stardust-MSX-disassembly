@@ -8736,60 +8736,60 @@ L_C533:
 	ld (0d3cdh),a		;c53b
 	jp L_C4AE		;c53e
 buffer_dir:		; La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna, con el *24 hecho a mano (x3 y tres veces x2)
-	push de			;c541
+	push de			;c541   ; La columna en bytes se aparta un momento...
 	ld a,l			;c542
-	ld l,h			;c543
+	ld l,h			;c543   ; ...y la fila se pasa a HL para multiplicarla
 	ld h,000h		;c544
 	ld d,h			;c546
 	ld e,l			;c547
-	add hl,hl			;c548
+	add hl,hl			;c548   ; Por 3 y tres veces por 2: 24, el ancho del buffer
 	add hl,de			;c549
 	add hl,hl			;c54a
 	add hl,hl			;c54b
 	add hl,hl			;c54c
 	ld e,a			;c54d
-	ld d,040h		;c54e
+	ld d,040h		;c54e   ; El buffer empieza en 0x4000, y la columna entra por E
 	add hl,de			;c550
 	pop de			;c551
 	ret			;c552
 pinta_glifo:		; Estampa en el buffer el glifo A de la fuente de 0xCA93 (16 B por glifo, 8 filas de mascara y dibujo) en la posicion HL, con el desplazamiento fino parcheando los `jr` de 0xC58E y 0xC5B3
-	push hl			;c553
-	ld h,000h		;c554
+	push hl			;c553   ; La posicion, que hace falta despues de la cuenta
+	ld h,000h		;c554   ; Por 16: cada glifo son ocho filas de mascara y dibujo
 	ld l,a			;c556
 	add hl,hl			;c557
 	add hl,hl			;c558
 	add hl,hl			;c559
 	add hl,hl			;c55a
-	ld de,0ca93h		;c55b
+	ld de,0ca93h		;c55b   ; La fuente del rotulador
 	add hl,de			;c55e
 	ex de,hl			;c55f
 	pop hl			;c560
-	ld b,008h		;c561
-	ld a,h			;c563
+	ld b,008h		;c561   ; Ocho filas
+	ld a,h			;c563   ; Quita el sesgo de 0x20 de la fila
 	sub 020h		;c564
 	ld h,a			;c566
-	ld a,l			;c567
+	ld a,l			;c567   ; Los tres bits bajos de la columna, el desplazamiento fino
 	and 007h		;c568
-	jr z,L_C56F		;c56a
-	add a,a			;c56c
+	jr z,L_C56F		;c56a   ; Cayendo justo en un byte el parche vale 0 y el `jr` no salta: ahi esta el atajo
+	add a,a			;c56c   ; n*2+4, que con peldanos de dos bytes y un atajo de seis aterriza en el peldano que toca
 	add a,004h		;c56d
 L_C56F:
-	ld (L_C58E+1),a		;c56f
+	ld (L_C58E+1),a		;c56f   ; Los dos `jr`, el de la mascara y el del dibujo
 	ld (L_C5B3+1),a		;c572
-	srl l		;c575
+	srl l		;c575   ; La columna, de pixeles a bytes
 	srl l		;c577
 	srl l		;c579
 	call buffer_dir		;c57b
 L_C57E:
-	ld a,h			;c57e
+	ld a,h			;c57e   ; Cada fila comprueba si sigue dentro del buffer...
 	cp 050h		;c57f
 	jr c,L_C587		;c581
-	inc de			;c583
+	inc de			;c583   ; ...y la que no lo esta se salta, pero la fuente avanza igual
 	inc de			;c584
 	jr L_C5D2		;c585
 L_C587:
 	push hl			;c587
-	ld a,(de)			;c588
+	ld a,(de)			;c588   ; La mascara, con H a 0xFF y acarreo: la tira rellena de UNOS, que es dejar pasar el fondo
 	ld h,0ffh		;c589
 	ld l,a			;c58b
 	inc de			;c58c
@@ -8797,7 +8797,7 @@ L_C587:
 L_C58E:
 	jr L_C58E		;c58e
 atajo_mascara16:		; Desplazamiento de ocho de la mascara de 16 bits: H = L, L = 0xFF. El gemelo de atajo_mascara24 sin la parte de A
-	ld h,l			;c590
+	ld h,l			;c590   ; El atajo de ocho: mover registros y ya esta
 	ld l,0ffh		;c591
 	jp L_C5A4		;c593
 tira_mascara16:		; La tira de la mascara de 16 bits: siete `adc hl,hl`, sin A porque el relleno de unos ya viene en H
@@ -8809,7 +8809,7 @@ tira_mascara16:		; La tira de la mascara de 16 bits: siete `adc hl,hl`, sin A po
 	adc hl,hl		;c5a0
 	adc hl,hl		;c5a2
 L_C5A4:
-	ld a,h			;c5a4
+	ld a,h			;c5a4   ; Y se estampa con AND en los dos bytes de la ventana
 	ld c,l			;c5a5
 	pop hl			;c5a6
 	and (hl)			;c5a7
@@ -8819,7 +8819,7 @@ L_C5A4:
 	and (hl)			;c5ab
 	ld (hl),a			;c5ac
 	push hl			;c5ad
-	xor a			;c5ae
+	xor a			;c5ae   ; El dibujo, con H a cero y sin acarreo -el `xor a` limpia las dos cosas-: rellena de CEROS para no pintar de mas
 	ld h,a			;c5af
 	ld a,(de)			;c5b0
 	inc de			;c5b1
@@ -8839,7 +8839,7 @@ tira_dibujo16:		; La tira del dibujo de 16 bits, los siete peldanos: tres de ell
 	adc hl,hl		;c5c5
 	adc hl,hl		;c5c7
 L_C5C9:
-	ld a,l			;c5c9
+	ld a,l			;c5c9   ; Y se estampa con OR, los mismos dos bytes en orden contrario
 	ld c,h			;c5ca
 	pop hl			;c5cb
 	or (hl)			;c5cc
@@ -8849,17 +8849,17 @@ L_C5C9:
 	or (hl)			;c5d0
 	ld (hl),a			;c5d1
 L_C5D2:
-	ld a,l			;c5d2
+	ld a,l			;c5d2   ; La fila siguiente, 24 bytes mas alla
 	add a,018h		;c5d3
 	ld l,a			;c5d5
 	jr nc,L_C5E0		;c5d6
 	inc h			;c5d8
 	ld a,h			;c5d9
-	cp 058h		;c5da
+	cp 058h		;c5da   ; El borde del anillo: en 0x5800 se vuelve a 0x4000, que son las 256 filas que caben en un byte
 	jr nz,L_C5E0		;c5dc
 	ld h,040h		;c5de
 L_C5E0:
-	djnz L_C57E		;c5e0
+	djnz L_C57E		;c5e0   ; Las ocho filas del glifo
 	ret			;c5e2
 siembra_particulas:		; Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
 	ld de,05bb2h		;c5e3

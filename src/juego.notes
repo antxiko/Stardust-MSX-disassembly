@@ -3552,3 +3552,38 @@ C 0xD946 ...y lo que deja es el bonus
 C 0xD950 La otra puerta aparca la instalacion en el `ret` de 0xD959: se queda en la tabla sin hacer nada
 C 0xDFA6 Cinco bytes por entrada
 C 0xDFAC Y los que queden por recorrer
+#
+# pinta_glifo ES pinta_sprite A DOS BYTES. Mismo esqueleto -mascara con AND,
+# dibujo con OR, tira de siete peldanos y `jr` parcheado- pero con una ventana
+# de 16 bits en vez de 24 y ocho filas en vez de dieciseis. La cuenta del
+# parche cambia con el tamano del peldano: aqui cada `adc hl,hl` ocupa 2 bytes
+# y el atajo 6, asi que es n*2+4 en vez de (n-1)*3+7.
+#
+# Y EL ANILLO DE AQUI ES DE 256 FILAS, NO DE 512. El borde lo pone el `cp 058h`
+# de 0xC5DA: 0x5800 - 0x4000 son 0x1800 bytes, que a 24 por fila son 256
+# clavadas, las que caben en el byte de fila. pinta_rejilla usa uno del doble
+# porque su fila trae un noveno bit.
+C 0xC541 La columna en bytes se aparta un momento...
+C 0xC543 ...y la fila se pasa a HL para multiplicarla
+C 0xC548 Por 3 y tres veces por 2: 24, el ancho del buffer
+C 0xC54E El buffer empieza en 0x4000, y la columna entra por E
+C 0xC553 La posicion, que hace falta despues de la cuenta
+C 0xC554 Por 16: cada glifo son ocho filas de mascara y dibujo
+C 0xC55B La fuente del rotulador
+C 0xC561 Ocho filas
+C 0xC563 Quita el sesgo de 0x20 de la fila
+C 0xC567 Los tres bits bajos de la columna, el desplazamiento fino
+C 0xC56A Cayendo justo en un byte el parche vale 0 y el `jr` no salta: ahi esta el atajo
+C 0xC56C n*2+4, que con peldanos de dos bytes y un atajo de seis aterriza en el peldano que toca
+C 0xC56F Los dos `jr`, el de la mascara y el del dibujo
+C 0xC575 La columna, de pixeles a bytes
+C 0xC57E Cada fila comprueba si sigue dentro del buffer...
+C 0xC583 ...y la que no lo esta se salta, pero la fuente avanza igual
+C 0xC588 La mascara, con H a 0xFF y acarreo: la tira rellena de UNOS, que es dejar pasar el fondo
+C 0xC590 El atajo de ocho: mover registros y ya esta
+C 0xC5A4 Y se estampa con AND en los dos bytes de la ventana
+C 0xC5AE El dibujo, con H a cero y sin acarreo -el `xor a` limpia las dos cosas-: rellena de CEROS para no pintar de mas
+C 0xC5C9 Y se estampa con OR, los mismos dos bytes en orden contrario
+C 0xC5D2 La fila siguiente, 24 bytes mas alla
+C 0xC5DA El borde del anillo: en 0x5800 se vuelve a 0x4000, que son las 256 filas que caben en un byte
+C 0xC5E0 Las ocho filas del glifo
