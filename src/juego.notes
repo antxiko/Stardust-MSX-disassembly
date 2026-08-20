@@ -3679,3 +3679,14 @@ C 0xD455 Uno de la tabla de objetos, y si entra se acabo
 C 0xD45B O si no, uno de la bandada
 C 0xD45E El escudo a 3, que es lleno
 C 0xD463 Y la marca del HUD encendida
+C 0xEF0D El marco entero, primero a la tabla de patrones...
+C 0xEF16 ...y los mismos 0x900 bytes a la de colores, que en SCREEN 2 van en paralelo
+C 0xEF1C Y con eso, pantalla encendida por el registro 1 del VDP
+C 0xEF28 El destino, que la segunda mitad vuelve a necesitar
+C 0xEF29 Dos filas de caracter...
+C 0xEF2B ...por cada uno de los tres tercios
+C 0xEF2E 0x100 bytes de una vez: una fila entera de 32 caracteres de a ocho
+C 0xEF34 Y 0x800 es lo que ocupa un tercio de la tabla
+C 0xEF3C Escrito como una suma de 0xEF00, que es restar 0x1100
+C 0xEF45 Segunda mitad: 24 tiras...
+C 0xEF4A ...de ocho bytes cada una...

@@ -13221,12 +13221,12 @@ L_EF00:
 	add hl,bc			;ef09
 	dec e			;ef0a
 	jr nz,L_EEFE		;ef0b
-	ld hl,00000h		;ef0d
+	ld hl,00000h		;ef0d   ; El marco entero, primero a la tabla de patrones...
 	ld de,048a0h		;ef10
 	call copia_marco		;ef13
-	ld hl,02000h		;ef16
+	ld hl,02000h		;ef16   ; ...y los mismos 0x900 bytes a la de colores, que en SCREEN 2 van en paralelo
 	call copia_marco		;ef19
-	di			;ef1c
+	di			;ef1c   ; Y con eso, pantalla encendida por el registro 1 del VDP
 	ld a,0e2h		;ef1d
 	out (099h),a		;ef1f
 	ld a,081h		;ef21
@@ -13235,31 +13235,31 @@ L_EF00:
 	out (099h),a		;ef25
 	ret			;ef27
 copia_marco:		; Vuelca el marco de la pantalla de juego a la VRAM: dos filas de caracter por tercio (0x100 B x3, saltando 0x800) mas 24 tiras de 8 B y otras 24 de 0x18. Se llama dos veces, con los patrones de 0x48A0 y con los colores de 0x51A0
-	push hl			;ef28
-	ld c,002h		;ef29
+	push hl			;ef28   ; El destino, que la segunda mitad vuelve a necesitar
+	ld c,002h		;ef29   ; Dos filas de caracter...
 L_EF2B:
-	ld b,003h		;ef2b
+	ld b,003h		;ef2b   ; ...por cada uno de los tres tercios
 L_EF2D:
 	push bc			;ef2d
-	ld bc,00100h		;ef2e
+	ld bc,00100h		;ef2e   ; 0x100 bytes de una vez: una fila entera de 32 caracteres de a ocho
 	call vram_escribe		;ef31
-	ld bc,00800h		;ef34
+	ld bc,00800h		;ef34   ; Y 0x800 es lo que ocupa un tercio de la tabla
 	add hl,bc			;ef37
 	pop bc			;ef38
 	djnz L_EF2D		;ef39
 	push de			;ef3b
-	ld de,lef00h		;ef3c
+	ld de,lef00h		;ef3c   ; Escrito como una suma de 0xEF00, que es restar 0x1100
 	add hl,de			;ef3f
 	pop de			;ef40
 	dec c			;ef41
 	jr nz,L_EF2B		;ef42
 	pop hl			;ef44
-	inc h			;ef45
+	inc h			;ef45   ; Segunda mitad: 24 tiras...
 	ld b,018h		;ef46
 	push hl			;ef48
 L_EF49:
 	push bc			;ef49
-	ld bc,00008h		;ef4a
+	ld bc,00008h		;ef4a   ; ...de ocho bytes cada una...
 	call vram_escribe		;ef4d
 	ld bc,00040h		;ef50
 	add hl,bc			;ef53
