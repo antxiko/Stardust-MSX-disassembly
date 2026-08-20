@@ -12601,30 +12601,30 @@ L_E3DB:
 	pop iy		;e3ec
 	ret			;e3ee
 op_volumen:		; 0x80 n: mete el argumento en (ix+009), el byte que la lectura de la partitura toma por volumen
-	inc bc			;e3ef
+	inc bc			;e3ef   ; Del opcode a su argumento
 	ld a,(bc)			;e3f0
-	ld (ix+009h),a		;e3f1
-	inc bc			;e3f4
+	ld (ix+009h),a		;e3f1   ; El volumen se guarda tal cual
+	inc bc			;e3f4   ; Y a la instruccion siguiente del guion
 	jp L_E222		;e3f5
 op_duracion:		; 0x83 n: (ix+006/007) = argumento por el tempo de 0xEE18. La duracion no esta en cuadros, esta en unidades de tempo
-	inc bc			;e3f8
+	inc bc			;e3f8   ; El argumento de la duracion...
 	ld a,(bc)			;e3f9
-	ld de,(0ee18h)		;e3fa
+	ld de,(0ee18h)		;e3fa   ; ...multiplicado por el tempo de 0xEE18, del que solo se toma el byte bajo
 	ld d,000h		;e3fe
 	call mul_a_de		;e400
-	ld (ix+006h),l		;e403
+	ld (ix+006h),l		;e403   ; Por eso la duracion no esta en cuadros: esta en unidades de tempo
 	ld (ix+007h),h		;e406
 	inc bc			;e409
 	jp L_E222		;e40a
 op_tono_ruido:		; 0x81 n: (ix+008) = argumento and 0x09, que es justo la pareja de bits -tono y ruido- que el mezclador desplaza por canal
-	inc bc			;e40d
+	inc bc			;e40d   ; El argumento del tono/ruido...
 	ld a,(bc)			;e40e
-	and 009h		;e40f
+	and 009h		;e40f   ; ...recortado a los bits 0 y 3, que son la pareja que el mezclador desplaza por canal
 	ld (ix+008h),a		;e411
 	inc bc			;e414
 	jp L_E222		;e415
 op_fin:		; 0x8B: cierra la voz borrando los 46 bytes de su estado y reponiendo el `di` en arranca_guion y arranca_guion_libre; si era la ultima que sonaba, limpia tambien las variables de 0xEDFF
-	push ix		;e418
+	push ix		;e418   ; Y esto es callar un canal del todo: sus 46 bytes de estado a cero
 	pop hl			;e41a
 	xor a			;e41b
 	ld b,02eh		;e41c

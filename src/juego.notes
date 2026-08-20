@@ -3744,3 +3744,17 @@ C 0xD8D6 Sube el tipo y sube la celda a la vez: los dos van del 6 al 9
 C 0xD8E1 Y al llegar a 10 vuelven los dos al 6...
 C 0xD8EA ...y la torreta esta otra vez lista
 C 0xD8F4 La instalacion quieta no hace mas que dejarse reventar
+#
+# LOS COMANDOS DEL INTERPRETE SON TODOS IGUALES POR FUERA: `inc bc` para pasar
+# del opcode a su argumento, `ld a,(bc)` para cogerlo, lo que sea, otro
+# `inc bc` y `jp L_E222`, que es volver al despachador. Lo unico que cambia es
+# el trozo de en medio.
+C 0xE3EF Del opcode a su argumento
+C 0xE3F1 El volumen se guarda tal cual
+C 0xE3F4 Y a la instruccion siguiente del guion
+C 0xE3F8 El argumento de la duracion...
+C 0xE3FA ...multiplicado por el tempo de 0xEE18, del que solo se toma el byte bajo
+C 0xE403 Por eso la duracion no esta en cuadros: esta en unidades de tempo
+C 0xE40D El argumento del tono/ruido...
+C 0xE40F ...recortado a los bits 0 y 3, que son la pareja que el mezclador desplaza por canal
+C 0xE418 Y esto es callar un canal del todo: sus 46 bytes de estado a cero
