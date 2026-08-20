@@ -3298,3 +3298,24 @@ C 0xD665 Tres bytes a la derecha, el ancho de una celda
 C 0xD668 Y la celda siguiente de la rejilla y de la formacion
 C 0xD66E 24 filas abajo, el alto de una celda
 C 0xD675 Montada la tanda entera, su aviso sonoro en el canal 0
+#
+# EL NIDO ENSENA QUE HA DISPARADO DURANTE UN SOLO CUADRO. inst_nido escribe 10
+# en su celda al empezar y 11 al final, si ha soltado un enemigo; y como
+# recorre_instalaciones va DELANTE de pinta_rejilla dentro del mismo cuadro
+# (avanza_instalaciones remata con el `jp pinta_rejilla` de 0xD8A0), ese 11 se
+# llega a dibujar. Al cuadro siguiente el 10 de 0xD901 lo borra. O sea que el
+# dibujo del nido abierto dura exactamente un cuadro por disparo.
+C 0xD8F8 Primero lo que le puede pasar a el: el disparo del jugador
+C 0xD8FB El puntero a su celda de la rejilla, que trae la propia entrada
+C 0xD901 La celda vuelve a 10 cada cuadro, que es el nido en reposo
+C 0xD903 Y una vez de cada 64 dispara
+C 0xD909 La columna de la celda son ocho pixeles por unidad...
+C 0xD910 ...y la fila la lleva la instalacion en (ix+007)
+C 0xD913 Mas ocho y ocho: el enemigo nace en el centro de la celda, no en su esquina
+C 0xD91A La posicion de la nave
+C 0xD91E La mascara de por donde se va hacia ella...
+C 0xD921 ...pasada a rumbo de 0 a 7 por la tabla de 0xC9AC
+C 0xD925 Que es como alta_enemigo espera el rumbo, en A'
+C 0xD926 Y el enemigo entra en la tabla de los tiros enemigos, con su tirada de dificultad por zona: si la zona es baja, muchas veces no entra
+C 0xD929 No ha entrado: la celda se queda en 10 y no se nota nada
+C 0xD930 Ha entrado: la celda pasa a 11 -otro dibujo- justo a tiempo de que pinta_rejilla la saque, y el cuadro siguiente vuelve a 10

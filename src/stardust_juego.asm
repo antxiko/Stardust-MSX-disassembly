@@ -11555,34 +11555,34 @@ inst_quieta:		; La instalacion que no hace nada: solo mira si la han tocado. Dos
 	call choca_y_revienta		;d8f4
 	ret			;d8f7
 inst_nido:		; El nido: pone su celda a 10 y, una vez de cada 64, suelta un enemigo apuntado a la nave (rumbo_hacia sobre 0xC184) y se marca con un 11
-	call choca_y_revienta		;d8f8
-	ld l,(ix+005h)		;d8fb
+	call choca_y_revienta		;d8f8   ; Primero lo que le puede pasar a el: el disparo del jugador
+	ld l,(ix+005h)		;d8fb   ; El puntero a su celda de la rejilla, que trae la propia entrada
 	ld h,(ix+006h)		;d8fe
-	ld (hl),00ah		;d901
-	call azar		;d903
+	ld (hl),00ah		;d901   ; La celda vuelve a 10 cada cuadro, que es el nido en reposo
+	call azar		;d903   ; Y una vez de cada 64 dispara
 	and 03fh		;d906
 	ret nz			;d908
-	ld a,(ix+000h)		;d909
+	ld a,(ix+000h)		;d909   ; La columna de la celda son ocho pixeles por unidad...
 	add a,a			;d90c
 	add a,a			;d90d
 	add a,a			;d90e
 	ld l,a			;d90f
-	ld h,(ix+007h)		;d910
-	ld bc,00808h		;d913
+	ld h,(ix+007h)		;d910   ; ...y la fila la lleva la instalacion en (ix+007)
+	ld bc,00808h		;d913   ; Mas ocho y ocho: el enemigo nace en el centro de la celda, no en su esquina
 	add hl,bc			;d916
 	ld b,h			;d917
 	ld c,l			;d918
 	push bc			;d919
-	ld de,(0c184h)		;d91a
-	call rumbo_hacia		;d91e
-	call rumbo_a_mascara2		;d921
+	ld de,(0c184h)		;d91a   ; La posicion de la nave
+	call rumbo_hacia		;d91e   ; La mascara de por donde se va hacia ella...
+	call rumbo_a_mascara2		;d921   ; ...pasada a rumbo de 0 a 7 por la tabla de 0xC9AC
 	pop bc			;d924
-	ex af,af'			;d925
-	call alta_enemigo		;d926
-	ret nc			;d929
+	ex af,af'			;d925   ; Que es como alta_enemigo espera el rumbo, en A'
+	call alta_enemigo		;d926   ; Y el enemigo entra en la tabla de los tiros enemigos, con su tirada de dificultad por zona: si la zona es baja, muchas veces no entra
+	ret nc			;d929   ; No ha entrado: la celda se queda en 10 y no se nota nada
 	ld l,(ix+005h)		;d92a
 	ld h,(ix+006h)		;d92d
-	ld (hl),00bh		;d930
+	ld (hl),00bh		;d930   ; Ha entrado: la celda pasa a 11 -otro dibujo- justo a tiempo de que pinta_rejilla la saque, y el cuadro siguiente vuelve a 10
 	ret			;d932
 inst_estalla:		; La instalacion reventando: sube su celda cada cuadro y, al llegar a 0x10, se retira; si su tipo era 5, en vez de retirarse se convierte en el bonus
 	ld l,(ix+005h)		;d933
