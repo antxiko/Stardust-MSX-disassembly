@@ -10610,64 +10610,64 @@ L_D21F:
 	ld (0d3c2h),a		;d23a
 	ret			;d23d
 choca_con_nave:		; Contacto entre la nave y lo que venga en HL: solapa_eje con la Y de la nave (0xC185, saturada por arriba a 0x20) y luego con su X (0xC184), cajas 4x5 contra 0x18x6. Carry = no hay contacto
-	push hl			;d23e
-	ld a,(0c185h)		;d23f
+	push hl			;d23e   ; La posicion del objeto, que hace falta entera despues del primer eje
+	ld a,(0c185h)		;d23f   ; La fila de la nave, contada desde el techo del area
 	sub 038h		;d242
-	cp 020h		;d244
+	cp 020h		;d244   ; Y con un suelo de 0x20: mas arriba de eso la caja no sube
 	jr nc,L_D24A		;d246
 	ld a,020h		;d248
 L_D24A:
 	ld l,a			;d24a
-	ld bc,00405h		;d24b
+	ld bc,00405h		;d24b   ; Cajas de 4 por 5 contra 0x18 por 6
 	ld de,01806h		;d24e
-	call solapa_eje		;d251
+	call solapa_eje		;d251   ; Primero el eje de las filas...
 	pop hl			;d254
-	ret c			;d255
-	ld h,l			;d256
+	ret c			;d255   ; ...y si ahi no se tocan, no hay nada mas que mirar
+	ld h,l			;d256   ; Y luego el de las columnas, con la del objeto contra la de la nave
 	ld a,(0c184h)		;d257
 	ld l,a			;d25a
 	jp solapa_eje		;d25b
 L_D25E:
-	ld hl,(0d3c7h)		;d25e
-	call choca_con_nave3		;d261
+	ld hl,(0d3c7h)		;d25e   ; La posicion del perseguidor
+	call choca_con_nave3		;d261   ; Si toca a la nave con la caja grande...
 	jr c,L_D275		;d264
-	ld a,005h		;d266
+	ld a,005h		;d266   ; ...empieza a morir el, con 0xD3C5 en 5...
 	ld (0d3c5h),a		;d268
 	xor a			;d26b
-	ld de,0ea52h		;d26c
+	ld de,0ea52h		;d26c   ; ...suena el impacto...
 	call arranca_guion_libre		;d26f
-	jp mata_nave		;d272
+	jp mata_nave		;d272   ; ...y se lleva a la nave por delante
 L_D275:
-	ld a,(0d3c9h)		;d275
+	ld a,(0d3c9h)		;d275   ; El historial de contactos: el bit 2 es el de hace tres cuadros
 	bit 2,a		;d278
 	jr z,L_D2A0		;d27a
-	ld a,(0d3bdh)		;d27c
+	ld a,(0d3bdh)		;d27c   ; Y solo con 0xD3BD en 1
 	dec a			;d27f
 	jr nz,L_D2A0		;d280
-	ld a,(0d3cah)		;d282
+	ld a,(0d3cah)		;d282   ; Un impacto menos de los tres que aguanta
 	dec a			;d285
 	ld (0d3cah),a		;d286
 	jr nz,L_D2A0		;d289
-	ld a,005h		;d28b
+	ld a,005h		;d28b   ; Agotados, el perseguidor pasa al estado 5, que es empezar a morir
 	ld (0d3c5h),a		;d28d
 	xor a			;d290
 	ld de,0ea52h		;d291
 	call arranca_guion_libre		;d294
-	ld hl,0dd84h		;d297
+	ld hl,0dd84h		;d297   ; Y 150 puntos a las decenas del marcador
 	ld b,00fh		;d29a
 	call premia		;d29c
 	ret			;d29f
 L_D2A0:
-	ld hl,(0d3c7h)		;d2a0
-	call choca_con_nave		;d2a3
+	ld hl,(0d3c7h)		;d2a0   ; La posicion del perseguidor
+	call choca_con_nave		;d2a3   ; Contra la nave
 	push af			;d2a6
-	ld a,(0d3c9h)		;d2a7
+	ld a,(0d3c9h)		;d2a7   ; El `ccf` pone el acarreo del derecho y el `rla` lo mete por el bit 0: asi 0xD3C9 lleva los ocho ultimos cuadros
 	ccf			;d2aa
 	rla			;d2ab
 	ld (0d3c9h),a		;d2ac
 	pop af			;d2af
-	ret c			;d2b0
-	xor a			;d2b1
+	ret c			;d2b0   ; Sin contacto, aqui se acaba
+	xor a			;d2b1   ; Y con contacto se apaga la bandera del escudo, que el bucle principal repone cada cuadro
 	ld (0d3c2h),a		;d2b2
 	ret			;d2b5
 impacto_simple:		; Gasta un punto de escudo, y si ya estaba a cero manda a mata_nave

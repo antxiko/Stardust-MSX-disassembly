@@ -3587,3 +3587,32 @@ C 0xC5C9 Y se estampa con OR, los mismos dos bytes en orden contrario
 C 0xC5D2 La fila siguiente, 24 bytes mas alla
 C 0xC5DA El borde del anillo: en 0x5800 se vuelve a 0x4000, que son las 256 filas que caben en un byte
 C 0xC5E0 Las ocho filas del glifo
+#
+# 0xD3C9 ES UN HISTORIAL, NO UNA BANDERA. Cada cuadro, 0xD2A0 pregunta si el
+# perseguidor toca a la nave y mete la respuesta por el bit 0 con un `rla`
+# (0xD2AB): el `ccf` de delante pone el acarreo del derecho -a 1 cuando SI hay
+# contacto, que solapa_eje devuelve al reves- y el byte va guardando los OCHO
+# ultimos cuadros. Por eso 0xD278 no mira el bit 0 sino el 2: lo que le importa
+# es el contacto de hace TRES cuadros, no el de este.
+C 0xD23E La posicion del objeto, que hace falta entera despues del primer eje
+C 0xD23F La fila de la nave, contada desde el techo del area
+C 0xD244 Y con un suelo de 0x20: mas arriba de eso la caja no sube
+C 0xD24B Cajas de 4 por 5 contra 0x18 por 6
+C 0xD251 Primero el eje de las filas...
+C 0xD255 ...y si ahi no se tocan, no hay nada mas que mirar
+C 0xD256 Y luego el de las columnas, con la del objeto contra la de la nave
+C 0xD25E La posicion del perseguidor
+C 0xD261 Si toca a la nave con la caja grande...
+C 0xD266 ...empieza a morir el, con 0xD3C5 en 5...
+C 0xD26C ...suena el impacto...
+C 0xD272 ...y se lleva a la nave por delante
+C 0xD275 El historial de contactos: el bit 2 es el de hace tres cuadros
+C 0xD27C Y solo con 0xD3BD en 1
+C 0xD282 Un impacto menos de los tres que aguanta
+C 0xD28B Agotados, el perseguidor pasa al estado 5, que es empezar a morir
+C 0xD297 Y 150 puntos a las decenas del marcador
+C 0xD2A0 La posicion del perseguidor
+C 0xD2A3 Contra la nave
+C 0xD2A7 El `ccf` pone el acarreo del derecho y el `rla` lo mete por el bit 0: asi 0xD3C9 lleva los ocho ultimos cuadros
+C 0xD2B0 Sin contacto, aqui se acaba
+C 0xD2B1 Y con contacto se apaga la bandera del escudo, que el bucle principal repone cada cuadro
