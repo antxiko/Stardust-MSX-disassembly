@@ -3714,3 +3714,14 @@ C 0xC525 La fila siguiente de la fuente
 C 0xC527 0x16 son 22, que con los dos `inc hl` de arriba completan las 24 del buffer
 C 0xC52B Pasada la fila 0x58 H se queda clavado en 0xF1, y como cada fila empieza mirando `cp 050h`, ahi se acaba de pintar el sprite
 C 0xC536 Una fila menos de las dieciseis
+C 0xD83A Primero las instalaciones, una a una
+C 0xD83D El contador de nueve bits, de golpe: en H los ocho bajos y en el bit 7 de L el noveno, que comparte byte con la columna de la tanda
+C 0xD840 La velocidad solo se ajusta una vez de cada ocho
+C 0xD84B Mientras el noveno bit siga puesto, la tanda va por la pagina de entrada y la velocidad sube a saco...
+C 0xD853 ...y en cuanto se apaga, se acerca a la fila de la nave menos 0x34
+C 0xD862 Tope 3 por arriba...
+C 0xD86A ...y tope 1 por abajo
+C 0xD872 La fila avanza lo que diga la velocidad
+C 0xD874 Y si se ha desbordado, el noveno bit CAMBIA DE ESTADO con un `xor`: asi se lleva un contador de nueve bits repartido en dos sitios que no estan juntos
+C 0xD87B Los dos bytes vuelven de una vez
+C 0xD87F Pasado 0xC0, y con el noveno bit ya apagado, la tanda se ha ido de la pantalla

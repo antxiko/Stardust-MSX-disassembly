@@ -11449,17 +11449,17 @@ gobierna_instalaciones:		; La ultima llamada del bucle de partida (0xBF9D), y el
 	ret nz			;d836
 	jp L_D5AA		;d837
 avanza_instalaciones:		; El cuadro de la tanda de instalaciones: llama a recorre_instalaciones y mueve el scroll de la tanda, que es un contador de NUEVE bits -los ocho bajos en 0xCA8D y el noveno en el bit 7 de 0xCA8C-, al que suma 1, 2 o 3 segun la velocidad de 0xCA91. Una vez de cada ocho (`ld a,(0ca8eh) / and 007h`) ajusta esa velocidad: a saco mientras la tanda va por la pagina de entrada, y despues la acerca a la fila de la nave (0xC185) menos 0x34, subiendo o bajando de uno en uno con topes 1 y 3. Cuando el contador pasa de 0xC0 con el noveno bit ya apagado, la tanda se fue: pone 0xCA91 = 0x80 -la marca que mira zona_despejada- y repone el dibujo 0x73 del HUD. Remata con el `jp pinta_rejilla` de 0xD8A0, que es la unica entrada de esa rutina, pasandole la fila en H, la columna sin el bit 7 en L y ese noveno bit en D. La llama tambien el bucle de fin de zona, en 0xD798
-	call recorre_instalaciones		;d83a
-	ld hl,(0ca8ch)		;d83d
-	ld a,(0ca8eh)		;d840
+	call recorre_instalaciones		;d83a   ; Primero las instalaciones, una a una
+	ld hl,(0ca8ch)		;d83d   ; El contador de nueve bits, de golpe: en H los ocho bajos y en el bit 7 de L el noveno, que comparte byte con la columna de la tanda
+	ld a,(0ca8eh)		;d840   ; La velocidad solo se ajusta una vez de cada ocho
 	and 007h		;d843
 	ld a,(0ca91h)		;d845
 	jp nz,L_D86F		;d848
-	ld a,l			;d84b
+	ld a,l			;d84b   ; Mientras el noveno bit siga puesto, la tanda va por la pagina de entrada y la velocidad sube a saco...
 	and 080h		;d84c
 	ld a,(0ca91h)		;d84e
 	jr nz,L_D862		;d851
-	ld a,(0c185h)		;d853
+	ld a,(0c185h)		;d853   ; ...y en cuanto se apaga, se acerca a la fila de la nave menos 0x34
 	sub 034h		;d856
 	jr c,L_D85B		;d858
 	cp h			;d85a
@@ -11468,27 +11468,27 @@ L_D85B:
 	jr c,L_D86A		;d85e
 	jr z,L_D872		;d860
 L_D862:
-	cp 003h		;d862
+	cp 003h		;d862   ; Tope 3 por arriba...
 	jr z,L_D872		;d864
 	inc a			;d866
 	jp L_D86F		;d867
 L_D86A:
-	cp 001h		;d86a
+	cp 001h		;d86a   ; ...y tope 1 por abajo
 	jr z,L_D872		;d86c
 	dec a			;d86e
 L_D86F:
 	ld (0ca91h),a		;d86f
 L_D872:
-	add a,h			;d872
+	add a,h			;d872   ; La fila avanza lo que diga la velocidad
 	ld h,a			;d873
-	ld a,l			;d874
+	ld a,l			;d874   ; Y si se ha desbordado, el noveno bit CAMBIA DE ESTADO con un `xor`: asi se lleva un contador de nueve bits repartido en dos sitios que no estan juntos
 	jp nc,L_D87B		;d875
 	xor 080h		;d878
 	ld l,a			;d87a
 L_D87B:
-	ld (0ca8ch),hl		;d87b
+	ld (0ca8ch),hl		;d87b   ; Los dos bytes vuelven de una vez
 	ex af,af'			;d87e
-	ld a,h			;d87f
+	ld a,h			;d87f   ; Pasado 0xC0, y con el noveno bit ya apagado, la tanda se ha ido de la pantalla
 	cp 0c0h		;d880
 	jr c,L_D894		;d882
 	bit 7,l		;d884
