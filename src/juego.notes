@@ -3690,3 +3690,27 @@ C 0xEF34 Y 0x800 es lo que ocupa un tercio de la tabla
 C 0xEF3C Escrito como una suma de 0xEF00, que es restar 0x1100
 C 0xEF45 Segunda mitad: 24 tiras...
 C 0xEF4A ...de ocho bytes cada una...
+#
+# EL BLITTER DE SPRITES NO DA LA VUELTA: SE CLAVA. pinta_glifo, al pasarse del
+# buffer, vuelve a 0x40 (`cp 058h` en 0xC5DA). El de sprites hace la cuenta con
+# el mismo umbral -0xC52C suma 0x0F y compara contra 0x67, que es H >= 0x58-
+# pero lo que pone es `xor a`, y el `sub 00fh` de detras deja H en 0xF1. No es
+# un destino: es un aparcadero. Como cada fila empieza comprobando `cp 050h`
+# (0xC4AE), de ahi en adelante ya no se pinta ni una fila mas y el sprite se
+# corta por abajo. Y como no se pinta, tampoco se escribe en 0xF1xx, que es RAM
+# del sistema.
+C 0xC4B1 Dentro del buffer, se pinta
+C 0xC4B3 Y fuera se salta la fila entera: dos bytes de fuente y dos de destino
+C 0xC4B9 A a 0xFF y acarreo puesto: la tira de la mascara rellena de UNOS, que es dejar pasar el fondo
+C 0xC4BB Destino y fuente, que la segunda mitad vuelve a necesitar
+C 0xC4BE La palabra de mascara de esta fila
+C 0xC4C3 El `jr` parcheado por la cabecera: cae en el peldano que deje los 8-n pasos que faltan
+C 0xC4C5 El atajo de ocho, que es mover registros y nada mas
+C 0xC4CC La tira: siete `adc hl,hl / adc a,a`, que juntos rotan A, H y L como un solo numero de 24 bits
+C 0xC4ED La fuente pasa a la palabra del DIBUJO, que va justo detras de la mascara...
+C 0xC4F0 ...y el destino vuelve a la primera de las tres columnas
+C 0xC4F2 El `xor a` hace dos cosas: A a cero Y acarreo a cero, o sea que esta tira rellena de CEROS y no pinta de mas
+C 0xC525 La fila siguiente de la fuente
+C 0xC527 0x16 son 22, que con los dos `inc hl` de arriba completan las 24 del buffer
+C 0xC52B Pasada la fila 0x58 H se queda clavado en 0xF1, y como cada fila empieza mirando `cp 050h`, ahi se acaba de pintar el sprite
+C 0xC536 Una fila menos de las dieciseis

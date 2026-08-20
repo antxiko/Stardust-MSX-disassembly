@@ -8617,31 +8617,31 @@ L_C49F:
 L_C4AE:
 	ld a,h			;c4ae   ; Pasado 0x5000 la fila se ha salido del buffer y no se pinta
 	cp 050h		;c4af
-	jr c,L_C4B9		;c4b1
-	inc de			;c4b3
+	jr c,L_C4B9		;c4b1   ; Dentro del buffer, se pinta
+	inc de			;c4b3   ; Y fuera se salta la fila entera: dos bytes de fuente y dos de destino
 	inc de			;c4b4
 	inc hl			;c4b5
 	inc hl			;c4b6
 	jr L_C525		;c4b7
 L_C4B9:
-	ld a,0ffh		;c4b9
-	push de			;c4bb
+	ld a,0ffh		;c4b9   ; A a 0xFF y acarreo puesto: la tira de la mascara rellena de UNOS, que es dejar pasar el fondo
+	push de			;c4bb   ; Destino y fuente, que la segunda mitad vuelve a necesitar
 	push hl			;c4bc
 	ex de,hl			;c4bd
-	ld d,(hl)			;c4be
+	ld d,(hl)			;c4be   ; La palabra de mascara de esta fila
 	inc hl			;c4bf
 	ld e,(hl)			;c4c0
 	scf			;c4c1
 	ex de,hl			;c4c2
 L_C4C3:
-	jr L_C4C3		;c4c3
+	jr L_C4C3		;c4c3   ; El `jr` parcheado por la cabecera: cae en el peldano que deje los 8-n pasos que faltan
 atajo_mascara24:		; Desplazamiento de ocho de la mascara: A = H, H = L, L = 0xFF. Es el camino cuando la columna cae justa en un byte, y es el unico que no recorre la tira
-	ld a,h			;c4c5
+	ld a,h			;c4c5   ; El atajo de ocho, que es mover registros y nada mas
 	ld h,l			;c4c6
 	ld l,0ffh		;c4c7
 	jp L_C4E1		;c4c9
 tira_mascara24:		; La tira de la mascara: siete `adc hl,hl / adc a,a` seguidos, en la que pinta_sprite entra por el peldano n-1 para dar 8-n pasos. Entra con A=0xFF y acarreo, o sea rellenando de unos
-	adc hl,hl		;c4cc
+	adc hl,hl		;c4cc   ; La tira: siete `adc hl,hl / adc a,a`, que juntos rotan A, H y L como un solo numero de 24 bits
 	adc a,a			;c4ce
 	adc hl,hl		;c4cf
 	adc a,a			;c4d1
@@ -8668,12 +8668,12 @@ L_C4E1:
 	ld a,e			;c4ea
 	and (hl)			;c4eb
 	ld (hl),a			;c4ec
-	pop de			;c4ed
+	pop de			;c4ed   ; La fuente pasa a la palabra del DIBUJO, que va justo detras de la mascara...
 	inc de			;c4ee
 	inc de			;c4ef
-	dec hl			;c4f0
+	dec hl			;c4f0   ; ...y el destino vuelve a la primera de las tres columnas
 	dec hl			;c4f1
-	xor a			;c4f2
+	xor a			;c4f2   ; El `xor a` hace dos cosas: A a cero Y acarreo a cero, o sea que esta tira rellena de CEROS y no pinta de mas
 	push de			;c4f3
 	push hl			;c4f4
 	ex de,hl			;c4f5
@@ -8718,11 +8718,11 @@ L_C518:
 	ld (hl),a			;c523
 	pop de			;c524
 L_C525:
-	inc de			;c525
+	inc de			;c525   ; La fila siguiente de la fuente
 	inc de			;c526
-	ld bc,00016h		;c527
+	ld bc,00016h		;c527   ; 0x16 son 22, que con los dos `inc hl` de arriba completan las 24 del buffer
 	add hl,bc			;c52a
-	ld a,h			;c52b
+	ld a,h			;c52b   ; Pasada la fila 0x58 H se queda clavado en 0xF1, y como cada fila empieza mirando `cp 050h`, ahi se acaba de pintar el sprite
 	add a,00fh		;c52c
 	cp 067h		;c52e
 	jr c,L_C533		;c530
@@ -8730,7 +8730,7 @@ L_C525:
 L_C533:
 	sub 00fh		;c533
 	ld h,a			;c535
-	ld a,(0d3cdh)		;c536
+	ld a,(0d3cdh)		;c536   ; Una fila menos de las dieciseis
 	dec a			;c539
 	ret z			;c53a
 	ld (0d3cdh),a		;c53b
