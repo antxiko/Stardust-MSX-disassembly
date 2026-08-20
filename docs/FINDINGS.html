@@ -103,6 +103,7 @@ TOPO SOFT</code></pre>
 <h3 id="this-isn-t-an-msx-tape">This isn&#x27;t an MSX tape</h3>
 <p>MSX games are recorded in KCS blocks, the system&#x27;s own format: the BIOS writes them and the BIOS reads them, and that&#x27;s how the rest of Topo Soft&#x27;s titles for this machine do it.</p>
 <p>Not Stardust. Its four data blocks are ZX Spectrum blocks, with the structure from over there: a flag byte, the data, and a final byte that&#x27;s the XOR of everything before it. All four carry that checksum correctly — checked one by one — and it&#x27;s the only integrity check the tape has at all.</p>
+<p>The tape carries it, yes, but <b>nobody looks at it</b>: the load routine works out the XOR and returns with the carry saying whether it matches, and both call sites (0x4018 and 0x403D) carry on without testing it. There is no retry and no error message: if the tape reads badly, the game starts anyway.</p>
 <p>And the loader isn&#x27;t native either: it&#x27;s a reimplementation of LD-BYTES, the Spectrum ROM&#x27;s own load routine, with the same register interface:</p>
 <pre><code>ld ix,047a0h    ; IX = where it goes
 ld de,0b647h    ; DE = how many bytes

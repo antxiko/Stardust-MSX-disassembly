@@ -2,7 +2,7 @@
 
 Son 94 228 bytes de fichero TSX, que al abrirlos dan 93 861 bytes de
 contenido repartidos en siete bloques. Y lo raro salta a la vista desde el
-primer momento: dos de esos bloques están grabados como manda el MSX, y
+primer momento: tres de esos bloques están grabados como manda el MSX, y
 los otros cuatro no.
 
 ## Los siete bloques

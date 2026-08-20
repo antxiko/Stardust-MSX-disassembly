@@ -50,6 +50,11 @@ estructura de allí: un byte de bandera, los datos, y un byte final que es el
 XOR de todo lo anterior. Los cuatro traen ese checksum correcto — comprobado
 uno por uno —, y es la única verificación de integridad que lleva la cinta.
 
+La lleva la cinta, eso sí, pero **nadie la mira**: la rutina de carga calcula
+el XOR y sale con el acarreo diciendo si cuadra, y las dos llamadas que hay
+(0x4018 y 0x403D) siguen adelante sin comprobarlo. No hay reintento ni aviso
+de error: si la cinta se lee mal, el juego arranca igual.
+
 Y el cargador tampoco es nativo: es una reimplementación de LD-BYTES, la
 rutina de carga de la ROM del Spectrum, con el mismo interfaz de registros:
 

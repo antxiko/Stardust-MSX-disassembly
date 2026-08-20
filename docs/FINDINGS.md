@@ -50,6 +50,11 @@ structure from over there: a flag byte, the data, and a final byte that's
 the XOR of everything before it. All four carry that checksum correctly —
 checked one by one — and it's the only integrity check the tape has at all.
 
+The tape carries it, yes, but **nobody looks at it**: the load routine works
+out the XOR and returns with the carry saying whether it matches, and both
+call sites (0x4018 and 0x403D) carry on without testing it. There is no retry
+and no error message: if the tape reads badly, the game starts anyway.
+
 And the loader isn't native either: it's a reimplementation of LD-BYTES, the
 Spectrum ROM's own load routine, with the same register interface:
 

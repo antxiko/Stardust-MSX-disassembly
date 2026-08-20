@@ -11,4 +11,224 @@
 # Ojo a un detalle: el LDIR copia 300 bytes (0x12C) desde 0xD33A, pero de aqui
 # al final del bloque solo hay 277. Los 23 que faltan se los lleva de lo que
 # hubiera en RAM detras.
+
+# ------------------------------------------------------- la parte que si corre
+L 0xD2F0 arranque Lo que llama el BASIC con DEFUSR=54000: mapea RAM en las paginas 1 y 2, se copia a la pagina 1 y salta alli
+C 0xD2F0 Y ya no se vuelven a permitir en toda la carga
+C 0xD2F1 Primero, RAM debajo de las paginas 1 y 2
+C 0xD2F4 El resto de este mismo bloque
+C 0xD2F7 A la pagina 1, que acaba de quedar en RAM
+C 0xD2FA 300 bytes, pero de 0xD33A al final del bloque solo hay 277: los 23 ultimos son lo que hubiera en RAM detras
+C 0xD2FF Y a correr desde alli. Esa copia sobrevive a todo: el bloque del juego se carga en 0x47A0, por encima de estos 300 bytes, y no los toca
+
+L 0xD302 mapea_la_ram Deja RAM en las paginas 1 y 2, para tener 48 KB planos de 0x4000 a 0xFFFF
+C 0xD302 La pagina 1
+C 0xD308 La pagina 2
+C 0xD30E La pagina 0 se queda con la ROM, que es de donde sale el ENASLT que usa la busqueda
+
+L 0xD30F busca_ram_en_la_pagina Prueba los 16 slots uno por uno y se queda con el primero que aguante una escritura en (HL)
+C 0xD30F 0x80: slot primario 0, subslot 0, y el bit 7 puesto, que le dice a ENASLT que mire tambien el subslot
+C 0xD311 Cuatro slots primarios que recorrer
+L 0xD313 prueba_slot_primario
+C 0xD313 Deja el bit 7 y el numero de slot primario, y pone a cero los dos bits de subslot
+C 0xD315 Cuatro subslots dentro de cada primario
+L 0xD317 prueba_este_slot
+C 0xD31A Mapea el slot que dice A en la pagina donde cae HL
+C 0xD31E Escribe un valor en el primer byte de la pagina...
+C 0xD320 ...y lo lee de vuelta
+C 0xD323 Si no vuelve igual, ahi no hay RAM
+C 0xD325 Y un segundo valor, distinto: con uno solo colaria una ROM que ya lo tuviera puesto
+C 0xD32A Los dos han vuelto: es RAM, y se sale dejandola mapeada
+L 0xD32C no_hay_ram_aqui
+C 0xD32E Siguiente subslot: son los bits 2 y 3 del identificador
+C 0xD330 Los cuatro subslots
+C 0xD332 Agotados, al siguiente slot primario
+C 0xD333 Y los cuatro primarios
+C 0xD336 Si no encuentra RAM vuelve igual, con el ultimo slot que probo mapeado
+L 0xD337 ram_encontrada
+C 0xD337 Deshace la pila de la vuelta en curso y sale sin tocar el mapeo
+
+# ------------------------------------------- el codigo que corre en la pagina 1
 D 0xD33A 0xD44F codigo_recolocado Codigo que se ejecuta recolocado en la pagina 1 (0x4000)
+
+B 0xD33A Lo que sigue son los 277 bytes desensamblados con `org 0x4000`, que es
+B 0xD33A donde se ejecutan. Las direcciones de los comentarios son las de
+B 0xD33A EJECUCION: a cada una hay que restarle 0x933A para dar con el byte del
+B 0xD33A bloque que tiene debajo.
+B 0xD33A
+B 0xD33A ---- 0x4000: salva el buzon de POKEs y pone la pila ----
+B 0xD33A   4000  ld hl,0dac0h    ; 0xDAC0 = 56000, donde escribe el cargador BASIC
+B 0xD33A   4003  ld de,0fde8h    ; a memoria alta, por encima de donde acaba el juego
+B 0xD33A   4006  ld bc,0005eh    ; 94 bytes
+B 0xD33A   4009  ldir            ; el bloque del juego llega hasta 0xFDE6: el buzon sobrevive
+B 0xD33A   400b  ld sp,04650h    ; la pila, dentro de la pagina 1 que acaba de mapear
+
+B 0xD348 ---- 0x400E: carga la pantalla de carga y la ejecuta ----
+B 0xD348   400e  ld ix,09b8ch    ; donde va el bloque
+B 0xD348   4012  ld de,030b4h    ; 12468 bytes, el tamano exacto del bloque de la pantalla
+B 0xD348   4015  ld a,000h       ; la bandera que tiene que traer el bloque
+B 0xD348   4017  scf             ; acarreo puesto = cargar
+B 0xD348   4018  call 405ch      ; y a la cinta
+B 0xD348   401b  ld a,082h       ; registro 1 = 0x82: pantalla APAGADA
+B 0xD348   401d  out (099h),a
+B 0xD348   401f  and a / and a   ; dos `and a` de puro relleno entre los dos bytes del par
+B 0xD348   4021  ld a,081h       ; 0x80+1: el registro 1
+B 0xD348   4023  out (099h),a
+B 0xD348   4025  call 09b8ch     ; ejecuta el bloque recien cargado: monta la ilustracion
+B 0xD348   4028  ld a,0c2h       ; registro 1 = 0xC2: pantalla encendida, pero sin la
+B 0xD348   402a  out (099h),a    ;   interrupcion del VDP que 0x9BF4 habia dejado permitida
+B 0xD348   402c  and a / and a
+B 0xD348   402e  ld a,081h
+B 0xD348   4030  out (099h),a
+
+B 0xD36C ---- 0x4032: carga el bloque del juego encima de todo ----
+B 0xD36C   4032  di
+B 0xD36C   4033  ld ix,047a0h    ; donde va el juego de naves
+B 0xD36C   4037  ld de,0b647h    ; 46663 bytes: 0x47A0 + 0xB647 = 0xFDE7, o sea que el
+B 0xD36C   403a  ld a,000h       ;   ultimo byte cae en 0xFDE6, justo debajo del buzon
+B 0xD36C   403c  scf
+B 0xD36C   403d  call 405ch      ; esta carga se lleva por delante la pantalla de carga entera
+
+B 0xD37A ---- 0x4040: el buzon de POKEs ----
+B 0xD37A   4040  ld hl,0fde8h    ; los 94 bytes que salvo al principio
+B 0xD37A   4043  ld b,003h
+B 0xD37A   4045  ld a,(hl)       ; la firma: tres bytes 0xC9
+B 0xD37A   4046  cp 0c9h
+B 0xD37A   4048  jp nz,0bd85h    ; sin firma, al juego directamente
+B 0xD37A   404b  inc hl
+B 0xD37A   404c  djnz 4045h
+B 0xD37A   404e  ld b,(hl)       ; el cuarto byte dice cuantos parches vienen
+B 0xD37A   404f  inc hl
+B 0xD37A   4050  ld e,(hl) / inc hl / ld d,(hl) / inc hl   ; direccion del parche
+B 0xD37A   4054  ld a,(hl) / inc hl                        ; y el byte que va ahi
+B 0xD37A   4056  ld (de),a       ; aplicado
+B 0xD37A   4057  djnz 4050h      ; tantos como diga el contador
+B 0xD37A   4059  jp 0bd85h       ; y ahora si, al juego
+B 0xD37A El contador no se compara con nada: manda entero quien llene el buzon. Los
+B 0xD37A 94 bytes que se copian dan para la firma, el contador y treinta parches.
+
+B 0xD396 ---- 0x405C: la rutina de carga. Preambulo ----
+B 0xD396 Las dos cargas entran por aqui, con IX = destino, DE = cuantos bytes y
+B 0xD396 A = la bandera que tiene que traer el bloque.
+B 0xD396   405c  ld hl,04105h    ; se mete la salida en la pila: cualquier `ret` de
+B 0xD396   405f  push hl         ;   aqui abajo cae en 0x4105, no en el llamante
+B 0xD396   4060  push af
+B 0xD396   4061  ld a,008h
+B 0xD396   4063  out (0abh),a    ; PPI: baja el bit 4 del puerto C = MOTOR de la cinta en marcha
+B 0xD396   4065  ld a,00eh
+B 0xD396   4067  out (0a0h),a    ; PSG: deja seleccionado el registro 14, el del puerto A,
+B 0xD396   4069  pop af          ;   cuyo bit 7 es la entrada de la cinta
+B 0xD396   406a  inc d           ; toca D solo para dejar el Z quitado...
+B 0xD396   406b  ex af,af'       ; ...y guarda A (la bandera) y las banderas en el juego alterno
+B 0xD396   406c  dec d           ; D vuelve a lo que era
+B 0xD396   406d  di
+B 0xD396   406e  ld a,005h       ; C lleva el nivel que se espera leer: su bit 7 se va
+B 0xD396   4070  ld c,a          ;   invirtiendo en cada flanco
+B 0xD396   4071  cp a            ; Z puesto, acarreo quitado
+
+B 0xD3AC ---- 0x4072: el piloto y el sincronismo ----
+B 0xD3AC   4072  call 40e2h      ; espera a un flanco cualquiera
+B 0xD3AC   4075  jr nc,4072h     ; si se agoto la cuenta, a esperar otra vez
+B 0xD3AC   4077  ld hl,00415h    ; 1045 pasadas del djnz de abajo: una espera larga que
+B 0xD3AC   407a  djnz 407ah      ;   deja pasar un buen trozo de piloto antes de medir nada
+B 0xD3AC   407c  dec hl
+B 0xD3AC   407d  ld a,h / or l
+B 0xD3AC   407f  jr nz,407ah
+B 0xD3AC   4081  call 40deh      ; un ciclo entero (dos flancos)
+B 0xD3AC   4084  jr nc,4072h
+B 0xD3AC   4086  ld b,09ch       ; y ahora 256 ciclos de piloto seguidos, midiendolos:
+B 0xD3AC   4088  call 40deh      ;   la cuenta arranca en 0x9C y tiene que pasar de 0xC6,
+B 0xD3AC   408b  jr nc,4072h     ;   o sea que el ciclo tiene que durar lo que dura el piloto
+B 0xD3AC   408d  ld a,0c6h
+B 0xD3AC   408f  cp b
+B 0xD3AC   4090  jr nc,4072h     ; demasiado corto: no era piloto, a empezar de cero
+B 0xD3AC   4092  inc h           ; H cuenta los ciclos buenos
+B 0xD3AC   4093  jr nz,4086h     ; hacen falta 256 para dar el piloto por bueno
+B 0xD3AC   4095  ld b,0c9h       ; a partir de aqui se busca el primer medio ciclo CORTO,
+B 0xD3AC   4097  call 40e2h      ;   que es el sincronismo: la cuenta no debe llegar a 0xD4
+B 0xD3AC   409a  jr nc,4072h
+B 0xD3AC   409c  ld a,b
+B 0xD3AC   409d  cp 0d4h
+B 0xD3AC   409f  jr nc,4095h     ; todavia es piloto: sigue mirando
+B 0xD3AC   40a1  call 40e2h      ; el segundo medio ciclo del sincronismo
+B 0xD3AC   40a4  ret nc
+B 0xD3AC   40a5  ld h,000h       ; H = el XOR de comprobacion, que empieza a cero
+B 0xD3AC   40a7  ld b,0b0h
+B 0xD3AC   40a9  jr 40c3h        ; y de cabeza a leer el primer byte, que es la bandera
+
+B 0xD3E5 ---- 0x40AB: el bucle de bytes ----
+B 0xD3E5   40ab  ex af,af'       ; recupera las banderas de la entrada
+B 0xD3E5   40ac  jr nz,40b3h     ; la PRIMERA vuelta va por 0x40B3: el byte leido es la bandera
+B 0xD3E5   40ae  ld (ix+000h),l  ; las demas guardan el byte en su sitio
+B 0xD3E5   40b1  jr 40bdh
+B 0xD3E5   40b3  rr c            ; guarda el acarreo dentro de C
+B 0xD3E5   40b5  xor l           ; y compara la bandera leida con la que pidio el llamante
+B 0xD3E5   40b6  ret nz          ; no es el bloque que se buscaba: fuera
+B 0xD3E5   40b7  ld a,c / rla / ld c,a   ; devuelve el acarreo a su sitio
+B 0xD3E5   40ba  inc de          ; la bandera no cuenta como byte del bloque
+B 0xD3E5   40bb  jr 40bfh        ;   (el `dec de` de abajo lo compensa)
+B 0xD3E5   40bd  inc ix          ; siguiente byte del destino
+B 0xD3E5   40bf  dec de          ; y uno menos por leer
+B 0xD3E5   40c0  ex af,af'       ; guarda las banderas otra vez; el `xor l` de la bandera
+B 0xD3E5   40c1  ld b,0b2h       ;   dejo el Z puesto, asi que ya no se vuelve a 0x40B3
+B 0xD3E5   40c3  ld l,001h       ; el 1 es el testigo: cuando se sale por arriba, hay byte
+B 0xD3E5   40c5  call 40deh      ; un ciclo entero por cada bit
+B 0xD3E5   40c8  ret nc          ; se acabo la cinta
+B 0xD3E5   40c9  ld a,0cbh       ; ciclo largo o corto: ese es el bit
+B 0xD3E5   40cb  cp b
+B 0xD3E5   40cc  rl l            ; que entra por abajo
+B 0xD3E5   40ce  ld b,0b0h
+B 0xD3E5   40d0  jp nc,40c5h     ; hasta que el testigo se sale: ocho bits
+B 0xD3E5   40d3  ld a,h / xor l / ld h,a   ; el byte entra en el XOR de comprobacion
+B 0xD3E5   40d6  ld a,d / or e
+B 0xD3E5   40d8  jr nz,40abh     ; y a por el siguiente
+B 0xD3E5   40da  ld a,h          ; con DE agotado, el ultimo byte leido era el XOR del bloque:
+B 0xD3E5   40db  cp 001h         ;   si todo cuadra H vale 0 y esto vuelve con acarreo
+B 0xD3E5   40dd  ret
+B 0xD3E5 Ese acarreo no lo mira NADIE: ni la carga de 0x4018 ni la de 0x403D lo
+B 0xD3E5 comprueban. Este cargador no tiene reintento ni aviso de error; si la
+B 0xD3E5 cinta falla, sigue adelante con lo que haya quedado en memoria.
+
+B 0xD418 ---- 0x40DE: medir un flanco ----
+B 0xD418   40de  call 40e2h      ; dos flancos seguidos, o sea un ciclo entero
+B 0xD418   40e1  ret nc
+B 0xD418   40e2  ld a,016h       ; 22 vueltas de espera antes de ponerse a mirar
+B 0xD418   40e4  dec a
+B 0xD418   40e5  jr nz,40e4h
+B 0xD418   40e7  and a           ; quita el acarreo: sin flanco se vuelve con el quitado
+B 0xD418   40e8  inc b           ; B cuenta lo que tarda en llegar el flanco
+B 0xD418   40e9  nop
+B 0xD418   40ea  ret z           ; si B da la vuelta, se acabo el tiempo
+B 0xD418   40eb  ld a,000h       ; este ld a,000h no sirve de nada: el `in` de la linea
+B 0xD418   40ed  in a,(0a2h)     ;   siguiente pisa A. Lee el puerto A del PSG...
+B 0xD418   40ef  cpl
+B 0xD418   40f0  xor c           ; ...y compara su bit 7 con el nivel que se espera
+B 0xD418   40f1  and 080h
+B 0xD418   40f3  jp z,40e8h      ; sigue igual: a contar otra vuelta
+B 0xD418   40f6  ld a,c / cpl / ld c,a   ; ha cambiado: el nivel que toca ahora es el contrario
+B 0xD418   40f9  ld a,r          ; y de paso el borde cambia de color con el registro de
+B 0xD418   40fb  and 00fh        ;   refresco, que es lo mas parecido a un numero al azar
+B 0xD418   40fd  out (099h),a    ;   que hay a mano
+B 0xD418   40ff  ld a,087h       ; 0x80+7: el registro 7 del VDP, el color del borde
+B 0xD418   4101  out (099h),a
+B 0xD418   4103  scf             ; acarreo puesto = flanco encontrado
+B 0xD418   4104  ret
+B 0xD418 Aqui esta la unica diferencia de fondo con la maquina de origen: donde
+B 0xD418 el ZX Spectrum saca el color por el puerto 0xFE, esto lo saca por el
+B 0xD418 registro 7 del VDP, que es el unico borde que tiene el MSX.
+
+B 0xD43F ---- 0x4105: la salida ----
+B 0xD43F Cae aqui cualquier `ret` de la rutina de carga, que se lo dejo puesto en
+B 0xD43F la pila. El `ret` del final es el que devuelve el control al llamante.
+B 0xD43F   4105  ld e,013h       ; E no lo lee nadie despues
+B 0xD43F   4107  ld a,009h
+B 0xD43F   4109  out (0abh),a    ; sube el bit 4 del puerto C: MOTOR parado
+B 0xD43F   410b  ld a,001h       ; y el borde a negro, que deja de parpadear
+B 0xD43F   410d  out (099h),a
+B 0xD43F   410f  ld a,087h       ; 0x80+7: el registro 7 del VDP
+B 0xD43F   4111  out (099h),a
+B 0xD43F   4113  ret
+
+B 0xD44E ---- 0x4114: el ultimo byte ----
+B 0xD44E Un byte suelto detras del `ret`. Los 23 que le siguen hasta completar los
+B 0xD44E 300 del LDIR no estan en la cinta: salen de lo que hubiera en RAM.

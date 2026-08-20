@@ -14,34 +14,51 @@
 ; ======================================================================
 
 
-L_9B8C:
-	di			;9b8c
-	call L_9BA3		;9b8d
-	call L_9BBE		;9b90
-	call L_9BDB		;9b93
-	ld b,0f1h		;9b96
-	call L_9BC8		;9b98
-	call L_9BF4		;9b9b
-	call L_9C10		;9b9e
-	nop			;9ba1
-	ret			;9ba2
-L_9BA3:
-	ld c,099h		;9ba3
-	ld hl,09bb6h		;9ba5
-	ld b,008h		;9ba8
-L_9BAA:
-	outi		;9baa
-	ld a,b			;9bac
-	or 080h		;9bad
+monta_la_pantalla:		; Lo unico que el cargador llama de este bloque: programa el VDP, limpia la VRAM, monta la tabla de nombres y vuelca la ilustracion
+	di			;9b8c   ; Otro di: el cargador ya las habia apagado en 0xD2F0 y nadie las ha vuelto a permitir
+	call programa_el_vdp		;9b8d   ; Los ocho registros del VDP, con los valores de 0x9BB6
+	call borra_la_vram		;9b90   ; Los 16 KB de VRAM enteros a cero
+	call monta_la_tabla_de_nombres		;9b93
+	ld b,0f1h		;9b96   ; 0xF1 = tinta blanca sobre fondo negro
+	call rellena_los_colores		;9b98   ; Con eso rellena los 6144 bytes de la tabla de colores
+	call enciende_la_pantalla		;9b9b   ; Enciende la pantalla ANTES de volcar el dibujo: los 12288 bytes entran con la pantalla ya visible
+	call vuelca_la_imagen		;9b9e   ; Los 12288 bytes de la imagen, patrones y colores
+	nop			;9ba1   ; Un nop suelto delante del ret
+	ret			;9ba2   ; Y vuelve al cargador, que se pone ya a por el bloque del juego
+programa_el_vdp:		; Vuelca la tabla de 0x9BB6 en los registros del VDP, del 7 al 0
+	ld c,099h		;9ba3   ; El 0x99 es el puerto de registros del VDP: se escribe el dato y luego 0x80+registro
+	ld hl,09bb6h		;9ba5   ; La tabla de ocho valores
+	ld b,008h		;9ba8   ; Ocho registros que programar
+programa_el_vdp_bucle:
+	outi		;9baa   ; Saca (HL) por el puerto y baja B de una vez
+	ld a,b			;9bac   ; OJO al orden: outi ya ha bajado B, asi que el PRIMER valor de la tabla acaba en el registro 7 y el ultimo en el 0
+	or 080h		;9bad   ; 0x80 + n es la orden de escribir en el registro n
 	out (c),a		;9baf
-	and 07fh		;9bb1
-	jr nz,L_9BAA		;9bb3
+	and 07fh		;9bb1   ; Quita el 0x80 para mirar si B ya era cero: si lo era, el ultimo valor acaba de ir al registro 0 y se termina
+	jr nz,programa_el_vdp_bucle		;9bb3
 	ret			;9bb5
 
 ; ----------------------------------------------------------------------
-; DATOS registros_del_vdp: Los 8 valores que se escriben en los registros 0 a
-;   7 del VDP
+; DATOS registros_del_vdp: Los 8 valores del VDP, en orden INVERSO: el primer
+;   byte va al registro 7 y el ultimo al 0
 ;   0x9bb6..0x9bbe  (8 bytes)
+
+; ----------------------------------------------------------------------
+; Leidos como los escribe el bucle de 0x9BAA, o sea de abajo arriba:
+; R7 = 0x01  color del borde: negro
+; R6 = 0x07  patrones de sprite en 0x3800
+; R5 = 0x36  atributos de sprite en 0x1B00
+; R4 = 0x03  patrones en 0x0000
+; R3 = 0xFF  colores en 0x2000
+; R2 = 0x06  tabla de nombres en 0x1800
+; R1 = 0x80  16K, pantalla APAGADA, sprites de 8x8
+; R0 = 0x02  modo grafico 2 (el SCREEN 2)
+; En modo grafico 2 de R3 solo cuenta el bit 7 y de R4 solo el bit 2; los
+; demas van a uno para abarcar los tres tercios de pantalla.
+; Las tres tablas cuadran con lo que hacen las rutinas: 0x9BDB rellena
+; 0x1800, 0x9BC8 rellena 6144 bytes desde 0x2000, y 0x9C10 vuelca los
+; patrones en 0x0000 y los colores en 0x2000.
+; ----------------------------------------------------------------------
 DATA_registros_del_vdp:
 	defb 001h	; 9bb6
 	defb 007h	; 9bb7
@@ -57,77 +74,77 @@ DATA_registros_del_vdp:
 ; ======================================================================
 
 
-L_9BBE:
-	ld hl,00000h		;9bbe
-	ld de,04000h		;9bc1
-	ld b,000h		;9bc4
-	jr L_9BCE		;9bc6
-L_9BC8:
-	ld hl,02000h		;9bc8
-	ld de,01800h		;9bcb
-L_9BCE:
-	call L_9BFF		;9bce
-	ld c,098h		;9bd1
-L_9BD3:
-	out (c),b		;9bd3
-	dec de			;9bd5
+borra_la_vram:		; Los 16384 bytes de VRAM a cero, de un tiron
+	ld hl,00000h		;9bbe   ; Desde el principio de la VRAM
+	ld de,04000h		;9bc1   ; 16384 bytes: la VRAM entera
+	ld b,000h		;9bc4   ; El byte con el que rellena
+	jr rellena_vram		;9bc6
+rellena_los_colores:		; Los 6144 bytes de la tabla de colores desde 0x2000, con el byte que venga en B
+	ld hl,02000h		;9bc8   ; La tabla de colores del SCREEN 2
+	ld de,01800h		;9bcb   ; 6144 bytes: un byte de color por cada linea de los 768 patrones
+rellena_vram:		; HL = donde, DE = cuantos, B = con que byte
+	call direcciona_vram		;9bce   ; Direcciona la VRAM en HL para escribir
+	ld c,098h		;9bd1   ; Y a partir de aqui todo sale por el 0x98, el puerto de datos
+rellena_vram_bucle:
+	out (c),b		;9bd3   ; Un byte por vuelta, siempre el mismo
+	dec de			;9bd5   ; DE es la cuenta atras
 	ld a,d			;9bd6
-	or e			;9bd7
-	jr nz,L_9BD3		;9bd8
+	or e			;9bd7   ; Hasta que DE llega a cero
+	jr nz,rellena_vram_bucle		;9bd8
 	ret			;9bda
-L_9BDB:
-	ld hl,01800h		;9bdb
-	call L_9BFF		;9bde
-	ld a,098h		;9be1
-	ld b,003h		;9be3
-L_9BE5:
-	xor a			;9be5
-L_9BE6:
-	out (c),a		;9be6
-	add a,008h		;9be8
-	jr nc,L_9BE6		;9bea
-	inc a			;9bec
-	cp 008h		;9bed
-	jr nz,L_9BE6		;9bef
-	djnz L_9BE5		;9bf1
-	ret			;9bf3
-L_9BF4:
-	ld c,099h		;9bf4
-	ld b,0e2h		;9bf6
+monta_la_tabla_de_nombres:		; Rellena los 768 bytes de la tabla de nombres con los patrones ENTRELAZADOS de ocho en ocho
+	ld hl,01800h		;9bdb   ; La tabla de nombres, donde la deja el registro 2
+	call direcciona_vram		;9bde   ; Direcciona ahi la VRAM
+	ld a,098h		;9be1   ; Este ld a,098h no sirve de nada: dos instrucciones despues el xor a lo borra. El puerto que usa el out (c),a de 0x9BE6 sale de C, que la llamada anterior dejo valiendo 0x98
+	ld b,003h		;9be3   ; Los tres tercios de pantalla del SCREEN 2
+tabla_de_nombres_tercio:
+	xor a			;9be5   ; Cada tercio vuelve a empezar por el patron 0
+tabla_de_nombres_bucle:
+	out (c),a		;9be6   ; Escribe el numero de patron de esta celda
+	add a,008h		;9be8   ; Y salta de ocho en ocho: 0, 8, 16... 248
+	jr nc,tabla_de_nombres_bucle		;9bea   ; Mientras no se pase de 255
+	inc a			;9bec   ; Al pasarse vuelve al principio, pero uno mas alto: 1, 9, 17... 249
+	cp 008h		;9bed   ; Ocho pasadas de 32 celdas: cuando A vuelve a valer 8 el tercio esta completo, 256 celdas
+	jr nz,tabla_de_nombres_bucle		;9bef
+	djnz tabla_de_nombres_tercio		;9bf1   ; Y los tres tercios, 768 celdas en total
+	ret			;9bf3   ; El resultado: el patron n queda en la columna n/8, fila n%8. El juego que se carga encima hereda esta tabla y cuenta con ella
+enciende_la_pantalla:		; Registro 1 = 0xE2
+	ld c,099h		;9bf4   ; El puerto de registros
+	ld b,0e2h		;9bf6   ; 0xE2: 16K, pantalla encendida, interrupcion del VDP permitida, sprites de 16x16
 	out (c),b		;9bf8
-	ld b,081h		;9bfa
-	out (c),b		;9bfc
+	ld b,081h		;9bfa   ; 0x80+1, o sea el registro 1
+	out (c),b		;9bfc   ; La pantalla se enciende aqui, con la VRAM ya limpia y la tabla de nombres puesta
 	ret			;9bfe
-L_9BFF:
-	push bc			;9bff
-	in a,(099h)		;9c00
+direcciona_vram:		; Deja el VDP apuntando a HL para ESCRIBIR
+	push bc			;9bff   ; Conserva BC, que los llamantes usan de contador y de puerto
+	in a,(099h)		;9c00   ; Leer el registro de estado pone a cero el biestable de direccion, para que la pareja de bytes que viene detras se lea entera
 	ld c,099h		;9c02
-	ld a,l			;9c04
+	ld a,l			;9c04   ; Primero los ocho bits bajos
 	out (c),a		;9c05
-	ld a,h			;9c07
-	and 07fh		;9c08
-	or 040h		;9c0a
+	ld a,h			;9c07   ; Y luego los altos...
+	and 07fh		;9c08   ; ...con el bit 15 fuera (solo hay 14 bits de direccion)...
+	or 040h		;9c0a   ; ...y el 14 puesto, que es lo que le dice al VDP que se prepare para escribir
 	out (c),a		;9c0c
 	pop bc			;9c0e
 	ret			;9c0f
-L_9C10:
-	ld hl,00000h		;9c10
-	call L_9BFF		;9c13
-	ld hl,09c40h		;9c16
-	ld bc,01800h		;9c19
-	call L_9C2B		;9c1c
-	ld hl,02000h		;9c1f
-	call L_9BFF		;9c22
-	ld hl,0b440h		;9c25
-	ld bc,01800h		;9c28
-L_9C2B:
-	ld a,(hl)			;9c2b
-	out (098h),a		;9c2c
+vuelca_la_imagen:		; Los 12288 bytes de la ilustracion: 6144 de patrones y 6144 de colores
+	ld hl,00000h		;9c10   ; Los patrones van a la VRAM 0x0000
+	call direcciona_vram		;9c13
+	ld hl,09c40h		;9c16   ; Y salen de aqui, justo detras del codigo
+	ld bc,01800h		;9c19   ; 6144 bytes: los 768 patrones de los tres tercios
+	call copia_a_vram		;9c1c
+	ld hl,02000h		;9c1f   ; Los colores van a la VRAM 0x2000
+	call direcciona_vram		;9c22
+	ld hl,0b440h		;9c25   ; 0x9C40 + 6144 = 0xB440: los colores empiezan donde acaban los patrones
+	ld bc,01800h		;9c28   ; Otros 6144, y 0xB440 + 6144 = 0xCC40, el final exacto del bloque
+copia_a_vram:		; BC bytes desde (HL) al puerto de datos, con la direccion ya puesta
+	ld a,(hl)			;9c2b   ; Cae aqui de seguido: la segunda mitad no necesita call
+	out (098h),a		;9c2c   ; Por el puerto de datos, byte a byte
 	inc hl			;9c2e
 	dec bc			;9c2f
 	ld a,b			;9c30
 	or c			;9c31
-	jr nz,L_9C2B		;9c32
+	jr nz,copia_a_vram		;9c32   ; Hasta agotar BC
 	ret			;9c34
 
 ; ----------------------------------------------------------------------

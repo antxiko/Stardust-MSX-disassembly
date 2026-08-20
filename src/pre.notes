@@ -9,12 +9,111 @@
 # y las cuentas cierran solas: 0x9C40 + 6144 = 0xB440, y 0xB440 + 6144 = 0xCC40,
 # que es el final exacto del bloque. Dibujada con tools/render_carga.py sale la
 # ilustracion firmada CANO, que es la prueba de que el reparto es este.
+
+# ------------------------------------------------------------------ el codigo
+# 161 bytes de codigo para poner una pantalla y nada mas. No mira el teclado, no
+# espera, no vuelve a la cinta: el cargador lo llama con `call 09b8ch`, esto
+# monta la imagen y devuelve el control. Todo el trabajo sale por dos puertos,
+# el 0x98 (datos del VDP) y el 0x99 (direcciones y registros del VDP).
+
+L 0x9B8C monta_la_pantalla Lo unico que el cargador llama de este bloque: programa el VDP, limpia la VRAM, monta la tabla de nombres y vuelca la ilustracion
+C 0x9B8C Otro di: el cargador ya las habia apagado en 0xD2F0 y nadie las ha vuelto a permitir
+C 0x9B8D Los ocho registros del VDP, con los valores de 0x9BB6
+C 0x9B90 Los 16 KB de VRAM enteros a cero
+C 0x9B96 0xF1 = tinta blanca sobre fondo negro
+C 0x9B98 Con eso rellena los 6144 bytes de la tabla de colores
+C 0x9B9B Enciende la pantalla ANTES de volcar el dibujo: los 12288 bytes entran con la pantalla ya visible
+C 0x9B9E Los 12288 bytes de la imagen, patrones y colores
+C 0x9BA1 Un nop suelto delante del ret
+C 0x9BA2 Y vuelve al cargador, que se pone ya a por el bloque del juego
+
+L 0x9BA3 programa_el_vdp Vuelca la tabla de 0x9BB6 en los registros del VDP, del 7 al 0
+C 0x9BA3 El 0x99 es el puerto de registros del VDP: se escribe el dato y luego 0x80+registro
+C 0x9BA5 La tabla de ocho valores
+C 0x9BA8 Ocho registros que programar
+L 0x9BAA programa_el_vdp_bucle
+C 0x9BAA Saca (HL) por el puerto y baja B de una vez
+C 0x9BAC OJO al orden: outi ya ha bajado B, asi que el PRIMER valor de la tabla acaba en el registro 7 y el ultimo en el 0
+C 0x9BAD 0x80 + n es la orden de escribir en el registro n
+C 0x9BB1 Quita el 0x80 para mirar si B ya era cero: si lo era, el ultimo valor acaba de ir al registro 0 y se termina
+D 0x9BB6 0x9BBE registros_del_vdp Los 8 valores del VDP, en orden INVERSO: el primer byte va al registro 7 y el ultimo al 0
+F 0x9BB6 1
+B 0x9BB6 Leidos como los escribe el bucle de 0x9BAA, o sea de abajo arriba:
+B 0x9BB6     R7 = 0x01  color del borde: negro
+B 0x9BB6     R6 = 0x07  patrones de sprite en 0x3800
+B 0x9BB6     R5 = 0x36  atributos de sprite en 0x1B00
+B 0x9BB6     R4 = 0x03  patrones en 0x0000
+B 0x9BB6     R3 = 0xFF  colores en 0x2000
+B 0x9BB6     R2 = 0x06  tabla de nombres en 0x1800
+B 0x9BB6     R1 = 0x80  16K, pantalla APAGADA, sprites de 8x8
+B 0x9BB6     R0 = 0x02  modo grafico 2 (el SCREEN 2)
+B 0x9BB6 En modo grafico 2 de R3 solo cuenta el bit 7 y de R4 solo el bit 2; los
+B 0x9BB6 demas van a uno para abarcar los tres tercios de pantalla.
+B 0x9BB6 Las tres tablas cuadran con lo que hacen las rutinas: 0x9BDB rellena
+B 0x9BB6 0x1800, 0x9BC8 rellena 6144 bytes desde 0x2000, y 0x9C10 vuelca los
+B 0x9BB6 patrones en 0x0000 y los colores en 0x2000.
+
+L 0x9BBE borra_la_vram Los 16384 bytes de VRAM a cero, de un tiron
+C 0x9BBE Desde el principio de la VRAM
+C 0x9BC1 16384 bytes: la VRAM entera
+C 0x9BC4 El byte con el que rellena
+L 0x9BC8 rellena_los_colores Los 6144 bytes de la tabla de colores desde 0x2000, con el byte que venga en B
+C 0x9BC8 La tabla de colores del SCREEN 2
+C 0x9BCB 6144 bytes: un byte de color por cada linea de los 768 patrones
+L 0x9BCE rellena_vram HL = donde, DE = cuantos, B = con que byte
+C 0x9BCE Direcciona la VRAM en HL para escribir
+C 0x9BD1 Y a partir de aqui todo sale por el 0x98, el puerto de datos
+L 0x9BD3 rellena_vram_bucle
+C 0x9BD3 Un byte por vuelta, siempre el mismo
+C 0x9BD5 DE es la cuenta atras
+C 0x9BD7 Hasta que DE llega a cero
+
+L 0x9BDB monta_la_tabla_de_nombres Rellena los 768 bytes de la tabla de nombres con los patrones ENTRELAZADOS de ocho en ocho
+C 0x9BDB La tabla de nombres, donde la deja el registro 2
+C 0x9BDE Direcciona ahi la VRAM
+C 0x9BE1 Este ld a,098h no sirve de nada: dos instrucciones despues el xor a lo borra. El puerto que usa el out (c),a de 0x9BE6 sale de C, que la llamada anterior dejo valiendo 0x98
+C 0x9BE3 Los tres tercios de pantalla del SCREEN 2
+L 0x9BE5 tabla_de_nombres_tercio
+C 0x9BE5 Cada tercio vuelve a empezar por el patron 0
+L 0x9BE6 tabla_de_nombres_bucle
+C 0x9BE6 Escribe el numero de patron de esta celda
+C 0x9BE8 Y salta de ocho en ocho: 0, 8, 16... 248
+C 0x9BEA Mientras no se pase de 255
+C 0x9BEC Al pasarse vuelve al principio, pero uno mas alto: 1, 9, 17... 249
+C 0x9BED Ocho pasadas de 32 celdas: cuando A vuelve a valer 8 el tercio esta completo, 256 celdas
+C 0x9BF1 Y los tres tercios, 768 celdas en total
+C 0x9BF3 El resultado: el patron n queda en la columna n/8, fila n%8. El juego que se carga encima hereda esta tabla y cuenta con ella
+
+L 0x9BF4 enciende_la_pantalla Registro 1 = 0xE2
+C 0x9BF4 El puerto de registros
+C 0x9BF6 0xE2: 16K, pantalla encendida, interrupcion del VDP permitida, sprites de 16x16
+C 0x9BFA 0x80+1, o sea el registro 1
+C 0x9BFC La pantalla se enciende aqui, con la VRAM ya limpia y la tabla de nombres puesta
+
+L 0x9BFF direcciona_vram Deja el VDP apuntando a HL para ESCRIBIR
+C 0x9BFF Conserva BC, que los llamantes usan de contador y de puerto
+C 0x9C00 Leer el registro de estado pone a cero el biestable de direccion, para que la pareja de bytes que viene detras se lea entera
+C 0x9C04 Primero los ocho bits bajos
+C 0x9C07 Y luego los altos...
+C 0x9C08 ...con el bit 15 fuera (solo hay 14 bits de direccion)...
+C 0x9C0A ...y el 14 puesto, que es lo que le dice al VDP que se prepare para escribir
+
+L 0x9C10 vuelca_la_imagen Los 12288 bytes de la ilustracion: 6144 de patrones y 6144 de colores
+C 0x9C10 Los patrones van a la VRAM 0x0000
+C 0x9C16 Y salen de aqui, justo detras del codigo
+C 0x9C19 6144 bytes: los 768 patrones de los tres tercios
+C 0x9C1F Los colores van a la VRAM 0x2000
+C 0x9C25 0x9C40 + 6144 = 0xB440: los colores empiezan donde acaban los patrones
+C 0x9C28 Otros 6144, y 0xB440 + 6144 = 0xCC40, el final exacto del bloque
+L 0x9C2B copia_a_vram BC bytes desde (HL) al puerto de datos, con la direccion ya puesta
+C 0x9C2B Cae aqui de seguido: la segunda mitad no necesita call
+C 0x9C2C Por el puerto de datos, byte a byte
+C 0x9C32 Hasta agotar BC
+
 D 0x9C40 0xB440 patrones_de_la_carga Patrones de la pantalla de carga: 6144 bytes a la VRAM 0x0000
 F 0x9C40 8
 D 0xB440 0xCC40 colores_de_la_carga Colores de la pantalla de carga: 6144 bytes a la VRAM 0x2000
 F 0xB440 8
 # Y entre el codigo y los patrones quedan unos pocos bytes: los 8 de la tabla de
 # registros del VDP que programa la rutina de 0x9BA3, y el relleno hasta 0x9C40.
-D 0x9BB6 0x9BBE registros_del_vdp Los 8 valores que se escriben en los registros 0 a 7 del VDP
-F 0x9BB6 1
 D 0x9C35 0x9C40 relleno_9C35 Relleno hasta el principio de los patrones
