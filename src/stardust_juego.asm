@@ -12258,25 +12258,25 @@ arranca_musica:		; Instala la musica de la partida de golpe: canal 0 <- 0xEB52, 
 	ld de,0eccbh		;e180
 	call arranca_guion		;e183
 sonido_off:		; Cierra el sonido metiendo un `ret` (0xC9) en la cabecera de arranca_guion y arranca_guion_libre: no se puede arrancar nada mas
-	ld a,0c9h		;e186
+	ld a,0c9h		;e186   ; Cerrar el sonido es meter un `ret` en la cabecera de las dos rutinas de arranque: lo que ya suena sigue, pero no entra nada nuevo
 	ld (arranca_guion),a		;e188
 	ld (arranca_guion_libre),a		;e18b
 	ret			;e18e
 arranca_guion_libre:		; arranca_guion, pero respetando lo que suena: si el canal pedido esta ocupado -sus dos primeros bytes no son cero- recorre los TRES buscando uno libre, y solo pisa el pedido si no queda ninguno
-	di			;e18f
+	di			;e18f   ; Con las interrupciones apagadas, que el interprete corre en el gancho de reloj
 	push af			;e190
 	push de			;e191
-	and 07fh		;e192
-	ld de,0002eh		;e194
+	and 07fh		;e192   ; El bit 7 de A no es canal: es "vuelve sin `ei`"
+	ld de,0002eh		;e194   ; 46 bytes de estado por canal
 	call mul_a_de		;e197
 	ld de,0ed75h		;e19a
 	add hl,de			;e19d
 	push hl			;e19e
-	ld a,(hl)			;e19f
+	ld a,(hl)			;e19f   ; Los dos primeros bytes del estado son el puntero de ejecucion: a cero, el canal esta libre
 	inc hl			;e1a0
 	or (hl)			;e1a1
-	jr z,L_E1B6		;e1a2
-	ld d,003h		;e1a4
+	jr z,L_E1B6		;e1a2   ; Libre, se usa el que han pedido
+	ld d,003h		;e1a4   ; Ocupado: se recorren los tres desde el primero
 	ld hl,0ed75h		;e1a6
 	ld bc,0002eh		;e1a9
 L_E1AC:
@@ -12284,18 +12284,18 @@ L_E1AC:
 	ld a,(hl)			;e1ad
 	dec hl			;e1ae
 	or (hl)			;e1af
-	jr z,L_E1B9		;e1b0
+	jr z,L_E1B9		;e1b0   ; El primero que este libre se lleva el guion
 	add hl,bc			;e1b2
 	dec d			;e1b3
 	jr nz,L_E1AC		;e1b4
 L_E1B6:
-	pop hl			;e1b6
+	pop hl			;e1b6   ; Ninguno libre -o el pedido lo estaba-: se usa el pedido, y si sonaba algo se pisa
 	jr L_E1CB		;e1b7
 L_E1B9:
-	pop de			;e1b9
+	pop de			;e1b9   ; Aqui DE no recibe nada util: es el puntero al canal pedido, que estorbaba en la pila
 	jr L_E1CB		;e1ba
 arranca_guion:		; Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei`): borra los 46 bytes de su estado en 0xED75+canal*46 y siembra el puntero de ejecucion y el de inicio
-	di			;e1bc
+	di			;e1bc   ; La otra puerta, la que no pregunta: misma cuenta, sin la comprobacion
 	push af			;e1bd
 	push de			;e1be
 	and 07fh		;e1bf
@@ -12305,26 +12305,26 @@ arranca_guion:		; Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei
 	add hl,de			;e1ca
 L_E1CB:
 	push hl			;e1cb
-	xor a			;e1cc
+	xor a			;e1cc   ; Los 46 bytes del estado, a cero
 	ld b,02eh		;e1cd
 L_E1CF:
 	ld (hl),a			;e1cf
 	inc hl			;e1d0
 	djnz L_E1CF		;e1d1
 	pop hl			;e1d3
-	pop de			;e1d4
-	ld (hl),e			;e1d5
+	pop de			;e1d4   ; Y ahora si, el guion que se pidio al entrar
+	ld (hl),e			;e1d5   ; Se siembra DOS veces: el puntero de ejecucion y el de inicio, que es a donde vuelve el guion cuando se repite
 	inc hl			;e1d6
 	ld (hl),d			;e1d7
 	inc hl			;e1d8
 	ld (hl),e			;e1d9
 	inc hl			;e1da
 	ld (hl),d			;e1db
-	ld a,001h		;e1dc
+	ld a,001h		;e1dc   ; La bandera de que hay algo sonando
 	ld (0ee1ah),a		;e1de
 	pop af			;e1e1
 	push af			;e1e2
-	and 07fh		;e1e3
+	and 07fh		;e1e3   ; Y el byte de 0xEE21 del canal, a cero
 	ld hl,0ee21h		;e1e5
 	add a,l			;e1e8
 	ld l,a			;e1e9
@@ -12334,7 +12334,7 @@ L_E1CF:
 	ld (hl),000h		;e1ee
 	pop af			;e1f0
 	or a			;e1f1
-	ret m			;e1f2
+	ret m			;e1f2   ; Con el bit 7 puesto vuelve sin `ei`, que es como se encadenan varios arranques seguidos sin abrir la puerta a una interrupcion por el medio
 	ei			;e1f3
 	ret			;e1f4
 tic_sonido:		; El motor del sonido, que la interrupcion llama cincuenta veces por segundo: recorre los tres canales desde 0xED75, gasta la duracion de (ix+004/005) y, al agotarse, apaga el mezclador y va a por el siguiente comando del guion
@@ -12489,17 +12489,17 @@ L_E31C:
 	ld a,c			;e31c
 	or a			;e31d
 	jr nz,L_E327		;e31e
-	bit 1,(ix+02dh)		;e320
+	bit 1,(ix+02dh)		;e320   ; La bandera 1 del canal pide la segunda envolvente
 	call nz,carga_envolvente_2		;e324
 L_E327:
-	pop bc			;e327
+	pop bc			;e327   ; Los tres punteros a los registros del PSG que el cuadro habia guardado
 	pop de			;e328
 	pop hl			;e329
-	ld a,(ix+009h)		;e32a
+	ld a,(ix+009h)		;e32a   ; El volumen que sale al chip es el de la partitura (ix+009) MAS el ajuste que lleva la envolvente (ix+02A), recortado a los cuatro bits del registro
 	add a,(ix+02ah)		;e32d
 	and 00fh		;e330
 	ld (hl),a			;e332
-	ld a,(ix+00ah)		;e333
+	ld a,(ix+00ah)		;e333   ; Y el periodo igual, pero a doce bits: (ix+00A/00B) mas (ix+02B/02C), con `add` y `adc` porque son dos bytes
 	add a,(ix+02bh)		;e336
 	ld (de),a			;e339
 	inc de			;e33a
@@ -12507,16 +12507,16 @@ L_E327:
 	adc a,(ix+02ch)		;e33e
 	ld (de),a			;e341
 	inc de			;e342
-	push de			;e343
+	push de			;e343   ; Cuarenta y seis bytes mas alla esta el canal siguiente
 	ld de,0002eh		;e344
 	add ix,de		;e347
 	pop de			;e349
 	pop af			;e34a
 	inc a			;e34b
 	inc hl			;e34c
-	dec b			;e34d
+	dec b			;e34d   ; Los tres canales
 	jp nz,L_E203		;e34e
-	ld iy,0edffh		;e351
+	ld iy,0edffh		;e351   ; Y detras empieza otro recorrido de tres, este sobre 0xEDFF
 	ld d,002h		;e355
 	ld c,000h		;e357
 L_E359:
@@ -13152,30 +13152,30 @@ creditos:		; La secuencia de creditos: cinco carteles en el tercio central (bucl
 	ld bc,00800h		;ee7f
 	ld a,0a1h		;ee82
 	call vram_rellena		;ee84
-	ld b,032h		;ee87
+	ld b,032h		;ee87   ; Una pausa antes del primer cartel
 	call retardo		;ee89
-	ld ix,0f1e7h		;ee8c
-	ld b,005h		;ee90
+	ld ix,0f1e7h		;ee8c   ; La tabla de los cinco carteles, dentro del bloque de textos
+	ld b,005h		;ee90   ; Cinco carteles, uno por vuelta
 L_EE92:
 	push bc			;ee92
-	ld hl,00900h		;ee93
+	ld hl,00900h		;ee93   ; Todos salen en el mismo sitio, el tercio central
 	call rotula_secuencia		;ee96
-	ld b,0c8h		;ee99
+	ld b,0c8h		;ee99   ; Dos pausas seguidas, que es lo que el cartel se queda quieto
 	call retardo		;ee9b
 	ld b,0c8h		;ee9e
 	call retardo		;eea0
-	call creditos_transicion		;eea3
+	call creditos_transicion		;eea3   ; Y la transicion que lo despide hacia arriba moviendo la tabla de nombres
 	pop bc			;eea6
 	djnz L_EE92		;eea7
-	ld hl,00a98h		;eea9
+	ld hl,00a98h		;eea9   ; El ultimo rotulo va fuera del bucle, en otra fila
 	call rotula_secuencia		;eeac
-	ld h,d			;eeaf
+	ld h,d			;eeaf   ; Siete bytes que no llegan a ninguna parte: ni HL ni BC los lee arranca_musica
 	ld l,e			;eeb0
 	ld bc,00000h		;eeb1
 	nop			;eeb4
 	nop			;eeb5
-	call arranca_musica		;eeb6
-	call espera_fin_musica		;eeb9
+	call arranca_musica		;eeb6   ; La musica de la presentacion...
+	call espera_fin_musica		;eeb9   ; ...y de aqui no se pasa hasta que se acaba o hasta que se toca una tecla
 	di			;eebc
 	ld a,0a2h		;eebd
 	out (099h),a		;eebf

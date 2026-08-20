@@ -3411,3 +3411,60 @@ C 0xD404 Y detras cierra el sonido: hasta que carga_zona lo reabra no se puede a
 C 0xD407 Con el escudo por debajo de 2 el premio es reponerlo...
 C 0xD40F ...y solo con el escudo entero, una vida
 C 0xD413 Hasta nueve, que es lo que cabe en el indicador de un digito
+#
+# ============================================================================
+# OCTAVA TANDA: COMO SE ABRE Y SE CIERRA UN CANAL DE SONIDO
+# ============================================================================
+#
+# LAS DOS RUTINAS DE ARRANQUE SON LA MISMA CON UNA COMPROBACION DELANTE.
+# arranca_guion (0xE1BC) pisa el canal que le pidan; arranca_guion_libre
+# (0xE18F) mira antes si esta ocupado -sus dos primeros bytes de estado no son
+# cero- y, si lo esta, recorre los tres buscando uno libre. Solo pisa el pedido
+# cuando no queda ninguno. De 0xE1CB en adelante las dos comparten codigo.
+#
+# EL `pop de` DE 0xE1B9 NO LEE NADA: LIMPIA LA PILA. Cuando el recorrido
+# encuentra un canal libre, el puntero al canal PEDIDO sigue en la pila y hay
+# que quitarlo de en medio; DE es donde cae, y se pierde sin que importe,
+# porque cuatro instrucciones despues el `pop de` de 0xE1D4 recupera el guion
+# de verdad, que se empujo al entrar.
+C 0xE186 Cerrar el sonido es meter un `ret` en la cabecera de las dos rutinas de arranque: lo que ya suena sigue, pero no entra nada nuevo
+C 0xE18F Con las interrupciones apagadas, que el interprete corre en el gancho de reloj
+C 0xE192 El bit 7 de A no es canal: es "vuelve sin `ei`"
+C 0xE194 46 bytes de estado por canal
+C 0xE19F Los dos primeros bytes del estado son el puntero de ejecucion: a cero, el canal esta libre
+C 0xE1A2 Libre, se usa el que han pedido
+C 0xE1A4 Ocupado: se recorren los tres desde el primero
+C 0xE1B0 El primero que este libre se lleva el guion
+C 0xE1B6 Ninguno libre -o el pedido lo estaba-: se usa el pedido, y si sonaba algo se pisa
+C 0xE1B9 Aqui DE no recibe nada util: es el puntero al canal pedido, que estorbaba en la pila
+C 0xE1BC La otra puerta, la que no pregunta: misma cuenta, sin la comprobacion
+C 0xE1CC Los 46 bytes del estado, a cero
+C 0xE1D4 Y ahora si, el guion que se pidio al entrar
+C 0xE1D5 Se siembra DOS veces: el puntero de ejecucion y el de inicio, que es a donde vuelve el guion cuando se repite
+C 0xE1DC La bandera de que hay algo sonando
+C 0xE1E3 Y el byte de 0xEE21 del canal, a cero
+C 0xE1F2 Con el bit 7 puesto vuelve sin `ei`, que es como se encadenan varios arranques seguidos sin abrir la puerta a una interrupcion por el medio
+#
+# LOS SIETE BYTES QUE NO HACEN NADA DE 0xEEAF. Entre el ultimo rotulo de los
+# creditos y la musica hay `ld h,d / ld l,e`, un `ld bc,00000h` y dos `nop`.
+# arranca_musica no lee HL ni BC -instala los tres canales de golpe con
+# direcciones fijas-, asi que ni el copiado ni el cero llegan a ninguna parte.
+# Dos `nop` seguidos ahi en medio tienen toda la pinta de ser algo quitado a
+# mano, aunque de que era no queda rastro.
+C 0xEE87 Una pausa antes del primer cartel
+C 0xEE8C La tabla de los cinco carteles, dentro del bloque de textos
+C 0xEE90 Cinco carteles, uno por vuelta
+C 0xEE93 Todos salen en el mismo sitio, el tercio central
+C 0xEE99 Dos pausas seguidas, que es lo que el cartel se queda quieto
+C 0xEEA3 Y la transicion que lo despide hacia arriba moviendo la tabla de nombres
+C 0xEEA9 El ultimo rotulo va fuera del bucle, en otra fila
+C 0xEEAF Siete bytes que no llegan a ninguna parte: ni HL ni BC los lee arranca_musica
+C 0xEEB6 La musica de la presentacion...
+C 0xEEB9 ...y de aqui no se pasa hasta que se acaba o hasta que se toca una tecla
+C 0xE320 La bandera 1 del canal pide la segunda envolvente
+C 0xE327 Los tres punteros a los registros del PSG que el cuadro habia guardado
+C 0xE32A El volumen que sale al chip es el de la partitura (ix+009) MAS el ajuste que lleva la envolvente (ix+02A), recortado a los cuatro bits del registro
+C 0xE333 Y el periodo igual, pero a doce bits: (ix+00A/00B) mas (ix+02B/02C), con `add` y `adc` porque son dos bytes
+C 0xE343 Cuarenta y seis bytes mas alla esta el canal siguiente
+C 0xE34D Los tres canales
+C 0xE351 Y detras empieza otro recorrido de tres, este sobre 0xEDFF
