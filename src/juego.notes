@@ -148,7 +148,8 @@ D 0xC9A4 0xC9AC tabla_rumbo_a_mascara De rumbo a mascara, las OCHO direcciones e
 F 0xC9A4 1
 D 0xC9AC 0xC9BC tabla_mascara_a_rumbo La vuelta: de mascara a rumbo, indexada por los cuatro bits (16 B). La lee rumbo_a_mascara2 (0xC7D3). Las mascaras que se contradicen NO son un descuido: el eje que se anula se cae y queda el otro -0x07 (arriba+abajo+derecha) da 2, que es derecha, y 0x0E (arriba+derecha+izquierda) da 0, que es arriba-, y solo las cuatro en las que no sobrevive nada -0x00, 0x03, 0x0C y 0x0F- valen 0xFF
 F 0xC9AC 1
-D 0xC9BC 0xCA5F variables_y_area_de_trabajo Variables y area de trabajo (163 B)
+D 0xC9BC 0xCA84 formaciones_de_instalaciones Las OCHO formaciones de instalaciones (200 B): ocho rejillas de 5x5, 25 bytes cada una, que es lo que lee el constructor de 0xD5AA con el `ld de,0c9bch` de 0xD5EB sobre indice*25. Un byte por celda, con los mismos valores que pinta_rejilla dibuja: 0 vacio, 1 y 2 decorado, y de 3 en adelante instalacion -6 torreta, 0x0A nido, el resto quieta-. Cierran al byte: 8 x 25 = 200, o sea 0xC9BC-0xCA83, y en 0xCA84 empieza la fuente del escritor de pantalla
+F 0xC9BC 5
 D 0xCA96 0xCB7A tabla_CA96 Tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
 # 0xDA72-0xDAC4 ESTUVO AQUI como tres rangos de datos -16 B de "tabla", 1 B
 # suelto y 86 B "sin clasificar"- y son 83 bytes de CODIGO seguido. Se retiran y
@@ -228,7 +229,17 @@ F 0xA560 2
 #
 # Esto no los identifica. Lo que hace es cerrar una via con un motivo, en vez de
 # dejarla como "sin probar".
-D 0xCA5F 0xCA84 datos_muertos_CA5F Datos muertos: residuo de la grabacion (37 B). Tienen estructura -valores pequenos, 0 a 10, con pinta de variables- pero NADIE los toca: sin referencias directas ni punteros en el binario, y medido con watchpoints de lectura Y escritura sobre la partida COMPLETA de 38 minutos (las siete zonas y la multicarga) mas 350 s de otra partida: cero disparos (tools/omsx_f972.tcl con STARDUST_INI/FIN_R, dump/ca5f y dump/ca5f_araubi). Que fueron antes de morir no se sabe
+# Los 37 bytes de 0xCA5F figuraron como DATOS MUERTOS -"residuo de la
+# grabacion"- y no lo son: son la cola de la tabla de formaciones, o sea los
+# doce ultimos bytes de la formacion 6 y la formacion 7 entera (12 + 25 = 37,
+# la cifra exacta que se publico). La medida que los dio por muertos era buena
+# -watchpoints de lectura y escritura sobre la partida completa de 38 minutos
+# mas 350 s de otra, cero disparos (tools/omsx_f972.tcl, dump/ca5f y
+# dump/ca5f_araubi)- pero la conclusion no: esas dos formaciones son las mas
+# cargadas de las ocho -miradas al byte, la 6 lleva tres nidos y la 7 cuatro-
+# y SOLO pueden salir de la zona 4 en adelante, porque las zonas 1, 2 y 3
+# echan a suertes entre las dos, las cuatro y las seis primeras (0xD5BE,
+# 0xD5C6 y el `cp 006h / jr nc` de 0xD5D3). En 38 minutos no salio ninguna.
 D 0xCA84 0xCA96 variables_del_juego Variables del juego (18 B), con nombre: 0xCA84-0xCA8B la fuente de 8 bytes del escritor de pantalla 0xC6E9 (patrones 00/FF/55/AA, cargada en 0xC6DC); 0xCA8C/8D variables del subsistema de 0xD6xx (los tiles especiales); 0xCA8E variable del arranque (0xBE2C); 0xCA8F/90 el PUNTERO-SEMILLA del generador de azar (ld hl,(0ca8fh) en 0xC840, dentro del RNG L_C83F, el gemelo del 0xAD28 de a pie); 0xCA91/92 variables de estado (0xCA92 la incrementa el alta de objetos en 0xC0F5); 0xCA93-0xCA95 el arranque de la fuente del rotulador 0xC5A8 (cargada en 0xC55B)
 D 0xDCB1 0xDCBF tabla_de_teclas Tabla de teclas: 7 entradas de (mascara, valor de puerto)
 F 0xDCB1 2
@@ -3226,3 +3237,64 @@ C 0xDF7E La posicion del tiro contra la de la nave, primero las filas...
 C 0xDF95 ...y luego las columnas, con las mismas cajas de 4 y 0x0A
 C 0xDF9F Se tocan: dos puntos de escudo de una vez
 C 0xDFA2 Y el propio tiro estalla, que es escribirle un 0x7C en el byte que mientras volaba era su velocidad
+#
+# ============================================================================
+# QUINTA TANDA: EL CONSTRUCTOR DE LA TANDA DE INSTALACIONES
+# ============================================================================
+#
+# LOS "DATOS MUERTOS" DE 0xCA5F ERAN LAS DOS FORMACIONES MAS DIFICILES. El
+# constructor de 0xD5AA echa a suertes UNA de ocho formaciones y la lee de
+# 0xC9BC + indice*25 (0xD5DE-0xD5EE): 25 bytes son la rejilla de 5x5 que luego
+# pinta pinta_rejilla, tres bytes de ancho y 24 filas de alto por celda. Ocho
+# por veinticinco son doscientos, o sea 0xC9BC-0xCA83, y en 0xCA84 empieza la
+# fuente del escritor: cierra al byte. Y los 200 bytes solo toman los valores
+# 0, 1, 2, 3, 4, 5, 6 y 10, que son exactamente los que el constructor y
+# pinta_rejilla saben tratar.
+#
+# La medida que dio esos 37 bytes por muertos estaba bien hecha; lo que fallaba
+# era la conclusion. De cuantas formaciones se echa a suertes depende de la
+# zona:
+#
+#     zona 1    azar and 1        formaciones 0 y 1
+#     zona 2    azar and 3        de la 0 a la 3
+#     zona 3    azar and 7, repitiendo si sale 6 o mas   de la 0 a la 5
+#     zona 4+   azar and 7        las ocho
+#
+# asi que la 6 y la 7 -las dos que caen en esos 37 bytes- no pueden salir hasta
+# la zona 4. Y son las mas cargadas de todas: la 6 lleva tres nidos y la 7
+# cuatro, contra el unico de la formacion 0.
+#
+# EL SEIS SE DECIDE EN EL ULTIMO MOMENTO. Una celda que valga 6 en la tabla no
+# es siempre una torreta: 0xD61F echa a suertes entre 6 y 10, o sea entre
+# torreta y nido, cada vez que se monta la tanda. Las demas van tal cual.
+C 0xD5AA La zona manda cuantas formaciones entran en el sorteo
+C 0xD5B6 De la zona 4 en adelante, las ocho
+C 0xD5BE La zona 1 solo juega con las dos primeras...
+C 0xD5C6 ...la 2 con las cuatro primeras...
+C 0xD5CE ...y la 3 con las seis primeras, repitiendo la tirada si sale 6 o 7
+C 0xD5D8 El indice tambien elige el aviso del HUD: 0x96 + indice va a dibuja_sprite_vram, que se queda el bit 0 para elegir mitad de entrada y el resto como numero de sprite, o sea las dos mitades de los sprites 0x4B a 0x4E, una por formacion
+C 0xD5DE Por 25, que son las celdas de una rejilla de 5x5: por 8, por 16, mas 8 y mas uno
+C 0xD5EB La tabla de las ocho formaciones
+C 0xD5F0 La fila de entrada de la tanda, los ocho bits bajos del contador de nueve
+C 0xD5F5 Velocidad 3, la mas rapida, mientras la tanda entra por arriba
+C 0xD5FC El noveno bit del contador encendido y una columna al azar de 0 a 7 en los bits bajos: 0xCA8C lleva las dos cosas
+C 0xD607 La cuenta de instalaciones, a cero
+C 0xD60B IY recorre las entradas de ocho bytes de las instalaciones, IX las 25 celdas de la rejilla
+C 0xD613 Cinco filas de celdas...
+C 0xD616 ...y cinco columnas
+C 0xD618 Cada fila arranca en la misma columna, la que salio al azar
+C 0xD61A El byte de la formacion
+C 0xD61B El 6 no se decide en la tabla sino aqui: a suertes entre torreta (6) y nido (10)
+C 0xD626 El valor va a la celda de la rejilla, que es lo que pinta_rejilla dibujara
+C 0xD629 Por debajo de 3 es decorado y no monta instalacion
+C 0xD62D La entrada de la instalacion: el valor, y la posicion de la celda
+C 0xD636 El 6 es torreta...
+C 0xD640 ...el 10 nido, y cualquier otro una instalacion quieta
+C 0xD64A La rutina que la gobierna, en (iy+003/004)
+C 0xD650 Y el puntero a su celda de la rejilla, que es como se borra al morir
+C 0xD659 A la entrada siguiente, ocho bytes mas alla
+C 0xD65E Una instalacion mas en la cuenta
+C 0xD665 Tres bytes a la derecha, el ancho de una celda
+C 0xD668 Y la celda siguiente de la rejilla y de la formacion
+C 0xD66E 24 filas abajo, el alto de una celda
+C 0xD675 Montada la tanda entera, su aviso sonoro en el canal 0

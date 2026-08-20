@@ -9558,33 +9558,54 @@ DATA_tabla_mascara_a_rumbo:
 	defb 0ffh	; c9bb
 
 ; ----------------------------------------------------------------------
-; DATOS variables_y_area_de_trabajo: Variables y area de trabajo (163 B)
-;   0xc9bc..0xca5f  (163 bytes)
-DATA_variables_y_area_de_trabajo:
-	defb 000h,000h,00ah,000h,000h,000h,000h,001h,000h,000h,003h,002h,005h,002h,006h,000h	; c9bc  ................
-	defb 000h,001h,000h,000h,000h,000h,006h,000h,000h,006h,002h,005h,002h,006h,000h,000h	; c9cc  ................
-	defb 001h,000h,000h,000h,000h,004h,000h,000h,000h,000h,001h,000h,000h,000h,000h,006h	; c9dc  ................
-	defb 000h,000h,000h,005h,002h,002h,00ah,000h,001h,000h,000h,001h,000h,001h,000h,000h	; c9ec  ................
-	defb 001h,000h,006h,002h,002h,006h,000h,000h,000h,000h,000h,004h,000h,000h,000h,005h	; c9fc  ................
-	defb 001h,000h,000h,000h,001h,00ah,000h,000h,000h,00ah,001h,000h,000h,000h,001h,006h	; ca0c  ................
-	defb 002h,006h,002h,006h,000h,000h,00ah,000h,000h,000h,000h,001h,000h,000h,003h,000h	; ca1c  ................
-	defb 005h,000h,00ah,001h,000h,001h,000h,001h,006h,002h,006h,002h,006h,006h,002h,00ah	; ca2c  ................
-	defb 002h,006h,000h,000h,001h,000h,000h,000h,000h,005h,000h,000h,000h,000h,001h,000h	; ca3c  ................
-	defb 000h,006h,002h,006h,002h,006h,00ah,000h,00ah,000h,00ah,001h,000h,001h,000h,001h	; ca4c  ................
-	defb 005h,002h,006h	; ca5c
-
-; ----------------------------------------------------------------------
-; DATOS datos_muertos_CA5F: Datos muertos: residuo de la grabacion (37 B).
-;   Tienen estructura -valores pequenos, 0 a 10, con pinta de variables- pero
-;   NADIE los toca: sin referencias directas ni punteros en el binario, y
-;   medido con watchpoints de lectura Y escritura sobre la partida COMPLETA de
-;   38 minutos (las siete zonas y la multicarga) mas 350 s de otra partida:
-;   cero disparos (tools/omsx_f972.tcl con STARDUST_INI/FIN_R, dump/ca5f y
-;   dump/ca5f_araubi). Que fueron antes de morir no se sabe
-;   0xca5f..0xca84  (37 bytes)
-DATA_datos_muertos_CA5F:
-	defb 002h,004h,001h,000h,000h,000h,001h,006h,000h,000h,000h,006h,00ah,002h,006h,002h	; ca5f  ................
-	defb 00ah,001h,000h,000h,000h,001h,00ah,000h,005h,000h,00ah,001h,000h,001h,000h,001h	; ca6f  ................
+; DATOS formaciones_de_instalaciones: Las OCHO formaciones de instalaciones
+;   (200 B): ocho rejillas de 5x5, 25 bytes cada una, que es lo que lee el
+;   constructor de 0xD5AA con el `ld de,0c9bch` de 0xD5EB sobre indice*25. Un
+;   byte por celda, con los mismos valores que pinta_rejilla dibuja: 0 vacio,
+;   1 y 2 decorado, y de 3 en adelante instalacion -6 torreta, 0x0A nido, el
+;   resto quieta-. Cierran al byte: 8 x 25 = 200, o sea 0xC9BC-0xCA83, y en
+;   0xCA84 empieza la fuente del escritor de pantalla
+;   0xc9bc..0xca84  (200 bytes)
+DATA_formaciones_de_instalaciones:
+	defb 000h,000h,00ah,000h,000h	; c9bc
+	defb 000h,000h,001h,000h,000h	; c9c1
+	defb 003h,002h,005h,002h,006h	; c9c6
+	defb 000h,000h,001h,000h,000h	; c9cb
+	defb 000h,000h,006h,000h,000h	; c9d0
+	defb 006h,002h,005h,002h,006h	; c9d5
+	defb 000h,000h,001h,000h,000h	; c9da
+	defb 000h,000h,004h,000h,000h	; c9df
+	defb 000h,000h,001h,000h,000h	; c9e4
+	defb 000h,000h,006h,000h,000h	; c9e9
+	defb 000h,005h,002h,002h,00ah	; c9ee
+	defb 000h,001h,000h,000h,001h	; c9f3
+	defb 000h,001h,000h,000h,001h	; c9f8
+	defb 000h,006h,002h,002h,006h	; c9fd
+	defb 000h,000h,000h,000h,000h	; ca02
+	defb 004h,000h,000h,000h,005h	; ca07
+	defb 001h,000h,000h,000h,001h	; ca0c
+	defb 00ah,000h,000h,000h,00ah	; ca11
+	defb 001h,000h,000h,000h,001h	; ca16
+	defb 006h,002h,006h,002h,006h	; ca1b
+	defb 000h,000h,00ah,000h,000h	; ca20
+	defb 000h,000h,001h,000h,000h	; ca25
+	defb 003h,000h,005h,000h,00ah	; ca2a
+	defb 001h,000h,001h,000h,001h	; ca2f
+	defb 006h,002h,006h,002h,006h	; ca34
+	defb 006h,002h,00ah,002h,006h	; ca39
+	defb 000h,000h,001h,000h,000h	; ca3e
+	defb 000h,000h,005h,000h,000h	; ca43
+	defb 000h,000h,001h,000h,000h	; ca48
+	defb 006h,002h,006h,002h,006h	; ca4d
+	defb 00ah,000h,00ah,000h,00ah	; ca52
+	defb 001h,000h,001h,000h,001h	; ca57
+	defb 005h,002h,006h,002h,004h	; ca5c
+	defb 001h,000h,000h,000h,001h	; ca61
+	defb 006h,000h,000h,000h,006h	; ca66
+	defb 00ah,002h,006h,002h,00ah	; ca6b
+	defb 001h,000h,000h,000h,001h	; ca70
+	defb 00ah,000h,005h,000h,00ah	; ca75
+	defb 001h,000h,001h,000h,001h	; ca7a
 	defb 006h,002h,003h,002h,006h	; ca7f
 
 ; ----------------------------------------------------------------------
@@ -11088,35 +11109,35 @@ L_D591:
 	ld (0c090h),hl		;d5a4
 	jp hud_reset		;d5a7
 L_D5AA:
-	ld a,(0e157h)		;d5aa
+	ld a,(0e157h)		;d5aa   ; La zona manda cuantas formaciones entran en el sorteo
 	dec a			;d5ad
 	jr z,L_D5BE		;d5ae
 	dec a			;d5b0
 	jr z,L_D5C6		;d5b1
 	dec a			;d5b3
 	jr z,L_D5CE		;d5b4
-	call azar		;d5b6
+	call azar		;d5b6   ; De la zona 4 en adelante, las ocho
 	and 007h		;d5b9
 	jp L_D5D7		;d5bb
 L_D5BE:
-	call azar		;d5be
+	call azar		;d5be   ; La zona 1 solo juega con las dos primeras...
 	and 001h		;d5c1
 	jp L_D5D7		;d5c3
 L_D5C6:
-	call azar		;d5c6
+	call azar		;d5c6   ; ...la 2 con las cuatro primeras...
 	and 003h		;d5c9
 	jp L_D5D7		;d5cb
 L_D5CE:
-	call azar		;d5ce
+	call azar		;d5ce   ; ...y la 3 con las seis primeras, repitiendo la tirada si sale 6 o 7
 	and 007h		;d5d1
 	cp 006h		;d5d3
 	jr nc,L_D5CE		;d5d5
 L_D5D7:
 	push af			;d5d7
-	add a,096h		;d5d8
+	add a,096h		;d5d8   ; El indice tambien elige el aviso del HUD: 0x96 + indice va a dibuja_sprite_vram, que se queda el bit 0 para elegir mitad de entrada y el resto como numero de sprite, o sea las dos mitades de los sprites 0x4B a 0x4E, una por formacion
 	call dibuja_sprite_vram		;d5da
 	pop af			;d5dd
-	ld h,000h		;d5de
+	ld h,000h		;d5de   ; Por 25, que son las celdas de una rejilla de 5x5: por 8, por 16, mas 8 y mas uno
 	ld l,a			;d5e0
 	ld d,h			;d5e1
 	ld e,l			;d5e2
@@ -11128,78 +11149,78 @@ L_D5D7:
 	add hl,hl			;d5e8
 	add hl,bc			;d5e9
 	add hl,de			;d5ea
-	ld de,0c9bch		;d5eb
+	ld de,0c9bch		;d5eb   ; La tabla de las ocho formaciones
 	add hl,de			;d5ee
 	ex de,hl			;d5ef
-	ld a,0a8h		;d5f0
+	ld a,0a8h		;d5f0   ; La fila de entrada de la tanda, los ocho bits bajos del contador de nueve
 	ld (0ca8dh),a		;d5f2
-	ld a,003h		;d5f5
+	ld a,003h		;d5f5   ; Velocidad 3, la mas rapida, mientras la tanda entra por arriba
 	ld (0ca91h),a		;d5f7
 	ld h,000h		;d5fa
-	call azar		;d5fc
+	call azar		;d5fc   ; El noveno bit del contador encendido y una columna al azar de 0 a 7 en los bits bajos: 0xCA8C lleva las dos cosas
 	and 007h		;d5ff
 	or 080h		;d601
 	ld (0ca8ch),a		;d603
 	ld c,a			;d606
-	xor a			;d607
+	xor a			;d607   ; La cuenta de instalaciones, a cero
 	ld (0c8d7h),a		;d608
-	ld iy,0c8d8h		;d60b
+	ld iy,0c8d8h		;d60b   ; IY recorre las entradas de ocho bytes de las instalaciones, IX las 25 celdas de la rejilla
 	ld ix,0c920h		;d60f
-	ld b,005h		;d613
+	ld b,005h		;d613   ; Cinco filas de celdas...
 L_D615:
 	push bc			;d615
-	ld b,005h		;d616
-	ld l,c			;d618
+	ld b,005h		;d616   ; ...y cinco columnas
+	ld l,c			;d618   ; Cada fila arranca en la misma columna, la que salio al azar
 L_D619:
 	push bc			;d619
-	ld a,(de)			;d61a
-	cp 006h		;d61b
+	ld a,(de)			;d61a   ; El byte de la formacion
+	cp 006h		;d61b   ; El 6 no se decide en la tabla sino aqui: a suertes entre torreta (6) y nido (10)
 	jr nz,L_D626		;d61d
 	call azar		;d61f
 	and 004h		;d622
 	add a,006h		;d624
 L_D626:
-	ld (ix+000h),a		;d626
-	cp 003h		;d629
+	ld (ix+000h),a		;d626   ; El valor va a la celda de la rejilla, que es lo que pinta_rejilla dibujara
+	cp 003h		;d629   ; Por debajo de 3 es decorado y no monta instalacion
 	jr c,L_D665		;d62b
-	ld (iy+002h),a		;d62d
+	ld (iy+002h),a		;d62d   ; La entrada de la instalacion: el valor, y la posicion de la celda
 	ld (iy+001h),h		;d630
 	ld (iy+000h),l		;d633
-	cp 006h		;d636
+	cp 006h		;d636   ; El 6 es torreta...
 	jr nz,L_D640		;d638
 	ld bc,inst_torreta		;d63a
 	jp L_D64A		;d63d
 L_D640:
-	cp 00ah		;d640
+	cp 00ah		;d640   ; ...el 10 nido, y cualquier otro una instalacion quieta
 	ld bc,inst_quieta		;d642
 	jr nz,L_D64A		;d645
 	ld bc,inst_nido		;d647
 L_D64A:
-	ld (iy+003h),c		;d64a
+	ld (iy+003h),c		;d64a   ; La rutina que la gobierna, en (iy+003/004)
 	ld (iy+004h),b		;d64d
-	push ix		;d650
+	push ix		;d650   ; Y el puntero a su celda de la rejilla, que es como se borra al morir
 	pop bc			;d652
 	ld (iy+005h),c		;d653
 	ld (iy+006h),b		;d656
-	ld bc,00008h		;d659
+	ld bc,00008h		;d659   ; A la entrada siguiente, ocho bytes mas alla
 	add iy,bc		;d65c
-	ld a,(0c8d7h)		;d65e
+	ld a,(0c8d7h)		;d65e   ; Una instalacion mas en la cuenta
 	inc a			;d661
 	ld (0c8d7h),a		;d662
 L_D665:
-	inc l			;d665
+	inc l			;d665   ; Tres bytes a la derecha, el ancho de una celda
 	inc l			;d666
 	inc l			;d667
-	inc ix		;d668
+	inc ix		;d668   ; Y la celda siguiente de la rejilla y de la formacion
 	inc de			;d66a
 	pop bc			;d66b
 	djnz L_D619		;d66c
-	ld a,018h		;d66e
+	ld a,018h		;d66e   ; 24 filas abajo, el alto de una celda
 	add a,h			;d670
 	ld h,a			;d671
 	pop bc			;d672
 	djnz L_D615		;d673
-	xor a			;d675
+	xor a			;d675   ; Montada la tanda entera, su aviso sonoro en el canal 0
 	ld de,0ea73h		;d676
 	jp arranca_guion_libre		;d679
 recorre_instalaciones:		; Recorre las instalaciones de la zona (contador 0xC8D7, tabla 0xC8D8, entradas de 8 B): a cada una le suma el scroll de 0xCA8D en (ix+007), y si no se ha salido por abajo (0xC0) le llama a su rutina de gobierno con `jp (hl)`, empujando antes la vuelta
