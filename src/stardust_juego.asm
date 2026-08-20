@@ -8983,62 +8983,62 @@ baja_tile_especial:		; Da de baja una entrada de la tabla de tiles especiales: r
 	pop ix		;c69c
 	ret			;c69e
 pinta_rejilla:		; Estampa en el buffer las 25 celdas de la rejilla de 0xC920, tres bytes por 24 filas cada una, con tres dibujos segun el valor: el 1 alterna dos bytes, el 2 saca ocho filas de la fuente de 0xCA84 y del 3 en adelante lee 0x69A8 + (celda-3)*72, que es la tabla de los centinelas. No la llama nadie: se entra por el `jp` de 0xD8A0
-	ld a,h			;c69f
+	ld a,h			;c69f   ; Quita el sesgo de 0x20 con que se llevan las filas
 	sub 020h		;c6a0
 	ld h,a			;c6a2
-	ld a,000h		;c6a3
+	ld a,000h		;c6a3   ; D entra en 0x00 o en 0xFF -el `sbc a,a` de 0xD896-, o sea 0 o -1; sumarle el prestamo es restar 0x20 a la fila de nueve bits entera, y vale porque la cuenta va modulo 512 filas
 	adc a,d			;c6a5
 	ld d,a			;c6a6
-	call buffer_dir		;c6a7
-	ld a,d			;c6aa
+	call buffer_dir		;c6a7   ; La direccion en el buffer, con la fila recortada a ocho bits
+	ld a,d			;c6aa   ; Si el noveno bit no ha sobrevivido, esa direccion ya vale
 	and a			;c6ab
 	jr z,L_C6B2		;c6ac
-	ld a,h			;c6ae
+	ld a,h			;c6ae   ; Y si ha sobrevivido, 0x1800 arriba: 256 filas de 24 bytes, que en el anillo de 0x3000 es tanto subirlas como bajarlas
 	add a,018h		;c6af
 	ld h,a			;c6b1
 L_C6B2:
-	exx			;c6b2
-	ld a,06fh		;c6b3
+	exx			;c6b2   ; De aqui en adelante el destino se queda en un juego de registros y los dos contadores en el otro
+	ld a,06fh		;c6b3   ; El tope del anillo aparcado en A', y dentro de la rutina no lo lee nadie
 	ex af,af'			;c6b5
-	ld c,005h		;c6b6
+	ld c,005h		;c6b6   ; Cinco filas de celdas...
 L_C6B8:
-	ld b,005h		;c6b8
+	ld b,005h		;c6b8   ; ...y cinco columnas en cada una
 L_C6BA:
-	ld a,(ix+000h)		;c6ba
+	ld a,(ix+000h)		;c6ba   ; El valor de la celda, que es a la vez el dibujo y el estado de lo que hay en ella
 	inc ix		;c6bd
 	and a			;c6bf
 	exx			;c6c0
-	jp z,L_C705		;c6c1
-	cp 003h		;c6c4
-	jp nc,L_C754		;c6c6
-	dec a			;c6c9
-	jp z,L_C724		;c6ca
-	push hl			;c6cd
-	ld de,000c0h		;c6ce
+	jp z,L_C705		;c6c1   ; La celda 0 esta vacia: ni se pinta ni se borra
+	cp 003h		;c6c4   ; De 3 en adelante es un centinela de la tabla de 0x69A8
+	jp nc,celda_centinela		;c6c6
+	dec a			;c6c9   ; La celda 1 es la tira de dos bytes...
+	jp z,celda_uno		;c6ca
+	push hl			;c6cd   ; ...y la 2, la que cae por aqui, ocho filas de la fuente de 0xCA84
+	ld de,000c0h		;c6ce   ; 0xC0 son ocho filas de 24: el dibujo de la celda 2 no empieza arriba del todo, sino a un tercio de la celda
 	add hl,de			;c6d1
-	ld a,06fh		;c6d2
+	ld a,06fh		;c6d2   ; El tope del anillo, la primera de las seis veces
 	cp h			;c6d4
 	jr nc,L_C6D9		;c6d5
 	ld h,040h		;c6d7
 L_C6D9:
-	ld bc,00816h		;c6d9
-	ld de,0ca84h		;c6dc
+	ld bc,00816h		;c6d9   ; Ocho filas, y 0x16 = 22 para completar el paso de fila con los dos `inc hl` que quedan
+	ld de,0ca84h		;c6dc   ; La fuente de la celda 2, en 0xCA84: los cuatro patrones 00/FF/55/AA
 L_C6DF:
-	ld a,04fh		;c6df
+	ld a,04fh		;c6df   ; Solo se pinta lo que cae dentro del buffer; de 0x5000 arriba es anillo y ahi no hay pantalla
 	cp h			;c6e1
 	jr nc,L_C6E8		;c6e2
-	inc hl			;c6e4
+	inc hl			;c6e4   ; Fuera del buffer no se pinta pero HL avanza lo mismo, y por eso los dos `inc hl` estan en los dos caminos
 	inc hl			;c6e5
 	jr L_C6EE		;c6e6
 L_C6E8:
-	ld a,(de)			;c6e8
+	ld a,(de)			;c6e8   ; El mismo byte en las tres columnas de la celda
 	ld (hl),a			;c6e9
 	inc hl			;c6ea
 	ld (hl),a			;c6eb
 	inc hl			;c6ec
 	ld (hl),a			;c6ed
 L_C6EE:
-	ld a,l			;c6ee
+	ld a,l			;c6ee   ; El paso de fila, sumado a ocho bits para no pagar el `add hl,de`
 	add a,c			;c6ef
 	ld l,a			;c6f0
 	jp nc,L_C701		;c6f1
@@ -9051,19 +9051,19 @@ L_C6EE:
 	jr nc,L_C701		;c6fd
 	ld h,040h		;c6ff
 L_C701:
-	inc de			;c701
+	inc de			;c701   ; La fila siguiente de la fuente
 	djnz L_C6DF		;c702
 	pop hl			;c704
 L_C705:
-	inc hl			;c705
+	inc hl			;c705   ; Tres bytes a la derecha: la celda de al lado
 	inc hl			;c706
 	inc hl			;c707
 	exx			;c708
-	djnz L_C6BA		;c709
+	djnz L_C6BA		;c709   ; Las cinco columnas
 	exx			;c70b
-	ld de,00231h		;c70c
+	ld de,00231h		;c70c   ; 0x231 son las 24 filas de la celda -0x240- menos los quince bytes que ya han adelantado las cinco columnas
 	add hl,de			;c70f
-	ld a,050h		;c710
+	ld a,050h		;c710   ; Y el tope del anillo otra vez, ahora entre fila y fila de celdas
 	cp h			;c712
 	jr nc,L_C71E		;c713
 	ld a,06fh		;c715
@@ -9074,19 +9074,19 @@ L_C705:
 	ld h,a			;c71d
 L_C71E:
 	exx			;c71e
-	dec c			;c71f
+	dec c			;c71f   ; Las cinco filas
 	jp nz,L_C6B8		;c720
 	ret			;c723
-L_C724:
+celda_uno:		; El dibujo de la celda 1: una tira de UN byte de ancho -el del medio de los tres- y 24 filas de alto, alternando 0x4E y 0x56
 	push hl			;c724
-	inc hl			;c725
+	inc hl			;c725   ; El byte del medio de los tres, que deja la tira centrada en la celda
 	ld de,00018h		;c726
-	ld bc,00c56h		;c729
+	ld bc,00c56h		;c729   ; Doce vueltas de dos filas, que son las 24 de la celda; C es el byte de las filas pares
 L_C72C:
-	ld a,04fh		;c72c
+	ld a,04fh		;c72c   ; Fuera del buffer no se pinta
 	cp h			;c72e
 	jr c,L_C733		;c72f
-	ld (hl),04eh		;c731
+	ld (hl),04eh		;c731   ; Fila impar: 0x4E
 L_C733:
 	add hl,de			;c733
 	ld a,050h		;c734
@@ -9097,7 +9097,7 @@ L_C733:
 	jr nc,L_C741		;c73c
 	ld h,040h		;c73e
 L_C740:
-	ld (hl),c			;c740
+	ld (hl),c			;c740   ; Fila par: 0x56
 L_C741:
 	add hl,de			;c741
 	ld a,050h		;c742
@@ -9110,16 +9110,16 @@ L_C741:
 L_C74E:
 	djnz L_C72C		;c74e
 	pop hl			;c750
-	jp L_C705		;c751
-L_C754:
+	jp L_C705		;c751   ; Y a la celda de al lado por el camino comun
+celda_centinela:		; Las celdas de 3 en adelante: los 72 bytes de 0x69A8 + (celda-3)*72 copiados con `ldi`, que son las 24 filas de 3 de un centinela
 	push hl			;c754
 	push hl			;c755
-	sub 003h		;c756
+	sub 003h		;c756   ; El indice dentro de la tabla de los centinelas
 	ld h,000h		;c758
 	ld l,a			;c75a
 	ld d,h			;c75b
 	ld e,l			;c75c
-	add hl,hl			;c75d
+	add hl,hl			;c75d   ; Por 3, por 9 y tres veces por 2: 72, los bytes que ocupa un centinela
 	add hl,de			;c75e
 	ld d,h			;c75f
 	ld e,l			;c760
@@ -9131,12 +9131,12 @@ L_C754:
 	ld de,069a8h		;c766
 	add hl,de			;c769
 	pop de			;c76a
-	ld bc,018ffh		;c76b
+	ld bc,018ffh		;c76b   ; B son las 24 filas; C entra en 0xFF para que los `ldi` -que bajan BC entero- no lleguen a robarle una vuelta al `djnz`, que 72 restas no le hacen mella
 L_C76E:
-	ld a,d			;c76e
+	ld a,d			;c76e   ; Solo se copia dentro del buffer
 	cp 04fh		;c76f
 	jr c,L_C77A		;c771
-	inc hl			;c773
+	inc hl			;c773   ; Fuera se salta la fila pero la fuente avanza igual, y el paso va entero porque aqui los `ldi` no han adelantado nada
 	inc hl			;c774
 	inc hl			;c775
 	ld a,018h		;c776
@@ -9145,18 +9145,18 @@ L_C77A:
 	ldi		;c77a   ; El decorado que se pinta DESPUES de los sprites (los pilares del pozo 0x69F0-0x6BE7): por esto la nave pasa por detras de los pilares
 	ldi		;c77c
 	ldi		;c77e
-	ld a,015h		;c780
+	ld a,015h		;c780   ; 0x15 son 21, porque los tres `ldi` ya han adelantado 3 de las 24
 L_C782:
-	add a,e			;c782
+	add a,e			;c782   ; El paso de fila del destino, tambien a ocho bits
 	ld e,a			;c783
 	jr nc,L_C78E		;c784
 	inc d			;c786
-	ld a,06fh		;c787
+	ld a,06fh		;c787   ; El tope del anillo, la ultima de las seis veces
 	cp d			;c789
 	jr nc,L_C78E		;c78a
 	ld d,040h		;c78c
 L_C78E:
-	djnz L_C76E		;c78e
+	djnz L_C76E		;c78e   ; Las 24 filas del centinela
 	pop hl			;c790
 	jp L_C705		;c791
 gira_rumbo:		; Acerca el rumbo actual (bits 0-2) al pedido (bits 5-7) un octavo por vez y por el lado corto, con los bits 3-4 haciendo de espera para que el giro no sea instantaneo
@@ -9247,40 +9247,40 @@ rumbo_suma_ejes:		; Suma el paso a la posicion, cada eje por su lado y a ocho bi
 	add a,e			;c800
 	ld l,a			;c801
 	ret			;c802
-rumbo_hacia:		; La mascara de rumbo de (B,C) hacia (D,E): bit 1 arriba y bit 2 abajo, bit 3 izquierda y bit 4 derecha, y cada componente solo cuenta si dos veces y media ella misma llega a la otra
-	ld a,b			;c803
+rumbo_hacia:		; La mascara de rumbo de (B,C) -el que persigue- hacia (D,E) -el objetivo-, con la fila en B y D y la columna en C y E. Reparto de bits el mismo del mando y de poda_rumbo_nave: bit 0 bajar, bit 1 subir, bit 2 a la derecha y bit 3 a la izquierda. Cada componente solo cuenta si dos veces y media ella misma llega a la otra, o sea que la diagonal se coge con cualquier proporcion entre 1:2,5 y 2,5:1. Nunca vuelve a cero: si una componente no llega, la otra pasa seguro. Vuelve en A y en C
+	ld a,b			;c803   ; La fila del que persigue contra la del objetivo
 	sub d			;c804
 	jr c,L_C80C		;c805
-	ld h,002h		;c807
+	ld h,002h		;c807   ; El objetivo esta mas arriba: el bit 1, subir
 	jp L_C810		;c809
 L_C80C:
-	ld h,001h		;c80c
+	ld h,001h		;c80c   ; Y aqui mas abajo: el bit 0, bajar, y la diferencia cambiada de signo
 	neg		;c80e
 L_C810:
-	ld d,a			;c810
-	ld a,c			;c811
+	ld d,a			;c810   ; D se queda con la diferencia de filas en valor absoluto
+	ld a,c			;c811   ; Y ahora la columna
 	sub e			;c812
 	jr c,L_C81A		;c813
-	ld l,008h		;c815
+	ld l,008h		;c815   ; El objetivo esta a la izquierda: el bit 3
 	jp L_C81E		;c817
 L_C81A:
-	ld l,004h		;c81a
+	ld l,004h		;c81a   ; Y aqui a la derecha: el bit 2
 	neg		;c81c
 L_C81E:
-	ld e,a			;c81e
-	ld b,a			;c81f
+	ld e,a			;c81e   ; E, la diferencia de columnas en valor absoluto
+	ld b,a			;c81f   ; Dos veces y media esa diferencia, en tres pasos: la mitad aparte, el doble, y una suma
 	srl b		;c820
 	add a,a			;c822
-	jr c,L_C82D		;c823
+	jr c,L_C82D		;c823   ; Si el doble ya no cabe en ocho bits, la lateral es enorme al lado de la otra y cuenta seguro
 	add a,b			;c825
 	jr c,L_C82D		;c826
-	cp d			;c828
-	ld c,000h		;c829
+	cp d			;c828   ; Contra la diferencia de filas: la componente lateral solo entra en la mascara si dos veces y media ella misma llega a la vertical
+	ld c,000h		;c829   ; Si no llega, la mascara se queda sin bit de columna...
 	jr c,L_C82E		;c82b
 L_C82D:
-	ld c,l			;c82d
+	ld c,l			;c82d   ; ...y si llega, entra el que toque
 L_C82E:
-	ld a,d			;c82e
+	ld a,d			;c82e   ; Lo mismo con la vertical, y esta vez contra la diferencia de columnas
 	ld b,a			;c82f
 	srl b		;c830
 	add a,a			;c832
@@ -9289,10 +9289,10 @@ L_C82E:
 	jr c,L_C83B		;c836
 	cp e			;c838
 	ld a,c			;c839
-	ret c			;c83a
+	ret c			;c83a   ; No llega: vuelve con la columna sola, un rumbo horizontal puro
 L_C83B:
 	ld a,c			;c83b
-	or h			;c83c
+	or h			;c83c   ; Llegan las dos y sale una diagonal. Nunca puede salir cero: si una componente no llega, la otra pasa seguro
 	ld c,a			;c83d
 	ret			;c83e
 azar:		; El generador de azar: identico al de la segunda parte (lee la ROM del BIOS como tabla de entropia), semilla en 0xCA8F sembrada con ld a,r en el arranque
@@ -9351,41 +9351,41 @@ borra_buffer_vuelta:		; Una vuelta son veinticuatro push, o sea dos filas del bu
 	ei			;c880   ; Las interrupciones se encienden aunque estuvieran apagadas al entrar
 	ret			;c881
 alta_bandada:		; Mete un objeto en la tabla de 0xC97B (contador 0xC97A, tope 4, entradas de 5 B) con rumbo inicial 0x14 y el A' de entrada como RETARDO en (ix+004): si es cero suena 0xEB42 al nacer. El OTRO valor que el juego pasa, 0x1B desde tile_32, no llega a sonar nunca: el sonido de mueve_bandada (0xC24B) pide que un dec deje el retardo en cero justo, y de 0x0F para abajo baja de tres en tres -15, 12, 9, 6, 3, 0- sin pasar por el 1. Vuelve con carry si ha entrado
-	ld hl,0c97ah		;c882
+	ld hl,0c97ah		;c882   ; El contador de la tabla
 	ld a,(hl)			;c885
-	cp 004h		;c886
+	cp 004h		;c886   ; Cuatro a la vez como mucho
 	ret nc			;c888
-	inc (hl)			;c889
-	ld h,000h		;c88a
+	inc (hl)			;c889   ; Sube el contador, y el valor viejo es el hueco que toca
+	ld h,000h		;c88a   ; El indice, a HL
 	ld l,a			;c88c
 	ld d,h			;c88d
 	ld e,l			;c88e
-	add hl,hl			;c88f
+	add hl,hl			;c88f   ; Por cuatro y una vez mas: entradas de cinco bytes
 	add hl,hl			;c890
 	add hl,de			;c891
-	ld de,0c97bh		;c892
+	ld de,0c97bh		;c892   ; La base de la tabla, que empieza justo detras del contador
 	add hl,de			;c895
-	ld (hl),c			;c896
+	ld (hl),c			;c896   ; Columna y fila
 	inc hl			;c897
 	ld (hl),b			;c898
 	inc hl			;c899
-	ld (hl),014h		;c89a
+	ld (hl),014h		;c89a   ; El rumbo de nacimiento: 0x14 son el rumbo 4 -bajar- con el contador de giro de gira_rumbo ya en 0x10
 	inc hl			;c89c
-	ld (hl),000h		;c89d
+	ld (hl),000h		;c89d   ; El contador de cuadros a cero, que es lo que (ix+003) significa mientras el enemigo esta vivo
 	inc hl			;c89f
-	ex af,af'			;c8a0
+	ex af,af'			;c8a0   ; Y el retardo de entrada, que viene en A'
 	ld (hl),a			;c8a1
-	and a			;c8a2
-	scf			;c8a3
+	and a			;c8a2   ; Si nace a cero, la entrada suena ya
+	scf			;c8a3   ; El `scf` esta antes del `ret nz` a proposito: el que entra vuelve con carry por los dos caminos
 	ret nz			;c8a4
-	ld de,0eb42h		;c8a5
+	ld de,0eb42h		;c8a5   ; El mismo guion que suena cuando mueve_bandada agota un retardo
 	call arranca_guion_libre		;c8a8
 	scf			;c8ab
 	ret			;c8ac
 alta_disparo:		; Mete un disparo en la tabla de 0xC999 (contador en 0xC998, entradas de 5 B) si no hay ya dos en el aire, y arranca el sonido 0xEA81 en el canal 1. Vuelve con carry si ha salido
-	ld hl,0c998h		;c8ad
+	ld hl,0c998h		;c8ad   ; El contador
 	ld a,(hl)			;c8b0
-	cp 002h		;c8b1
+	cp 002h		;c8b1   ; Dos disparos en el aire como mucho
 	ret nc			;c8b3
 	inc (hl)			;c8b4
 	ld h,000h		;c8b5
@@ -9395,22 +9395,22 @@ alta_disparo:		; Mete un disparo en la tabla de 0xC999 (contador en 0xC998, entr
 	add hl,hl			;c8ba
 	add hl,hl			;c8bb
 	add hl,de			;c8bc
-	ld de,0c999h		;c8bd
+	ld de,0c999h		;c8bd   ; La base, detras del contador
 	add hl,de			;c8c0
-	ld (hl),000h		;c8c1
+	ld (hl),000h		;c8c1   ; Los cinco bytes: primero un cero y el A' de entrada, que el que la mueve (0xDF0F) recoge en C y en B...
 	inc hl			;c8c3
 	ex af,af'			;c8c4
 	ld (hl),a			;c8c5
 	inc hl			;c8c6
-	ld (hl),c			;c8c7
+	ld (hl),c			;c8c7   ; ...luego la columna y la fila, que son las que recoge en DE...
 	inc hl			;c8c8
 	ld (hl),b			;c8c9
 	inc hl			;c8ca
-	ld (hl),000h		;c8cb
-	ld a,001h		;c8cd
+	ld (hl),000h		;c8cb   ; ...y un quinto a cero, el que 0xDF48 compara contra 0xB4
+	ld a,001h		;c8cd   ; Canal 1
 	ld de,0ea81h		;c8cf
 	call arranca_guion_libre		;c8d2
-	scf			;c8d5
+	scf			;c8d5   ; Y vuelve con carry, que ha salido
 	ret			;c8d6
 
 ; ----------------------------------------------------------------------
@@ -9508,23 +9508,70 @@ DATA_tabla_que_compacta_DFB1:
 	defb 0ffh,0ffh,0ffh,0ffh,0ffh	; c99e
 
 ; ----------------------------------------------------------------------
-; DATOS variables_y_area_de_trabajo: Variables y area de trabajo (188 B); en
-;   0xC9A3 el fotograma de la nave en los cinco bits bajos y su rumbo en los
-;   tres altos
-;   0xc9a3..0xca5f  (188 bytes)
+; DATOS fotograma_y_rumbo_de_la_nave: El fotograma de la nave en los cinco
+;   bits bajos y su rumbo en los tres altos (1 B): lo lleva actualiza_nave
+;   0xc9a3..0xc9a4  (1 bytes)
+DATA_fotograma_y_rumbo_de_la_nave:
+	defb 000h	; c9a3
+
+; ----------------------------------------------------------------------
+; DATOS tabla_rumbo_a_mascara: De rumbo a mascara, las OCHO direcciones en el
+;   sentido de las agujas del reloj empezando por arriba (8 B): 0 arriba
+;   (0x02), 1 arriba-derecha (0x06), 2 derecha (0x04), 3 abajo-derecha (0x05),
+;   4 abajo (0x01), 5 abajo-izquierda (0x09), 6 izquierda (0x08) y 7
+;   arriba-izquierda (0x0A). La lee rumbo_a_mascara (0xC7CD)
+;   0xc9a4..0xc9ac  (8 bytes)
+DATA_tabla_rumbo_a_mascara:
+	defb 002h	; c9a4
+	defb 006h	; c9a5
+	defb 004h	; c9a6
+	defb 005h	; c9a7
+	defb 001h	; c9a8
+	defb 009h	; c9a9
+	defb 008h	; c9aa
+	defb 00ah	; c9ab
+
+; ----------------------------------------------------------------------
+; DATOS tabla_mascara_a_rumbo: La vuelta: de mascara a rumbo, indexada por los
+;   cuatro bits (16 B). La lee rumbo_a_mascara2 (0xC7D3). Las mascaras que se
+;   contradicen NO son un descuido: el eje que se anula se cae y queda el otro
+;   -0x07 (arriba+abajo+derecha) da 2, que es derecha, y 0x0E
+;   (arriba+derecha+izquierda) da 0, que es arriba-, y solo las cuatro en las
+;   que no sobrevive nada -0x00, 0x03, 0x0C y 0x0F- valen 0xFF
+;   0xc9ac..0xc9bc  (16 bytes)
+DATA_tabla_mascara_a_rumbo:
+	defb 0ffh	; c9ac
+	defb 004h	; c9ad
+	defb 000h	; c9ae
+	defb 0ffh	; c9af
+	defb 002h	; c9b0
+	defb 003h	; c9b1
+	defb 001h	; c9b2
+	defb 002h	; c9b3
+	defb 006h	; c9b4
+	defb 005h	; c9b5
+	defb 007h	; c9b6
+	defb 006h	; c9b7
+	defb 0ffh	; c9b8
+	defb 004h	; c9b9
+	defb 000h	; c9ba
+	defb 0ffh	; c9bb
+
+; ----------------------------------------------------------------------
+; DATOS variables_y_area_de_trabajo: Variables y area de trabajo (163 B)
+;   0xc9bc..0xca5f  (163 bytes)
 DATA_variables_y_area_de_trabajo:
-	defb 000h,002h,006h,004h,005h,001h,009h,008h,00ah,0ffh,004h,000h,0ffh,002h,003h,001h	; c9a3  ................
-	defb 002h,006h,005h,007h,006h,0ffh,004h,000h,0ffh,000h,000h,00ah,000h,000h,000h,000h	; c9b3  ................
-	defb 001h,000h,000h,003h,002h,005h,002h,006h,000h,000h,001h,000h,000h,000h,000h,006h	; c9c3  ................
-	defb 000h,000h,006h,002h,005h,002h,006h,000h,000h,001h,000h,000h,000h,000h,004h,000h	; c9d3  ................
-	defb 000h,000h,000h,001h,000h,000h,000h,000h,006h,000h,000h,000h,005h,002h,002h,00ah	; c9e3  ................
-	defb 000h,001h,000h,000h,001h,000h,001h,000h,000h,001h,000h,006h,002h,002h,006h,000h	; c9f3  ................
-	defb 000h,000h,000h,000h,004h,000h,000h,000h,005h,001h,000h,000h,000h,001h,00ah,000h	; ca03  ................
-	defb 000h,000h,00ah,001h,000h,000h,000h,001h,006h,002h,006h,002h,006h,000h,000h,00ah	; ca13  ................
-	defb 000h,000h,000h,000h,001h,000h,000h,003h,000h,005h,000h,00ah,001h,000h,001h,000h	; ca23  ................
-	defb 001h,006h,002h,006h,002h,006h,006h,002h,00ah,002h,006h,000h,000h,001h,000h,000h	; ca33  ................
-	defb 000h,000h,005h,000h,000h,000h,000h,001h,000h,000h,006h,002h,006h,002h,006h,00ah	; ca43  ................
-	defb 000h,00ah,000h,00ah,001h,000h,001h,000h,001h,005h,002h,006h	; ca53  ............
+	defb 000h,000h,00ah,000h,000h,000h,000h,001h,000h,000h,003h,002h,005h,002h,006h,000h	; c9bc  ................
+	defb 000h,001h,000h,000h,000h,000h,006h,000h,000h,006h,002h,005h,002h,006h,000h,000h	; c9cc  ................
+	defb 001h,000h,000h,000h,000h,004h,000h,000h,000h,000h,001h,000h,000h,000h,000h,006h	; c9dc  ................
+	defb 000h,000h,000h,005h,002h,002h,00ah,000h,001h,000h,000h,001h,000h,001h,000h,000h	; c9ec  ................
+	defb 001h,000h,006h,002h,002h,006h,000h,000h,000h,000h,000h,004h,000h,000h,000h,005h	; c9fc  ................
+	defb 001h,000h,000h,000h,001h,00ah,000h,000h,000h,00ah,001h,000h,000h,000h,001h,006h	; ca0c  ................
+	defb 002h,006h,002h,006h,000h,000h,00ah,000h,000h,000h,000h,001h,000h,000h,003h,000h	; ca1c  ................
+	defb 005h,000h,00ah,001h,000h,001h,000h,001h,006h,002h,006h,002h,006h,006h,002h,00ah	; ca2c  ................
+	defb 002h,006h,000h,000h,001h,000h,000h,000h,000h,005h,000h,000h,000h,000h,001h,000h	; ca3c  ................
+	defb 000h,006h,002h,006h,002h,006h,00ah,000h,00ah,000h,00ah,001h,000h,001h,000h,001h	; ca4c  ................
+	defb 005h,002h,006h	; ca5c
 
 ; ----------------------------------------------------------------------
 ; DATOS datos_muertos_CA5F: Datos muertos: residuo de la grabacion (37 B).
@@ -9730,58 +9777,58 @@ L_CC63:
 	ldir		;cc7e
 	jp L_CC52		;cc80
 alta_enemigo:		; Intenta meter un objeto en la tabla de 0xC939 (tope 6): solo lo hace si el azar supera (7 - zona)*16, que es como sube la dificultad, y suena 0xEA44 al nacer
-	ld hl,0c939h		;cc83
-	ld a,(0e157h)		;cc86
+	ld hl,0c939h		;cc83   ; El contador de los tiros enemigos
+	ld a,(0e157h)		;cc86   ; La zona, de 1 a 7
 	ld e,a			;cc89
-	ld a,007h		;cc8a
+	ld a,007h		;cc8a   ; (7 - zona) por 16: el liston baja de 96 en la zona 1 a CERO en la 7, donde ya pasa siempre, y por eso salen mas enemigos segun avanza la partida
 	sub e			;cc8c
 	add a,a			;cc8d
 	add a,a			;cc8e
 	add a,a			;cc8f
 	add a,a			;cc90
 	ld e,a			;cc91
-	call azar		;cc92
+	call azar		;cc92   ; La tirada
 	cp e			;cc95
-	ccf			;cc96
+	ccf			;cc96   ; El `ccf` hace dos cosas de una vez: da la vuelta a la comparacion -se sigue cuando la tirada LLEGA al liston- y deja el acarreo a cero en el `ret`, que es el "no ha entrado" que espera el llamador
 	ret nc			;cc97
-	ld e,006h		;cc98
-	exx			;cc9a
-	ld h,001h		;cc9b
+	ld e,006h		;cc98   ; Seis a la vez como mucho
+	exx			;cc9a   ; Del `exx` de aqui al de 0xCCAE no hay ninguno mas: el puntero al contador y el tope se quedan en un juego de registros y el canal, el guion y la posicion en el otro
+	ld h,001h		;cc9b   ; Canal 1 para los tiros enemigos...
 	ld de,0ea44h		;cc9d
 	jp alta_en_tabla		;cca0
 alta_objeto_c952:		; Mete un objeto en la tabla de 0xC952 (tope 9) con el sonido 0xEA38, sin tirada de azar previa
 	ld hl,0c952h		;cca3
 	ld e,009h		;cca6
 	exx			;cca8
-	ld h,002h		;cca9
+	ld h,002h		;cca9   ; ...y canal 2 para los del jugador
 	ld de,0ea38h		;ccab
 alta_en_tabla:		; El alta comun a las tres tablas: si el contador no ha llegado al tope, lo incrementa, arranca el sonido DE en el canal H y escribe C, B y A' en la entrada indice*4. Vuelve con carry si ha entrado
-	exx			;ccae
+	exx			;ccae   ; Vuelve al juego de registros donde estan el contador y el tope
 	ld a,(hl)			;ccaf
 	cp e			;ccb0
-	ret nc			;ccb1
+	ret nc			;ccb1   ; Llena: vuelve sin carry, y en el mismo juego de registros con el que la llamaron
 	exx			;ccb2
-	push af			;ccb3
+	push af			;ccb3   ; El contador es el indice del hueco y arranca_guion_libre se come A, asi que se guarda
 	ld a,h			;ccb4
 	call arranca_guion_libre		;ccb5
 	pop af			;ccb8
 	exx			;ccb9
 	inc (hl)			;ccba
-	ld e,l			;ccbb
+	ld e,l			;ccbb   ; La tabla empieza justo detras del contador
 	ld d,h			;ccbc
 	inc de			;ccbd
 	ld h,000h		;ccbe
 	ld l,a			;ccc0
-	add hl,hl			;ccc1
+	add hl,hl			;ccc1   ; Por cuatro: entradas de cuatro bytes...
 	add hl,hl			;ccc2
 	add hl,de			;ccc3
-	ld (hl),c			;ccc4
+	ld (hl),c			;ccc4   ; ...de las que aqui solo se escriben tres, la columna, la fila...
 	inc hl			;ccc5
 	ld (hl),b			;ccc6
 	inc hl			;ccc7
-	ex af,af'			;ccc8
+	ex af,af'			;ccc8   ; ...y el rumbo, que viene en A'. El cuarto se queda como estaba
 	ld (hl),a			;ccc9
-	scf			;ccca
+	scf			;ccca   ; Con carry: ha entrado
 	ret			;cccb
 persigue_a_cuadros:		; Lo mismo con reja de cuadros y saturacion a mas menos cuatro: corrige siempre en el cuadro 0 de cada 4 y la mitad de las veces en el 2. Al rebotar en 0xB0 rehace el movimiento entero desde la posicion guardada, no solo la columna
 	ld (0d3cdh),hl		;cccc
@@ -10406,29 +10453,29 @@ recorta_fila:		; La otra mitad del recorte, la de la fila
 	ld a,(0c185h)		;d13f   ; Y se repone la que habia
 	ld h,a			;d142
 	ret			;d143
-borde_pantalla:		; Poda el rumbo en los bordes laterales: con X < 3 quita el bit de izquierda y con X >= 174 el de derecha, sobre el A alternativo
-	ex af,af'			;d144
-	ld a,(ix+000h)		;d145
-	add a,010h		;d148
-	cp 013h		;d14a
+borde_pantalla:		; Poda el rumbo en los bordes laterales: con la columna por debajo de 3 quita el bit 3 -la izquierda- y con 174 o mas el bit 2 -la derecha-. El rumbo entra y sale por el A principal, igual que en poda_rumbo_nave; A' solo lo guarda mientras el principal mira la columna
+	ex af,af'			;d144   ; El rumbo se aparca en A' mientras el principal mira la columna, igual que en poda_rumbo_nave
+	ld a,(ix+000h)		;d145   ; La columna guardada del objeto
+	add a,010h		;d148   ; Sumarle 0x10 antes de comparar hace que las columnas de 0xF0 en adelante -las que se han salido por la izquierda- caigan tambien del lado izquierdo
+	cp 013h		;d14a   ; Columna por debajo de 3
 	jr nc,L_D152		;d14c
 	ex af,af'			;d14e
-	and 0f7h		;d14f
+	and 0f7h		;d14f   ; Se apaga el bit 3, la izquierda
 	ret			;d151
 L_D152:
-	cp 0beh		;d152
+	cp 0beh		;d152   ; Columna 174 o mas
 	jr c,L_D15A		;d154
 	ex af,af'			;d156
-	and 0fbh		;d157
+	and 0fbh		;d157   ; Se apaga el bit 2, la derecha
 	ret			;d159
 L_D15A:
-	ex af,af'			;d15a
+	ex af,af'			;d15a   ; Ni un borde ni el otro: el rumbo vuelve intacto
 	ret			;d15b
 recorta_x_objeto:		; Deshace el paso lateral del objeto de IX si se ha salido: con L >= 0xB1 repone L desde (ix+000h). Identica byte a byte a la de la fase de a pie
-	ld a,l			;d15c
+	ld a,l			;d15c   ; El paso lateral ya dado; el area llega hasta 0xB0
 	cp 0b1h		;d15d
 	ret c			;d15f
-	ld l,(ix+000h)		;d160
+	ld l,(ix+000h)		;d160   ; Si se ha salido, se repone la columna que habia a la entrada, y el objeto se queda pegado al borde
 	ret			;d163
 arranca_estela:		; Si queda barra (0xD3C1) y la puerta de (iy+000)|(iy+005) esta a cero, gasta un punto, repinta la barra y lanza la estela de 0xD3BD desde la posicion de la nave, con vida 3 y paso 0x03C0 o 0x003C segun la columna. La llama dispara al terminar
 	ld iy,0d3bdh		;d164

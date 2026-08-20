@@ -143,7 +143,12 @@ D 0xC98F 0xC998 tabla_de_alta_objeto_C990 La tabla de alta_objeto_c990 (9 B): co
 F 0xC98F 1,4
 D 0xC998 0xC9A3 tabla_que_compacta_DFB1 La tabla que compacta 0xDFB1 (11 B): contador y dos entradas de 5 bytes
 F 0xC998 1,5
-D 0xC9A3 0xCA5F variables_y_area_de_trabajo Variables y area de trabajo (188 B); en 0xC9A3 el fotograma de la nave en los cinco bits bajos y su rumbo en los tres altos
+D 0xC9A3 0xC9A4 fotograma_y_rumbo_de_la_nave El fotograma de la nave en los cinco bits bajos y su rumbo en los tres altos (1 B): lo lleva actualiza_nave
+D 0xC9A4 0xC9AC tabla_rumbo_a_mascara De rumbo a mascara, las OCHO direcciones en el sentido de las agujas del reloj empezando por arriba (8 B): 0 arriba (0x02), 1 arriba-derecha (0x06), 2 derecha (0x04), 3 abajo-derecha (0x05), 4 abajo (0x01), 5 abajo-izquierda (0x09), 6 izquierda (0x08) y 7 arriba-izquierda (0x0A). La lee rumbo_a_mascara (0xC7CD)
+F 0xC9A4 1
+D 0xC9AC 0xC9BC tabla_mascara_a_rumbo La vuelta: de mascara a rumbo, indexada por los cuatro bits (16 B). La lee rumbo_a_mascara2 (0xC7D3). Las mascaras que se contradicen NO son un descuido: el eje que se anula se cae y queda el otro -0x07 (arriba+abajo+derecha) da 2, que es derecha, y 0x0E (arriba+derecha+izquierda) da 0, que es arriba-, y solo las cuatro en las que no sobrevive nada -0x00, 0x03, 0x0C y 0x0F- valen 0xFF
+F 0xC9AC 1
+D 0xC9BC 0xCA5F variables_y_area_de_trabajo Variables y area de trabajo (163 B)
 D 0xCA96 0xCB7A tabla_CA96 Tabla (228 B; racha 14.03, entropia 1.41, 17 valores: pocos valores para ser un dibujo)
 # 0xDA72-0xDAC4 ESTUVO AQUI como tres rangos de datos -16 B de "tabla", 1 B
 # suelto y 86 B "sin clasificar"- y son 83 bytes de CODIGO seguido. Se retiran y
@@ -1476,7 +1481,7 @@ L 0xD0A5 choca_con_nave2 El otro contacto con la nave, con la caja pequena: sola
 # si la otra diferencia no la aplasta, y el umbral es DOS VECES Y MEDIA, hecho
 # a mano con `ld b,a / srl b / add a,a / add a,b` (a*2 + a/2). Por eso los
 # enemigos no van en escalera: prefieren las diagonales limpias.
-L 0xC803 rumbo_hacia La mascara de rumbo de (B,C) hacia (D,E): bit 1 arriba y bit 2 abajo, bit 3 izquierda y bit 4 derecha, y cada componente solo cuenta si dos veces y media ella misma llega a la otra
+L 0xC803 rumbo_hacia La mascara de rumbo de (B,C) -el que persigue- hacia (D,E) -el objetivo-, con la fila en B y D y la columna en C y E. Reparto de bits el mismo del mando y de poda_rumbo_nave: bit 0 bajar, bit 1 subir, bit 2 a la derecha y bit 3 a la izquierda. Cada componente solo cuenta si dos veces y media ella misma llega a la otra, o sea que la diagonal se coge con cualquier proporcion entre 1:2,5 y 2,5:1. Nunca vuelve a cero: si una componente no llega, la otra pasa seguro. Vuelve en A y en C
 L 0xF114 vram_pon_dir_lee Fija la direccion de LECTURA del VDP por el puerto 0x99, sin el bit 0x40: es la gemela de vram_pon_dir
 
 # ============================================================================
@@ -1655,7 +1660,7 @@ L 0xE529 mezclador_canal Enciende o apaga el tono y el ruido del canal 0xEE19 en
 # principio, porque su gemela supuesta pinta desde el mapa de la fase de a pie
 # y esta trabaja sobre la tabla de 0xCB03. El buscador propone; lo que decide
 # es leerlas.
-L 0xD144 borde_pantalla Poda el rumbo en los bordes laterales: con X < 3 quita el bit de izquierda y con X >= 174 el de derecha, sobre el A alternativo
+L 0xD144 borde_pantalla Poda el rumbo en los bordes laterales: con la columna por debajo de 3 quita el bit 3 -la izquierda- y con 174 o mas el bit 2 -la derecha-. El rumbo entra y sale por el A principal, igual que en poda_rumbo_nave; A' solo lo guarda mientras el principal mira la columna
 L 0xD49B rotula_glifo Estampa el glifo 0x5F00 + A*8 en el buffer a doble altura y con tramado en damero -borra con rlca/cpl/and y pinta con and 0x55/0xAA-, recortando al llegar a 0x4F00
 
 # ============================================================================
@@ -2942,3 +2947,168 @@ L 0xD12E poda_rumbo_sale
 L 0xD139 recorta_fila La otra mitad del recorte, la de la fila
 L 0xE105 dispara_apunta_gatillo
 L 0xE148 dispara_remata La estela y la vuelta, por donde pasan tanto el disparo suelto como los cuatro
+#
+# ============================================================================
+# TERCERA TANDA DE COMENTARIO DE LINEA: LA REJILLA, EL RUMBO Y LAS ALTAS
+# ============================================================================
+#
+# Tramo comentado: pinta_rejilla entera (0xC69F-0xC793), rumbo_hacia
+# (0xC803-0xC83E), alta_bandada y alta_disparo (0xC882-0xC8D6), alta_enemigo
+# con alta_objeto_c952 y el alta comun (0xCC83-0xCCCB) y las dos podas de
+# objeto (0xD144-0xD163).
+#
+# LA REJILLA SE DIBUJA EN UN ANILLO DE 512 FILAS, NO EN EL BUFFER. La fila que
+# le pasa avanza_instalaciones es de NUEVE bits: los ocho bajos en H y el
+# noveno en D, que llega hecho 0x00 o 0xFF por el `sbc a,a` de 0xD896. Como
+# buffer_dir solo sabe de ocho bits, 0xC6AE le suma 0x1800 -256 filas de 24
+# bytes- cuando ese noveno bit ha sobrevivido al `sub 020h`. Y sale bien porque
+# TODA la cuenta va modulo 512 filas: 512 x 24 = 0x3000 bytes, o sea que el
+# espacio de direcciones va de 0x4000 a 0x6FFF y 0x1800 es justo la mitad, su
+# propio negativo ahi dentro. Sumar 0x1800 sirve igual para subir 256 filas que
+# para bajarlas, y por eso el `adc a,d` de 0xC6A3 puede SUMAR el prestamo donde
+# la resta de 16 bits pediria restarlo.
+#
+# De ese anillo solo hay pantalla en el primer octavo. Las tres comprobaciones
+# que se repiten seis veces son siempre la misma:
+#
+#     H <= 0x50          dentro del buffer          -> pinta
+#     0x50 < H <= 0x6F   por encima del buffer      -> no pinta, pero avanza
+#     H >= 0x70          acaba de cruzar el tope    -> H - 0x30 y pinta
+#
+# o sea que una celda que empieza por encima del borde de arriba se pinta a
+# medias, y la mitad que entra aparece pegada a 0x4000. El 0x6F que 0xC6B3
+# guarda en A' es ese mismo tope, y dentro de la rutina no lo lee nadie: las
+# seis comprobaciones se lo cargan a pelo con `ld a,06fh`.
+#
+# Y LOS DOS CONTADORES VIVEN EN EL OTRO JUEGO DE REGISTROS. El destino se queda
+# en HL de un juego y las cinco filas y las cinco columnas en BC del otro, con
+# un `exx` a cada entrada y salida del bucle (0xC6B2, 0xC6C0, 0xC708, 0xC70B,
+# 0xC71E). Es lo que deja HL libre para recorrer el buffer sin guardar nada.
+C 0xC69F Quita el sesgo de 0x20 con que se llevan las filas
+C 0xC6A3 D entra en 0x00 o en 0xFF -el `sbc a,a` de 0xD896-, o sea 0 o -1; sumarle el prestamo es restar 0x20 a la fila de nueve bits entera, y vale porque la cuenta va modulo 512 filas
+C 0xC6A7 La direccion en el buffer, con la fila recortada a ocho bits
+C 0xC6AA Si el noveno bit no ha sobrevivido, esa direccion ya vale
+C 0xC6AE Y si ha sobrevivido, 0x1800 arriba: 256 filas de 24 bytes, que en el anillo de 0x3000 es tanto subirlas como bajarlas
+C 0xC6B2 De aqui en adelante el destino se queda en un juego de registros y los dos contadores en el otro
+C 0xC6B3 El tope del anillo aparcado en A', y dentro de la rutina no lo lee nadie
+C 0xC6B6 Cinco filas de celdas...
+C 0xC6B8 ...y cinco columnas en cada una
+C 0xC6BA El valor de la celda, que es a la vez el dibujo y el estado de lo que hay en ella
+C 0xC6C1 La celda 0 esta vacia: ni se pinta ni se borra
+C 0xC6C4 De 3 en adelante es un centinela de la tabla de 0x69A8
+C 0xC6C9 La celda 1 es la tira de dos bytes...
+C 0xC6CD ...y la 2, la que cae por aqui, ocho filas de la fuente de 0xCA84
+C 0xC6CE 0xC0 son ocho filas de 24: el dibujo de la celda 2 no empieza arriba del todo, sino a un tercio de la celda
+C 0xC6D2 El tope del anillo, la primera de las seis veces
+C 0xC6D9 Ocho filas, y 0x16 = 22 para completar el paso de fila con los dos `inc hl` que quedan
+C 0xC6DC La fuente de la celda 2, en 0xCA84: los cuatro patrones 00/FF/55/AA
+C 0xC6DF Solo se pinta lo que cae dentro del buffer; de 0x5000 arriba es anillo y ahi no hay pantalla
+C 0xC6E4 Fuera del buffer no se pinta pero HL avanza lo mismo, y por eso los dos `inc hl` estan en los dos caminos
+C 0xC6E8 El mismo byte en las tres columnas de la celda
+C 0xC6EE El paso de fila, sumado a ocho bits para no pagar el `add hl,de`
+C 0xC701 La fila siguiente de la fuente
+C 0xC705 Tres bytes a la derecha: la celda de al lado
+C 0xC709 Las cinco columnas
+C 0xC70C 0x231 son las 24 filas de la celda -0x240- menos los quince bytes que ya han adelantado las cinco columnas
+C 0xC710 Y el tope del anillo otra vez, ahora entre fila y fila de celdas
+C 0xC71F Las cinco filas
+L 0xC724 celda_uno El dibujo de la celda 1: una tira de UN byte de ancho -el del medio de los tres- y 24 filas de alto, alternando 0x4E y 0x56
+C 0xC725 El byte del medio de los tres, que deja la tira centrada en la celda
+C 0xC729 Doce vueltas de dos filas, que son las 24 de la celda; C es el byte de las filas pares
+C 0xC72C Fuera del buffer no se pinta
+C 0xC731 Fila impar: 0x4E
+C 0xC740 Fila par: 0x56
+C 0xC751 Y a la celda de al lado por el camino comun
+L 0xC754 celda_centinela Las celdas de 3 en adelante: los 72 bytes de 0x69A8 + (celda-3)*72 copiados con `ldi`, que son las 24 filas de 3 de un centinela
+C 0xC756 El indice dentro de la tabla de los centinelas
+C 0xC75D Por 3, por 9 y tres veces por 2: 72, los bytes que ocupa un centinela
+C 0xC76B B son las 24 filas; C entra en 0xFF para que los `ldi` -que bajan BC entero- no lleguen a robarle una vuelta al `djnz`, que 72 restas no le hacen mella
+C 0xC76E Solo se copia dentro del buffer
+C 0xC773 Fuera se salta la fila pero la fuente avanza igual, y el paso va entero porque aqui los `ldi` no han adelantado nada
+C 0xC780 0x15 son 21, porque los tres `ldi` ya han adelantado 3 de las 24
+C 0xC782 El paso de fila del destino, tambien a ocho bits
+C 0xC787 El tope del anillo, la ultima de las seis veces
+C 0xC78E Las 24 filas del centinela
+#
+# COMO SE APUNTA A LA NAVE, Y POR QUE HAY DOS TABLAS. rumbo_hacia devuelve una
+# MASCARA de cuatro bits -la misma que da el mando-, y las dos rutinas de
+# 0xC7CD y 0xC7D3 son las dos traducciones entre esa mascara y el rumbo de 0 a
+# 7 que se guarda en los objetos:
+#
+#     0xC9A4  rumbo -> mascara   8 entradas    la usa aplica_rumbo
+#     0xC9AC  mascara -> rumbo  16 entradas    la usan los que apuntan
+#
+# y las dos casan: rumbo 0 es arriba (0x02) y de ahi en el sentido de las
+# agujas del reloj hasta el 7, arriba-izquierda (0x0A). Ese es tambien el orden
+# de los sprites, que van de ocho en ocho.
+C 0xC803 La fila del que persigue contra la del objetivo
+C 0xC807 El objetivo esta mas arriba: el bit 1, subir
+C 0xC80C Y aqui mas abajo: el bit 0, bajar, y la diferencia cambiada de signo
+C 0xC810 D se queda con la diferencia de filas en valor absoluto
+C 0xC811 Y ahora la columna
+C 0xC815 El objetivo esta a la izquierda: el bit 3
+C 0xC81A Y aqui a la derecha: el bit 2
+C 0xC81E E, la diferencia de columnas en valor absoluto
+C 0xC81F Dos veces y media esa diferencia, en tres pasos: la mitad aparte, el doble, y una suma
+C 0xC823 Si el doble ya no cabe en ocho bits, la lateral es enorme al lado de la otra y cuenta seguro
+C 0xC828 Contra la diferencia de filas: la componente lateral solo entra en la mascara si dos veces y media ella misma llega a la vertical
+C 0xC829 Si no llega, la mascara se queda sin bit de columna...
+C 0xC82D ...y si llega, entra el que toque
+C 0xC82E Lo mismo con la vertical, y esta vez contra la diferencia de columnas
+C 0xC83A No llega: vuelve con la columna sola, un rumbo horizontal puro
+C 0xC83C Llegan las dos y sale una diagonal. Nunca puede salir cero: si una componente no llega, la otra pasa seguro
+#
+# LAS TRES ALTAS SE PARECEN PORQUE HACEN LO MISMO. Todas miran un contador
+# contra un tope, se quedan con el valor viejo como indice, multiplican por el
+# tamano de la entrada y escriben. Lo que cambia es el tamano -5 bytes en
+# alta_bandada y alta_disparo, 4 en el alta comun- y de donde sale el tercer
+# dato, que en las tres viene en A' porque el llamador lo deja ahi con un
+# `ex af,af'`.
+C 0xC882 El contador de la tabla
+C 0xC886 Cuatro a la vez como mucho
+C 0xC889 Sube el contador, y el valor viejo es el hueco que toca
+C 0xC88A El indice, a HL
+C 0xC88F Por cuatro y una vez mas: entradas de cinco bytes
+C 0xC892 La base de la tabla, que empieza justo detras del contador
+C 0xC896 Columna y fila
+C 0xC89A El rumbo de nacimiento: 0x14 son el rumbo 4 -bajar- con el contador de giro de gira_rumbo ya en 0x10
+C 0xC89D El contador de cuadros a cero, que es lo que (ix+003) significa mientras el enemigo esta vivo
+C 0xC8A0 Y el retardo de entrada, que viene en A'
+C 0xC8A2 Si nace a cero, la entrada suena ya
+C 0xC8A3 El `scf` esta antes del `ret nz` a proposito: el que entra vuelve con carry por los dos caminos
+C 0xC8A5 El mismo guion que suena cuando mueve_bandada agota un retardo
+C 0xC8AD El contador
+C 0xC8B1 Dos disparos en el aire como mucho
+C 0xC8BD La base, detras del contador
+C 0xC8C1 Los cinco bytes: primero un cero y el A' de entrada, que el que la mueve (0xDF0F) recoge en C y en B...
+C 0xC8C7 ...luego la columna y la fila, que son las que recoge en DE...
+C 0xC8CB ...y un quinto a cero, el que 0xDF48 compara contra 0xB4
+C 0xC8CD Canal 1
+C 0xC8D5 Y vuelve con carry, que ha salido
+C 0xCC83 El contador de los tiros enemigos
+C 0xCC86 La zona, de 1 a 7
+C 0xCC8A (7 - zona) por 16: el liston baja de 96 en la zona 1 a CERO en la 7, donde ya pasa siempre, y por eso salen mas enemigos segun avanza la partida
+C 0xCC92 La tirada
+C 0xCC96 El `ccf` hace dos cosas de una vez: da la vuelta a la comparacion -se sigue cuando la tirada LLEGA al liston- y deja el acarreo a cero en el `ret`, que es el "no ha entrado" que espera el llamador
+C 0xCC98 Seis a la vez como mucho
+C 0xCC9A Del `exx` de aqui al de 0xCCAE no hay ninguno mas: el puntero al contador y el tope se quedan en un juego de registros y el canal, el guion y la posicion en el otro
+C 0xCC9B Canal 1 para los tiros enemigos...
+C 0xCCA9 ...y canal 2 para los del jugador
+C 0xCCAE Vuelve al juego de registros donde estan el contador y el tope
+C 0xCCB1 Llena: vuelve sin carry, y en el mismo juego de registros con el que la llamaron
+C 0xCCB3 El contador es el indice del hueco y arranca_guion_libre se come A, asi que se guarda
+C 0xCCBB La tabla empieza justo detras del contador
+C 0xCCC1 Por cuatro: entradas de cuatro bytes...
+C 0xCCC4 ...de las que aqui solo se escriben tres, la columna, la fila...
+C 0xCCC8 ...y el rumbo, que viene en A'. El cuarto se queda como estaba
+C 0xCCCA Con carry: ha entrado
+C 0xD144 El rumbo se aparca en A' mientras el principal mira la columna, igual que en poda_rumbo_nave
+C 0xD145 La columna guardada del objeto
+C 0xD148 Sumarle 0x10 antes de comparar hace que las columnas de 0xF0 en adelante -las que se han salido por la izquierda- caigan tambien del lado izquierdo
+C 0xD14A Columna por debajo de 3
+C 0xD14F Se apaga el bit 3, la izquierda
+C 0xD152 Columna 174 o mas
+C 0xD157 Se apaga el bit 2, la derecha
+C 0xD15A Ni un borde ni el otro: el rumbo vuelve intacto
+C 0xD15C El paso lateral ya dado; el area llega hasta 0xB0
+C 0xD160 Si se ha salido, se repone la columna que habia a la entrada, y el objeto se queda pegado al borde
