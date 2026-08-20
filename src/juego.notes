@@ -3544,3 +3544,11 @@ C 0xF084 Un cero delante...
 C 0xF086 ...y quince `ldi` que corren la fila entera un byte a la derecha: el logo entra deslizandose ocho pixeles por vuelta
 C 0xF0A5 La fila siguiente
 C 0xF0A8 Y una vuelta menos de las que lleva (ix+004)
+L 0xD933 inst_derrumbe El estado en que choca_y_revienta deja a la instalacion tocada: sube un cuadro la celda del mapa dieciseis veces -que es el derrumbe dibujandose- y al acabar la retira, salvo la de tipo 5, que es la unica que deja bonus
+C 0xD933 La celda del mapa, que la propia entrada lleva apuntada
+C 0xD939 Una unidad por cuadro: el derrumbe son dieciseis dibujos seguidos
+C 0xD93E Pasados los dieciseis, solo la de tipo 5 deja algo detras...
+C 0xD946 ...y lo que deja es el bonus
+C 0xD950 La otra puerta aparca la instalacion en el `ret` de 0xD959: se queda en la tabla sin hacer nada
+C 0xDFA6 Cinco bytes por entrada
+C 0xDFAC Y los que queden por recorrer

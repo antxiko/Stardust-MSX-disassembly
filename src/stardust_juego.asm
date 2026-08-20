@@ -11584,22 +11584,22 @@ inst_nido:		; El nido: pone su celda a 10 y, una vez de cada 64, suelta un enemi
 	ld h,(ix+006h)		;d92d
 	ld (hl),00bh		;d930   ; Ha entrado: la celda pasa a 11 -otro dibujo- justo a tiempo de que pinta_rejilla la saque, y el cuadro siguiente vuelve a 10
 	ret			;d932
-inst_estalla:		; La instalacion reventando: sube su celda cada cuadro y, al llegar a 0x10, se retira; si su tipo era 5, en vez de retirarse se convierte en el bonus
-	ld l,(ix+005h)		;d933
+inst_derrumbe:		; El estado en que choca_y_revienta deja a la instalacion tocada: sube un cuadro la celda del mapa dieciseis veces -que es el derrumbe dibujandose- y al acabar la retira, salvo la de tipo 5, que es la unica que deja bonus
+	ld l,(ix+005h)		;d933   ; La celda del mapa, que la propia entrada lleva apuntada
 	ld h,(ix+006h)		;d936
-	inc (hl)			;d939
+	inc (hl)			;d939   ; Una unidad por cuadro: el derrumbe son dieciseis dibujos seguidos
 	ld a,(hl)			;d93a
 	cp 010h		;d93b
 	ret c			;d93d
-	ld a,(ix+002h)		;d93e
+	ld a,(ix+002h)		;d93e   ; Pasados los dieciseis, solo la de tipo 5 deja algo detras...
 	cp 005h		;d941
 	jp nz,retira_instalacion		;d943
-	ld hl,inst_bonus		;d946
+	ld hl,inst_bonus		;d946   ; ...y lo que deja es el bonus
 	ld (ix+003h),l		;d949
 	ld (ix+004h),h		;d94c
 	ret			;d94f
 retira_instalacion:		; Retira la instalacion instalandole como rutina la direccion de un `ret` que ya existe en el codigo (0xD959): asi el bucle puede seguir llamando a todas sin preguntar
-	ld hl,ld959h		;d950
+	ld hl,ld959h		;d950   ; La otra puerta aparca la instalacion en el `ret` de 0xD959: se queda en la tabla sin hacer nada
 	ld (ix+003h),l		;d953
 	ld (ix+004h),h		;d956
 L_D959:
@@ -11993,11 +11993,11 @@ L_DF52:
 	call impacto_doble		;df9f   ; Se tocan: dos puntos de escudo de una vez
 	ld (ix+000h),07ch		;dfa2   ; Y el propio tiro estalla, que es escribirle un 0x7C en el byte que mientras volaba era su velocidad
 L_DFA6:
-	ld de,00005h		;dfa6
+	ld de,00005h		;dfa6   ; Cinco bytes por entrada
 	add ix,de		;dfa9
 L_DFAB:
 	pop bc			;dfab
-	dec b			;dfac
+	dec b			;dfac   ; Y los que queden por recorrer
 	jp nz,L_DF19		;dfad
 	ret			;dfb0
 L_DFB1:
