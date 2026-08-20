@@ -8581,8 +8581,8 @@ L_C476:
 	ld (0cb39h),a		;c477
 	ret			;c47a
 pinta_sprite:		; Estampa el sprite A (64 B en 0xA560 + A*64: 16 filas de mascara+dibujo) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xC4C3 y 0xC4FA
-	push hl			;c47b
-	ld h,000h		;c47c
+	push hl			;c47b   ; La posicion, que no se vuelve a necesitar hasta despues de la cuenta
+	ld h,000h		;c47c   ; Por 64: cada sprite son 16 filas de mascara y dibujo, dos palabras por fila
 	ld l,a			;c47e
 	add hl,hl			;c47f
 	add hl,hl			;c480
@@ -8590,32 +8590,32 @@ pinta_sprite:		; Estampa el sprite A (64 B en 0xA560 + A*64: 16 filas de mascara
 	add hl,hl			;c482
 	add hl,hl			;c483
 	add hl,hl			;c484
-	ld de,0a560h		;c485
+	ld de,0a560h		;c485   ; El pozo de sprites
 	add hl,de			;c488
 	ex de,hl			;c489
 	pop hl			;c48a
-	ld a,010h		;c48b
+	ld a,010h		;c48b   ; Dieciseis filas, contadas en 0xD3CD
 	ld (0d3cdh),a		;c48d
-	ld a,h			;c490
+	ld a,h			;c490   ; Quita el sesgo de 0x20 con que se llevan las filas
 	sub 020h		;c491
 	ld h,a			;c493
-	ld a,l			;c494
+	ld a,l			;c494   ; Los tres bits bajos de la columna son el desplazamiento fino dentro del byte
 	and 007h		;c495
-	jr z,L_C49F		;c497
-	dec a			;c499
+	jr z,L_C49F		;c497   ; Cayendo justo en un byte no hay desplazamiento que hacer, y ahi esta el atajo
+	dec a			;c499   ; (n-1)*3 + 7: donde tiene que aterrizar el `jr` para que queden 8-n peldanos por delante
 	ld c,a			;c49a
 	add a,a			;c49b
 	add a,c			;c49c
 	add a,007h		;c49d
 L_C49F:
-	ld (L_C4C3+1),a		;c49f
+	ld (L_C4C3+1),a		;c49f   ; Y se parchean los DOS, el de la mascara y el del dibujo
 	ld (L_C4FA+1),a		;c4a2
-	srl l		;c4a5
+	srl l		;c4a5   ; La columna, de pixeles a bytes
 	srl l		;c4a7
 	srl l		;c4a9
-	call buffer_dir		;c4ab
+	call buffer_dir		;c4ab   ; La direccion en el buffer
 L_C4AE:
-	ld a,h			;c4ae
+	ld a,h			;c4ae   ; Pasado 0x5000 la fila se ha salido del buffer y no se pinta
 	cp 050h		;c4af
 	jr c,L_C4B9		;c4b1
 	inc de			;c4b3
@@ -12001,14 +12001,14 @@ L_DFAB:
 	jp nz,L_DF19		;dfad
 	ret			;dfb0
 L_DFB1:
-	ld hl,0c998h		;dfb1
+	ld hl,0c998h		;dfb1   ; Un disparo menos en la cuenta
 	dec (hl)			;dfb4
-	pop bc			;dfb5
+	pop bc			;dfb5   ; B son los que quedan por recorrer, y hay que mirarlo sin sacarlo de la pila
 	push bc			;dfb6
 	ld a,b			;dfb7
-	cp 001h		;dfb8
+	cp 001h		;dfb8   ; Si el que se va es el ultimo no hay nada que compactar
 	jr z,L_DFAB		;dfba
-	push ix		;dfbc
+	push ix		;dfbc   ; Origen la entrada siguiente, cinco bytes mas alla
 	pop de			;dfbe
 	push de			;dfbf
 	inc de			;dfc0
@@ -12016,14 +12016,14 @@ L_DFB1:
 	inc de			;dfc2
 	inc de			;dfc3
 	inc de			;dfc4
-	ld hl,0c9a3h		;dfc5
+	ld hl,0c9a3h		;dfc5   ; La longitud no es (B-1)*5 como en baja_tile_especial: se mide de aqui al FINAL de la tabla, y se copia todo lo que quede aunque este vacio
 	and a			;dfc8
 	sbc hl,de		;dfc9
 	ld b,h			;dfcb
 	ld c,l			;dfcc
 	ex de,hl			;dfcd
 	pop de			;dfce
-	ldir		;dfcf
+	ldir		;dfcf   ; Las de detras suben cinco bytes
 	jp L_DFAB		;dfd1
 tile_37:		; El tile 0x37: mira si le han dado y, una vez de cada 32, pasa al estado siguiente
 	call impacto_objeto		;dfd4
@@ -13423,12 +13423,12 @@ logo_borra:		; Pone a cero (ix+004) filas de 16 B desde DE, con `ld (hl),000h` y
 	and a			;f07e
 	ret z			;f07f
 L_F080:
-	push de			;f080
+	push de			;f080   ; HL en la fila y DE un byte mas alla
 	pop hl			;f081
 	push de			;f082
 	inc de			;f083
-	ld (hl),000h		;f084
-	ldi		;f086
+	ld (hl),000h		;f084   ; Un cero delante...
+	ldi		;f086   ; ...y quince `ldi` que corren la fila entera un byte a la derecha: el logo entra deslizandose ocho pixeles por vuelta
 	ldi		;f088
 	ldi		;f08a
 	ldi		;f08c
@@ -13444,8 +13444,8 @@ L_F080:
 	ldi		;f0a0
 	ldi		;f0a2
 	pop de			;f0a4
-	call logo_avanza		;f0a5
-	dec (ix+004h)		;f0a8
+	call logo_avanza		;f0a5   ; La fila siguiente
+	dec (ix+004h)		;f0a8   ; Y una vuelta menos de las que lleva (ix+004)
 	ret z			;f0ab
 	jr L_F080		;f0ac
 logo_avanza:		; Cierra una fila del montaje: suma 16 a DE y sube el contador de filas de (ix+005), que es lo que luego mira logo_vuelca
@@ -13783,25 +13783,25 @@ L_F35F:
 	djnz L_F33E		;f360
 	ret			;f362
 parpadeo_energia:		; El parpadeo de la barra de energia cuando queda poca: solo actua si 0xD3C1 vale 1, 2 o 3, y una vez de cada ocho; lee el color de la barra en la VRAM, le da la vuelta al nibble con cuatro `rrca` y lo reescribe
-	ld a,(0d3c1h)		;f363
+	ld a,(0d3c1h)		;f363   ; La energia: por encima de 3 no parpadea, y a cero tampoco
 	cp 004h		;f366
 	ret nc			;f368
 	and a			;f369
 	ret z			;f36a
-	add a,a			;f36b
+	add a,a			;f36b   ; Por ocho, que son los bytes de color que ocupa lo que queda de barra
 	add a,a			;f36c
 	add a,a			;f36d
 	ld b,a			;f36e
-	ld a,(0f393h)		;f36f
+	ld a,(0f393h)		;f36f   ; El contador vive en 0xF393, el byte justo detras del `ret` de esta misma rutina
 	inc a			;f372
 	and 007h		;f373
 	ld (0f393h),a		;f375
-	ret nz			;f378
-	ld hl,06050h		;f379
+	ret nz			;f378   ; Una vez de cada ocho
+	ld hl,06050h		;f379   ; El color de la barra, en la VRAM
 	call vram_pon_dir_lee		;f37c
 	in a,(098h)		;f37f
 	ei			;f381
-	rrca			;f382
+	rrca			;f382   ; Cuatro `rrca` cambian de sitio los dos nibbles: la tinta pasa a fondo y el fondo a tinta
 	rrca			;f383
 	rrca			;f384
 	rrca			;f385
@@ -13809,7 +13809,7 @@ parpadeo_energia:		; El parpadeo de la barra de energia cuando queda poca: solo 
 	call vram_pon_dir		;f387
 	ex af,af'			;f38a
 L_F38B:
-	out (098h),a		;f38b
+	out (098h),a		;f38b   ; Y el mismo byte se reescribe tantas veces como quede de barra
 	and a			;f38d
 	dec b			;f38e
 	jr nz,L_F38B		;f38f

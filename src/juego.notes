@@ -3514,3 +3514,33 @@ C 0xD7BB En el 0x28 clavado se cobra, y el contador vuelve al 0x27 para volver a
 C 0xD7BF Cien puntos por vuelta, a las centenas del marcador
 C 0xD7C7 Y el rotulo baja una unidad...
 C 0xD7CE ...hasta el '0' de ASCII, que es donde se acaba de cobrar
+C 0xC47B La posicion, que no se vuelve a necesitar hasta despues de la cuenta
+C 0xC47C Por 64: cada sprite son 16 filas de mascara y dibujo, dos palabras por fila
+C 0xC485 El pozo de sprites
+C 0xC48B Dieciseis filas, contadas en 0xD3CD
+C 0xC490 Quita el sesgo de 0x20 con que se llevan las filas
+C 0xC494 Los tres bits bajos de la columna son el desplazamiento fino dentro del byte
+C 0xC497 Cayendo justo en un byte no hay desplazamiento que hacer, y ahi esta el atajo
+C 0xC499 (n-1)*3 + 7: donde tiene que aterrizar el `jr` para que queden 8-n peldanos por delante
+C 0xC49F Y se parchean los DOS, el de la mascara y el del dibujo
+C 0xC4A5 La columna, de pixeles a bytes
+C 0xC4AB La direccion en el buffer
+C 0xC4AE Pasado 0x5000 la fila se ha salido del buffer y no se pinta
+C 0xDFB1 Un disparo menos en la cuenta
+C 0xDFB5 B son los que quedan por recorrer, y hay que mirarlo sin sacarlo de la pila
+C 0xDFB8 Si el que se va es el ultimo no hay nada que compactar
+C 0xDFBC Origen la entrada siguiente, cinco bytes mas alla
+C 0xDFC5 La longitud no es (B-1)*5 como en baja_tile_especial: se mide de aqui al FINAL de la tabla, y se copia todo lo que quede aunque este vacio
+C 0xDFCF Las de detras suben cinco bytes
+C 0xF363 La energia: por encima de 3 no parpadea, y a cero tampoco
+C 0xF36B Por ocho, que son los bytes de color que ocupa lo que queda de barra
+C 0xF36F El contador vive en 0xF393, el byte justo detras del `ret` de esta misma rutina
+C 0xF378 Una vez de cada ocho
+C 0xF379 El color de la barra, en la VRAM
+C 0xF382 Cuatro `rrca` cambian de sitio los dos nibbles: la tinta pasa a fondo y el fondo a tinta
+C 0xF38B Y el mismo byte se reescribe tantas veces como quede de barra
+C 0xF080 HL en la fila y DE un byte mas alla
+C 0xF084 Un cero delante...
+C 0xF086 ...y quince `ldi` que corren la fila entera un byte a la derecha: el logo entra deslizandose ocho pixeles por vuelta
+C 0xF0A5 La fila siguiente
+C 0xF0A8 Y una vuelta menos de las que lleva (ix+004)
