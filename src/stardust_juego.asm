@@ -10878,54 +10878,54 @@ L_D3E1:
 	inc (hl)			;d416
 	jp hud_vidas_zona		;d417
 alta_enemigo_cuadro:		; El alta de enemigos cuadro a cuadro, la ANTEPENULTIMA llamada del bucle de partida (0xBF97): detras van todavia va_a_nave_estado en 0xBF9A y gobierna_instalaciones en 0xBF9D. Tres filtros antes de nada: una tirada de cada 32 (`and 01fh`), la bandera 0xDAC5 a cero -o sea antes de que salga el tile de fin de zona- y una segunda tirada cuya dificultad sale de la zona y de cuantos enemigos hay ya volando: b = ((7 - zona) pasado por `rrca`) + 0xC97A + 0xC98F, y hay que sacar cero en `azar and (2^b - 1)`; si esa suma es cero entra sin tirar. Luego saca una columna al azar por debajo de 0xB0 y suelta el enemigo en la fila 0, en la tabla de 0xC990 si el bit 1 de esa columna esta puesto -con la de 0xC97B de reserva si estaba llena- y en la de 0xC97B si no. Es la hermana de la alta_enemigo_cuadro de la fase de a pie: mismo esquema con otros numeros, y solo 7 de sus 68 bytes coinciden
-	call azar		;d41a
+	call azar		;d41a   ; Una tirada de cada 32 para empezar
 	and 01fh		;d41d
 	ret nz			;d41f
-	ld a,(0dac5h)		;d420
+	ld a,(0dac5h)		;d420   ; Y nada si ya ha salido el tile que cierra la zona
 	and a			;d423
 	ret nz			;d424
-	ld a,(0c97ah)		;d425
+	ld a,(0c97ah)		;d425   ; Cuantos enemigos hay ya vivos, sumando las dos tablas
 	ld e,a			;d428
 	ld a,(0c98fh)		;d429
 	add a,e			;d42c
 	ld e,a			;d42d
-	ld a,(0e157h)		;d42e
+	ld a,(0e157h)		;d42e   ; Y la zona, del reves: cuanto mas avanzada, menos suma
 	ld b,a			;d431
 	ld a,007h		;d432
 	sub b			;d434
-	rrca			;d435
+	rrca			;d435   ; El `rrca` se lleva el bit bajo al bit 7, y es lo que separa las zonas pares de las impares
 	add a,e			;d436
-	jr z,L_D445		;d437
+	jr z,L_D445		;d437   ; Sin nada vivo y en la zona 7, alta directa y sin tirada
 	ld b,a			;d439
 	xor a			;d43a
 L_D43B:
-	scf			;d43b
+	scf			;d43b   ; Una mascara de N unos, que satura en 0xFF a las ocho vueltas
 	rla			;d43c
 	djnz L_D43B		;d43d
 	ld e,a			;d43f
-	call azar		;d440
+	call azar		;d440   ; Y la tirada contra ella: 1 entre 2 elevado a N
 	and e			;d443
 	ret nz			;d444
 L_D445:
-	call azar		;d445
+	call azar		;d445   ; La columna, en el area de juego
 	cp 0b0h		;d448
 	jr nc,L_D445		;d44a
 	ld c,a			;d44c
 	ld b,000h		;d44d
-	and 002h		;d44f
+	and 002h		;d44f   ; El bit 1 de esa misma columna elige de que tabla sale el enemigo
 	jr z,L_D459		;d451
 	xor a			;d453
 	ex af,af'			;d454
-	call alta_objeto_c990		;d455
+	call alta_objeto_c990		;d455   ; Uno de la tabla de objetos, y si entra se acabo
 	ret c			;d458
 L_D459:
 	xor a			;d459
 	ex af,af'			;d45a
-	jp alta_bandada		;d45b
+	jp alta_bandada		;d45b   ; O si no, uno de la bandada
 repone_escudo:		; La otra cara del premio de los 10.000: si la nave llega con el escudo por debajo de 2, en vez de una vida le reponen el ESCUDO, a 3
-	ld a,003h		;d45e
+	ld a,003h		;d45e   ; El escudo a 3, que es lleno
 	ld (0c188h),a		;d460
-	ld hl,02778h		;d463
+	ld hl,02778h		;d463   ; Y la marca del HUD encendida
 	ld c,0f9h		;d466
 	call pinta_celda_color		;d468
 	ld hl,02f40h		;d46b

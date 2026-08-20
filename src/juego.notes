@@ -3640,3 +3640,42 @@ C 0xD0E5 La posicion de la nave, con el mismo suelo de 0x20 en la fila que usa c
 C 0xD0F2 La bandera del escudo, del reves: el `xor` deja Z cuando estaba encendida
 C 0xD0F9 La celda del HUD donde va la marca
 C 0xD103 Y el sprite que se pinta pegado a la nave, 0x39 o 0x3A por la misma bandera
+#
+# ============================================================================
+# EL RITMO DE APARICION ALTERNA ENTRE ZONAS PARES E IMPARES
+# ============================================================================
+#
+# alta_enemigo_cuadro decide cada cuadro si sale un enemigo, y la probabilidad
+# es 1 entre 2 elevado a N, con N = (enemigos vivos) + (7 - zona) rotado a la
+# derecha. La rotacion es un `rrca` (0xD435), NO un desplazamiento, asi que
+# cuando 7 - zona es IMPAR el bit que sale por abajo entra por el bit 7 y N se
+# dispara por encima de 0x80. El bucle de 0xD43B monta una mascara de N unos y
+# satura en 0xFF a las ocho vueltas, o sea que ahi la probabilidad se queda en
+# 1 entre 256.
+#
+#     zona 1   7-zona=6  ->  3     1 entre 2^(3+vivos)
+#     zona 2   7-zona=5  -> 0x82   1 entre 256
+#     zona 3   7-zona=4  ->  2     1 entre 2^(2+vivos)
+#     zona 4   7-zona=3  -> 0x81   1 entre 256
+#     zona 5   7-zona=2  ->  1     1 entre 2^(1+vivos)
+#     zona 6   7-zona=1  -> 0x80   1 entre 256
+#     zona 7   7-zona=0  ->  0     con la pantalla vacia, alta directa
+#
+# Leido del codigo, no medido en el emulador. Con un `srl a` en vez del `rrca`
+# la escala subiria seguida de la zona 1 a la 7; con el `rrca` las zonas pares
+# son mucho mas tranquilas que las impares de al lado. Que fuera querido o no, no se
+# puede saber desde aqui.
+C 0xD41A Una tirada de cada 32 para empezar
+C 0xD420 Y nada si ya ha salido el tile que cierra la zona
+C 0xD425 Cuantos enemigos hay ya vivos, sumando las dos tablas
+C 0xD42E Y la zona, del reves: cuanto mas avanzada, menos suma
+C 0xD435 El `rrca` se lleva el bit bajo al bit 7, y es lo que separa las zonas pares de las impares
+C 0xD437 Sin nada vivo y en la zona 7, alta directa y sin tirada
+C 0xD43B Una mascara de N unos, que satura en 0xFF a las ocho vueltas
+C 0xD440 Y la tirada contra ella: 1 entre 2 elevado a N
+C 0xD445 La columna, en el area de juego
+C 0xD44F El bit 1 de esa misma columna elige de que tabla sale el enemigo
+C 0xD455 Uno de la tabla de objetos, y si entra se acabo
+C 0xD45B O si no, uno de la bandada
+C 0xD45E El escudo a 3, que es lleno
+C 0xD463 Y la marca del HUD encendida
