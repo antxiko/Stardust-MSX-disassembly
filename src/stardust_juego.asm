@@ -7646,390 +7646,407 @@ DATA_mandos_de_la_demo:
 
 
 arranque:		; Donde salta el cargador: pila en 0x5B32, apaga la pantalla por el registro 1 del VDP, engancha `ret` en H.KEYI y `jp 0xE15A` en H.TIMI, hace la presentacion y los creditos, limpia el mapa y las variables del sonido, siembra el azar con dos `ld a,r`, monta la pantalla del menu y se queda en el bucle de atraccion de 0xBE2F hasta que el disparo elige opcion por la fila de la nave
-	ld sp,05b32h		;bd85
-	in a,(099h)		;bd88
-	ld hl,00000h		;bd8a
-	ld a,082h		;bd8d
+	ld sp,05b32h		;bd85   ; SP en 0x5B32, justo debajo de la tabla de velocidades de las particulas: la pila crece hacia abajo y las particulas hacia arriba
+	in a,(099h)		;bd88   ; Lee el registro de estado del VDP. El valor no se usa -0xBD8D pisa A-, pero la lectura deja el puerto 0x99 esperando el primer byte de un par
+	ld hl,00000h		;bd8a   ; HL no lo lee nadie: 0xBDA0 lo vuelve a cargar antes de que nada lo toque
+	ld a,082h		;bd8d   ; Primer byte del par de 0x99: el DATO, 0x82
 	out (099h),a		;bd8f
-	ld a,081h		;bd91
-	and a			;bd93
+	ld a,081h		;bd91   ; Segundo byte: 0x80+1, o sea "escribe en el registro 1". R1 = 0x82 deja la PANTALLA APAGADA, las interrupciones del VDP apagadas y los sprites en 16x16
+	and a			;bd93   ; No cambia A: solo baja el acarreo
 	out (099h),a		;bd94
-	ld a,0c9h		;bd96
-	ld (0fd9ah),a		;bd98
-	ld a,0c3h		;bd9b
-	ld (0fd9fh),a		;bd9d
-	ld hl,0e15ah		;bda0
+	ld a,0c9h		;bd96   ; 0xC9 es el opcode de `ret`
+	ld (0fd9ah),a		;bd98   ; ...y va a H.KEYI (0xFD9A): el gancho de teclado queda desactivado
+	ld a,0c3h		;bd9b   ; 0xC3 es el de `jp`
+	ld (0fd9fh),a		;bd9d   ; ...y va a H.TIMI (0xFD9F): de aqui en adelante el gancho de reloj es un salto
+	ld hl,0e15ah		;bda0   ; El destino del salto, 0xE15A, en los dos bytes de detras (0xFDA0)
 	ld (0fda0h),hl		;bda3
-	call presentacion		;bda6
-	call sonido_reset		;bda9
-	ld hl,0edffh		;bdac
+	call presentacion		;bda6   ; Logo, rebote y creditos. Vuelve con la pantalla ya encendida
+	call sonido_reset		;bda9   ; Repone el `di` que sonido_off deja machacado y calla los tres canales
+	ld hl,0edffh		;bdac   ; Los catorce bytes del canal de efectos, 0xEDFF-0xEE0C, a cero: un `ld (hl),0` y un ldir solapado de trece
 	ld de,0ee00h		;bdaf
 	ld bc,0000dh		;bdb2
 	ld (hl),000h		;bdb5
 	ldir		;bdb7
-	ld a,r		;bdb9
+	ld a,r		;bdb9   ; El registro R como semilla, una lectura por byte
 	ld l,a			;bdbb
 	ld a,r		;bdbc
 	ld h,a			;bdbe
-	ld (0ca8fh),hl		;bdbf
-	ld hl,05c32h		;bdc2
+	ld (0ca8fh),hl		;bdbf   ; La semilla es un PUNTERO: azar la pasea por la ROM del BIOS
+	ld hl,05c32h		;bdc2   ; Otro ldir solapado, este SIN sembrar el primer byte: propaga lo que haya en 0x5C32 a los 509 siguientes. En la cinta ese byte es 0x00, asi que lo que hace es borrar las 85 entradas de 6 bytes de 0x5C32-0x5E2F, que es donde se descomprime el mapa
 	ld de,05c33h		;bdc5
 	ld bc,001fdh		;bdc8
 	ldir		;bdcb
-	xor a			;bdcd
+	xor a			;bdcd   ; 0xDCC3 = 0: el mando arranca en TECLADO
 	ld (0dcc3h),a		;bdce
-	ld de,0cb09h		;bdd1
+	ld de,0cb09h		;bdd1   ; La tabla de las 48 estrellas del fondo, 0xCB09-0xCB38
 	ld b,030h		;bdd4   ; Rellena la tabla de las 48 estrellas (0xCB09) con alturas al azar menores de 0xA0
-L_BDD6:
-	call azar		;bdd6
-	cp 0a0h		;bdd9
-	inc hl			;bddb
-	jr nc,L_BDD6		;bddc
+siembra_estrellas:		; El bucle que llena las 48 alturas de la tabla de estrellas (0xCB09) con valores al azar por debajo de 0xA0, la altura del buffer. Solo lo ejecuta el arranque, una vez
+	call azar		;bdd6   ; Una altura al azar por estrella...
+	cp 0a0h		;bdd9   ; ...pero rechazando 0xA0 en adelante, que es la altura del buffer
+	inc hl			;bddb   ; Este `inc hl` no lo lee nadie: azar salva y repone HL, y al salir del bucle 0xBEF1 pisa el registro. Esta metido entre el `cp` y el `jr` porque no toca banderas
+	jr nc,siembra_estrellas		;bddc
 	ld (de),a			;bdde
 	inc de			;bddf
-	djnz L_BDD6		;bde0
-L_BDE2:
-	call entra_en_records		;bde2
-L_BDE5:
-	ld hl,0a058h		;bde5
+	djnz siembra_estrellas		;bde0
+fin_de_partida:		; La entrada de game over, y la unica: aqui llegan tanto el `jp c` de 0xC000 -sin vidas- como el `jp z` de 0xBFE8 -tecla ABANDONAR-. Llama a entra_en_records y cae en monta_menu
+	call entra_en_records		;bde2   ; Por aqui pasa TODO game over: quedarse sin vidas (0xC000) o pulsar ABANDONAR (0xBFE8)
+monta_menu:		; Deja la maquina en estado de menu: nave en 0xA058 (la banda de JUGAR), zona 1, tres vidas, barra a 10, escudo a 3, 0xE151 a 1 para que el mando sea el teclado, colores a 0xF1, y repone lee_mando en el operando de 0xC090 por si venia de la demo. Remata resembrando el azar y cayendo en el bucle de atraccion
+	ld hl,0a058h		;bde5   ; La nave del menu: columna 0x58, fila 0xA0, que cae en la banda de JUGAR
 	ld (0c184h),hl		;bde8
-	xor a			;bdeb
+	xor a			;bdeb   ; Fotograma y rumbo de la nave a cero
 	ld (0c9a3h),a		;bdec
-	inc a			;bdef
+	inc a			;bdef   ; 0xE151 = 1: mientras dure el menu lee_mando ignora el joystick y pregunta siempre al teclado
 	ld (0e151h),a		;bdf0
-	ld a,001h		;bdf3
+	ld a,001h		;bdf3   ; La zona, a 1
 	ld (0e157h),a		;bdf5
-	ld hl,02f78h		;bdf8
+	ld hl,02f78h		;bdf8   ; Apaga la marca del HUD de 0x2F78: la entrada de 0xF3A3 es la que pinta con 0x11
 	call pinta_marca_hud		;bdfb
-	ld a,073h		;bdfe
+	ld a,073h		;bdfe   ; Repone el dibujo 0x73 del HUD
 	call dibuja_sprite_vram		;be00
-	ld a,0f1h		;be03
+	ld a,0f1h		;be03   ; 0xF1 -tinta blanca sobre fondo negro- en las tres bandas de la tabla de colores
 	call rellena_colores		;be05
-	ld a,00ah		;be08
+	ld a,00ah		;be08   ; Barra de energia a 10
 	ld (0d3c1h),a		;be0a
-	call pinta_energia		;be0d
-	call repone_escudo		;be10
-	ld a,003h		;be13
+	call pinta_energia		;be0d   ; La barra, a la pantalla
+	call repone_escudo		;be10   ; Escudo a 3, y de paso las tres celdas de color de su indicador
+	ld a,003h		;be13   ; Tres vidas, pero mira 0xBE96: al empezar la partida de verdad se quedan en dos
 	ld (0e156h),a		;be15
-	call hud_vidas_zona		;be18
-	ld hl,0c1bdh		;be1b
+	call hud_vidas_zona		;be18   ; Y los dos digitos del HUD, vidas y zona
+	ld hl,0c1bdh		;be1b   ; Parchea el operando del `call` de 0xC090 con lee_mando, que es lo que deshace el 0xC1AF que dejo ahi la demo
 	ld (actualiza_nave+1),hl		;be1e
-	ld a,r		;be21
+	ld a,r		;be21   ; Segunda siembra del azar. Entre las dos ha pasado toda la presentacion, asi que R vale otra cosa
 	ld l,a			;be23
 	ld a,r		;be24
 	ld h,a			;be26
 	ld (0ca8fh),hl		;be27
-L_BE2A:
-	ld a,0a0h		;be2a
+menu_repone_cuenta:		; Repone los 160 cuadros de cortesia del menu (0xCA8E). Se pasa por aqui cada vez que el jugador toca algo que no sea el disparo, y tambien despues de cada opcion elegida que no sea JUGAR
+	ld a,0a0h		;be2a   ; 160 cuadros de cortesia en el menu: cuando se agotan, a la tabla de records y a la demo
 	ld (0ca8eh),a		;be2c
-L_BE2F:
-	call borra_buffer		;be2f
-	call mueve_estrellas		;be32
-	call actualiza_nave		;be35
-	call pinta_menu		;be38
-	call vuelca_pantalla		;be3b
-	ld a,(0ca8eh)		;be3e
+bucle_menu:		; El cuadro del menu: borra_buffer, mueve_estrellas, actualiza_nave, pinta_menu y vuelca_pantalla, y luego el despachador de la eleccion. Sale por dos sitios: la cuenta de 0xCA8E agotada lleva a la tabla de records y a la demo, y el disparo elige opcion segun la fila de la nave
+	call borra_buffer		;be2f   ; El cuadro del menu, cinco llamadas: borrar el buffer, estrellas, nave, rotulos y volcado
+	call mueve_estrellas		;be32   ; Las estrellas del fondo corren tambien en el menu
+	call actualiza_nave		;be35   ; La nave del menu es la nave de la partida: el mismo actualiza_nave y el mismo mando
+	call pinta_menu		;be38   ; Los cinco rotulos y el selector, encima
+	call vuelca_pantalla		;be3b   ; Y el buffer a la VRAM
+	ld a,(0ca8eh)		;be3e   ; Baja la cuenta de atraccion
 	dec a			;be41
-	jp z,L_D560		;be42
+	jp z,L_D560		;be42   ; Agotada: a la tabla de records de 0xD560, que acaba entrando en la demo
 	ld (0ca8eh),a		;be45
-	ld a,(0e150h)		;be48
+	ld a,(0e150h)		;be48   ; Lo que devolvio lee_mando en este cuadro, guardado por 0xC092
 	and a			;be4b
-	jr z,L_BE2F		;be4c
-	bit 4,a		;be4e
-	jp z,L_BE2A		;be50
-	ld a,(0c185h)		;be53
-	cp 039h		;be56
-	jr c,L_BE2A		;be58
-	cp 058h		;be5a
-	jr z,L_BE2A		;be5c
-	jr nc,L_BE66		;be5e
-	ld (0dcc3h),a		;be60
-	jp L_BE2A		;be63
-L_BE66:
-	cp 078h		;be66
-	jr z,L_BE2A		;be68
-	jr nc,L_BE73		;be6a
-	xor a			;be6c
+	jr z,bucle_menu		;be4c   ; Mando quieto: otra vuelta, y la cuenta sigue bajando
+	bit 4,a		;be4e   ; El bit 4 es el disparo
+	jp z,menu_repone_cuenta		;be50   ; Se ha movido pero no ha disparado: repone los 160 cuadros y sigue
+	ld a,(0c185h)		;be53   ; Ha disparado, asi que elige. El cursor del menu es la FILA de la nave
+	cp 039h		;be56   ; Por debajo de 0x39 no hay opcion ninguna
+	jr c,menu_repone_cuenta		;be58   ; Ni por debajo de 0x39 ni en la frontera de 0x58 pasa nada: se repone la cuenta y a otra vuelta
+	cp 058h		;be5a   ; 0x58 es la frontera exacta entre JOYSTICK y TECLADO, y no hace nada
+	jr z,menu_repone_cuenta		;be5c
+	jr nc,menu_banda_teclado		;be5e
+	ld (0dcc3h),a		;be60   ; 0x39-0x57 es JOYSTICK: guarda la propia fila en 0xDCC3, a la que solo se le pide ser distinta de cero
+	jp menu_repone_cuenta		;be63
+menu_banda_teclado:		; La segunda frontera del menu: por debajo de 0x78 es TECLADO (0xDCC3 = 0), y por encima se sigue mirando
+	cp 078h		;be66   ; 0x78, la frontera entre TECLADO y REDEFINIR
+	jr z,menu_repone_cuenta		;be68
+	jr nc,menu_banda_redefinir		;be6a
+	xor a			;be6c   ; 0x59-0x77 es TECLADO, o sea 0xDCC3 = 0
 	ld (0dcc3h),a		;be6d
-	jp L_BE2A		;be70
-L_BE73:
-	cp 098h		;be73
-	jr z,L_BE2A		;be75
-	jr nc,hud_reset		;be77
-	call redefine_teclas		;be79
-	jp L_BDE5		;be7c
+	jp menu_repone_cuenta		;be70
+menu_banda_redefinir:		; La tercera y ultima: por debajo de 0x98 es REDEFINIR TECLAS, y de 0x99 en adelante es JUGAR, y ahi salta a hud_reset
+	cp 098h		;be73   ; 0x98, la frontera entre REDEFINIR y JUGAR
+	jr z,menu_repone_cuenta		;be75
+	jr nc,hud_reset		;be77   ; 0x99 en adelante es JUGAR, y de aqui se salta a hud_reset
+	call redefine_teclas		;be79   ; 0x79-0x97 es REDEFINIR TECLAS; al volver se rehace el menu entero
+	jp monta_menu		;be7c   ; Y monta el menu entero otra vez, que es lo que devuelve el selector a su sitio
 hud_reset:		; Pone el marcador de puntos a "000000" (seis 0x30 desde 0xDD80) y lo pinta en 0x12B0, la misma posicion que usa la fase de a pie
-	ld hl,0dd80h		;be7f
+	ld hl,0dd80h		;be7f   ; Marcador a "000000": seis 0x30 desde 0xDD80, con el ldir solapado de siempre
 	ld de,0dd81h		;be82
 	ld bc,00005h		;be85
 	ld (hl),030h		;be88
 	ldir		;be8a
-	ld ix,0dd80h		;be8c
+	ld ix,0dd80h		;be8c   ; Y a la pantalla, en los patrones de 0x12B0
 	ld de,012b0h		;be90
 	call hud_imprime		;be93
-	ld a,002h		;be96
+	ld a,002h		;be96   ; DOS vidas, no tres: esta es la segunda inicializacion y es la que manda
 	ld (0e156h),a		;be98
-	dec a			;be9b
+	dec a			;be9b   ; El mismo A menos uno: la zona, a 1
 	ld (0e157h),a		;be9c
-	ld hl,0d0dfh		;be9f
+	ld hl,0d0dfh		;be9f   ; Repone el operando del trampolin de pinta_escudo (0xD0DD), que tile_5D_espera parchea con un `ret` al cerrar la zona 7
 	ld (0d0ddh),hl		;bea2
-	ld hl,nave_estado		;bea5
+	ld hl,nave_estado		;bea5   ; Y el del `jp` de va_a_nave_estado, que ese mismo tile_5D_espera desvia a arrastra_nave
 	ld (va_a_nave_estado+1),hl		;bea8
-	ld hl,0ba20h		;beab
+	ld hl,0ba20h		;beab   ; Rebobina la partida grabada de la demo a su primer byte
 	ld (0e158h),hl		;beae
-	ld a,00ah		;beb1
+	ld a,00ah		;beb1   ; Barra de energia a 10
 	ld (0d3c1h),a		;beb3
 	call pinta_energia		;beb6
-L_BEB9:
-	call repone_escudo		;beb9
+arranca_vida:		; Lo que se rehace en cada vida, no solo al empezar la partida: escudo a 3, tabla de disparos vacia, fotograma de la nave a cero, disparo cuadruple apagado, la nave otra vez en 0xA058 y las 64 velocidades de las particulas resembradas al azar. Entran aqui el arranque de partida (por fallthrough desde hud_reset) y el `jp` de 0xC003, que es la vida siguiente
+	call repone_escudo		;beb9   ; Escudo a 3. De aqui para abajo es lo que se rehace en CADA vida, no solo al empezar
 	xor a			;bebc
-	ld (0c952h),a		;bebd
-	ld (0c9a3h),a		;bec0
-	ld (0dcc1h),a		;bec3
-	ld (0e14eh),a		;bec6
-	ld hl,0a058h		;bec9
+	ld (0c952h),a		;bebd   ; Vacia la tabla de disparos del jugador
+	ld (0c9a3h),a		;bec0   ; Fotograma y rumbo de la nave a cero
+	ld (0dcc1h),a		;bec3   ; 0xDCC1 no se lee en ningun sitio del bloque
+	ld (0e14eh),a		;bec6   ; Apaga el disparo cuadruple: el premio del bonus no se hereda de la vida anterior
+	ld hl,0a058h		;bec9   ; La nave, otra vez en la columna 0x58 y la fila 0xA0
 	ld (0c184h),hl		;becc
-	ld hl,003e8h		;becf
+	ld hl,003e8h		;becf   ; HL cuenta y no lo lee nadie; DE si: es la tabla de VELOCIDADES de las particulas, 0x5B32-0x5BB1
 	ld de,05b32h		;bed2
-	ld b,040h		;bed5
-L_BED7:
-	call azar		;bed7
+	ld b,040h		;bed5   ; 64 particulas, dos bytes cada una
+siembra_velocidades:		; Llena de azar las 64 parejas de velocidad de las particulas, 0x5B32-0x5BB1: la de columnas entre -7 y +8, la de filas entre -15 y 0. Las posiciones las pone despues siembra_particulas en 0x5BB2, cuando la nave explota de verdad
+	call azar		;bed7   ; Velocidad en COLUMNAS: cuatro bits menos 7, o sea de -7 a +8
 	and 00fh		;beda
 	sub 007h		;bedc
 	ld (de),a			;bede
 	inc de			;bedf
 	inc hl			;bee0
-	call azar		;bee1
+	call azar		;bee1   ; Velocidad en FILAS: cuatro bits menos 15, o sea de -15 a 0, siempre hacia arriba. La gravedad -el `inc d` de mueve_particulas- se encarga del resto
 	and 00fh		;bee4
 	sub 00fh		;bee6
 	ld (de),a			;bee8
 	inc de			;bee9
 	inc hl			;beea
-	djnz L_BED7		;beeb
-L_BEED:
-	ld a,(0e157h)		;beed
-	dec a			;bef0
+	djnz siembra_velocidades		;beeb
+carga_zona:		; El arranque de zona: busca la entrada de la zona en la tabla de 0xDE03 -tres bytes, puntero y color-, descomprime el mapa a 0x5C50, siembra las tres variables del scroll de 0xCB03, pone a cero los contadores de las seis tablas de objetos y ocho banderas mas, reabre el sonido, repinta el HUD y deja la zona en marcha (0xCB39 = 1). Cae en el bucle de partida
+	ld a,(0e157h)		;beed   ; La zona menos uno, por tres, sobre la tabla de 0xDE03
+	dec a			;bef0   ; La tabla se indexa desde cero y la zona empieza en 1
 	ld l,a			;bef1
 	ld h,000h		;bef2
 	ld d,h			;bef4
 	ld e,l			;bef5
-	add hl,hl			;bef6
+	add hl,hl			;bef6   ; Por dos y luego mas uno: por TRES, que es lo que ocupa cada entrada
 	add hl,de			;bef7
 	ld de,0de03h		;bef8
 	add hl,de			;befb
-	ld e,(hl)			;befc
+	ld e,(hl)			;befc   ; Los dos primeros bytes de la entrada son el puntero al mapa comprimido
 	inc hl			;befd
 	ld d,(hl)			;befe
 	inc hl			;beff
-	ld a,(hl)			;bf00
-	push af			;bf01
+	ld a,(hl)			;bf00   ; Y el tercero, el color de SCREEN 2 de la zona
+	push af			;bf01   ; Que hay que guardar, porque el descompresor usa medio mundo
 	ex de,hl			;bf02
-	call descomprime_nivel		;bf03
-	ld iy,0cb03h		;bf06
-	ld (iy+000h),050h		;bf0a
-	ld (iy+001h),001h		;bf0e
-	ld (iy+002h),020h		;bf12
-	xor a			;bf16
-	ld (0c97ah),a		;bf17
-	ld (0c98fh),a		;bf1a
-	ld (0d3c5h),a		;bf1d
-	ld (0c998h),a		;bf20
-	ld (0c939h),a		;bf23
-	ld (0ca92h),a		;bf26
-	ld (0ca8eh),a		;bf29
-	ld (0d3bdh),a		;bf2c
-	ld (0dcc0h),a		;bf2f
+	call descomprime_nivel		;bf03   ; Expande el mapa a las 75 filas de a seis que empiezan en 0x5C50
+	ld iy,0cb03h		;bf06   ; Las tres variables del scroll de repinta_fondo, 0xCB03-0xCB05: fila del mapa 0x50, scroll encendido y desplazamiento fino ya en 0x20, o sea que el primer cuadro ya baja una fila
+	ld (iy+000h),050h		;bf0a   ; La fila del mapa por la que va el scroll, que cuenta hacia atras hasta cero
+	ld (iy+001h),001h		;bf0e   ; El scroll, encendido: con este byte a cero repinta_fondo no avanza
+	ld (iy+002h),020h		;bf12   ; Y el desplazamiento fino dentro del tile de 32 pixeles, ya al tope
+	xor a			;bf16   ; A partir de aqui, todo a cero de una sentada...
+	ld (0c97ah),a		;bf17   ; el contador de la bandada (tabla 0xC97B)
+	ld (0c98fh),a		;bf1a   ; el de la tabla de 0xC990
+	ld (0d3c5h),a		;bf1d   ; el perseguidor
+	ld (0c998h),a		;bf20   ; el de la tabla que compacta 0xDFB1
+	ld (0c939h),a		;bf23   ; el de los tiros enemigos (tabla 0xC93A)
+	ld (0ca92h),a		;bf26   ; el de los tiles especiales (tabla 0xCB3A)
+	ld (0ca8eh),a		;bf29   ; el contador de cuadros
+	ld (0d3bdh),a		;bf2c   ; la puerta de la estela
+	ld (0dcc0h),a		;bf2f   ; y tres bytes que nadie lee en todo el bloque: 0xDCC0, 0xDCC2 y 0xDCBF
 	ld (0dcc2h),a		;bf32
 	ld (0dcbfh),a		;bf35
-	ld (0e14fh),a		;bf38
-	ld (0e151h),a		;bf3b
-	ld (0dac5h),a		;bf3e
-	call sonido_reset		;bf41
+	ld (0e14fh),a		;bf38   ; El estado anterior del gatillo, que es lo que hace que dispara mire el FLANCO y no el nivel
+	ld (0e151h),a		;bf3b   ; 0xE151 = 0: fuera del menu, el joystick vuelve a valer
+	ld (0dac5h),a		;bf3e   ; Y la marca de que ha salido el tile de fin de zona
+	call sonido_reset		;bf41   ; Sonido abierto otra vez, y el canal de efectos a cero como en el arranque
 	ld hl,0edffh		;bf44
 	ld de,0ee00h		;bf47
 	ld bc,0000dh		;bf4a
 	ld (hl),000h		;bf4d
 	ldir		;bf4f
-	call hud_vidas_zona		;bf51
-	ld a,073h		;bf54
+	call hud_vidas_zona		;bf51   ; Repinta vidas y zona
+	ld a,073h		;bf54   ; Y el dibujo 0x73 del HUD
 	call dibuja_sprite_vram		;bf56
-	pop af			;bf59
+	pop af			;bf59   ; El color de la zona, que 0xBF01 habia dejado en la pila
 	call rellena_colores		;bf5a
-	ld a,080h		;bf5d
+	ld a,080h		;bf5d   ; 0x80 en 0xCA91 es la marca de "no hay ninguna instalacion montada"
 	ld (0ca91h),a		;bf5f
-	ld a,001h		;bf62
+	ld a,001h		;bf62   ; 0xCB39 = 1: la zona esta en marcha. Cuando vuelva a cero, esta despejada
 	ld (0cb39h),a		;bf64
-	ld (0d3c2h),a		;bf67
-L_BF6A:
-	ld hl,0ca8eh		;bf6a
+	ld (0d3c2h),a		;bf67   ; Y la bandera del escudo
+bucle_partida:		; El cuadro de la partida: sube el contador de 0xCA8E y encadena las QUINCE llamadas del motor, de repinta_fondo a gobierna_instalaciones, con la nave (va_a_nave_estado) en la penultima. Detras va el rotulo DEMO, que solo se pinta si el operando parcheado de 0xC090 dice que quien juega es la partida grabada
+	ld hl,0ca8eh		;bf6a   ; Un cuadro mas. Este contador lo mira medio bloque para hacer las cosas una vez de cada tantas
 	inc (hl)			;bf6d
-	call repinta_fondo		;bf6e
-	call pinta_escudo		;bf71
-	call parpadeo_energia		;bf74
-	call mueve_estrellas		;bf77
-	ld a,001h		;bf7a
+	call repinta_fondo		;bf6e   ; La rutina mas cara del bloque: redibuja las 160 filas del buffer
+	call pinta_escudo		;bf71   ; El indicador que va pegado a la nave
+	call parpadeo_energia		;bf74   ; El parpadeo de la barra cuando queda poca energia
+	call mueve_estrellas		;bf77   ; El fondo de estrellas, el mismo que corre en el menu
+	ld a,001h		;bf7a   ; La bandera del escudo se repone CADA cuadro; quien la apaga son los contactos de 0xD23A y 0xD2B2
 	ld (0d3c2h),a		;bf7c
-	call recorre_tiles_especiales		;bf7f
-	call mueve_perseguidor		;bf82
-	call aparece_perseguidor		;bf85
-	call traza_estela		;bf88
-	call recorre_las_dos_tablas		;bf8b
-	call mueve_disparos		;bf8e
-	call mueve_bandada		;bf91
-	call mueve_objetos		;bf94
-	call alta_enemigo_cuadro		;bf97
-	call va_a_nave_estado		;bf9a
-	call gobierna_instalaciones		;bf9d
-	ld a,(actualiza_nave+1)		;bfa0
-	cp 0afh		;bfa3
-	jr nz,L_BFD0		;bfa5
-	call hay_tecla		;bfa7
-	jp nz,L_BDE5		;bfaa
-	ld a,(0ca8eh)		;bfad
+	call recorre_tiles_especiales		;bf7f   ; Los tiles especiales de la rejilla (0xCB3A), cada uno con su rutina de gobierno
+	call mueve_perseguidor		;bf82   ; El perseguidor que ya vuela
+	call aparece_perseguidor		;bf85   ; Y los 16 cuadros de aparicion del que acaba de salir: son dos rutinas, no una
+	call traza_estela		;bf88   ; La estela del disparo especial (0xD3BD)
+	call recorre_las_dos_tablas		;bf8b   ; Las dos tablas seguidas, la de 0xC93A y la de 0xC953, cada una con su velocidad parcheada
+	call mueve_disparos		;bf8e   ; Los disparos de 0xC999
+	call mueve_bandada		;bf91   ; La bandada de 0xC97B
+	call mueve_objetos		;bf94   ; Los objetos de 0xC990
+	call alta_enemigo_cuadro		;bf97   ; El alta de enemigos del cuadro, con su tirada de dificultad
+	call va_a_nave_estado		;bf9a   ; La nave, por el trampolin parcheable
+	call gobierna_instalaciones		;bf9d   ; Y las instalaciones, que son lo ultimo
+	ld a,(actualiza_nave+1)		;bfa0   ; Lee solo el byte BAJO del operando parcheado: lee_mando es 0xC1BD y lee_mando_demo 0xC1AF, y comparten el 0xC1 de arriba
+	cp 0afh		;bfa3   ; 0xAF, o sea que quien mueve la nave es la demo
+	jr nz,cierra_cuadro		;bfa5
+	call hay_tecla		;bfa7   ; Y en la demo cualquier tecla vuelve al menu
+	jp nz,monta_menu		;bfaa
+	ld a,(0ca8eh)		;bfad   ; Bit 3 del contador de cuadros: ocho cuadros si y ocho no, que es el parpadeo del rotulo
 	and 008h		;bfb0
-	jr z,L_BFD0		;bfb2
-	ld a,0ffh		;bfb4
+	jr z,cierra_cuadro		;bfb2
+	ld a,0ffh		;bfb4   ; Quita el tramado en damero de rotula_glifo -los operandos del `and 055h` de 0xD4D2 y del `and 0aah` de 0xD4D8- para que el rotulo salga solido
 	ld (0d4d3h),a		;bfb6
 	ld (0d4d9h),a		;bfb9
-	ld ix,0ddf2h		;bfbc
-	ld hl,04d94h		;bfc0
+	ld ix,0ddf2h		;bfbc   ; La cadena DEMO, en 0xDDF2
+	ld hl,04d94h		;bfc0   ; Sobre el buffer en 0x4D94: fila 144 de 160 y columna 20 de 24, o sea abajo a la derecha
 	call rotula_cadena		;bfc3
-	ld a,055h		;bfc6
+	ld a,055h		;bfc6   ; Y repone el damero para todo lo demas
 	ld (0d4d3h),a		;bfc8
 	ld a,0aah		;bfcb
 	ld (0d4d9h),a		;bfcd
-L_BFD0:
-	call vuelca_pantalla		;bfd0
-	ld a,(0cb39h)		;bfd3
+cierra_cuadro:		; El cierre del cuadro: vuelca el buffer a la VRAM y mira las tres salidas -zona despejada (0xCB39), tecla ABANDONAR y agonia de la nave acabada (0xC188 en 0x2D)-. Si no se cumple ninguna, otra vuelta a bucle_partida
+	call vuelca_pantalla		;bfd0   ; El buffer, a la VRAM
+	ld a,(0cb39h)		;bfd3   ; 0xCB39 a cero: la zona esta despejada, a la secuencia de fin de zona
 	and a			;bfd6
 	jp z,L_D740		;bfd7
 	ld ix,0dcb1h		;bfda
-	ld a,(ix+00dh)		;bfde
+	ld a,(ix+00dh)		;bfde   ; La SEPTIMA entrada de la tabla de teclas, ABANDONAR: fila por el puerto 0xAA...
 	out (0aah),a		;bfe1
-	in a,(0a9h)		;bfe3
+	in a,(0a9h)		;bfe3   ; ...y los ocho bits de esa fila por el 0xA9, filtrados con la mascara de la tecla
 	and (ix+00ch)		;bfe5
-	jp z,L_BDE2		;bfe8
-	call pausa		;bfeb
-	ld a,(0c188h)		;bfee
+	jp z,fin_de_partida		;bfe8   ; Pulsada: game over sin mas tramite
+	call pausa		;bfeb   ; La pausa, ya con el cuadro volcado: si se para, la pantalla se queda como estaba
+	ld a,(0c188h)		;bfee   ; 0x2D es el final de la agonia de la nave, el mismo limite que en la fase de a pie
 	cp 02dh		;bff1
-	jr nc,L_BFF8		;bff3
-	jp L_BF6A		;bff5
-L_BFF8:
-	ld a,(0e156h)		;bff8
+	jr nc,pierde_vida		;bff3
+	jp bucle_partida		;bff5   ; Sigue viva, o todavia esta explotando: otro cuadro
+pierde_vida:		; Resta una vida a 0xE156 y decide: con acarreo se acabo la partida y se va a fin_de_partida, y si quedaba alguna se vuelve a arranca_vida, o sea a la MISMA zona
+	ld a,(0e156h)		;bff8   ; Se acabo la agonia: una vida menos
 	sub 001h		;bffb
 	ld (0e156h),a		;bffd
-	jp c,L_BDE2		;c000
-	jp L_BEB9		;c003
+	jp c,fin_de_partida		;c000   ; Con acarreo no quedaban, y eso es game over
+	jp arranca_vida		;c003   ; Y si quedaban, otra vida en la MISMA zona: se vuelve a 0xBEB9, no a 0xBEED
 pausa:		; Si la tecla PARAR (la sexta de 0xDCB1) esta pulsada, espera a que se suelten todas las teclas y luego a que se pulse cualquiera
-	ld ix,0dcb1h		;c006
+	ld ix,0dcb1h		;c006   ; La SEXTA entrada de la tabla de teclas, PARAR
 	ld a,(ix+00bh)		;c00a
 	out (0aah),a		;c00d
 	in a,(0a9h)		;c00f
 	and (ix+00ah)		;c011
-	ret nz			;c014
-L_C015:
-	ld d,0f0h		;c015
+	ret nz			;c014   ; No esta pulsada: aqui no se para nadie
+pausa_espera_suelte:		; La primera mitad de la pausa: no sigue hasta que las nueve filas de la matriz den una pasada entera sin acusar ninguna tecla
+	ld d,0f0h		;c015   ; Primero, esperar a que se suelte TODO
 	ld a,d			;c017
-L_C018:
-	out (0aah),a		;c018
+pausa_barre_suelte:		; El barrido de las nueve filas, 0xF0 a 0xF8. Cualquier tecla pulsada reinicia la pasada
+	out (0aah),a		;c018   ; Las nueve filas de la matriz, de 0xF0 a 0xF8
 	in a,(0a9h)		;c01a
-	cpl			;c01c
+	cpl			;c01c   ; El puerto devuelve 0 en el bit de la tecla pulsada: el `cpl` lo pone del derecho
 	and a			;c01d
-	jr nz,L_C015		;c01e
-	inc d			;c020
+	jr nz,pausa_espera_suelte		;c01e   ; Algo sigue pulsado: vuelta a empezar el barrido entero
+	inc d			;c020   ; Fila siguiente
 	ld a,d			;c021
 	cp 0f9h		;c022
-	jr nz,L_C018		;c024
-L_C026:
-	ld d,0f0h		;c026
+	jr nz,pausa_barre_suelte		;c024
+pausa_espera_tecla:		; La segunda mitad: ahora da vueltas hasta que se pulse cualquier cosa
+	ld d,0f0h		;c026   ; Y ahora al reves: dar vueltas hasta que se pulse cualquier cosa
 	ld a,d			;c028
-L_C029:
+pausa_barre_tecla:		; El mismo barrido, pero saliendo en cuanto una fila acuse algo
 	out (0aah),a		;c029
 	in a,(0a9h)		;c02b
-	cpl			;c02d
+	cpl			;c02d   ; Aqui vale cualquiera de las nueve filas
 	and a			;c02e
-	ret nz			;c02f
+	ret nz			;c02f   ; Cualquier tecla de cualquier fila reanuda
 	inc d			;c030
 	ld a,d			;c031
 	cp 0f9h		;c032
-	jr nz,L_C029		;c034
-	jr L_C026		;c036
+	jr nz,pausa_barre_tecla		;c034
+	jr pausa_espera_tecla		;c036   ; Sin reloj y sin interrupciones de por medio: se queda barriendo las nueve filas
 hud_vidas_zona:		; Repinta los dos indicadores de un digito, vidas (0xE156 -> 0xE152, patrones 0x07A0) y zona (0xE157 -> 0xE154, patrones 0x1630), pasandolos a ASCII con add a,030h
-	ld a,(0e156h)		;c038
-	add a,030h		;c03b
+	ld a,(0e156h)		;c038   ; Las vidas
+	add a,030h		;c03b   ; De numero a ASCII
 	ld (0e152h),a		;c03d
-	ld ix,0e152h		;c040
-	ld de,007a0h		;c044
+	ld ix,0e152h		;c040   ; La cadena es ese digito y el cero de 0xE153, que nadie escribe nunca
+	ld de,007a0h		;c044   ; Patrones en 0x07A0
 	call hud_imprime		;c047
-	ld a,(0e157h)		;c04a
+	ld a,(0e157h)		;c04a   ; La zona, igual
 	add a,030h		;c04d
 	ld (0e154h),a		;c04f
 	ld ix,0e154h		;c052
-	ld de,01630h		;c056
-	jp hud_imprime		;c059
+	ld de,01630h		;c056   ; Patrones en 0x1630
+	jp hud_imprime		;c059   ; Con `jp` porque es lo ultimo que hace
 recarga_escudo:		; Pone el escudo (0xC188) a 3 y sigue en actualiza_nave. Nadie la llama en el juego original -su direccion no aparece ni una vez en el bloque-: es donde aterriza el POKE de inmortalidad de Input MSX 19, que cambia el `jr c` de 0xC06E por un `jr -20`
-	ld a,003h		;c05c
+	ld a,003h		;c05c   ; Aqui aterriza el POKE de inmortalidad de Input MSX 19: el escudo, recargado a 3 cada cuadro
 	ld (0c188h),a		;c05e
-	jr actualiza_nave		;c061
+	jr actualiza_nave		;c061   ; Y sigue en actualiza_nave: con el POKE puesto la nave pasa por aqui cada cuadro y el escudo no baja nunca de 3
 va_a_nave_estado:		; Trampolin de tres bytes: `jp nave_estado`
-	jp nave_estado		;c063
+	jp nave_estado		;c063   ; Trampolin de tres bytes: hud_reset repone su operando y tile_5D_espera lo desvia a arrastra_nave
 nave_estado:		; El despachador de 0xC188, que es ESCUDO y agonia en la misma variable: de 0 a 3 son los impactos que aguanta; igual a 4 arranca la explosion (siembra_particulas) y aparca la nave en 0xFF58; mas de 4 la explosion sigue. El POKE de inmortalidad de Input MSX 19 parchea su jr c de 0xC06E
-	ld hl,(0c184h)		;c066
+	ld hl,(0c184h)		;c066   ; La posicion de la nave, que llega hasta siembra_particulas si toca explotar
 	ld a,(0c188h)		;c069
-	cp 004h		;c06c
-	jr c,actualiza_nave		;c06e
-	jr z,L_C07A		;c070
-	inc a			;c072
+	cp 004h		;c06c   ; 4 es la frontera: por debajo la nave vive, de ahi para arriba se esta muriendo
+	jr c,actualiza_nave		;c06e   ; De 0 a 3 la nave vive, y sigue en actualiza_nave por fallthrough
+	jr z,nave_estalla		;c070   ; Exactamente 4: primer cuadro de la explosion
+	inc a			;c072   ; De 5 en adelante la agonia sube sola hasta 0x2D, que es donde 0xBFEE resta la vida
 	ld (0c188h),a		;c073
-	call mueve_particulas		;c076
+	call mueve_particulas		;c076   ; Y mientras tanto, solo particulas
 	ret			;c079
-L_C07A:
-	inc a			;c07a
+nave_estalla:		; El primer cuadro de la explosion: pone 0xC188 en 5, siembra las 64 particulas 16 filas por encima de la nave y aparca la nave en 0xFF58. A partir de aqui nave_estado solo cuenta hasta 0x2D
+	inc a			;c07a   ; A 5, para no volver a entrar aqui
 	ld (0c188h),a		;c07b
-	ld a,h			;c07e
+	ld a,h			;c07e   ; Sube 16 filas el centro de la explosion respecto a la posicion de la nave
 	sub 010h		;c07f
 	ld h,a			;c081
 	call siembra_particulas		;c082
 	call mueve_particulas		;c085
-	ld hl,0ff58h		;c088
+	ld hl,0ff58h		;c088   ; Aparca la nave en 0xFF58: fila 0xFF, fuera del buffer y fuera de toda caja de contacto
 	ld (0c184h),hl		;c08b
 	ret			;c08e
+
+; ----------------------------------------------------------------------
+; EL MANDO Y LOS DOS EJES
+;
+; Una posicion cabe en HL: L es la COLUMNA en pixeles y H la FILA.
+; El mando cabe en cinco bits: 0 abajo, 1 arriba, 2 derecha,
+; 3 izquierda y 4 disparo.
+;
+; Y hay dos tablas de rumbo, pegadas, dentro del rango de 0xC9A3:
+; - 0xC9A4, ocho bytes: rumbo (0-7) -> mascara para aplica_rumbo:
+; 02 06 04 05 01 09 08 0A, que es el rumbo en sentido horario
+; empezando por ARRIBA.
+; - 0xC9AC, dieciseis bytes: mascara del mando -> rumbo, con 0xFF en
+; las cuatro combinaciones que se anulan (nada, arriba mas abajo,
+; izquierda mas derecha, y las cuatro a la vez).
+; Y cierran al byte: 0xC9AC + 16 = 0xC9BC, o sea 0xC9A4-0xC9BB seguidas.
+; ----------------------------------------------------------------------
 actualiza_nave:		; La nave, de punta a punta: lee el mando, pasa el rumbo pedido por gira_rumbo, mueve la posicion de 0xC184 con aplica_rumbo y la pinta con pinta_sprite. El fotograma esta en los 5 bits bajos de 0xC9A3 y los 3 altos son el rumbo
-	call lee_mando		;c08f
-	ld (0e150h),a		;c092
-	call dispara		;c095
-	and 00fh		;c098
-	call poda_rumbo_nave		;c09a
-	call rumbo_a_mascara2		;c09d
-	cp 0ffh		;c0a0
-	push af			;c0a2
-	jr nz,L_C0A6		;c0a3
-	xor a			;c0a5
-L_C0A6:
-	rrca			;c0a6
+	call lee_mando		;c08f   ; El operando lo pone el arranque (lee_mando) o la demo (lee_mando_demo)
+	ld (0e150h),a		;c092   ; El mando del cuadro queda en 0xE150, que es de donde lo lee el menu
+	call dispara		;c095   ; El gatillo, que es el bit 4
+	and 00fh		;c098   ; Y los cuatro bits de direccion: 0 abajo, 1 arriba, 2 derecha, 3 izquierda
+	call poda_rumbo_nave		;c09a   ; Quita las direcciones que el borde no deja tomar
+	call rumbo_a_mascara2		;c09d   ; La tabla de 0xC9AC traduce las 16 combinaciones a rumbo 0-7, y devuelve 0xFF en las cuatro que no llevan a ningun sitio
+	cp 0ffh		;c0a0   ; 0xFF es "sin rumbo pedido"
+	push af			;c0a2   ; Guarda el Z de ese `cp` para 0xC0BA: sin rumbo pedido la nave no se mueve, pero el fotograma se actualiza igual
+	jr nz,rumbo_pedido_a_bits		;c0a3
+	xor a			;c0a5   ; Y a gira_rumbo se le pasa un cero
+rumbo_pedido_a_bits:		; Sube el rumbo pedido a los bits 5-7 y lo junta con los cinco bajos de 0xC9A3 -rumbo actual y espera-, que es el byte que gira_rumbo espera
+	rrca			;c0a6   ; Tres `rrca` suben el rumbo pedido a los bits 5-7
 	rrca			;c0a7
 	rrca			;c0a8
 	ld c,a			;c0a9
-	ld a,(0c9a3h)		;c0aa
+	ld a,(0c9a3h)		;c0aa   ; Los cinco bits bajos de 0xC9A3 son el rumbo actual y su espera
 	and 01fh		;c0ad
 	or c			;c0af
-	call gira_rumbo		;c0b0
+	call gira_rumbo		;c0b0   ; El giro va de un octavo por cuadro y por el lado corto: de ahi el tacto de la nave
 	ld (0c9a3h),a		;c0b3
-	pop af			;c0b6
+	pop af			;c0b6   ; El Z que 0xC0A2 habia guardado
 	ld hl,(0c184h)		;c0b7
-	jr z,L_C0D0		;c0ba
-	ld a,(0c9a3h)		;c0bc
-	and 007h		;c0bf
-	ld hl,(0c184h)		;c0c1
-	ld bc,00404h		;c0c4
-	call aplica_rumbo		;c0c7
-	call recorta_a_area		;c0ca
+	jr z,nave_pinta		;c0ba   ; Sin rumbo pedido no hay movimiento
+	ld a,(0c9a3h)		;c0bc   ; El rumbo YA GIRADO, no el pedido
+	and 007h		;c0bf   ; Los tres bits de rumbo, sin la espera
+	ld hl,(0c184h)		;c0c1   ; Reload de sobra: HL ya traia esto desde 0xC0B7 y nada lo ha tocado por el camino
+	ld bc,00404h		;c0c4   ; Cuatro pixeles por cuadro en cada eje
+	call aplica_rumbo		;c0c7   ; Suma o resta cuatro en cada eje segun la mascara del rumbo
+	call recorta_a_area		;c0ca   ; Y si el paso se sale del area, lo deshace
 	ld (0c184h),hl		;c0cd
-L_C0D0:
-	ld a,(0c9a3h)		;c0d0
+nave_pinta:		; El remate del cuadro de la nave: saca el numero de sprite de los cinco bits bajos de 0xC9A3, lo estampa en el buffer y comprueba el contacto con los tiros enemigos
+	ld a,(0c9a3h)		;c0d0   ; Los cinco bits bajos de 0xC9A3 son el numero de sprite
 	and 01fh		;c0d3
 	call pinta_sprite		;c0d5
-	call tiro_alcanza_nave		;c0d8
+	call tiro_alcanza_nave		;c0d8   ; El contacto contra los tiros enemigos, lo ultimo del cuadro de la nave
 	ret			;c0db
 alta_tile_especial:		; Mete una entrada en la tabla de los tiles especiales (0xCB3A, contador 0xCA92, tope 8): columna en (ix+001), indice de tile en (ix+002) y puntero al byte del mapa en (ix+005/006); la rutina de gobierno la pone luego el despachador de 0xC116 segun el indice, con 0xC678 de serie
 	ex af,af'			;c0dc
@@ -8150,65 +8167,65 @@ tile_estalla:		; El derrumbe de un tile especial: el estado que impacto_objeto l
 	ld (ix+002h),a		;c1ab
 	ret			;c1ae
 lee_mando_demo:		; Saca el siguiente byte de la partida grabada de la demo (puntero en 0xE158) y avanza: la demo entra por el mismo sitio que el jugador
-	ld ix,(0e158h)		;c1af
-	ld a,(ix+000h)		;c1b3
-	inc ix		;c1b6
+	ld ix,(0e158h)		;c1af   ; El puntero de la partida grabada
+	ld a,(ix+000h)		;c1b3   ; Un byte por cuadro, en el mismo formato de cinco bits que devuelve lee_mando
+	inc ix		;c1b6   ; Y avanza. No hay tope ni vuelta atras: quien lo rebobina es hud_reset, en 0xBEAB
 	ld (0e158h),ix		;c1b8
 	ret			;c1bc
 lee_mando:		; Los cinco controles en un byte: por el registro 14 del PSG si 0xDCC3 dice joystick, o preguntando las cinco primeras teclas de 0xDCB1 si dice teclado. En el joystick los bits se reordenan a mano al codigo de rumbo del juego
-	ld a,(0dcc3h)		;c1bd
+	ld a,(0dcc3h)		;c1bd   ; 0 es teclado, cualquier otra cosa es joystick
 	and a			;c1c0
-	ld c,000h		;c1c1
-	jr z,L_C1F4		;c1c3
-	ld a,(0e151h)		;c1c5
+	ld c,000h		;c1c1   ; En C se va montando el resultado bit a bit
+	jr z,lee_teclado		;c1c3
+	ld a,(0e151h)		;c1c5   ; 0xE151 lo pone a 1 el menu, y ahi el joystick no vale aunque este elegido
 	and a			;c1c8
-	jr nz,L_C1F4		;c1c9
-	ld a,007h		;c1cb
+	jr nz,lee_teclado		;c1c9
+	ld a,007h		;c1cb   ; Registro 7 del PSG, el mezclador...
 	out (0a0h),a		;c1cd
-	ld a,0ffh		;c1cf
+	ld a,0ffh		;c1cf   ; ...con 0xFF entero. El volcado de sonido lo repone desde 0xEE14 en el siguiente tic de interrupcion, asi que este valor solo dura lo que tarda el `in` de dos instrucciones mas abajo
 	out (0a1h),a		;c1d1
-	ld a,00eh		;c1d3
+	ld a,00eh		;c1d3   ; Registro 14, que es donde el MSX cablea el mando
 	out (0a0h),a		;c1d5
-	in a,(0a2h)		;c1d7
-	rra			;c1d9
-	jr c,L_C1DE		;c1da
-	set 1,c		;c1dc
+	in a,(0a2h)		;c1d7   ; El puerto de LECTURA del PSG, que es el 0xA2 y no el 0xA1
+	rra			;c1d9   ; Cinco `rra` que reparten los bits UNO A UNO, porque el orden del joystick del MSX no es el del codigo de rumbo del juego
+	jr c,L_C1DE		;c1da   ; El puerto trae 0 en lo que esta pulsado
+	set 1,c		;c1dc   ; Arriba del joystick -> bit 1
 L_C1DE:
 	rra			;c1de
 	jr c,L_C1E3		;c1df
-	set 0,c		;c1e1
+	set 0,c		;c1e1   ; Abajo -> bit 0
 L_C1E3:
 	rra			;c1e3
 	jr c,L_C1E8		;c1e4
-	set 3,c		;c1e6
+	set 3,c		;c1e6   ; Izquierda -> bit 3
 L_C1E8:
 	rra			;c1e8
 	jr c,L_C1ED		;c1e9
-	set 2,c		;c1eb
+	set 2,c		;c1eb   ; Derecha -> bit 2
 L_C1ED:
 	rra			;c1ed
 	jr c,L_C1F2		;c1ee
-	set 4,c		;c1f0
+	set 4,c		;c1f0   ; Disparo -> bit 4, el unico que cae en su sitio
 L_C1F2:
 	ld a,c			;c1f2
 	ret			;c1f3
-L_C1F4:
-	ld ix,0dcb1h		;c1f4
-	ld b,005h		;c1f8
-L_C1FA:
-	ld a,(ix+001h)		;c1fa
+lee_teclado:		; El camino de teclado de lee_mando: recorre las CINCO primeras entradas de la tabla de 0xDCB1 metiendo cada tecla por el bit 7 de C, y remata con tres `rrca` que dejan los cinco bits en el 0 al 4
+	ld ix,0dcb1h		;c1f4   ; La tabla de teclas: mascara del bit y valor de la fila, dos bytes por entrada
+	ld b,005h		;c1f8   ; CINCO, no siete: PARAR y ABANDONAR se leen en otro sitio
+lee_teclado_bucle:		; Una entrada de la tabla: fila por el puerto 0xAA, lectura por el 0xA9, mascara del bit, y el resultado a C por acarreo
+	ld a,(ix+001h)		;c1fa   ; La fila, por el puerto 0xAA...
 	out (0aah),a		;c1fd
-	in a,(0a9h)		;c1ff
-	and (ix+000h)		;c201
+	in a,(0a9h)		;c1ff   ; ...y los ocho bits de esa fila, por el 0xA9
+	and (ix+000h)		;c201   ; Filtrados con la mascara del bit de esa tecla
 	jr nz,L_C207		;c204
-	scf			;c206
+	scf			;c206   ; Pulsada: acarreo a 1
 L_C207:
-	rr c		;c207
-	inc ix		;c209
-	inc ix		;c20b
-	djnz L_C1FA		;c20d
+	rr c		;c207   ; Que entra por el bit 7 de C y va bajando vuelta a vuelta
+	inc ix		;c209   ; Dos bytes por entrada
+	inc ix		;c20b   ; Dos bytes por entrada, mascara y fila
+	djnz lee_teclado_bucle		;c20d
 	ld a,c			;c20f
-	rrca			;c210
+	rrca			;c210   ; Tras cinco `rr c` los cinco bits estan en el 7 al 3: estos tres `rrca` los bajan al 4 al 0, y en el orden de la tabla, que es ABAJO, ARRIBA, DERECHA, IZQUIERDA, DISPARO
 	rrca			;c211
 	rrca			;c212
 	ret			;c213
@@ -10767,7 +10784,7 @@ L_D3E1:
 	ret nc			;d415
 	inc (hl)			;d416
 	jp hud_vidas_zona		;d417
-alta_enemigo_cuadro:		; El alta de enemigos cuadro a cuadro, la penultima llamada del bucle de partida (0xBF97). Tres filtros antes de nada: una tirada de cada 32 (`and 01fh`), la bandera 0xDAC5 a cero -o sea antes de que salga el tile de fin de zona- y una segunda tirada cuya dificultad sale de la zona y de cuantos enemigos hay ya volando: b = ((7 - zona) pasado por `rrca`) + 0xC97A + 0xC98F, y hay que sacar cero en `azar and (2^b - 1)`; si esa suma es cero entra sin tirar. Luego saca una columna al azar por debajo de 0xB0 y suelta el enemigo en la fila 0, en la tabla de 0xC990 si el bit 1 de esa columna esta puesto -con la de 0xC97B de reserva si estaba llena- y en la de 0xC97B si no. Es la hermana de la alta_enemigo_cuadro de la fase de a pie: mismo esquema con otros numeros, y solo 7 de sus 68 bytes coinciden
+alta_enemigo_cuadro:		; El alta de enemigos cuadro a cuadro, la ANTEPENULTIMA llamada del bucle de partida (0xBF97): detras van todavia va_a_nave_estado en 0xBF9A y gobierna_instalaciones en 0xBF9D. Tres filtros antes de nada: una tirada de cada 32 (`and 01fh`), la bandera 0xDAC5 a cero -o sea antes de que salga el tile de fin de zona- y una segunda tirada cuya dificultad sale de la zona y de cuantos enemigos hay ya volando: b = ((7 - zona) pasado por `rrca`) + 0xC97A + 0xC98F, y hay que sacar cero en `azar and (2^b - 1)`; si esa suma es cero entra sin tirar. Luego saca una columna al azar por debajo de 0xB0 y suelta el enemigo en la fila 0, en la tabla de 0xC990 si el bit 1 de esa columna esta puesto -con la de 0xC97B de reserva si estaba llena- y en la de 0xC97B si no. Es la hermana de la alta_enemigo_cuadro de la fase de a pie: mismo esquema con otros numeros, y solo 7 de sus 68 bytes coinciden
 	call azar		;d41a
 	and 01fh		;d41d
 	ret nz			;d41f
@@ -10971,7 +10988,7 @@ L_D566:
 	call scroll_records		;d56c
 	call vuelca_pantalla		;d56f
 	call hay_tecla		;d572
-	jp nz,L_BDE5		;d575
+	jp nz,monta_menu		;d575
 	jp L_D566		;d578
 espera_fin_musica:		; Da vueltas hasta que el canal 1 se queda sin guion (0xEDA3 a cero) o hasta que se pulsa una tecla, con una espera de 1000 entre vuelta y vuelta
 	xor a			;d57b
@@ -11315,7 +11332,7 @@ L_D803:
 	ld a,(0e157h)		;d80c
 	cp 008h		;d80f
 	jp z,L_F71C		;d811
-	jp L_BEED		;d814
+	jp carga_zona		;d814
 espera_1000:		; espera_bc con BC = 1000
 	ld bc,003e8h		;d817
 espera_bc:		; Espera activa: decrementa BC hasta cero y vuelve
@@ -12120,22 +12137,22 @@ DATA_relleno_E14E:
 
 
 interrupcion:		; El epilogo de la interrupcion, lo que el arranque engancha en H.TIMI (0xBD9D mete 0xC3 en 0xFD9F y 0xBDA3 la direccion en 0xFDA0, con H.KEYI ya tapado con un `ret`): corta con `di`, tira con `pop hl` la vuelta a la ROM, llama a tic_sonido y desapila los DIEZ pares que el manejador de la BIOS habia guardado -IX, IY, AF, BC, DE, HL y, tras `ex af,af` y `exx`, los cuatro alternos-, de modo que el `ei / ret` de 0xE16D vuelve de la interrupcion sin pasar por el resto del manejador. Gemela de la interrupcion de la fase de a pie (0xC46E): 21 bytes, y las dos unicas diferencias son el operando del `call`
-	di			;e15a
-	pop hl			;e15b
-	call tic_sonido		;e15c
-	pop ix		;e15f
+	di			;e15a   ; Lo que viene es un desmontaje a mano de la pila del manejador de la BIOS, y no admite visitas
+	pop hl			;e15b   ; Tira la vuelta a la ROM: esta rutina NO va a volver al manejador
+	call tic_sonido		;e15c   ; El unico trabajo de verdad del gancho: un tic del interprete de sonido
+	pop ix		;e15f   ; Los seis pares que el manejador habia guardado...
 	pop iy		;e161
 	pop af			;e163
 	pop bc			;e164
 	pop de			;e165
 	pop hl			;e166
-	ex af,af'			;e167
+	ex af,af'			;e167   ; ...y los otros cuatro, tras cambiar a los registros alternos
 	exx			;e168
 	pop af			;e169
 	pop bc			;e16a
 	pop de			;e16b
 	pop hl			;e16c
-	ei			;e16d
+	ei			;e16d   ; Y la vuelta de la interrupcion sale de aqui, no de la ROM
 	ret			;e16e
 arranca_musica:		; Instala la musica de la partida de golpe: canal 0 <- 0xEB52, canal 1 <- 0xEC4A, canal 2 <- 0xECCB. Medido en el emulador, es exactamente lo que se ve arrancar (ver el bloque de la partitura)
 	ld a,080h		;e16f

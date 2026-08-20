@@ -141,9 +141,9 @@ While we're at it: the randomness for the particles — and for the 48-star
 field in the ship stage's background, which are actually random heights
 painted with the same fixed pattern `0x18` — comes from a generator that
 reads the BIOS ROM as if it were an entropy table. And the immortality POKE
-from Input MSX magazine, the one that patches 0xC06E, lands exactly on the
-dispatcher that decides whether the ship is alive or exploding: immortality
-here is, literally, never letting the particle system get called at all.
+from Input MSX magazine, the one that patches 0xC06E, sends the ship through
+0xC05C on every frame, where a 3 goes into the shield counter: immortality here
+is, literally, a shield that is recharged before it can ever run out.
 
 ### A slip in the enemy spawner, inherited instruction by instruction
 
@@ -786,13 +786,21 @@ refills the shield to 3. So the same bonus is one thing or the other
 depending on how you arrive at it — get there banged up and you get healed,
 get there at full shield and you get an extra life.
 
-And that finally settles a loose piece that had been sitting around since
-day one. The immortality POKE published by *Input MSX* issue 19 patches a
-jump to skip the comparison of that counter against four — which is the
-exact same invulnerability door the on-foot stage has three times over: once
-the counter reaches four or more, the game ignores hits because it thinks
-you're already dying. The POKE doesn't hand out lives: it just leaves the
-player permanently stuck in that state.
+And that finally settles a loose piece that had been sitting around since day
+one: the immortality POKE published by *Input MSX* issue 19. This page used to
+say it left the player stuck in the dying state, and **that is wrong**. The
+arithmetic settles it.
+
+The POKE replaces the `jr c` at 0xC06E with the bytes `18 EC` — `jr -20`
+counted from 0xC070, so **0xC070 − 20 = 0xC05C**: three instructions that put a
+3 into 0xC188 and carry on into the ship's movement. And 0xC188 is the shield.
+So what the POKE does is **recharge your shield to full on every frame**, not
+leave you dying: the ship always goes through there, the counter never reaches
+four and the explosion is never triggered.
+
+The pretty detail is that those three instructions **are called by nothing in
+the original game** — their address does not appear once in the block. They are
+there for the POKE to land on.
 
 ### The game frame travels in the block, and the loading screen sets the table
 

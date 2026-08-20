@@ -782,13 +782,21 @@ vida te reponen el escudo a 3. O sea que el mismo premio es una cosa o la
 otra según cómo llegues a él: con la nave tocada te curan, y con la nave
 entera te dan una vida de propina.
 
-Y ahí encaja, por fin, una pieza que llevaba suelta desde el primer día. El
-POKE de inmortalidad que publicó la revista *Input MSX* número 19 parchea un
-salto para saltarse la comparación de ese contador contra cuatro — que es la
-misma puerta de invulnerabilidad que la fase de a pie tiene por triplicado:
-con el contador ya en cuatro o más, el juego ignora los choques porque cree
-que ya te estás muriendo. El POKE no regala vidas: lo que hace es dejar al
-jugador permanentemente atrapado en ese estado.
+Y ahí encaja, por fin, una pieza que llevaba suelta desde el primer día: el
+POKE de inmortalidad que publicó la revista *Input MSX* número 19. Esta página
+contaba que dejaba al jugador atrapado en el estado de agonía, y **es falso**.
+Basta con hacer la cuenta.
+
+El POKE cambia el `jr c` de 0xC06E por los bytes `18 EC`, o sea `jr -20`
+contado desde 0xC070: **0xC070 − 20 = 0xC05C**, tres instrucciones que ponen un
+3 en 0xC188 y siguen al movimiento de la nave. Y 0xC188 es el escudo. Así que
+lo que hace el POKE es **recargarte el escudo a tope en cada cuadro**, no
+dejarte muriéndote: la nave pasa por ahí siempre, el contador no llega nunca a
+cuatro y la explosión no se dispara.
+
+El detalle bonito es que esas tres instrucciones **no las llama nadie en el
+juego original** —su dirección no aparece ni una vez en el bloque—. Están ahí
+para que el POKE aterrice justo encima.
 
 ### El marco del juego viaja en el bloque, y la pantalla de carga le deja la mesa puesta
 
