@@ -11510,49 +11510,49 @@ L_D894:
 	ld ix,0c920h		;d89c
 	jp pinta_rejilla		;d8a0
 inst_torreta:		; La torreta: mira el contacto y, una vez de cada 32, dispara desde su propia posicion mas 0x1808. Si el disparo entra, se cambia a si misma la rutina por inst_recarga
-	call choca_y_revienta		;d8a3
-	call azar		;d8a6
+	call choca_y_revienta		;d8a3   ; Primero lo que le puede pasar a ella
+	call azar		;d8a6   ; Y una vez de cada 32, dispara
 	and 01fh		;d8a9
 	ret nz			;d8ab
-	ld a,(ix+000h)		;d8ac
+	ld a,(ix+000h)		;d8ac   ; La columna de la celda va en bytes: por ocho para tenerla en pixeles
 	add a,a			;d8af
 	add a,a			;d8b0
 	add a,a			;d8b1
 	ld l,a			;d8b2
 	ld h,(ix+007h)		;d8b3
-	ld bc,01808h		;d8b6
+	ld bc,01808h		;d8b6   ; Mas ocho pixeles y 24 filas, que es justo el alto de una celda: el disparo nace por su borde de abajo
 	add hl,bc			;d8b9
 	ld b,h			;d8ba
 	ld c,l			;d8bb
-	ld a,008h		;d8bc
+	ld a,008h		;d8bc   ; El 8 que alta_disparo espera en A'
 	ex af,af'			;d8be
 	call alta_disparo		;d8bf
 	ret nc			;d8c2
-	ld hl,inst_recarga		;d8c3
+	ld hl,inst_recarga		;d8c3   ; Disparada, la torreta se pone a recargar
 	ld (ix+003h),l		;d8c6
 	ld (ix+004h),h		;d8c9
 	ret			;d8cc
 inst_recarga:		; La torreta recargando: cada dos cuadros (bit 0 de 0xCA8E) sube su celda de la rejilla, y al llegar a 10 la devuelve a 6 y vuelve a ser inst_torreta. Ese 6..9 es la animacion del canon
-	call choca_y_revienta		;d8cd
-	ld a,(0ca8eh)		;d8d0
+	call choca_y_revienta		;d8cd   ; Recargando tambien se la puede reventar
+	ld a,(0ca8eh)		;d8d0   ; La recarga corre a la mitad de velocidad, un paso cada dos cuadros
 	and 001h		;d8d3
 	ret z			;d8d5
-	inc (ix+002h)		;d8d6
+	inc (ix+002h)		;d8d6   ; Sube el tipo y sube la celda a la vez: los dos van del 6 al 9
 	ld l,(ix+005h)		;d8d9
 	ld h,(ix+006h)		;d8dc
 	inc (hl)			;d8df
 	ld a,(hl)			;d8e0
-	cp 00ah		;d8e1
+	cp 00ah		;d8e1   ; Y al llegar a 10 vuelven los dos al 6...
 	ret c			;d8e3
 	ld a,006h		;d8e4
 	ld (hl),a			;d8e6
 	ld (ix+002h),a		;d8e7
-	ld hl,inst_torreta		;d8ea
+	ld hl,inst_torreta		;d8ea   ; ...y la torreta esta otra vez lista
 	ld (ix+003h),l		;d8ed
 	ld (ix+004h),h		;d8f0
 	ret			;d8f3
 inst_quieta:		; La instalacion que no hace nada: solo mira si la han tocado. Dos instrucciones
-	call choca_y_revienta		;d8f4
+	call choca_y_revienta		;d8f4   ; La instalacion quieta no hace mas que dejarse reventar
 	ret			;d8f7
 inst_nido:		; El nido: pone su celda a 10 y, una vez de cada 64, suelta un enemigo apuntado a la nave (rumbo_hacia sobre 0xC184) y se marca con un 11
 	call choca_y_revienta		;d8f8   ; Primero lo que le puede pasar a el: el disparo del jugador

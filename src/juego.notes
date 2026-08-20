@@ -3725,3 +3725,22 @@ C 0xD872 La fila avanza lo que diga la velocidad
 C 0xD874 Y si se ha desbordado, el noveno bit CAMBIA DE ESTADO con un `xor`: asi se lleva un contador de nueve bits repartido en dos sitios que no estan juntos
 C 0xD87B Los dos bytes vuelven de una vez
 C 0xD87F Pasado 0xC0, y con el noveno bit ya apagado, la tanda se ha ido de la pantalla
+#
+# LA RECARGA DE LA TORRETA SE VE. Al disparar, inst_torreta se pasa a
+# inst_recarga (0xD8C3), y esa sube de uno en uno -una vez de cada dos cuadros-
+# el valor de la celda del mapa: 6, 7, 8, 9. Al llegar a 10 lo devuelve a 6 y
+# vuelve a inst_torreta. Como el valor de la celda ES su dibujo (pinta_rejilla
+# lo usa de indice en la tabla de centinelas), esos cuatro pasos son la torreta
+# recargandose a la vista, y duran ocho cuadros clavados.
+C 0xD8A3 Primero lo que le puede pasar a ella
+C 0xD8A6 Y una vez de cada 32, dispara
+C 0xD8AC La columna de la celda va en bytes: por ocho para tenerla en pixeles
+C 0xD8B6 Mas ocho pixeles y 24 filas, que es justo el alto de una celda: el disparo nace por su borde de abajo
+C 0xD8BC El 8 que alta_disparo espera en A'
+C 0xD8C3 Disparada, la torreta se pone a recargar
+C 0xD8CD Recargando tambien se la puede reventar
+C 0xD8D0 La recarga corre a la mitad de velocidad, un paso cada dos cuadros
+C 0xD8D6 Sube el tipo y sube la celda a la vez: los dos van del 6 al 9
+C 0xD8E1 Y al llegar a 10 vuelven los dos al 6...
+C 0xD8EA ...y la torreta esta otra vez lista
+C 0xD8F4 La instalacion quieta no hace mas que dejarse reventar
