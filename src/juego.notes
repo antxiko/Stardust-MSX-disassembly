@@ -3112,3 +3112,117 @@ C 0xD157 Se apaga el bit 2, la derecha
 C 0xD15A Ni un borde ni el otro: el rumbo vuelve intacto
 C 0xD15C El paso lateral ya dado; el area llega hasta 0xB0
 C 0xD160 Si se ha salido, se repone la columna que habia a la entrada, y el objeto se queda pegado al borde
+#
+# ============================================================================
+# CUARTA TANDA DE COMENTARIO DE LINEA: LA ONDA, EL PERSEGUIDOR Y EL BONUS
+# ============================================================================
+#
+# Tramo comentado: tile_46 con su onda expansiva (0xD314-0xD380),
+# alta_objeto_c990 (0xCD20), tile_45 y todo el perseguidor (0xCE73-0xCFA0),
+# inst_bonus (0xD95A) y el tiro que persigue (0xDF52-0xDFA5).
+#
+# 0xD3C5 LLEVA DOS COSAS EN LA MISMA VARIABLE, y por eso todo el que la mira
+# compara contra un numero distinto:
+#
+#     0            no hay perseguidor          (lo que espera tile_45)
+#     1            ya vuela                    (mueve_perseguidor)
+#     5 a 9        se esta muriendo            (0xCF85, cuatro figuras)
+#     0x0A o mas   esta apareciendo, Y ADEMAS ese valor es el EJE del espejo
+#
+# El eje sale de tile_45: columna del tile por dos mas 0x10 (0xCE96). Y es un
+# eje de verdad, no un estado con un numero grande: pinta_pareja estampa el
+# sprite B en L y el B+1 en 0xD3C5 - L (0xCF1F), o sea que las dos mitades
+# salen reflejadas: lo que una avanza, la otra lo retrocede. Empiezan a 0x10
+# de distancia -que es lo que vale 0xD3C5 menos dos veces la columna- y de ahi
+# cada mitad se mueve con su propio paso, que ademas cambia cada cuadro.
+#
+# Y EL CONTADOR DE UN OBJETO PUEDE SER SU FOTOGRAMA DE EXPLOSION. En el tiro
+# que persigue, (ix+000) es la velocidad en columnas mientras vuela -de -5 a
+# +5, que es a lo que satura persigue_con_velocidad- y el numero de fotograma
+# desde 0x7C: el `sub 069h` de 0xDF36 convierte 0x7C, 0x7D, 0x7E y 0x7F en los
+# sprites 0x1D a 0x20, los cuatro de la explosion que ya usaban la nave y la
+# bandada. Reventarlo es escribir ese 0x7C (0xDFA2), y nada mas.
+C 0xD314 Antes que nada se puede reventar como cualquier otro tile especial
+C 0xD317 El primer cuadro (ix+002) todavia trae el indice de tile, 0x46...
+C 0xD31E ...y se cambia por un 0xFF que el `inc` de abajo deja en cero: de aqui en adelante es un contador
+C 0xD320 El contador se planta en 8 y ahi se queda
+C 0xD328 Ocho pixeles por cada paso del contador...
+C 0xD32C ...que se le restan a la columna del tile: la onda crece hacia los dos lados a la vez
+C 0xD331 (ix+000) es el contador de cuadros del tile Y su fila: el fondo baja dos pixeles por cuadro, asi que la fila es el contador por dos
+C 0xD336 La posicion en pixeles se guarda, que buffer_dir quiere la columna en bytes
+C 0xD33D La direccion en el buffer donde arranca la banda
+C 0xD340 El ancho: contador por dos mas cuatro bytes, o sea de 32 a 160 pixeles
+C 0xD347 Y la brocha, que es solo suya
+C 0xD34A El ruido de la onda, en el canal 1 y cada cuadro
+C 0xD353 Si la nave ya esta explotando no hay nada que comprobar
+C 0xD359 El sesgo de 0x20 con que solapa_eje espera las filas
+C 0xD35E Primero el eje de las filas, contra la fila de la nave: la caja de la onda es de 6 y la de la nave de 0x0C
+C 0xD36D Y en el de las columnas la caja de la onda crece con ella, 16 pixeles por paso del contador sobre una base de 0x1E
+C 0xD377 H la columna de la onda, L la de la nave
+C 0xD380 Se tocan por los dos ejes: muerto
+C 0xCD20 El contador de la tabla
+C 0xCD24 Dos a la vez como mucho
+C 0xCD27 Sube el contador, y el valor viejo es el indice
+C 0xCD2B Por cuatro: entradas de cuatro bytes
+C 0xCD31 El primer byte a cero
+C 0xCD34 El valor de entrada viene en A' y se guarda en D, que hace falta al final
+C 0xCD36 Los dos bits altos del azar encima del rumbo. El `add a,004h` y el `sub 004h` se anulan -mientras el valor de entrada no pase de 0x3B, el `or` es una suma-, asi que lo que queda escrito es el valor de entrada con dos bits de azar en los altos
+C 0xCD43 Columna y fila
+C 0xCD46 Si el valor de entrada no era cero, se va con carry y sin sonar...
+C 0xCD4A ...y si era cero suena, en el canal 0 porque A vale cero desde el `and a`
+C 0xCE73 Se puede reventar como cualquier otro tile especial
+C 0xCE76 (ix+000) es el contador de cuadros y a la vez la fila: el tile no suelta nada hasta llegar a la fila 0x2D
+C 0xCE7C Uno cada vez: si 0xD3C5 no esta a cero, ya hay perseguidor
+C 0xCE81 Y solo con la zona despejada de instalaciones, que es lo que marca el 0x80 de 0xCA91
+C 0xCE8B La fila: el contador por dos mas ocho
+C 0xCE92 Y la columna, tal cual
+C 0xCE96 La columna por dos mas 0x10, que es el EJE del espejo de la aparicion y a la vez la marca de "apareciendo"
+C 0xCE9C Las dos mitades arrancan en el mismo sitio, con 0xF9 y 0xF2 de paso lateral: -7 y -14
+C 0xCEB0 Dieciseis cuadros de aparicion
+C 0xCEB5 Y su sonido, en el canal 0
+C 0xCEBC Por debajo de 0x0A no hay aparicion que pintar: es el estado, no el eje
+C 0xCEC2 Las dos mitades viven en 0xD3C7: tres bytes cada una, columna, fila y paso lateral
+C 0xCECC Sprites 0x19 y 0x1A, paso lateral que crece de uno en uno...
+C 0xCECF ...y cuatro filas hacia arriba por cuadro
+C 0xCED7 La posicion y el paso, ya avanzados, se devuelven a su sitio
+C 0xCEE6 La segunda mitad: sprites 0x1B y 0x1C, el paso lateral crece de dos en dos...
+C 0xCEE9 ...y sube tres filas por cuadro, o sea que las dos parejas se abren a distinta velocidad
+C 0xCEFA Un cuadro menos de aparicion
+C 0xCEFF Agotada: 0xD3C5 pasa a valer 1, que es "ya vuela", y deja de ser un eje
+C 0xCF04 Sin retardo de disparo...
+C 0xCF08 ...y con tres impactos de vida
+C 0xCF0E El bramido de la aparicion, en el canal 0
+C 0xCF14 El sprite B en la posicion que le llega
+C 0xCF1F Y el B+1 reflejado: 0xD3C5 menos la columna, que es lo que convierte la aparicion en dos mitades que se abren
+C 0xCF2C La fila avanza D y la columna E...
+C 0xCF32 ...y el propio paso lateral crece C cada cuadro: empieza negativo -0xF9 y 0xF2, o sea -7 y -14- y va subiendo, asi que cada mitad frena, se para y se vuelve
+C 0xCF85 De 0x0A para arriba esto es el eje del espejo y no un estado: aqui no se toca
+C 0xCF88 De 5 a 9 el perseguidor se esta muriendo, y el contador sube uno por cuadro
+C 0xCF90 (estado - 6) por cuatro mas 0x3B: las figuras 0x3B, 0x3F, 0x43 y 0x47, cuatro sprites cada una
+C 0xCF9C Al llegar a 0x0A se acabo: 0xD3C5 a cero y ya no hay perseguidor
+C 0xD95A Con la nave explotando no se recoge nada
+C 0xD962 La posicion de la nave
+C 0xD966 El eje de las filas contra (ix+007), cajas de 0x0C y 0x10
+C 0xD975 Y el de las columnas, contra (ix+000) por ocho
+C 0xD982 Recogido: la celda del mapa pasa a valer 0x10
+C 0xD98A Con la barra de energia por debajo de 10 el premio es energia y se acaba la historia
+C 0xD991 Estando llena, y solo si el disparo cuadruple no esta ya puesto...
+C 0xD997 ...una vez de cada cuatro lo da, que es la unica manera de conseguirlo
+C 0xD9A2 Y con sonido propio, distinto del de la energia
+C 0xD9AC Diez de energia mas, que la barra ya recorta a 20 al pintarla
+C 0xD9BF En los dos casos, 27 puntos a las unidades del marcador
+C 0xD9C7 Y la instalacion se retira
+C 0xDF52 El objetivo, ya elegido: la nave o el 0xFF60 de la huida
+C 0xDF53 Corrige la velocidad un punto por eje hacia el, saturada a mas menos cinco, y aplica el movimiento
+C 0xDF57 Pasada la fila 0xE0 se ha ido por arriba y se da de baja
+C 0xDF5C La velocidad nueva...
+C 0xDF62 ...y la posicion nueva, a su sitio
+C 0xDF68 El bit bajo del contador alterna los dos dibujos del tiro
+C 0xDF6D Y el contador baja: arranca en cero, o sea que la primera vuelta ya lo deja en 0xFF
+C 0xDF71 El dibujo
+C 0xDF74 El disparo del jugador lo puede derribar
+C 0xDF77 Y si la nave esta explotando, aqui se acaba
+C 0xDF7E La posicion del tiro contra la de la nave, primero las filas...
+C 0xDF95 ...y luego las columnas, con las mismas cajas de 4 y 0x0A
+C 0xDF9F Se tocan: dos puntos de escudo de una vez
+C 0xDFA2 Y el propio tiro estalla, que es escribirle un 0x7C en el byte que mientras volaba era su velocidad

@@ -9887,22 +9887,22 @@ L_CD12:
 L_CD1F:
 	ret			;cd1f
 alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope 2, entradas de 4 B) con el rumbo sacado del azar, y solo suena 0xEB42 si el A' de entrada era cero
-	ld hl,0c98fh		;cd20
+	ld hl,0c98fh		;cd20   ; El contador de la tabla
 	ld a,(hl)			;cd23
-	cp 002h		;cd24
+	cp 002h		;cd24   ; Dos a la vez como mucho
 	ret nc			;cd26
-	inc (hl)			;cd27
+	inc (hl)			;cd27   ; Sube el contador, y el valor viejo es el indice
 	ld h,000h		;cd28
 	ld l,a			;cd2a
-	add hl,hl			;cd2b
+	add hl,hl			;cd2b   ; Por cuatro: entradas de cuatro bytes
 	add hl,hl			;cd2c
 	ld de,0c990h		;cd2d
 	add hl,de			;cd30
-	ld (hl),000h		;cd31
+	ld (hl),000h		;cd31   ; El primer byte a cero
 	inc hl			;cd33
-	ex af,af'			;cd34
+	ex af,af'			;cd34   ; El valor de entrada viene en A' y se guarda en D, que hace falta al final
 	ld d,a			;cd35
-	add a,004h		;cd36
+	add a,004h		;cd36   ; Los dos bits altos del azar encima del rumbo. El `add a,004h` y el `sub 004h` se anulan -mientras el valor de entrada no pase de 0x3B, el `or` es una suma-, asi que lo que queda escrito es el valor de entrada con dos bits de azar en los altos
 	ld e,a			;cd38
 	call azar		;cd39
 	and 0c0h		;cd3c
@@ -9910,14 +9910,14 @@ alta_objeto_c990:		; Mete un objeto en la tabla de 0xC990 (contador 0xC98F, tope
 	sub 004h		;cd3f
 	ld (hl),a			;cd41
 	inc hl			;cd42
-	ld (hl),c			;cd43
+	ld (hl),c			;cd43   ; Columna y fila
 	inc hl			;cd44
 	ld (hl),b			;cd45
-	ld a,d			;cd46
+	ld a,d			;cd46   ; Si el valor de entrada no era cero, se va con carry y sin sonar...
 	and a			;cd47
 	scf			;cd48
 	ret nz			;cd49
-	ld de,0eb42h		;cd4a
+	ld de,0eb42h		;cd4a   ; ...y si era cero suena, en el canal 0 porque A vale cero desde el `and a`
 	call arranca_guion_libre		;cd4d
 	scf			;cd50
 	ret			;cd51
@@ -10087,74 +10087,74 @@ L_CE51:
 	ldir		;ce6e
 	jp L_CE4B		;ce70
 tile_45:		; El tile 0x45 suelta al perseguidor: cuando su fila llega a 0x2D, no hay perseguidor (0xD3C5 a cero) y la zona ya no tiene instalaciones (0xCA91 en 0x80), monta sus dos mitades en 0xD3C7, pone los 16 cuadros de aparicion en 0xD3C6 y arranca el sonido 0xED55
-	call impacto_objeto		;ce73
-	ld a,(ix+000h)		;ce76
+	call impacto_objeto		;ce73   ; Se puede reventar como cualquier otro tile especial
+	ld a,(ix+000h)		;ce76   ; (ix+000) es el contador de cuadros y a la vez la fila: el tile no suelta nada hasta llegar a la fila 0x2D
 	cp 02dh		;ce79
 	ret c			;ce7b
-	ld a,(0d3c5h)		;ce7c
+	ld a,(0d3c5h)		;ce7c   ; Uno cada vez: si 0xD3C5 no esta a cero, ya hay perseguidor
 	and a			;ce7f
 	ret nz			;ce80
-	ld a,(0ca91h)		;ce81
+	ld a,(0ca91h)		;ce81   ; Y solo con la zona despejada de instalaciones, que es lo que marca el 0x80 de 0xCA91
 	cp 080h		;ce84
 	ret nz			;ce86
 	ld iy,0d3c7h		;ce87
-	ld a,(ix+000h)		;ce8b
+	ld a,(ix+000h)		;ce8b   ; La fila: el contador por dos mas ocho
 	add a,a			;ce8e
 	add a,008h		;ce8f
 	ld h,a			;ce91
-	ld a,(ix+001h)		;ce92
+	ld a,(ix+001h)		;ce92   ; Y la columna, tal cual
 	ld l,a			;ce95
-	add a,a			;ce96
+	add a,a			;ce96   ; La columna por dos mas 0x10, que es el EJE del espejo de la aparicion y a la vez la marca de "apareciendo"
 	add a,010h		;ce97
 	ld (0d3c5h),a		;ce99
-	ld (iy+000h),l		;ce9c
+	ld (iy+000h),l		;ce9c   ; Las dos mitades arrancan en el mismo sitio, con 0xF9 y 0xF2 de paso lateral: -7 y -14
 	ld (iy+001h),h		;ce9f
 	ld (iy+002h),0f9h		;cea2
 	ld (iy+003h),l		;cea6
 	ld (iy+004h),h		;cea9
 	ld (iy+005h),0f2h		;ceac
-	ld a,010h		;ceb0
+	ld a,010h		;ceb0   ; Dieciseis cuadros de aparicion
 	ld (0d3c6h),a		;ceb2
-	xor a			;ceb5
+	xor a			;ceb5   ; Y su sonido, en el canal 0
 	ld de,0ed55h		;ceb6
 	jp arranca_guion_libre		;ceb9
 aparece_perseguidor:		; Los 16 cuadros de la aparicion: pinta dos parejas de sprites (0x19/0x1A y 0x1B/0x1C) reflejadas respecto a 0xD3C5, subiendolas 4 y 3 filas por cuadro; al agotarse el contador pone 0xD3C5 a 1 -ya vuela-, le da tres impactos de vida y suena 0xEA98
-	ld a,(0d3c5h)		;cebc
+	ld a,(0d3c5h)		;cebc   ; Por debajo de 0x0A no hay aparicion que pintar: es el estado, no el eje
 	cp 00ah		;cebf
 	ret c			;cec1
-	ld iy,0d3c7h		;cec2
+	ld iy,0d3c7h		;cec2   ; Las dos mitades viven en 0xD3C7: tres bytes cada una, columna, fila y paso lateral
 	ld l,(iy+000h)		;cec6
 	ld h,(iy+001h)		;cec9
-	ld bc,01901h		;cecc
-	ld d,0fch		;cecf
+	ld bc,01901h		;cecc   ; Sprites 0x19 y 0x1A, paso lateral que crece de uno en uno...
+	ld d,0fch		;cecf   ; ...y cuatro filas hacia arriba por cuadro
 	ld e,(iy+002h)		;ced1
 	call pinta_pareja		;ced4
-	ld (iy+000h),l		;ced7
+	ld (iy+000h),l		;ced7   ; La posicion y el paso, ya avanzados, se devuelven a su sitio
 	ld (iy+001h),h		;ceda
 	ld (iy+002h),e		;cedd
 	ld l,(iy+003h)		;cee0
 	ld h,(iy+004h)		;cee3
-	ld bc,01b02h		;cee6
-	ld d,0fdh		;cee9
+	ld bc,01b02h		;cee6   ; La segunda mitad: sprites 0x1B y 0x1C, el paso lateral crece de dos en dos...
+	ld d,0fdh		;cee9   ; ...y sube tres filas por cuadro, o sea que las dos parejas se abren a distinta velocidad
 	ld e,(iy+005h)		;ceeb
 	call pinta_pareja		;ceee
 	ld (iy+003h),l		;cef1
 	ld (iy+004h),h		;cef4
 	ld (iy+005h),e		;cef7
-	ld hl,0d3c6h		;cefa
+	ld hl,0d3c6h		;cefa   ; Un cuadro menos de aparicion
 	dec (hl)			;cefd
 	ret nz			;cefe
-	ld a,001h		;ceff
+	ld a,001h		;ceff   ; Agotada: 0xD3C5 pasa a valer 1, que es "ya vuela", y deja de ser un eje
 	ld (0d3c5h),a		;cf01
-	xor a			;cf04
+	xor a			;cf04   ; Sin retardo de disparo...
 	ld (0d3c9h),a		;cf05
-	ld a,003h		;cf08
+	ld a,003h		;cf08   ; ...y con tres impactos de vida
 	ld (0d3cah),a		;cf0a
 	xor a			;cf0d
-	ld de,0ea98h		;cf0e
+	ld de,0ea98h		;cf0e   ; El bramido de la aparicion, en el canal 0
 	jp arranca_guion_libre		;cf11
 pinta_pareja:		; Pinta el sprite B en HL y el B+1 en la posicion reflejada respecto a 0xD3C5, y avanza la posicion con DE y el paso con C: las dos mitades de una figura simetrica
-	push de			;cf14
+	push de			;cf14   ; El sprite B en la posicion que le llega
 	push hl			;cf15
 	push bc			;cf16
 	ld a,b			;cf17
@@ -10163,7 +10163,7 @@ pinta_pareja:		; Pinta el sprite B en HL y el B+1 en la posicion reflejada respe
 	pop hl			;cf1c
 	push hl			;cf1d
 	push bc			;cf1e
-	ld a,(0d3c5h)		;cf1f
+	ld a,(0d3c5h)		;cf1f   ; Y el B+1 reflejado: 0xD3C5 menos la columna, que es lo que convierte la aparicion en dos mitades que se abren
 	sub l			;cf22
 	ld l,a			;cf23
 	ld a,b			;cf24
@@ -10172,13 +10172,13 @@ pinta_pareja:		; Pinta el sprite B en HL y el B+1 en la posicion reflejada respe
 	pop bc			;cf29
 	pop hl			;cf2a
 	pop de			;cf2b
-	ld a,h			;cf2c
+	ld a,h			;cf2c   ; La fila avanza D y la columna E...
 	add a,d			;cf2d
 	ld h,a			;cf2e
 	ld a,l			;cf2f
 	add a,e			;cf30
 	ld l,a			;cf31
-	ld a,e			;cf32
+	ld a,e			;cf32   ; ...y el propio paso lateral crece C cada cuadro: empieza negativo -0xF9 y 0xF2, o sea -7 y -14- y va subiendo, asi que cada mitad frena, se para y se vuelve
 	add a,c			;cf33
 	ld e,a			;cf34
 	ret			;cf35
@@ -10222,20 +10222,20 @@ L_CF7D:
 	call pinta_figura32		;cf7f
 	jp L_D25E		;cf82
 L_CF85:
-	cp 00ah		;cf85
+	cp 00ah		;cf85   ; De 0x0A para arriba esto es el eje del espejo y no un estado: aqui no se toca
 	ret nc			;cf87
-	inc a			;cf88
+	inc a			;cf88   ; De 5 a 9 el perseguidor se esta muriendo, y el contador sube uno por cuadro
 	cp 00ah		;cf89
 	jr z,L_CF9C		;cf8b
 	ld (0d3c5h),a		;cf8d
-	sub 006h		;cf90
+	sub 006h		;cf90   ; (estado - 6) por cuatro mas 0x3B: las figuras 0x3B, 0x3F, 0x43 y 0x47, cuatro sprites cada una
 	add a,a			;cf92
 	add a,a			;cf93
 	add a,03bh		;cf94
 	ld hl,(0d3c7h)		;cf96
 	jp pinta_figura32		;cf99
 L_CF9C:
-	xor a			;cf9c
+	xor a			;cf9c   ; Al llegar a 0x0A se acabo: 0xD3C5 a cero y ya no hay perseguidor
 	ld (0d3c5h),a		;cf9d
 	ret			;cfa0
 disparo_derriba_bandada:		; Mira si un disparo del jugador ha tocado al enemigo de IX -posicion en (ix+000/001), caja 4x0x0C-: lo pasa a explosion (0xFF/0x1D en (ix+002/003)), marca el disparo con 0x80, suena 0xEA52 y paga 130 puntos
@@ -10706,67 +10706,67 @@ mata_nave:		; La unica puerta de la muerte: apaga las dos marcas del HUD y mete 
 	ld (0c188h),a		;d30e
 	jp pinta_marca_hud		;d311
 tile_46:		; El comportamiento del tile 0x46 (`ld de,0d314h` en 0xC16B), que es una onda expansiva horizontal. El primer cuadro convierte (ix+002) -que traia el indice de tile, 0x46- en un contador que sube de 0 a 8 y ahi se queda, y con el pinta por pinta_banda_ruido una banda de 8 px de alto y (contador*2+4) bytes de ancho que arranca en la columna (ix+001) - contador*8: crece 16 px por cuadro, ocho por cada lado, de 32 px hasta 160. Suena 0xEAA1 en el canal 1 cada cuadro y, si la nave sigue viva (0xC188 por debajo de 4), la mata al tocarla con una caja que crece a la par: contador*16 + 0x1E contra 0x0C en el eje de columnas, y 6 contra 0x0C en el de filas. Antes de todo eso llama a impacto_objeto, o sea que se puede reventar como cualquier otro tile especial
-	call impacto_objeto		;d314
-	ld a,(ix+002h)		;d317
+	call impacto_objeto		;d314   ; Antes que nada se puede reventar como cualquier otro tile especial
+	ld a,(ix+002h)		;d317   ; El primer cuadro (ix+002) todavia trae el indice de tile, 0x46...
 	cp 046h		;d31a
 	jr nz,L_D320		;d31c
-	ld a,0ffh		;d31e
+	ld a,0ffh		;d31e   ; ...y se cambia por un 0xFF que el `inc` de abajo deja en cero: de aqui en adelante es un contador
 L_D320:
-	cp 008h		;d320
+	cp 008h		;d320   ; El contador se planta en 8 y ahi se queda
 	jr z,L_D328		;d322
 	inc a			;d324
 	ld (ix+002h),a		;d325
 L_D328:
-	add a,a			;d328
+	add a,a			;d328   ; Ocho pixeles por cada paso del contador...
 	add a,a			;d329
 	add a,a			;d32a
 	ld e,a			;d32b
-	ld a,(ix+001h)		;d32c
+	ld a,(ix+001h)		;d32c   ; ...que se le restan a la columna del tile: la onda crece hacia los dos lados a la vez
 	sub e			;d32f
 	ld l,a			;d330
-	ld h,(ix+000h)		;d331
+	ld h,(ix+000h)		;d331   ; (ix+000) es el contador de cuadros del tile Y su fila: el fondo baja dos pixeles por cuadro, asi que la fila es el contador por dos
 	sla h		;d334
-	push hl			;d336
+	push hl			;d336   ; La posicion en pixeles se guarda, que buffer_dir quiere la columna en bytes
 	srl l		;d337
 	srl l		;d339
 	srl l		;d33b
-	call buffer_dir		;d33d
-	ld a,(ix+002h)		;d340
+	call buffer_dir		;d33d   ; La direccion en el buffer donde arranca la banda
+	ld a,(ix+002h)		;d340   ; El ancho: contador por dos mas cuatro bytes, o sea de 32 a 160 pixeles
 	add a,a			;d343
 	add a,004h		;d344
 	ld b,a			;d346
-	call pinta_banda_ruido		;d347
-	ld a,001h		;d34a
+	call pinta_banda_ruido		;d347   ; Y la brocha, que es solo suya
+	ld a,001h		;d34a   ; El ruido de la onda, en el canal 1 y cada cuadro
 	ld de,0eaa1h		;d34c
 	call arranca_guion_libre		;d34f
 	pop hl			;d352
-	ld a,(0c188h)		;d353
+	ld a,(0c188h)		;d353   ; Si la nave ya esta explotando no hay nada que comprobar
 	cp 004h		;d356
 	ret nc			;d358
-	ld a,h			;d359
+	ld a,h			;d359   ; El sesgo de 0x20 con que solapa_eje espera las filas
 	add a,020h		;d35a
 	ld h,a			;d35c
 	push hl			;d35d
-	ld a,(0c185h)		;d35e
+	ld a,(0c185h)		;d35e   ; Primero el eje de las filas, contra la fila de la nave: la caja de la onda es de 6 y la de la nave de 0x0C
 	ld l,a			;d361
 	ld de,0060ch		;d362
 	ld bc,00102h		;d365
 	call solapa_eje		;d368
 	pop hl			;d36b
 	ret c			;d36c
-	ld a,(ix+002h)		;d36d
+	ld a,(ix+002h)		;d36d   ; Y en el de las columnas la caja de la onda crece con ella, 16 pixeles por paso del contador sobre una base de 0x1E
 	add a,a			;d370
 	add a,a			;d371
 	add a,a			;d372
 	add a,a			;d373
 	add a,01eh		;d374
 	ld d,a			;d376
-	ld h,l			;d377
+	ld h,l			;d377   ; H la columna de la onda, L la de la nave
 	ld a,(0c184h)		;d378
 	ld l,a			;d37b
 	call solapa_eje		;d37c
 	ret c			;d37f
-	jp mata_nave		;d380
+	jp mata_nave		;d380   ; Se tocan por los dos ejes: muerto
 pinta_banda_ruido:		; La brocha de tile_46, y solo suya: pinta B columnas de un byte por 8 filas del buffer, y para CADA columna echa a suertes (`call azar / and 001h`) entre los dos patrones de 8 bytes de 0xD3AD y 0xD3B5, que son los dieciseis primeros de los 34 que figuraban en 0xD3AD como tabla sin dueno. Cada byte lo borra primero con el patron rotado y complementado (`ld a,(de) / rrca / cpl / and (hl)`) y lo pinta despues con `or (hl)`; entre fila y fila suma 24, el ancho del buffer, y entre columna y columna un `inc hl`
 	push bc			;d383
 	call azar		;d384
@@ -11584,18 +11584,18 @@ retira_instalacion:		; Retira la instalacion instalandole como rutina la direcci
 L_D959:
 	ret			;d959
 inst_bonus:		; El bonus que deja una instalacion de tipo 5 al morir: espera a que la nave lo toque (cajas 0x0C x 0x10 y 2x4), marca su celda con 0x10 y paga 27 puntos. Si la barra de energia llega a 10, el disparo cuadruple esta apagado y el azar da 0 -una de cada cuatro-, ENCIENDE EL DISPARO CUADRUPLE (0xE14E) con el sonido 0xEA8C; si no, suma 10 de energia y repinta la barra
-	ld a,(0c188h)		;d95a
+	ld a,(0c188h)		;d95a   ; Con la nave explotando no se recoge nada
 	cp 004h		;d95d
 	jp nc,L_D9CA		;d95f
-	ld hl,(0c184h)		;d962
+	ld hl,(0c184h)		;d962   ; La posicion de la nave
 	push hl			;d965
-	ld l,(ix+007h)		;d966
+	ld l,(ix+007h)		;d966   ; El eje de las filas contra (ix+007), cajas de 0x0C y 0x10
 	ld de,00c10h		;d969
 	ld bc,00204h		;d96c
 	call solapa_eje		;d96f
 	pop hl			;d972
 	jr c,L_D9CA		;d973
-	ld h,l			;d975
+	ld h,l			;d975   ; Y el de las columnas, contra (ix+000) por ocho
 	ld a,(ix+000h)		;d976
 	add a,a			;d979
 	add a,a			;d97a
@@ -11603,26 +11603,26 @@ inst_bonus:		; El bonus que deja una instalacion de tipo 5 al morir: espera a qu
 	ld l,a			;d97c
 	call solapa_eje		;d97d
 	jr c,L_D9CA		;d980
-	ld l,(ix+005h)		;d982
+	ld l,(ix+005h)		;d982   ; Recogido: la celda del mapa pasa a valer 0x10
 	ld h,(ix+006h)		;d985
 	ld (hl),010h		;d988
-	ld a,(0d3c1h)		;d98a
+	ld a,(0d3c1h)		;d98a   ; Con la barra de energia por debajo de 10 el premio es energia y se acaba la historia
 	cp 00ah		;d98d
 	jr c,L_D9AC		;d98f
-	ld a,(0e14eh)		;d991
+	ld a,(0e14eh)		;d991   ; Estando llena, y solo si el disparo cuadruple no esta ya puesto...
 	and a			;d994
 	jr nz,L_D9AC		;d995
-	call azar		;d997
+	call azar		;d997   ; ...una vez de cada cuatro lo da, que es la unica manera de conseguirlo
 	and 003h		;d99a
 	jr nz,L_D9AC		;d99c
 	inc a			;d99e
 	ld (0e14eh),a		;d99f
-	ld a,001h		;d9a2
+	ld a,001h		;d9a2   ; Y con sonido propio, distinto del de la energia
 	ld de,0ea8ch		;d9a4
 	call arranca_guion_libre		;d9a7
 	jr L_D9BF		;d9aa
 L_D9AC:
-	ld a,(0d3c1h)		;d9ac
+	ld a,(0d3c1h)		;d9ac   ; Diez de energia mas, que la barra ya recorta a 20 al pintarla
 	add a,00ah		;d9af
 	ld (0d3c1h),a		;d9b1
 	call pinta_energia		;d9b4
@@ -11630,10 +11630,10 @@ L_D9AC:
 	ld de,0eaa1h		;d9b9
 	call arranca_guion_libre		;d9bc
 L_D9BF:
-	ld hl,0dd85h		;d9bf
+	ld hl,0dd85h		;d9bf   ; En los dos casos, 27 puntos a las unidades del marcador
 	ld b,01bh		;d9c2
 	call premia		;d9c4
-	jp retira_instalacion		;d9c7
+	jp retira_instalacion		;d9c7   ; Y la instalacion se retira
 L_D9CA:
 	ld a,(0ca8eh)		;d9ca
 	and 003h		;d9cd
@@ -11935,26 +11935,26 @@ L_DF48:
 	jr nc,L_DF52		;df4d
 	ld hl,0ff60h		;df4f
 L_DF52:
-	ex de,hl			;df52
-	call persigue_con_velocidad		;df53
+	ex de,hl			;df52   ; El objetivo, ya elegido: la nave o el 0xFF60 de la huida
+	call persigue_con_velocidad		;df53   ; Corrige la velocidad un punto por eje hacia el, saturada a mas menos cinco, y aplica el movimiento
 	ex de,hl			;df56
-	ld a,d			;df57
+	ld a,d			;df57   ; Pasada la fila 0xE0 se ha ido por arriba y se da de baja
 	cp 0e0h		;df58
 	jr nc,L_DFB1		;df5a
-	ld (ix+000h),c		;df5c
+	ld (ix+000h),c		;df5c   ; La velocidad nueva...
 	ld (ix+001h),b		;df5f
-	ld (ix+002h),e		;df62
+	ld (ix+002h),e		;df62   ; ...y la posicion nueva, a su sitio
 	ld (ix+003h),d		;df65
-	ld a,(ix+004h)		;df68
+	ld a,(ix+004h)		;df68   ; El bit bajo del contador alterna los dos dibujos del tiro
 	and 001h		;df6b
-	dec (ix+004h)		;df6d
+	dec (ix+004h)		;df6d   ; Y el contador baja: arranca en cero, o sea que la primera vuelta ya lo deja en 0xFF
 	ex de,hl			;df70
-	call pinta_glifo		;df71
-	call disparo_derriba_tiro		;df74
-	ld a,(0c188h)		;df77
+	call pinta_glifo		;df71   ; El dibujo
+	call disparo_derriba_tiro		;df74   ; El disparo del jugador lo puede derribar
+	ld a,(0c188h)		;df77   ; Y si la nave esta explotando, aqui se acaba
 	cp 004h		;df7a
 	jr nc,L_DFA6		;df7c
-	ld l,(ix+002h)		;df7e
+	ld l,(ix+002h)		;df7e   ; La posicion del tiro contra la de la nave, primero las filas...
 	ld h,(ix+003h)		;df81
 	push hl			;df84
 	ld a,(0c185h)		;df85
@@ -11964,13 +11964,13 @@ L_DF52:
 	call solapa_eje		;df8f
 	pop hl			;df92
 	jr c,L_DFA6		;df93
-	ld h,l			;df95
+	ld h,l			;df95   ; ...y luego las columnas, con las mismas cajas de 4 y 0x0A
 	ld a,(0c184h)		;df96
 	ld l,a			;df99
 	call solapa_eje		;df9a
 	jr c,L_DFA6		;df9d
-	call impacto_doble		;df9f
-	ld (ix+000h),07ch		;dfa2
+	call impacto_doble		;df9f   ; Se tocan: dos puntos de escudo de una vez
+	ld (ix+000h),07ch		;dfa2   ; Y el propio tiro estalla, que es escribirle un 0x7C en el byte que mientras volaba era su velocidad
 L_DFA6:
 	ld de,00005h		;dfa6
 	add ix,de		;dfa9
