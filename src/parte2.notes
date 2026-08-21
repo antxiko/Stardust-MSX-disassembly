@@ -1695,3 +1695,141 @@ L 0xC8E2 vuelca_psg Vuelca al PSG los once bytes del bloque sombra 0xD100-0xD10A
 # Suena a arreglo hecho para la segunda parte, pero es SUPOSICION: lo que esta
 # establecido es la diferencia de codigo y las condiciones estaticas, no que
 # llegue a oirse. Sin medir en el emulador.
+
+# ============================================================================
+# EL ARRANQUE Y EL BUCLE DE JUEGO DE LA FASE A PIE, comentado linea a linea
+# (0xA279-0xA57D). Es el armazon entero: encendido, titulo con menu, comienzo
+# de partida, respawn, el cuadro de juego y la pausa.
+# ============================================================================
+
+C 0xA27A SP en 0x5B32, la misma pila que monta el bloque de naves en 0xBD85. De aqui a 0xA29C es su mismo arranque reescrito, instruccion por instruccion
+C 0xA27D Lee el registro de estado del VDP: el valor no se usa, pero la lectura deja el puerto 0x99 esperando el primer byte de un par
+C 0xA27F Relleno de espera entre los dos bytes del par; el bloque de naves usa aqui un `ld hl,0` para lo mismo
+C 0xA280 Primer byte del par: el DATO, 0xE2
+C 0xA284 Segundo byte: 0x80+1, o sea "escribe en el registro 1". R1 = 0xE2 deja la PANTALLA ENCENDIDA, las interrupciones del VDP encendidas y los sprites en 16x16. La fase de naves escribe 0x82 en este mismo sitio -pantalla APAGADA- porque va a montar el SCREEN 2 de cero; aqui el modo ya viene puesto de la carga anterior y no hay nada que ocultar
+C 0xA286 Dos `and a` seguidos, mas espera entre outs
+C 0xA28A 0xC9 es el opcode de `ret`...
+C 0xA28C ...y va a H.KEYI (0xFD9A): el gancho de teclado queda desactivado
+C 0xA28F 0xC3 es el de `jp`...
+C 0xA291 ...y va a H.TIMI (0xFD9F): el gancho de reloj pasa a ser un salto
+C 0xA294 El destino del salto, la interrupcion de 0xC46E, en los dos bytes de detras (0xFDA0)
+C 0xA29A El registro R como semilla, una lectura por byte: identico al 0xBDB9 de la fase de naves
+C 0xA2A0 La semilla es un PUNTERO: azar (0xAC06) la pasea por la ROM del BIOS
+C 0xA2A4 0xB87C = 0: el mando arranca en TECLADO, y es el mismo byte que rotula_menu mira para poner la marca de seleccion
+C 0xA2A7 Los records que la fase de naves puso a salvo en 0xD6D8 antes de volver a la cinta: ocho fichas de 15 B = 120 = 0x78 clavado. 0xD6D8 esta por encima de 0xD674, o sea fuera de lo que esta segunda carga machaca
+C 0xA2B2 La entrada 0 del pool de sprites (0x6555) y su byte +2. El formato es de 4 B por linea -mascara izda, mascara dcha, dibujo izdo, dibujo dcho-, asi que con paso 4 se lee el DIBUJO de las 16 lineas y la mascara se deja atras: aqui no hay fondo que respetar
+C 0xA2B5 VRAM 0x0748: tercio 0, columna 29, fila de pixel 8. La geometria de esta pantalla es tercio*0x800 + columna*0x40 + fila, o sea por COLUMNAS
+C 0xA2B8 Dos vueltas: la mitad izquierda del sprite de 16x16 y la derecha
+C 0xA2BA 16 bytes seguidos, que en esta geometria son las 16 lineas de pixel de dos caracteres apilados de la misma columna
+C 0xA2C0 Byte a byte por el puerto 0x98 sin volver a fijar la direccion: el VDP autoincrementa
+C 0xA2C3 Paso 4, que es lo que ocupa una linea del sprite
+C 0xA2CA La segunda vuelta arranca en 0x6558, el dibujo de la mitad DERECHA...
+C 0xA2CB ...y va a la columna 30, pegada a la anterior. Entre las dos dejan el monigote del HUD arriba a la derecha, con el contador de vidas justo debajo (0x07A0)
+C 0xA2D1 Con H.TIMI ya apuntando a 0xC46E, aqui empieza a latir el juego
+C 0xA2D2 La puerta de TODO game over y tambien del arranque en frio: se mira si el marcador entra en la tabla y, entre o no entre, se cae al titulo de aqui abajo
+C 0xA2D5 El jugador al centro: 0x6858 es X = 0x58 y la fila 0x68, que es donde paso_jugador lo clava siempre
+C 0xA2DB La pila otra vez, porque a este punto se entra con `jp` desde dentro de llamadas (0xA3B1, 0xA4DB)
+C 0xA2DE 0xC463 es la base del menu dentro del buffer, y suma_scroll (0xBB18) le suma el offset de cada rotulo: mover este puntero es lo que hace deslizarse el menu entero
+C 0xA2E4 Las cinco tablas a cero: 0xAD0E animacion del jugador, 0xACF8 voladores, 0xACE3 andantes, 0xACA2 tiros enemigos y 0xAD03 tiros de torreta
+C 0xA2F4 0xC45C = 1: mientras dure el titulo lee_mando ignora el joystick y pregunta siempre al teclado. Es el gemelo del 0xE151 de la fase de naves
+C 0xA2F8 0xC465 = 0x40, la altura del cursor del menu. 0x40 cae en la banda de JUGAR, que asi es la opcion por defecto
+C 0xA2FD 0x2F78 cae en la tabla de COLORES: tercio 1, columna 29, la del HUD lateral. Se pinta de 0x11, negro sobre negro
+C 0xA303 0xF1 -tinta blanca sobre fondo negro- en las tres bandas de la tabla de colores
+C 0xA30B Tres vidas en el titulo; al empezar la partida de verdad 0xA3CB las baja a dos
+C 0xA313 El operando del `call` de 0xA688 apuntando a lee_mando: es lo que deshace el 0xA6EE que deja ahi la demo
+C 0xA319 Segunda tirada de semilla, esta ya con las interrupciones abiertas: R ha corrido y el valor no es el de 0xA29A
+C 0xA322 Borra la torre de la cuenta atras, que en el titulo no se ve
+C 0xA325 0xAD27 = 0xA0: 160 vueltas de titulo sin elegir nada y entra la pantalla de records. Cada vez que se toca el mando se rearma aqui
+C 0xA32A El titulo se redibuja entero cada vuelta sobre el buffer limpio
+C 0xA32D Fila 1 del mapa: el fondo del titulo es el propio decorado de la fase
+C 0xA335 El mismo turno de jugador que en partida: el cursor del menu es el protagonista andando, y lo que mueve el menu es el scroll de camara que esa llamada deja en 0xC462
+C 0xA338 Los cinco rotulos encadenados desde 0xB886 -STARDUST, REDEFINIR TECLAS, JUGAR, JOYSTICK, TECLADO-, colgados de 0xC463
+C 0xA33B 0xC462 es el delta del scroll de este cuadro: +2 si la camara subio, 0xFE si bajo, 0 si no se movio. Lo ponen los rotadores 0xB140/0xB167
+C 0xA341 Solo hay dos valores posibles: +2 va a L_A354 y cualquier otro es el -2
+C 0xA346 0x30 = 48 bytes = dos filas del buffer, que son 24 B cada una: los 2 px de scroll
+C 0xA34B Menu hacia un lado...
+C 0xA34E ...con tope en 0x39xx, que se alcanza tras 33 pasos y con 0xC465 ya en 0x00, justo la opcion TECLADO. Ahi se planta
+C 0xA354 Menu hacia el otro...
+C 0xA356 ...y este 0x67 no se alcanza nunca partiendo de 0x4000: el tope de 0x43 salta antes. Codigo defensivo, o resto del original
+C 0xA35E El tope de arriba: 0x4300 son 16 pasos y deja 0xC465 en 0x5E, dentro de la banda de REDEFINIR TECLAS
+C 0xA362 Y la altura del cursor sigue al puntero: a 0xC465 se le suma el mismo delta, que es lo que se mide luego para saber que opcion hay debajo
+C 0xA36F El buffer a la VRAM, en las tres bandas
+C 0xA372 El reloj de paciencia del titulo...
+C 0xA376 ...agotado, a la pantalla de records y de ahi a la demo
+C 0xA37C 0xC45B es el byte de controles que juega_en_firme acaba de guardar en 0xA68B
+C 0xA380 Sin tocar nada, otra vuelta y el reloj sigue corriendo
+C 0xA382 El bit 4 es el disparo (el `bit 4,a` de dispara): moverse sin disparar solo rearma el reloj
+C 0xA387 Disparo pulsado: la banda en la que este el cursor decide la opcion
+C 0xA38A 0x10, y mas abajo 0x30 y 0x50, son las fronteras entre opciones: caer justo encima no elige nada
+C 0xA38F Por encima de 0xF8 seria cursor pasado de rosca por abajo; con el tope de 0xA34E no ocurre, pero si ocurriera cae en TECLADO
+C 0xA39A Por debajo de 0x30, JOYSTICK o TECLADO...
+C 0xA3A1 ...y la altura se guarda TAL CUAL en 0xB87C, que solo se mira contra cero: el 0x00 del tope de abajo es TECLADO y cualquier otro valor es JOYSTICK
+C 0xA3A7 Entre 0x30 y 0x50, JUGAR
+C 0xA3AE Por encima de 0x50, REDEFINIR TECLAS; al volver se rehace el titulo entero
+C 0xA3B4 El marcador a "000000": un `ld (hl),030h` y un ldir solapado de cinco, seis digitos ASCII en 0xB87F-0xB884 con el 0 de cierre detras
+C 0xA3C5 VRAM 0x12B0 = tercio 2, columna 10, fila de pixel 48: el marcador del HUD, que hud_imprime va estampando de 0x40 en 0x40, columna a columna
+C 0xA3CB DOS vidas de reserva, no las tres del titulo: la que se esta jugando no cuenta. El mismo detalle que el 0xBE96 de la fase de naves
+C 0xA3D3 Pantalla en negro antes de entrar
+C 0xA3DC El marcador que la fase de naves dejo en 0xD750: se sigue jugando con los puntos de las siete zonas
+C 0xA3E5 ...pero NO en la demo: si el `call` de 0xA688 apunta al lector de la grabacion (0xA6EE, byte bajo 0xEE), la demo empieza a cero
+C 0xA3EE Repinta el marcador, ya con los puntos heredados
+C 0xA3F8 0xC468 = 0 apaga las llamas de la nave del final, que es lo que pinta_nave mide
+C 0xA3FF El puntero de la demo al principio de su partida grabada, 0x9FF3
+C 0xA405 El checkpoint de salida: fila 0x47 del mapa -la de mas abajo de las 78- y scroll fino 2
+C 0xA40F Y la ultima posicion pisada en firme, la misma 0x6858 del centro
+C 0xA415 Seis objetivos que derribar; hasta que 0xBC33 no llegue a cero la cuenta atras no corre
+C 0xA41F Una torreta por columna del mapa: (b-1)*32 + 12, o sea 12, 44, 76, 108, 140 y 172, los centros de las seis celdas de 32 px de ancho
+C 0xA42B El segundo byte de cada ficha, al azar entre 0 y 15: es lo que reparte el turno de las seis para que no disparen todas a la vez
+C 0xA439 Escudo a 3 y sus tres iconos repintados
+C 0xA43C Deshace el parche del cadaver: update_jugador vuelve a ser el turno normal
+C 0xA442 0xACBB los disparos del jugador y 0xAD0E su animacion
+C 0xA449 0xB87A -y mas abajo 0xB878, 0xB879 y 0xB87B- se ponen a cero y no los lee NADIE en todo el bloque: cuatro bytes muertos, justo detras de las siete entradas de teclas de 0xB86A
+C 0xA44C 0xC459, la mejora del disparo, se pierde al morir
+C 0xA44F Vuelta a la ultima posicion pisada en firme...
+C 0xA455 ...y la camara al checkpoint que juega_en_firme va apuntando en cada paso
+C 0xA461 Las cuatro tablas de enemigos vaciadas: lo que hubiera en pantalla no reaparece
+C 0xA47A 0xC45A es el estado anterior del gatillo y 0xC45C el "solo teclado" que dejo puesto el titulo
+C 0xA480 0xB720 a cero levanta el freno de alta_enemigo_cuadro
+C 0xA48C Uno de los CUATRO colores de 0xC46A al azar: por esto la fase a pie no se ve siempre igual
+C 0xA49C 0xAD30 = 1, y no lo lee nadie: esta es la unica instruccion de todo el bloque que toca ese byte
+C 0xA4A1 El contador de cuadros, que reparte turnos y marca el ritmo de la cuenta atras y del parpadeo del DEMO
+C 0xA4A5 Parche 0xC2 = `jp nz`: redibuja_fondo pinta SOLO las celdas vacias...
+C 0xA4AD ...y los voladores se estampan encima de ese fondo vacio
+C 0xA4B0 Parche 0xCA = `jp z`: ahora SOLO las celdas solidas, que vuelven a taparlos. Los dos pases del fondo con el volador en medio son lo que da la profundidad
+C 0xA4BB Las seis torretas, que solo disparan con el scroll parado
+C 0xA4C1 La cuenta atras, que solo corre con los seis objetivos ya muertos
+C 0xA4CD Consumido el delta del scroll, a cero para el cuadro siguiente
+C 0xA4D1 0xEE es el byte bajo de 0xA6EE, el lector de la grabacion: asi se sabe si esto es la demo
+C 0xA4D8 En demo, cualquier tecla corta y devuelve al titulo
+C 0xA4DE El bit 3 del contador de cuadros: el rotulo DEMO parpadea ocho cuadros si y ocho no
+C 0xA4E5 0xFF en los dos operandos de los `and` de rotula_glifo (0xB4A9 y 0xB4AF) lo deja pintar SOLIDO...
+C 0xA4ED ...para el rotulo DEMO de 0xB9AB, en 0x4D94 del buffer: la misma posicion que en la fase de naves
+C 0xA4F7 ...y se repone el damero 0x55/0xAA, que es como se rotula todo lo demas
+C 0xA501 El turno del jugador, por el `jp` parcheable: en pie, agonizando o derrumbandose
+C 0xA507 La septima entrada de la tabla de teclas de 0xB86A: ABANDONAR, mascara en +12 y fila de teclado en +13
+C 0xA512 Las teclas dan 0 al pulsarse, o sea que Z = pulsada...
+C 0xA515 ...y ABANDONAR es game over inmediato, derecho a la tabla de records
+C 0xA518 PARAR se mira aparte, porque bloquea alli mismo
+C 0xA51B 0xA6ED por debajo de 0x2D es que el jugador sigue en pie o agonizando: otra vuelta del bucle
+C 0xA52D Y el `jp` parcheable restaurado antes de cualquiera de las dos salidas
+C 0xA539 La sexta entrada de 0xB86A, PARAR: mascara en +10 y fila de teclado en +11
+C 0xA547 No pulsada, se vuelve sin parar nada
+C 0xA548 Primero espera a que se suelte TODO: encontrar una sola tecla pulsada reinicia el barrido
+C 0xA54B Las nueve primeras filas de la matriz, 0xF0 a 0xF8; el nibble alto a 1 deja quietos el motor del casete, el LED de CAPS y el click
+C 0xA54F El `cpl` pone a 1 las teclas pulsadas, y el `and a` mira si queda alguna
+C 0xA559 Y ahora al reves: hasta que no se pulse algo no se sigue
+C 0xA55C En cuanto una fila no da 0xFF entero se sale; si las nueve estan limpias, otra ronda
+C 0xA56B De 0 a 9 a su digito ASCII
+C 0xA573 VRAM 0x07A0 = tercio 0, columna 30, fila de pixel 32: justo debajo del monigote que dejo puesto el arranque en 0xA2B2
+C 0xA57D El operando de este `jp` esta en 0xA57E, y es lo unico que se parchea en caliente en toda la fase
+C 0xA433 Dos bytes por ficha: la tabla de las seis torretas es la de 0xBC24, la misma que luego lee la cuenta atras
+C 0xA569 Agotadas las nueve filas sin nada pulsado, vuelta a empezar: aqui se queda todo parado hasta que alguien toque una tecla
+
+B 0x6555 MEDIDO sobre el binario (entrada 0, las 16 lineas): de los tres
+B 0x6555 repartes posibles de los 4 bytes por linea, el UNICO que cuadra es
+B 0x6555 mascara izda, mascara dcha, dibujo izdo, dibujo dcho. Y la relacion
+B 0x6555 entre los dos no es la de "el dibujo cae donde la mascara esta a
+B 0x6555 cero": es `dibujo and mascara == dibujo` en las 16 lineas, o sea que
+B 0x6555 el dibujo va DENTRO de la mascara. Asi que aqui la mascara es la
+B 0x6555 SILUETA del sprite -uno donde ocupa-, no el hueco, y quien lo pinta
+B 0x6555 tiene que invertirla antes del `and`.
