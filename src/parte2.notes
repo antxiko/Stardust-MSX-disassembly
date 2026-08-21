@@ -20,7 +20,16 @@ D 0x6644 0x682E pool_de_sprites_tramo Pool de sprites de la fase (tramo): las en
 F 0x6644 2
 D 0x682E 0x7C78 pool_de_sprites_continuacion Pool de sprites de la fase (continuacion): entradas de 64 B; los frames del derrumbe del protagonista (0x50 en adelante) caen aqui, en 0x6555 + 0x50*64 = 0x7955
 F 0x682E 2
-D 0x7C9D 0x840B graficos_final_del_pool Graficos: el final del pool de sprites (hasta 0x7D54), el slot de trabajo 0x60 del derrumbe (0x7D55-0x7D94) y graficos hasta el mapa de 0x840B
+D 0x7C9D 0x7D55 graficos_final_del_pool Graficos: el final del pool de sprites de 0x6555, hasta la entrada 0x5F
+F 0x7C9D 2
+D 0x7D55 0x7D95 slot_de_trabajo_del_sprite EL SLOT DE TRABAJO, que es la entrada 0x60 del pool (64 B): aqui dejan su resultado las cuatro rutinas de giro de 0xB2A6 y de aqui lo lee pinta_sprite. 0x6555 + 0x60*64 = 0x7D55
+F 0x7D55 4
+D 0x7D95 0x7DDB coreografia_del_estallido LA COREOGRAFIA DEL ESTALLIDO de la nave insignia (70 B, uno por cuadro del bucle de 0xBEB9, que da 0x46 vueltas): cada BIT dice que hueco de explosion se enciende ese cuadro, y el `rlc (iy+000h)` de 0xBF2A va pasando de bit en bit -ocho rotaciones lo dejan como estaba, asi que la tabla no se estropea-. Empieza con chispas sueltas (48 de los 70 bytes son cero) y acaba con seis 0xFF seguidos, todo a la vez. El unico byte que vale 1 es ademas la senal que busca el `dec a` de 0xBECC para doblar los huecos de 8 a 16. Cierra al byte: 0x7D95 + 70 = 0x7DDB
+D 0x7DDB 0x81DB dibujo_de_la_nave EL DIBUJO DE LA NAVE del final (1024 B): 64 filas de ocho parejas (mascara, dibujo), o sea 64x64 pixeles, que pinta_nave lee con la PILA. 64 x 16 = 1024, y 0x7DDB + 0x400 = 0x81DB cierra clavado con las tablas de la llama
+F 0x7DDB 16
+D 0x81DB 0x820B tablas_de_la_llama Las DOS tablas de la llama de las toberas (2 x 24 B): pinta_nave se turna entre ellas con el bit 0 del contador de cuadros y entra por el final, tan atras como diga 0xC468
+F 0x81DB 24
+D 0x820B 0x840B graficos_hasta_el_mapa Graficos: lo que queda hasta el mapa de 0x840B
 D 0x840B 0x85DF mapa_de_la_fase El MAPA de la fase, que es dos mapas en uno (468 B: 78 filas de 6 celdas de 32x32 px, 280 con suelo). Cada byte es el INDICE DE TILE del pozo de 0x87F3 con el que se dibuja la celda (redibuja_fondo: origen = 0x87F3 + valor*128) y a la vez la COLISION (consulta_mapa acaba en and a: 0 = vacio, y sus seis llamadores solo miran el flag Z). La partida recorre las filas 71 a 0. OJO: estuvo publicado como celdas de 32x16 y torre de 1248 px; el alto se habia derivado en vez de medirse, y es 32 px (tile de 128 B = 4 B x 32 filas, consulta_mapa divide Y entre 32, y el fino 0xAD2C da 16 pasos de 2 px por fila). La torre es 192x2496
 F 0x840B 6
 D 0x85DF 0x87F3 ceros_bajo_la_zona Ceros bajo la zona (532 B, todos 0x00 comprobado: el vacio y el relleno hasta el pozo)
@@ -624,7 +633,7 @@ L 0xBBD2 avanza_torre Sube la punta de la torre una fila (0xBC31/32); el salto d
 L 0xBCEE tiempo_agotado Se acabo el tiempo: flash de dameros, decaimiento de pixeles al azar, y a la tabla de records: game over sin FELICIDADES
 L 0xBD7B flash_dameros El parpadeo del final de tiempo, y NO es de la pantalla entera como figuraba: son los tres tramos de la COLUMNA DE LA TORRE (0x0050, 0x0840 y 0x1040, los mismos sitios que borra_torre pero la mitad de largos), o sea la barra de la cuenta atras. El patron se ACUMULA con `xor` sobre los dos bytes de 0xBDAA, asi que la pareja 0x2A54/0x542A partiendo de 0x7E da la vuelta cada cuatro llamadas -0x54, 0x00, 0x2A, 0x7E- y las veinte del bucle son diez parpadeos
 L 0xBF6F mueve_metralla Mueve y pinta las 200 particulas del final feliz: posicion+velocidad en un solo add hl,de, poda fuera de pantalla, y 4 filas de brillo al azar en el buffer
-L 0xBFB6 siembra_metralla Siembra las 200 particulas de la nave insignia explotando: dx -7..+8, dy -13..+2 sesgado hacia ARRIBA (metralla en fuente), tabla en 0xBFEB
+L 0xBFB6 siembra_metralla Siembra las 200 particulas de la nave insignia explotando, en la tabla de 0xBFEB (4 B cada una): dx de -7 a +8 sin el cero, y dy de -14 a -2 mas el +1. OJO, que la vertical figuraba como "-13..+2": el `dec a` de 0xBFD4 no solo compara, se queda con el valor, asi que lo que se guarda es (azar and 0x0F) - 14. Trece salidas hacia ARRIBA por cada una hacia abajo, y ni el 0 ni el -1 salen nunca
 L 0xD252 imprime_marco El impresor del marco: DIRECTO a la VRAM con la fuente de 0x5F00; A<0x20 es control (0 borra la celda, 1 posiciona con el parametro de (IX))
 L 0xD383 vuelca_pantalla Vuelca el buffer a la VRAM en TRES bandas: 0x4000/56 filas a 0x0108, 0x4540/64 a 0x0900, 0x4B40/40 a 0x1100
 C 0xAA70 El byte de la izquierda de la ventana, el primero de los tres del ancho de 24
@@ -3022,3 +3031,108 @@ C 0xBDEF Con la fila del mapa a cero se ha llegado arriba del todo: escena final
 C 0xBDF8 Y si no, la llama crece de dos en dos hasta 16, y ahi se queda
 C 0xBDC5 La posicion del jugador, que a estas alturas ya es la nave...
 C 0xBDCC ...una fila del buffer mas arriba en cada pasada
+
+
+# ----------------------------------------------------------------------
+# EL FINAL FELIZ (0xBE06-0xBFEB)
+# ----------------------------------------------------------------------
+# EL ESTALLIDO DE LA NAVE INSIGNIA VA ESCRITO EN UNA TABLA. Los 70 bytes de
+# 0x7D95 -que figuraban como "graficos"- son la coreografia: uno por cuadro del
+# bucle de 0xBEB9, y cada BIT dice cual de los huecos de explosion se enciende
+# ese cuadro. El `rlc (iy+000h)` de 0xBF2A va pasando de bit en bit, y como son
+# ocho rotaciones por cuadro el byte queda como estaba. Volcada la tabla:
+#   40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 00
+#   00 00 00 00 00 40 00 00 00 00 00 40 00 00 00 40 00 20 00 40 00 00 00 00
+#   00 00 00 00 00 00 00 40 20 90 08 42 21 94 01 CE FF FF FF FF FF FF
+# 48 de los 70 son cero: empieza con chispas sueltas y acaba con seis 0xFF, o
+# sea todo a la vez. Y el 0x01 del final no es una explosion cualquiera: es la
+# senal que busca el `dec a` de 0xBECC para doblar los huecos de 8 a 16.
+# Cierra al byte por los dos lados: 0x7D55 + 64 = 0x7D95 (el slot de trabajo) y
+# 0x7D95 + 70 = 0x7DDB (el dibujo de la nave).
+#
+# LOS HUECOS DE EXPLOSION son 16 fichas de 3 bytes en 0xC30B (posicion en el +0
+# y el +1, fotograma en el +2), y 0xC30B + 48 = 0xC33B, justo la cadena de
+# "!!! FELICIDADES !!!": cierra tambien.
+#
+# PERO EL DOBLADO DE HUECOS NO SIRVE DE NADA. El bucle de 0xBEAF solo limpia
+# los OCHO primeros (0xC30B-0xC322); los otros ocho (0xC323-0xC33A) los deja la
+# cinta a 0xFF, o sea "ocupado". Cuando el 0x01 sube la cuenta a 16 esos huecos
+# se saltan el alta -entran por el camino de "ya esta encendido"- y necesitan
+# llegar de 0xFF a 0x50 contando de uno en uno, unos 80 cuadros, cuando de la
+# coreografia solo quedan SEIS. No se encienden ni una vez, y lo unico que
+# hacen es pedir un sprite en la posicion 0xFFFF, que el recorte de
+# pinta_sprite tira fila por fila. Comprobado sobre el volcado: los 48 bytes de
+# 0xC30B-0xC33A son 0xFF en la cinta.
+#
+# CORRECCION de la ficha de siembra_metralla: la velocidad vertical NO va de
+# -13 a +2. El `dec a` de 0xBFD4 no es solo una comparacion, se queda con el
+# valor, asi que lo que se guarda es (azar and 0x0F) - 14: de -14 a -2, mas el
+# +1. Trece de cada catorce salen hacia ARRIBA y solo uno hacia abajo; el 0 y
+# el -1 no salen nunca, que para eso estan los dos `jr z`.
+#
+# Y un `ld iy,01388h` (0xBE15) que no lee nadie: de ahi a 0xBEA6, donde IY
+# vuelve a cargarse, no hay una sola instruccion que lo mire, ni en el tramo ni
+# en ninguna de las rutinas que se llaman por el camino -las unicas que tocan
+# IY en todo el listado quedan fuera de esa lista-. 5000 en decimal, con pinta
+# de espera quitada.
+
+C 0xBE06 El fondo, desde el mapa
+C 0xBE09 La nave encima, y aqui entera: 0x40 filas
+C 0xBE11 Y el buffer a la pantalla
+C 0xBE15 Este `ld iy,01388h` no lo lee nadie: hasta 0xBEA6, que es donde IY vuelve a cargarse, no lo mira ni el tramo ni ninguna de las rutinas que se llaman. 5000 en decimal, con pinta de espera quitada
+C 0xBE19 El guion de la animacion final, que empieza en 0x61D8
+C 0xBE1D Silencio, reponiendo el `di` que sonido_off machaco
+C 0xBE20 Toda la tabla de colores a blanco sobre negro
+C 0xBE2B La imagen del final (0x6285) al buffer: 40 filas de 18 bytes centradas
+C 0xBE31 BC a cero son 65536 vueltas, y se hace cuatro veces: el respiro antes de que arranque la escena
+C 0xBE40 La musica del final, en el canal 0
+C 0xBE47 Cada paso del guion rehace el fondo entero: borrar, estrellas y la imagen
+C 0xBE50 El guion, byte a byte...
+C 0xBE53 ...0xC0 lo termina...
+C 0xBE57 ...por debajo de 0xC0 es la columna de una pareja...
+C 0xBE59 ...y por encima, el fotograma: se escribe en el operando del `ld a` de 0xBE6B, o sea que el guion cambia de dibujo parcheando el codigo
+C 0xBE63 La pareja son columna y fila, dos bytes
+C 0xBE6D El dibujo va con pinta_glifo, el de dos bytes de ancho
+C 0xBE70 Un paso de guion por cuadro
+C 0xBE76 Cuatro esperas mas con la escena quieta...
+C 0xBE85 ...y el cartel de FELICIDADES, que se imprime DIRECTO a la VRAM
+C 0xBE8F Y quince esperas antes del estallido
+C 0xBE9A Las 200 particulas se siembran ANTES de que estalle nada: cuando les toque volar ya estan puestas
+C 0xBE9D Ocho huecos de explosion, escritos en el operando del `ld b` de 0xBEC7
+C 0xBEA2 Los huecos, tres bytes cada uno, desde 0xC30B
+C 0xBEA6 Y la coreografia del estallido, un byte por cuadro desde 0x7D95
+C 0xBEAF Solo se limpian los OCHO primeros huecos
+C 0xBEB7 Setenta cuadros, uno por byte de la coreografia
+C 0xBEC9 El byte de la coreografia que vale 1 dobla los huecos a dieciseis...
+C 0xBECF ...pero los ocho de arriba no los limpia nadie: la cinta los deja a 0xFF, o sea ocupados, y con 80 cuadros para soltarse cuando solo quedan seis no se encienden ni una vez
+C 0xBED4 Hueco ocupado: a seguir dibujandolo
+C 0xBEDA Y hueco libre: se enciende solo si el bit que le toca de la coreografia esta puesto
+C 0xBEE0 Cada explosion nueva trae su sonido
+C 0xBEE9 Sitio al azar dentro del area, ocho filas mas arriba
+C 0xBEF0 Y una de las dos explosiones echada a suertes: la que arranca en 0x4C o la que arranca en 0x5C
+C 0xBEFE La posicion, al hueco, que a partir de aqui vive sola
+C 0xBF07 El fotograma de este cuadro
+C 0xBF13 Uno por cuadro...
+C 0xBF19 ...y al llegar a 0x50 o a 0x60 -el final de cada una de las dos tandas de cuatro- el hueco vuelve a quedar libre
+C 0xBF25 Hueco siguiente, tres bytes...
+C 0xBF2A ...y el bit siguiente de la coreografia. Como son ocho rotaciones, el byte acaba el cuadro como lo empezo
+C 0xBF34 Cuadro siguiente de la coreografia
+C 0xBF3A Acabada la coreografia, el fogonazo...
+C 0xBF45 ...y 110 cuadros de metralla volando
+C 0xBF57 Se acaba con la pantalla limpia de todo menos estrellas...
+C 0xBF6C ...y de ahi al game over de siempre: entra_en_records y el titulo
+C 0xBF75 Velocidad en el +0/+1 y posicion en el +2/+3
+C 0xBF81 Un solo `add hl,de` mueve las dos cosas: L es la columna y H la fila
+C 0xBF83 Pasada la fila 0xA0...
+C 0xBF88 ...o la columna 0xC0, la particula ni se guarda ni se pinta: se queda con su ultima posicion buena y ya no vuelve a salir, porque la suma da lo mismo cada cuadro
+C 0xBF92 La columna entre ocho, que buffer_dir la quiere en bytes
+C 0xBF9E Cuatro filas de brillo por particula
+C 0xBFA3 El dibujo tambien es al azar, recortado a los cuatro pixeles de en medio del byte
+C 0xBFAD Particula siguiente, cuatro bytes
+C 0xBFB6 Doscientas particulas de cuatro bytes desde 0xBFEB
+C 0xBFBC Cada una nace en un sitio al azar del area de juego
+C 0xBFBF La velocidad horizontal, de -7 a +8, y el cero se vuelve a tirar: ninguna sale recta
+C 0xBFCB Y la vertical, con dos filtros seguidos...
+C 0xBFD4 ...y ojo con este `dec a`, que no solo compara: se queda con el valor. Lo que se guarda es azar-14, o sea de -14 a -2 mas el +1, con trece salidas hacia arriba por cada una hacia abajo
+C 0xBFDA La fila se guarda con 0x20 menos, que es como la quiere el pintor
+C 0xBFE3 Particula siguiente
