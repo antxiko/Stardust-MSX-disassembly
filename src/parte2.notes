@@ -2439,3 +2439,100 @@ C 0xAEC2 BC corrige las dos coordenadas antes de comparar: lo que se mide es la 
 C 0xAEC4 Al que va delante se le suma SU tamano: si L queda por debajo de H, se mira si L+E alcanza a H...
 C 0xAECA ...y si no, si H+D alcanza a L. Vuelve con acarreo cuando NO se tocan
 
+
+# ----------------------------------------------------------------------
+# LOS VOLADORES Y TODOS LOS CONTACTOS (0xAECE-0xB0DB)
+# ----------------------------------------------------------------------
+# El aleteo del volador son DOS dibujos, no cuatro. El campo +1 guarda la fase
+# en los bits 6-7; 0xAF6F los baja a los bits 0-1 con dos `rlca` -o sea
+# indice = bit6 + 2*bit7- y les suma 0x48, y 0xAF79 alterna SOLO el bit 6 con
+# un `xor 040h`. Asi que el bit 7, que alta_volador echo a suertes y ya no
+# cambia nadie, elige la pareja para toda la vida del bicho: 0x48/0x49 o
+# 0x4A/0x4B.
+# Y la explosion es la MISMA para todos: los voladores la pintan con
+# estado+0x28 desde 0x34 (0x5C a 0x5F) y los andantes con reloj+0x3F desde 0x1D
+# (0x5C a 0x5F tambien), los mismos cuatro dibujos que se lleva el jugador.
+
+C 0xAECE Las dos fichas de voladores, de cinco bytes
+C 0xAED6 Sin ninguno vivo no hay nada que hacer
+C 0xAED9 El scroll del cuadro, a la fila: los voladores van clavados al mundo
+C 0xAEE2 La velocidad en BC y la posicion en HL, que es como las quieren vaga_o_persigue y pinta_sprite
+C 0xAEEC El estado manda, y este bucle solo atiende a los de 0x2E para arriba: los de menos son de mueve_voladores, y los dos cortes son complementarios
+C 0xAEF3 Explotando: el estado 0x34 mas 0x28 da el dibujo 0x5C, y de ahi a 0x5F. Son los mismos cuatro que usan los andantes y el jugador reventado
+C 0xAEF8 Un fotograma por cuadro...
+C 0xAEFE ...y en 0x38, cuatro despues, se da de baja
+C 0xAF03 La baja necesita saber a donde volver, y se lo lleva en DE: ver 0xAFAD
+C 0xAF09 La posicion del jugador, que es a donde apunta todo lo de abajo
+C 0xAF0D Por debajo de 0x2E la ficha no es de esta rutina
+C 0xAF12 De 0x2E a 0x32 el volador esta entrando...
+C 0xAF16 ...y son tres pixeles hacia arriba por cuadro, a pelo, sin mirar nada
+C 0xAF1C Un paso de la entrada, y a los cinco cuadros llega al 0x33
+C 0xAF21 El 0x33 es la vida de verdad. La velocidad vertical sale del byte con el sesgo de cuatro, dejando fuera los dos bits de la fase del aleteo
+C 0xAF29 Y ya vaga o persigue, como los andantes
+C 0xAF2C Salirse por arriba es morir sin explosion
+C 0xAF34 La velocidad horizontal, entera
+C 0xAF38 Y la vertical vuelve al byte compartido: se le pone el sesgo...
+C 0xAF3B ...se conservan los dos bits de la fase del que habia...
+C 0xAF43 ...y se quita el sesgo del conjunto, con el mismo prestamo de siempre
+C 0xAF48 La posicion nueva
+C 0xAF4E Una de cada 64 veces, el volador dispara
+C 0xAF56 El tiro no sale de la esquina de la ficha sino cuatro y cuatro adentro, o sea del centro del bicho
+C 0xAF5D La direccion dominante hacia el jugador, que sale como mascara...
+C 0xAF60 ...y la tabla inversa la vuelve rumbo, que es lo que la ficha del tiro guarda. Pese al nombre, esta segunda entrada va de mascara A rumbo
+C 0xAF65 Con el rumbo en A' y la posicion en BC, que es como lo quiere el alta
+C 0xAF69 El dibujo: los dos bits altos del byte compartido...
+C 0xAF6F ...bajados a los bits 0 y 1 con dos rotaciones, que dejan indice = bit6 + 2 por bit7...
+C 0xAF73 ...y sumados a 0x48, el primero de los cuatro dibujos de volador
+C 0xAF79 El aleteo alterna SOLO el bit 6, asi que el volador va y viene entre dos dibujos. El bit 7 lo echo a suertes alta_volador y no lo cambia nadie: es el que elige si esa pareja es la 0x48/0x49 o la 0x4A/0x4B
+C 0xAF80 Le toca al jugador: primero, si alguno de sus disparos lo ha alcanzado
+C 0xAF83 Y el contacto solo se mira si el jugador esta entero: de 4 en adelante 0xA6ED ya no es escudo sino la cuenta de la agonia
+C 0xAF95 Chocar cuesta los dos: el volador se pone a explotar y el jugador se muere
+C 0xAF9C Cinco bytes a la ficha siguiente
+C 0xAFA7 La baja de un volador: uno menos...
+C 0xAFAD ...y aqui el `push de` con el `ret` de dos lineas mas abajo, que es un salto disfrazado: se vuelve a 0xAFA1, el final del bucle, sin gastar un `jp` en cada una de las dos salidas
+C 0xAFAF Si la que muere es la ultima por mirar, no hay nada que compactar
+C 0xAFB1 Y si no, se trae encima todo lo que hay entre la ficha siguiente y el final de la tabla, que es 0xAD03
+C 0xAFC7 La posicion del andante, con X en el +0 e Y en el +1
+C 0xAFCD Contra la tabla de disparos del jugador, entera
+C 0xAFD1 Las dos cajas: 6 el disparo y 0x0E el andante, iguales en los dos ejes
+C 0xAFDA Sin contacto, no hay nada mas que hacer
+C 0xAFDB El sonido del derribo, en el canal 0
+C 0xAFE2 El andante pasa a explotar: 0xFF en el rumbo lo deja quieto y el 0x1D arranca los cuatro dibujos
+C 0xAFEA Y el disparo que acerto se marca con 0x80, que es como mueve_tabla_disparos sabe que hay que darlo de baja
+C 0xAFEE 44 sobre 0xB883, que es el digito de las decenas: 440 puntos por un andante
+C 0xAFF7 El juego alterno guarda el contador de vueltas, porque HL hace falta entero para la posicion
+C 0xAFF8 El contador vive delante de la tabla, como en todas las de este juego
+C 0xAFFC Tabla vacia: se vuelve con acarreo, que aqui significa "no toca nada"
+C 0xB001 Primero el eje horizontal: L es la X propia y H se pisa con la del candidato
+C 0xB008 Si en un eje no se solapan, ya no hace falta mirar el otro
+C 0xB00B Y ahora el vertical, con la Y propia bajada a L y la del candidato en H
+C 0xB013 Solapan los dos ejes: contacto, y se sale SIN acarreo con IY apuntando al culpable
+C 0xB015 Cuatro bytes por ficha, que es la anchura de las dos tablas de disparos
+C 0xB01D Recorrida entera sin tocar nada
+C 0xB01F Igual que la del andante, pero aqui la posicion vive en el +2 y el +3
+C 0xB03A El volador no siembra explosion: le basta con ponerse en el estado 0x34, que es por donde 0xAEEF lo manda a los cuatro dibujos
+C 0xB042 41 en el mismo digito: 410 puntos, treinta menos que un andante
+C 0xB04B El contacto al reves: aqui el que se mira es el jugador...
+C 0xB04E ...contra la tabla de tiros enemigos entera
+C 0xB052 Cajas de 4 y 10: el tiro es estrecho y el jugador ancho
+C 0xB05C Al tiro que acierta se le pone la marca de muerto, y el jugador paga un punto de escudo
+C 0xB064 Y contra los tiros de torreta, que llevan la posicion en el +2 y el +3
+C 0xB078 Aqui esta el otro sitio que planta el 0x7C: derribado el tiro, su byte de velocidad pasa a ser el contador de la explosion. El mismo camino que el impacto de 0xBA43
+C 0xB080 53 en las unidades, no en las decenas: derribar un tiro de torreta es lo que menos paga de todo el bloque
+C 0xB08A La X del jugador, para el primer eje
+C 0xB08E BC corrige 2 y 3 y los tamanos son 0x0C y 0x0A: las mismas medidas que la caja pequena de la nave
+C 0xB098 Si el primer eje ya no solapa, se sale con acarreo y sin mirar el segundo
+C 0xB099 Y el segundo eje, con la Y del jugador. El `jp` en vez de `call` deja que sea solapa_eje quien devuelva el acarreo
+C 0xB0A1 La X del jugador, que es lo unico que hace falta: aqui no se vuela y no hay topes arriba y abajo
+C 0xB0A4 El rumbo pedido viaja en A', que es donde lo dejo quien llama
+C 0xB0A6 Pegado al borde izquierdo, o sea X justo 0...
+C 0xB0AA ...se le quita el bit 3, que es el de ir a la izquierda
+C 0xB0AD Y pegado al derecho, X justo 0xB0...
+C 0xB0B2 ...se le quita el bit 2, el de ir a la derecha. Son comparaciones EXACTAS: solo podan en la columna del tope, y de pasarse ya se encarga recorta_x_jugador
+C 0xB0B8 Con la columna 0xB1 o mas alla, el paso se deshace...
+C 0xB0BB ...reponiendo la X que la ficha traia de antes
+C 0xB0C1 El sesgo de 16 no es adorno: mete las dieciseis columnas negativas -0xF0 a 0xFF- dentro del rango bajo, y asi un objeto que ya se ha pasado del borde por la izquierda tambien queda podado. Sin el, un `cp 003h` a secas los daria por buenos
+C 0xB0C6 Por debajo de la columna 3, fuera el bit de la izquierda
+C 0xB0CE Y de la 174 en adelante, fuera el de la derecha
+C 0xB0D8 La misma poda que la del jugador, pero reponiendo desde la ficha de IX
+

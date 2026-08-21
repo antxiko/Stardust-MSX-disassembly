@@ -5862,106 +5862,106 @@ L_AECA:
 	cp l			;aecc
 	ret			;aecd
 voladores_activos:		; La segunda mitad de la vida de los voladores, la de estado 0x2E o mas: de 0x2E a 0x32 suben 3 px por cuadro, 0x33 es la forma que persigue al jugador y dispara una de cada 64 veces, y de 0x34 a 0x37 la explosion. Se reparte la tabla con mueve_voladores, que se queda con los de estado menor: los dos cortes son complementarios
-	ld ix,0acf9h		;aece
+	ld ix,0acf9h		;aece   ; Las dos fichas de voladores, de cinco bytes
 	ld a,(0acf8h)		;aed2
 	and a			;aed5
-	ret z			;aed6
+	ret z			;aed6   ; Sin ninguno vivo no hay nada que hacer
 	ld b,a			;aed7
 L_AED8:
 	push bc			;aed8
-	ld a,(0c462h)		;aed9
+	ld a,(0c462h)		;aed9   ; El scroll del cuadro, a la fila: los voladores van clavados al mundo
 	add a,(ix+003h)		;aedc
 	ld (ix+003h),a		;aedf
-	ld c,(ix+000h)		;aee2
+	ld c,(ix+000h)		;aee2   ; La velocidad en BC y la posicion en HL, que es como las quieren vaga_o_persigue y pinta_sprite
 	ld b,(ix+001h)		;aee5
 	ld l,(ix+002h)		;aee8
 	ld h,a			;aeeb
-	ld a,(ix+004h)		;aeec
+	ld a,(ix+004h)		;aeec   ; El estado manda, y este bucle solo atiende a los de 0x2E para arriba: los de menos son de mueve_voladores, y los dos cortes son complementarios
 	cp 034h		;aeef
 	jr c,L_AF09		;aef1
-	add a,028h		;aef3
+	add a,028h		;aef3   ; Explotando: el estado 0x34 mas 0x28 da el dibujo 0x5C, y de ahi a 0x5F. Son los mismos cuatro que usan los andantes y el jugador reventado
 	call pinta_sprite		;aef5
-	inc (ix+004h)		;aef8
+	inc (ix+004h)		;aef8   ; Un fotograma por cuadro...
 	ld a,(ix+004h)		;aefb
-	cp 038h		;aefe
+	cp 038h		;aefe   ; ...y en 0x38, cuatro despues, se da de baja
 	jp c,L_AF9C		;af00
-	ld de,lafa1h		;af03
+	ld de,lafa1h		;af03   ; La baja necesita saber a donde volver, y se lo lleva en DE: ver 0xAFAD
 	jp L_AFA7		;af06
 L_AF09:
-	ld de,(0a6ebh)		;af09
-	cp 02eh		;af0d
+	ld de,(0a6ebh)		;af09   ; La posicion del jugador, que es a donde apunta todo lo de abajo
+	cp 02eh		;af0d   ; Por debajo de 0x2E la ficha no es de esta rutina
 	jp c,L_AF9C		;af0f
-	cp 033h		;af12
+	cp 033h		;af12   ; De 0x2E a 0x32 el volador esta entrando...
 	jr nc,L_AF21		;af14
-	dec h			;af16
+	dec h			;af16   ; ...y son tres pixeles hacia arriba por cuadro, a pelo, sin mirar nada
 	dec h			;af17
 	dec h			;af18
 	ld (ix+003h),h		;af19
-	inc (ix+004h)		;af1c
+	inc (ix+004h)		;af1c   ; Un paso de la entrada, y a los cinco cuadros llega al 0x33
 	jr L_AF69		;af1f
 L_AF21:
-	ld a,b			;af21
+	ld a,b			;af21   ; El 0x33 es la vida de verdad. La velocidad vertical sale del byte con el sesgo de cuatro, dejando fuera los dos bits de la fase del aleteo
 	add a,004h		;af22
 	and 03fh		;af24
 	sub 004h		;af26
 	ld b,a			;af28
-	call vaga_o_persigue		;af29
-	ld a,h			;af2c
+	call vaga_o_persigue		;af29   ; Y ya vaga o persigue, como los andantes
+	ld a,h			;af2c   ; Salirse por arriba es morir sin explosion
 	cp 0e0h		;af2d
 	ld de,lafa1h		;af2f
 	jr nc,L_AFA7		;af32
-	ld (ix+000h),c		;af34
+	ld (ix+000h),c		;af34   ; La velocidad horizontal, entera
 	ld a,b			;af37
-	add a,004h		;af38
+	add a,004h		;af38   ; Y la vertical vuelve al byte compartido: se le pone el sesgo...
 	ld c,a			;af3a
-	ld a,(ix+001h)		;af3b
+	ld a,(ix+001h)		;af3b   ; ...se conservan los dos bits de la fase del que habia...
 	add a,004h		;af3e
 	and 0c0h		;af40
 	or c			;af42
-	sub 004h		;af43
+	sub 004h		;af43   ; ...y se quita el sesgo del conjunto, con el mismo prestamo de siempre
 	ld (ix+001h),a		;af45
-	ld (ix+002h),l		;af48
+	ld (ix+002h),l		;af48   ; La posicion nueva
 	ld (ix+003h),h		;af4b
-	call azar		;af4e
+	call azar		;af4e   ; Una de cada 64 veces, el volador dispara
 	and 03fh		;af51
 	jr nz,L_AF69		;af53
 	push hl			;af55
-	ld bc,00404h		;af56
+	ld bc,00404h		;af56   ; El tiro no sale de la esquina de la ficha sino cuatro y cuatro adentro, o sea del centro del bicho
 	add hl,bc			;af59
 	ld b,h			;af5a
 	ld c,l			;af5b
 	push bc			;af5c
-	call rumbo_al_jugador		;af5d
-	call rumbo_a_mascara2		;af60
+	call rumbo_al_jugador		;af5d   ; La direccion dominante hacia el jugador, que sale como mascara...
+	call rumbo_a_mascara2		;af60   ; ...y la tabla inversa la vuelve rumbo, que es lo que la ficha del tiro guarda. Pese al nombre, esta segunda entrada va de mascara A rumbo
 	ex af,af'			;af63
 	pop bc			;af64
-	call alta_tiro_enemigo		;af65
+	call alta_tiro_enemigo		;af65   ; Con el rumbo en A' y la posicion en BC, que es como lo quiere el alta
 	pop hl			;af68
 L_AF69:
-	ld a,(ix+001h)		;af69
+	ld a,(ix+001h)		;af69   ; El dibujo: los dos bits altos del byte compartido...
 	add a,004h		;af6c
 	push af			;af6e
-	and 0c0h		;af6f
+	and 0c0h		;af6f   ; ...bajados a los bits 0 y 1 con dos rotaciones, que dejan indice = bit6 + 2 por bit7...
 	rlca			;af71
 	rlca			;af72
-	add a,048h		;af73
+	add a,048h		;af73   ; ...y sumados a 0x48, el primero de los cuatro dibujos de volador
 	call pinta_sprite		;af75
 	pop af			;af78
-	xor 040h		;af79
+	xor 040h		;af79   ; El aleteo alterna SOLO el bit 6, asi que el volador va y viene entre dos dibujos. El bit 7 lo echo a suertes alta_volador y no lo cambia nadie: es el que elige si esa pareja es la 0x48/0x49 o la 0x4A/0x4B
 	sub 004h		;af7b
 	ld (ix+001h),a		;af7d
-	call disparo_derriba_volador		;af80
-	ld a,(0a6edh)		;af83
+	call disparo_derriba_volador		;af80   ; Le toca al jugador: primero, si alguno de sus disparos lo ha alcanzado
+	ld a,(0a6edh)		;af83   ; Y el contacto solo se mira si el jugador esta entero: de 4 en adelante 0xA6ED ya no es escudo sino la cuenta de la agonia
 	cp 004h		;af86
 	jr nc,L_AF9C		;af88
 	ld l,(ix+002h)		;af8a
 	ld h,(ix+003h)		;af8d
 	call choca_con_jugador		;af90
 	jr c,L_AF9C		;af93
-	ld (ix+004h),034h		;af95
+	ld (ix+004h),034h		;af95   ; Chocar cuesta los dos: el volador se pone a explotar y el jugador se muere
 	call mata_jugador_impacto		;af99
 L_AF9C:
-	ld de,00005h		;af9c
+	ld de,00005h		;af9c   ; Cinco bytes a la ficha siguiente
 	add ix,de		;af9f
 L_AFA1:
 	pop bc			;afa1
@@ -5969,15 +5969,15 @@ L_AFA1:
 	jp nz,L_AED8		;afa3
 	ret			;afa6
 L_AFA7:
-	ld hl,0acf8h		;afa7
+	ld hl,0acf8h		;afa7   ; La baja de un volador: uno menos...
 	dec (hl)			;afaa
 	pop bc			;afab
 	push bc			;afac
-	push de			;afad
+	push de			;afad   ; ...y aqui el `push de` con el `ret` de dos lineas mas abajo, que es un salto disfrazado: se vuelve a 0xAFA1, el final del bucle, sin gastar un `jp` en cada una de las dos salidas
 	ld a,b			;afae
-	dec a			;afaf
+	dec a			;afaf   ; Si la que muere es la ultima por mirar, no hay nada que compactar
 	ret z			;afb0
-	push ix		;afb1
+	push ix		;afb1   ; Y si no, se trae encima todo lo que hay entre la ficha siguiente y el final de la tabla, que es 0xAD03
 	pop de			;afb3
 	push de			;afb4
 	inc de			;afb5
@@ -5995,53 +5995,53 @@ L_AFA7:
 	ldir		;afc4
 	ret			;afc6
 disparo_derriba_andante:		; Mira si un disparo del jugador ha tocado al enemigo andante de IX: lo pasa a explosion (0xFF/0x1D), marca el disparo con 0x80, suena 0xCD6D y paga 440 puntos
-	ld l,(ix+000h)		;afc7
+	ld l,(ix+000h)		;afc7   ; La posicion del andante, con X en el +0 e Y en el +1
 	ld h,(ix+001h)		;afca
-	ld iy,0acbch		;afcd
-	ld de,0060eh		;afd1
+	ld iy,0acbch		;afcd   ; Contra la tabla de disparos del jugador, entera
+	ld de,0060eh		;afd1   ; Las dos cajas: 6 el disparo y 0x0E el andante, iguales en los dos ejes
 	ld bc,00101h		;afd4
 	call choca_con_tabla		;afd7
-	ret c			;afda
-	xor a			;afdb
+	ret c			;afda   ; Sin contacto, no hay nada mas que hacer
+	xor a			;afdb   ; El sonido del derribo, en el canal 0
 	ld de,0cd6dh		;afdc
 	call arranca_guion		;afdf
-	ld (ix+002h),0ffh		;afe2
+	ld (ix+002h),0ffh		;afe2   ; El andante pasa a explotar: 0xFF en el rumbo lo deja quieto y el 0x1D arranca los cuatro dibujos
 	ld (ix+003h),01dh		;afe6
-	ld (iy+002h),080h		;afea
-	ld hl,0b883h		;afee
+	ld (iy+002h),080h		;afea   ; Y el disparo que acerto se marca con 0x80, que es como mueve_tabla_disparos sabe que hay que darlo de baja
+	ld hl,0b883h		;afee   ; 44 sobre 0xB883, que es el digito de las decenas: 440 puntos por un andante
 	ld b,02ch		;aff1
 	call premia		;aff3
 	ret			;aff6
 choca_con_tabla:		; Busca contacto entre HL y toda una tabla de objetos: IY apunta a la primera entrada y (iy-1) es el contador, entradas de 4 B, dos solapa_eje por objeto
-	exx			;aff7
-	ld a,(iy-001h)		;aff8
+	exx			;aff7   ; El juego alterno guarda el contador de vueltas, porque HL hace falta entero para la posicion
+	ld a,(iy-001h)		;aff8   ; El contador vive delante de la tabla, como en todas las de este juego
 	and a			;affb
-	scf			;affc
+	scf			;affc   ; Tabla vacia: se vuelve con acarreo, que aqui significa "no toca nada"
 	ret z			;affd
 	ld b,a			;affe
 L_AFFF:
 	exx			;afff
 	push hl			;b000
-	ld h,(iy+000h)		;b001
+	ld h,(iy+000h)		;b001   ; Primero el eje horizontal: L es la X propia y H se pisa con la del candidato
 	call solapa_eje		;b004
 	pop hl			;b007
-	jr c,L_B014		;b008
+	jr c,L_B014		;b008   ; Si en un eje no se solapan, ya no hace falta mirar el otro
 	push hl			;b00a
-	ld l,h			;b00b
+	ld l,h			;b00b   ; Y ahora el vertical, con la Y propia bajada a L y la del candidato en H
 	ld h,(iy+001h)		;b00c
 	call solapa_eje		;b00f
 	pop hl			;b012
-	ret nc			;b013
+	ret nc			;b013   ; Solapan los dos ejes: contacto, y se sale SIN acarreo con IY apuntando al culpable
 L_B014:
 	exx			;b014
-	ld de,00004h		;b015
+	ld de,00004h		;b015   ; Cuatro bytes por ficha, que es la anchura de las dos tablas de disparos
 	add iy,de		;b018
 	djnz L_AFFF		;b01a
 	exx			;b01c
-	scf			;b01d
+	scf			;b01d   ; Recorrida entera sin tocar nada
 	ret			;b01e
 disparo_derriba_volador:		; Lo mismo para los voladores de la tabla de 0xACF9, con la posicion en (ix+002/003): en vez de sembrar la explosion escribe 0x34 en (ix+004h), y paga 410
-	ld l,(ix+002h)		;b01f
+	ld l,(ix+002h)		;b01f   ; Igual que la del andante, pero aqui la posicion vive en el +2 y el +3
 	ld h,(ix+003h)		;b022
 	ld iy,0acbch		;b025
 	ld de,0060eh		;b029
@@ -6051,85 +6051,85 @@ disparo_derriba_volador:		; Lo mismo para los voladores de la tabla de 0xACF9, c
 	xor a			;b033
 	ld de,0cd6dh		;b034
 	call arranca_guion		;b037
-	ld (ix+004h),034h		;b03a
+	ld (ix+004h),034h		;b03a   ; El volador no siembra explosion: le basta con ponerse en el estado 0x34, que es por donde 0xAEEF lo manda a los cuatro dibujos
 	ld (iy+002h),080h		;b03e
-	ld hl,0b883h		;b042
+	ld hl,0b883h		;b042   ; 41 en el mismo digito: 410 puntos, treinta menos que un andante
 	ld b,029h		;b045
 	call premia		;b047
 	ret			;b04a
 tiro_alcanza_jugador:		; El contacto al reves: el jugador (0xA6EB) contra la tabla de tiros enemigos (0xACA3), y al chocar marca al culpable y se va por impacto_simple
-	ld hl,(0a6ebh)		;b04b
-	ld iy,0aca3h		;b04e
-	ld de,0040ah		;b052
+	ld hl,(0a6ebh)		;b04b   ; El contacto al reves: aqui el que se mira es el jugador...
+	ld iy,0aca3h		;b04e   ; ...contra la tabla de tiros enemigos entera
+	ld de,0040ah		;b052   ; Cajas de 4 y 10: el tiro es estrecho y el jugador ancho
 	ld bc,00203h		;b055
 	call choca_con_tabla		;b058
 	ret c			;b05b
-	ld (iy+002h),080h		;b05c
+	ld (iy+002h),080h		;b05c   ; Al tiro que acierta se le pone la marca de muerto, y el jugador paga un punto de escudo
 	call impacto_simple		;b060
 	ret			;b063
 disparo_derriba_tiro:		; Lo mismo contra un tiro de torreta: 0x7C en (ix+000h) y 53 puntos. Gemela de la de naves, con las mismas cajas y el mismo premio
-	ld l,(ix+002h)		;b064
+	ld l,(ix+002h)		;b064   ; Y contra los tiros de torreta, que llevan la posicion en el +2 y el +3
 	ld h,(ix+003h)		;b067
 	ld iy,0acbch		;b06a
 	ld de,00408h		;b06e
 	ld bc,00200h		;b071
 	call choca_con_tabla		;b074
 	ret c			;b077
-	ld (ix+000h),07ch		;b078
+	ld (ix+000h),07ch		;b078   ; Aqui esta el otro sitio que planta el 0x7C: derribado el tiro, su byte de velocidad pasa a ser el contador de la explosion. El mismo camino que el impacto de 0xBA43
 	ld (iy+002h),080h		;b07c
-	ld hl,0b884h		;b080
+	ld hl,0b884h		;b080   ; 53 en las unidades, no en las decenas: derribar un tiro de torreta es lo que menos paga de todo el bloque
 	ld b,035h		;b083
 	call premia		;b085
 	ret			;b088
 choca_con_jugador:		; Contacto con el jugador (0xA6EB/0xA6EC): solapa_eje con 2x3 contra 0x0C x 0x0A, las mismas medidas que la caja pequena de la nave
 	push hl			;b089
-	ld a,(0a6ech)		;b08a
+	ld a,(0a6ech)		;b08a   ; La X del jugador, para el primer eje
 	ld l,a			;b08d
-	ld bc,00203h		;b08e
+	ld bc,00203h		;b08e   ; BC corrige 2 y 3 y los tamanos son 0x0C y 0x0A: las mismas medidas que la caja pequena de la nave
 	ld de,00c0ah		;b091
 	call solapa_eje		;b094
 	pop hl			;b097
-	ret c			;b098
-	ld h,l			;b099
+	ret c			;b098   ; Si el primer eje ya no solapa, se sale con acarreo y sin mirar el segundo
+	ld h,l			;b099   ; Y el segundo eje, con la Y del jugador. El `jp` en vez de `call` deja que sea solapa_eje quien devuelva el acarreo
 	ld a,(0a6ebh)		;b09a
 	ld l,a			;b09d
 	jp solapa_eje		;b09e
 poda_rumbo_jugador:		; Quita del rumbo pedido las direcciones que el borde no permite. Es la de naves TRUNCADA: solo los dos topes horizontales, porque aqui no se vuela
-	ld hl,(0a6ebh)		;b0a1
-	ex af,af'			;b0a4
+	ld hl,(0a6ebh)		;b0a1   ; La X del jugador, que es lo unico que hace falta: aqui no se vuela y no hay topes arriba y abajo
+	ex af,af'			;b0a4   ; El rumbo pedido viaja en A', que es donde lo dejo quien llama
 	ld a,l			;b0a5
-	and a			;b0a6
+	and a			;b0a6   ; Pegado al borde izquierdo, o sea X justo 0...
 	jr nz,L_B0AD		;b0a7
 	ex af,af'			;b0a9
-	and 0f7h		;b0aa
+	and 0f7h		;b0aa   ; ...se le quita el bit 3, que es el de ir a la izquierda
 	ex af,af'			;b0ac
 L_B0AD:
-	cp 0b0h		;b0ad
+	cp 0b0h		;b0ad   ; Y pegado al derecho, X justo 0xB0...
 	jr nz,L_B0B5		;b0af
 	ex af,af'			;b0b1
-	and 0fbh		;b0b2
+	and 0fbh		;b0b2   ; ...se le quita el bit 2, el de ir a la derecha. Son comparaciones EXACTAS: solo podan en la columna del tope, y de pasarse ya se encarga recorta_x_jugador
 	ret			;b0b4
 L_B0B5:
 	ex af,af'			;b0b5
 	ret			;b0b6
 recorta_x_jugador:		; Deshace el paso lateral del jugador si se ha salido: con L >= 0xB1 repone la X desde 0xA6EB. Es la primera mitad de recorta_a_area; la banda vertical 0x38..0xB1 que si vigila la nave aqui no existe
 	ld a,l			;b0b7
-	cp 0b1h		;b0b8
+	cp 0b1h		;b0b8   ; Con la columna 0xB1 o mas alla, el paso se deshace...
 	ret c			;b0ba
-	ld a,(0a6ebh)		;b0bb
+	ld a,(0a6ebh)		;b0bb   ; ...reponiendo la X que la ficha traia de antes
 	ld l,a			;b0be
 	ret			;b0bf
 borde_pantalla:		; Poda el rumbo en los bordes laterales: X<3 quita el bit de izquierda, X>=174 el de derecha
 	ex af,af'			;b0c0
-	ld a,(ix+000h)		;b0c1
+	ld a,(ix+000h)		;b0c1   ; El sesgo de 16 no es adorno: mete las dieciseis columnas negativas -0xF0 a 0xFF- dentro del rango bajo, y asi un objeto que ya se ha pasado del borde por la izquierda tambien queda podado. Sin el, un `cp 003h` a secas los daria por buenos
 	add a,010h		;b0c4
-	cp 013h		;b0c6
+	cp 013h		;b0c6   ; Por debajo de la columna 3, fuera el bit de la izquierda
 	jr nc,L_B0CE		;b0c8
 	ex af,af'			;b0ca
 	and 0f7h		;b0cb
 	ret			;b0cd
 L_B0CE:
-	cp 0beh		;b0ce
+	cp 0beh		;b0ce   ; Y de la 174 en adelante, fuera el de la derecha
 	jr c,L_B0D6		;b0d0
 	ex af,af'			;b0d2
 	and 0fbh		;b0d3
@@ -6138,7 +6138,7 @@ L_B0D6:
 	ex af,af'			;b0d6
 	ret			;b0d7
 recorta_x_objeto:		; Lo mismo para el objeto de IX, reponiendo L desde (ix+000h). Identica byte a byte a la de la fase de naves
-	ld a,l			;b0d8
+	ld a,l			;b0d8   ; La misma poda que la del jugador, pero reponiendo desde la ficha de IX
 	cp 0b1h		;b0d9
 	ret c			;b0db
 	ld l,(ix+000h)		;b0dc
