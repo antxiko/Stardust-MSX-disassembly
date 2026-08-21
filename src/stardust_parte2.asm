@@ -6818,81 +6818,81 @@ DATA_relleno_B51B:
 ; ======================================================================
 
 
-scroll_records:		; El scroll de la pantalla de records: baja el puntero de 0xB87D una fila del buffer por vuelta y rotula el titulo y las ocho fichas de 0xB8C8; cuando el rotulo se sale por arriba, el llamador desapila, arranca la musica y entra en la demo. Gemela de la de naves, 35 de 49 bytes
-	ld hl,(0b87dh)		;b65b
-	ld de,00018h		;b65e
+scroll_records:		; El scroll de la pantalla de records: le resta al puntero de 0xB87D una fila del buffer por vuelta -o sea que el rotulo SUBE un escalon- y vuelve a rotular el titulo y las ocho fichas de 0xB8C8. Cuando el rotulo se ha ido por arriba no vuelve: el `pop hl` de 0xB6A7 se come su propia direccion de retorno, y de ahi sigue con la musica, la espera y la demo. Gemela de la de naves, 35 de 49 bytes
+	ld hl,(0b87dh)		;b65b   ; El puntero donde se rotula, que 0xB68C arranca en 0x4F08
+	ld de,00018h		;b65e   ; Restarle el ancho del buffer es subir el rotulo una fila: eso es todo el scroll
 	and a			;b661
 	sbc hl,de		;b662
 	ld a,h			;b664
-	cp 040h		;b665
+	cp 040h		;b665   ; Y por encima de 0x4000 el rotulo entero se ha ido por arriba
 	jp c,L_B6A7		;b667
 	ld (0b87dh),hl		;b66a
-	ld ix,0b886h		;b66d
+	ld ix,0b886h		;b66d   ; El titulo, la primera de las cadenas encadenadas de 0xB886
 	call rotula_cadena		;b671
-	ld de,00235h		;b674
+	ld de,00235h		;b674   ; Del titulo a la primera ficha: sus 8 caracteres mas 0x235 son 573 bytes, o sea 24 filas mas abajo y la columna 5
 	add hl,de			;b677
-	ld ix,0b8c8h		;b678
-	ld de,00172h		;b67c
+	ld ix,0b8c8h		;b678   ; Las ocho fichas de record, que van seguidas: ocho de nombre, seis de puntos y el cero
+	ld de,00172h		;b67c   ; De una ficha a la de abajo: sus 14 caracteres mas 0x172 son 384 justos, 16 filas, que es lo que mide un renglon a doble altura
 	ld b,008h		;b67f
 L_B681:
 	push bc			;b681
 	push de			;b682
-	call rotula_cadena		;b683
+	call rotula_cadena		;b683   ; Nombre y puntos se rotulan de una vez: son la misma cadena
 	pop de			;b686
-	add hl,de			;b687
+	add hl,de			;b687   ; Y a la ficha siguiente
 	pop bc			;b688
 	djnz L_B681		;b689
 	ret			;b68b
 L_B68C:
-	ld hl,04f08h		;b68c
+	ld hl,04f08h		;b68c   ; La pantalla de records empieza con el rotulo por debajo del buffer, en la fila 160
 	ld (0b87dh),hl		;b68f
 L_B692:
-	call borra_buffer		;b692
+	call borra_buffer		;b692   ; El cuadro: borrar, estrellas, subir el rotulo un escalon y volcar
 	call pinta_estrellas		;b695
 	call scroll_records		;b698
 	call vuelca_pantalla		;b69b
-	call hay_tecla		;b69e
+	call hay_tecla		;b69e   ; Con cualquier tecla se corta y se vuelve al titulo
 	jp nz,L_A2D5		;b6a1
 	jp L_B692		;b6a4
 L_B6A7:
-	pop hl			;b6a7
-	call arranca_musica		;b6a8
-	nop			;b6ab
+	pop hl			;b6a7   ; Aqui ya no se vuelve: el `pop` se come la direccion de retorno del bucle de arriba
+	call arranca_musica		;b6a8   ; Con el rotulo fuera, la musica
+	nop			;b6ab   ; Tres `nop` seguidos detras del `call`, con pinta de algo quitado a mano; los mismos modales que los dos de 0xEEAF en la fase de naves
 	nop			;b6ac
 	nop			;b6ad
 	xor a			;b6ae
-	ld (0d10dh),a		;b6af
+	ld (0d10dh),a		;b6af   ; Apagar 0xD10D es como se le pide a la musica que acabe: op_bucle (0xC78C) mira ese byte para decidir si el guion del canal 1 se repite o se termina
 L_B6B2:
-	call hay_tecla		;b6b2
+	call hay_tecla		;b6b2   ; Y se espera a lo que llegue antes: una tecla...
 	jr nz,L_B6C4		;b6b5
 	ld bc,003e8h		;b6b7
 	call espera		;b6ba
-	ld hl,(0d096h)		;b6bd
+	ld hl,(0d096h)		;b6bd   ; ...o que el canal 1 se quede sin puntero de ejecucion, o sea que la musica se haya acabado
 	ld a,h			;b6c0
 	or l			;b6c1
 	jr nz,L_B6B2		;b6c2
 L_B6C4:
-	ld hl,0a7f8h		;b6c4
+	ld hl,0a7f8h		;b6c4   ; La semilla del azar a un valor FIJO -0xA7F8, que la mascara de azar deja en 0x27F8-: sin eso la partida grabada no se repetiria igual
 	ld (0ad28h),hl		;b6c7
-	ld hl,0a6eeh		;b6ca
+	ld hl,0a6eeh		;b6ca   ; Y el `call` del lector de mando parcheado al lector de la grabacion: esto de aqui es la DEMO
 	ld (0a689h),hl		;b6cd
-	jp L_A3B4		;b6d0
+	jp L_A3B4		;b6d0   ; De ahi en adelante, como una partida cualquiera
 entra_en_records:		; Mira si el marcador entra en la tabla: compara los seis digitos contra los ocho campos de puntuacion y, al ganar uno, hace hueco con un `lddr` y salta a la entrada del nombre. Es por donde vuelve todo game over. Gemela de la de naves, 57 de 71 bytes
-	ld hl,0b8d0h		;b6d3
-	ld c,008h		;b6d6
+	ld hl,0b8d0h		;b6d3   ; Los puntos de la primera ficha; el nombre son los ocho bytes de delante
+	ld c,008h		;b6d6   ; Las ocho fichas, de la mejor a la peor
 L_B6D8:
-	ld de,0b87fh		;b6d8
+	ld de,0b87fh		;b6d8   ; Contra los seis digitos del marcador
 	push hl			;b6db
 	ld b,006h		;b6dc
 L_B6DE:
-	ld a,(de)			;b6de
+	ld a,(de)			;b6de   ; Digito a digito, empezando por el de mas peso
 	cp (hl)			;b6df
-	jr c,L_B711		;b6e0
-	jr z,L_B70D		;b6e2
-	ld hl,0b931h		;b6e4
-	dec c			;b6e7
+	jr c,L_B711		;b6e0   ; Menor: esta ficha no se supera, a probar con la siguiente
+	jr z,L_B70D		;b6e2   ; Iguales: al digito de al lado. Un empate exacto recorre los seis y acaba cayendo a la ficha de abajo, o sea que empatar no adelanta a nadie
+	ld hl,0b931h		;b6e4   ; Superada: 0xB931 es la ultima de las ocho, que es donde se escribe si no hay nada que correr
+	dec c			;b6e7   ; Y eso pasa justo cuando la superada es la ultima
 	jr z,L_B700		;b6e8
-	ld h,000h		;b6ea
+	ld h,000h		;b6ea   ; Si no, hay que bajar un puesto a todas las de debajo: quince bytes por ficha, contados como hl*16 - hl
 	ld l,c			;b6ec
 	ld d,h			;b6ed
 	ld e,l			;b6ee
@@ -6905,21 +6905,21 @@ L_B6DE:
 	ld c,l			;b6f6
 	ld hl,0b930h		;b6f7
 	ld de,0b93fh		;b6fa
-	lddr		;b6fd
-	inc hl			;b6ff
+	lddr		;b6fd   ; El `lddr` las corre de una en una desde el final, y la octava se cae de la tabla
+	inc hl			;b6ff   ; Y HL queda en el nombre del hueco que se acaba de abrir
 L_B700:
-	pop de			;b700
+	pop de			;b700   ; Los puntos de la ficha superada, guardados antes del bucle de digitos
 	push hl			;b701
-	ld hl,0b87fh		;b702
+	ld hl,0b87fh		;b702   ; El marcador entero a su sitio...
 	ld bc,00006h		;b705
 	ldir		;b708
-	jp L_D3C4		;b70a
+	jp L_D3C4		;b70a   ; ...y a meter el nombre, con el puntero al hueco en la pila
 L_B70D:
-	inc hl			;b70d
+	inc hl			;b70d   ; Digito siguiente
 	inc de			;b70e
 	djnz L_B6DE		;b70f
 L_B711:
-	pop hl			;b711
+	pop hl			;b711   ; Ficha siguiente, quince bytes mas alla
 	ld de,0000fh		;b712
 	add hl,de			;b715
 	dec c			;b716
@@ -7018,27 +7018,27 @@ L_B9E9:
 	ld hl,0ff60h		;b9f0   ; ...y cuando baja, a un punto fijo de fuera de la pantalla: el tiro deja de perseguir y se va
 L_B9F3:
 	ex de,hl			;b9f3
-	call persigue_con_inercia		;b9f4
+	call persigue_con_inercia		;b9f4   ; Un paso de persecucion con inercia, con la velocidad en el +0/+1 y la posicion en el +2/+3
 	ex de,hl			;b9f7
 	ld a,d			;b9f8   ; La poda vertical de verdad, esta si sobre la fila: 0xE0 para arriba es haberse salido por el techo
 	cp 0e0h		;b9f9
 	jr nc,L_BA52		;b9fb
-	ld (ix+000h),c		;b9fd
+	ld (ix+000h),c		;b9fd   ; La ficha se queda con lo que devuelva: velocidad nueva...
 	ld (ix+001h),b		;ba00
-	ld (ix+002h),e		;ba03
+	ld (ix+002h),e		;ba03   ; ...y posicion nueva
 	ld (ix+003h),d		;ba06
-	ld a,(ix+004h)		;ba09
+	ld a,(ix+004h)		;ba09   ; El bit 0 del reloj del +4 elige entre los dos dibujos del tiro, y el reloj baja un paso por cuadro
 	and 001h		;ba0c
 	dec (ix+004h)		;ba0e
 	ex de,hl			;ba11
 	call pinta_glifo		;ba12
-	call disparo_derriba_tiro		;ba15
-	ld a,(0a6edh)		;ba18
+	call disparo_derriba_tiro		;ba15   ; Un disparo del jugador lo puede derribar aqui mismo
+	ld a,(0a6edh)		;ba18   ; Con el jugador ya sentenciado -0xA6ED de 4 en adelante- el tiro ya no puede alcanzarlo: el muerto no se muere dos veces
 	cp 004h		;ba1b
 	jr nc,L_BA47		;ba1d
 	ld l,(ix+002h)		;ba1f
 	ld h,(ix+003h)		;ba22
-	push hl			;ba25
+	push hl			;ba25   ; Primero el eje horizontal contra la X del jugador...
 	ld a,(0a6ech)		;ba26
 	ld l,a			;ba29
 	ld de,0040ah		;ba2a
@@ -7046,7 +7046,7 @@ L_B9F3:
 	call solapa_eje		;ba30
 	pop hl			;ba33
 	jr c,L_BA47		;ba34
-	ld h,l			;ba36
+	ld h,l			;ba36   ; ...y solo si ese solapa, el vertical
 	ld a,(0a6ebh)		;ba37
 	ld l,a			;ba3a
 	call solapa_eje		;ba3b
@@ -7054,7 +7054,7 @@ L_B9F3:
 	call impacto_doble		;ba40
 	ld (ix+000h),07ch		;ba43   ; Alcanzado el jugador, el tiro se marca para explotar reutilizando el byte de la velocidad
 L_BA47:
-	ld de,00005h		;ba47
+	ld de,00005h		;ba47   ; Ficha siguiente, cinco bytes
 	add ix,de		;ba4a
 L_BA4C:
 	pop bc			;ba4c
@@ -7062,56 +7062,56 @@ L_BA4C:
 	jp nz,L_B9BA		;ba4e
 	ret			;ba51
 L_BA52:
-	ld hl,0ad03h		;ba52
+	ld hl,0ad03h		;ba52   ; Un tiro menos en la tabla
 	dec (hl)			;ba55
 	pop bc			;ba56
 	push bc			;ba57
-	ld a,b			;ba58
+	ld a,b			;ba58   ; Si el que se va es el ultimo del recorrido no hay nada que compactar
 	cp 001h		;ba59
 	jr z,L_BA4C		;ba5b
 	push ix		;ba5d
 	pop de			;ba5f
 	push de			;ba60
-	inc de			;ba61
+	inc de			;ba61   ; Cinco `inc de` son la ficha siguiente...
 	inc de			;ba62
 	inc de			;ba63
 	inc de			;ba64
 	inc de			;ba65
-	ld hl,0ad0eh		;ba66
+	ld hl,0ad0eh		;ba66   ; ...y de ahi hasta 0xAD0E, el final de la tabla, es lo que hay que subir un hueco. Esta mide hasta el final; la del otro compactador del bloque mide (B-1)*8
 	and a			;ba69
 	sbc hl,de		;ba6a
 	ld b,h			;ba6c
 	ld c,l			;ba6d
 	ex de,hl			;ba6e
 	pop de			;ba6f
-	ldir		;ba70
+	ldir		;ba70   ; IX no avanza: la ficha que ocupa el sitio se mira en la vuelta siguiente
 	jp L_BA4C		;ba72
 dispara:		; Mete disparos en la tabla del jugador (0xACBC) en su posicion mas 0x0404, con la mejora de 0xC459 cuatro en los rumbos base, +2, +4 y +6. OJO: el filtro del gatillo NO es el de la fase de naves: aqui se guarda el estado en 0xC45A y se sale con `xor c / ret z`, o sea que entra cada vez que el boton CAMBIA -al pulsar y al soltar-, no solo al pulsar
-	bit 4,a		;ba75
-	ld bc,(0c45ah)		;ba77
+	bit 4,a		;ba75   ; El bit 4 de la mascara del mando es el gatillo
+	ld bc,(0c45ah)		;ba77   ; El estado del gatillo del cuadro anterior vive en 0xC45A
 	ld b,a			;ba7b
 	ld a,010h		;ba7c
 	jr nz,L_BA82		;ba7e
 	ld a,000h		;ba80
 L_BA82:
-	ld (0c45ah),a		;ba82
-	xor c			;ba85
+	ld (0c45ah),a		;ba82   ; Se guarda el de ahora...
+	xor c			;ba85   ; ...y el `xor` dice si ha CAMBIADO, no si esta pulsado: se dispara al apretar y otra vez al soltar
 	ld a,b			;ba86
 	ret z			;ba87
 	push af			;ba88
 	push hl			;ba89
-	ld a,(0ad0eh)		;ba8a
+	ld a,(0ad0eh)		;ba8a   ; El rumbo del disparo es el del jugador, en los tres bits bajos de 0xAD0E
 	and 007h		;ba8d
-	ld bc,00404h		;ba8f
+	ld bc,00404h		;ba8f   ; El disparo nace cuatro pixeles a la derecha y cuatro por debajo
 	add hl,bc			;ba92
 	ld b,h			;ba93
 	ld c,l			;ba94
 	ex af,af'			;ba95
-	call alta_objeto_acbb		;ba96
-	add a,002h		;ba99
+	call alta_objeto_acbb		;ba96   ; El primero, en el rumbo del jugador
+	add a,002h		;ba99   ; Y cada uno de los otros tres, dos rumbos mas alla: sobre ocho, dos son un cuarto de vuelta
 	and 007h		;ba9b
 	ex af,af'			;ba9d
-	ld a,(0c459h)		;ba9e
+	ld a,(0c459h)		;ba9e   ; Sin la mejora de 0xC459 se queda en uno solo
 	and a			;baa1
 	jr z,L_BAB7		;baa2
 	call alta_objeto_acbb		;baa4
@@ -7128,7 +7128,7 @@ L_BAB7:
 	pop af			;bab8
 	ret			;bab9
 rotula_glifo_menu:		; rotula_glifo con otro recorte, solo para el menu: mismo glifo a doble altura y mismas mascaras de damero, pero sin el recorte de la entrada y con uno por fila que, tal como esta escrito, NO se cumple nunca (compara H contra C, que vale 0x18 fijo). No se nota porque el menu nunca baja tanto
-	cp 020h		;baba
+	cp 020h		;baba   ; El mismo `cp 020h` muerto que la de 0xB472, byte por byte
 	push hl			;babc
 	ld h,000h		;babd
 	ld l,a			;babf
@@ -7141,30 +7141,30 @@ rotula_glifo_menu:		; rotula_glifo con otro recorte, solo para el menu: mismo gl
 	pop hl			;bac8
 	push hl			;bac9
 	push de			;baca
-	ld bc,00018h		;bacb
+	ld bc,00018h		;bacb   ; 0x18 es el ancho del buffer, y a la vez el numero contra el que se compara el byte alto del destino: de ahi que el recorte no sirva
 	ld a,008h		;bace
 L_BAD0:
 	ex af,af'			;bad0
-	ld a,h			;bad1
+	ld a,h			;bad1   ; El recorte por fila: si H fuese C, la fila se desviaria a 0xF1xx y se perderia. Pero C vale 0x18 y H es una pagina del buffer, de 0x40 a 0x4E: nunca coinciden
 	cp c			;bad2
 	jr nz,L_BAD7		;bad3
 	ld h,0f1h		;bad5
 L_BAD7:
-	ld a,(de)			;bad7
+	ld a,(de)			;bad7   ; De aqui abajo es la de 0xB48E: borrar con el glifo corrido un pixel...
 	rlca			;bad8
 	cpl			;bad9
 	and (hl)			;bada
 	ld (hl),a			;badb
-	add hl,bc			;badc
+	add hl,bc			;badc   ; Sumar el ancho del buffer es bajar una fila: cada fila del glifo se estampa dos veces
 	ld a,(de)			;badd
 	rlca			;bade
 	cpl			;badf
 	and (hl)			;bae0
 	ld (hl),a			;bae1
 	add hl,bc			;bae2
-	inc de			;bae3
+	inc de			;bae3   ; Byte siguiente del glifo
 	ex af,af'			;bae4
-	dec a			;bae5
+	dec a			;bae5   ; Ocho filas y fuera
 	jp nz,L_BAD0		;bae6
 	pop de			;bae9
 	pop hl			;baea
@@ -7178,47 +7178,47 @@ L_BAEF:
 	jr nz,L_BAF6		;baf2
 	ld h,0f1h		;baf4
 L_BAF6:
-	ld a,(de)			;baf6
+	ld a,(de)			;baf6   ; ...y pintar en damero, una fila los impares y la de al lado los pares
 	and 055h		;baf7
 	or (hl)			;baf9
 	ld (hl),a			;bafa
 	add hl,bc			;bafb
 	ld a,(de)			;bafc
-	and 0aah		;bafd
+	and 0aah		;bafd   ; La otra mitad del damero, en la fila de al lado
 	or (hl)			;baff
 	ld (hl),a			;bb00
-	add hl,bc			;bb01
+	add hl,bc			;bb01   ; Y otra fila abajo
 	inc de			;bb02
 	ex af,af'			;bb03
-	dec a			;bb04
+	dec a			;bb04   ; Las ocho filas del glifo, tambien aqui
 	jp nz,L_BAEF		;bb05
 	pop hl			;bb08
 	ret			;bb09
 rotula_cadena_menu:		; La cadena de rotula_glifo_menu: lee (IX), avanza y sale con el cero. Byte a byte la misma que rotula_cadena, cambiando solo a quien llama
-	ld a,(ix+000h)		;bb0a
+	ld a,(ix+000h)		;bb0a   ; Un caracter de la cadena de IX...
 	inc ix		;bb0d
 	and a			;bb0f
-	ret z			;bb10
+	ret z			;bb10   ; ...y el cero la cierra
 	call rotula_glifo_menu		;bb11
-	inc hl			;bb14
+	inc hl			;bb14   ; Un byte del buffer por caracter
 	jp rotula_cadena_menu		;bb15
 suma_scroll:		; HL = el scroll de 0xC463 mas DE
 	ld hl,(0c463h)		;bb18
 	add hl,de			;bb1b
 	ret			;bb1c
 pinta_estrellas:		; Estampa el patron 0x18 -dos pixeles- en 48 posiciones del buffer sacadas de 96 bytes de la ROM del BIOS en 0x07D0, leidos como pares (byte alto enmascarado a 0x4x, byte bajo)
-	ld hl,007d0h		;bb1d
-	ld b,030h		;bb20
+	ld hl,007d0h		;bb1d   ; Noventa y seis bytes de la ROM del BIOS: no hay tabla de estrellas, el ruido se coge prestado de la maquina
+	ld b,030h		;bb20   ; Cuarenta y ocho estrellas
 L_BB22:
 	ld a,(hl)			;bb22
 	inc hl			;bb23
-	and 00fh		;bb24
+	and 00fh		;bb24   ; El primer byte del par, enmascarado a cuatro bits y subido a la pagina del buffer: de 0x40 a 0x4F. Como el buffer acaba en 0x4EFF, las que salgan en la 0x4F se pintan fuera
 	add a,040h		;bb26
 	ld d,a			;bb28
-	ld a,(hl)			;bb29
+	ld a,(hl)			;bb29   ; Y el segundo byte, tal cual, es la posicion dentro de la pagina
 	inc hl			;bb2a
 	ld e,a			;bb2b
-	ld a,018h		;bb2c
+	ld a,018h		;bb2c   ; El patron 0x18 son dos pixeles pegados en medio del byte: eso es una estrella
 	ld (de),a			;bb2e
 	djnz L_BB22		;bb2f
 	ret			;bb31
@@ -7230,12 +7230,12 @@ dispara_torretas:		; Recorre las SEIS torretas de 0xBC24 (solo con el scroll par
 	ld ix,0bc24h		;bb39
 L_BB3D:
 	push bc			;bb3d
-	ld a,(ix+001h)		;bb3e
+	ld a,(ix+001h)		;bb3e   ; 0xFF en el +1 quiere decir torreta muerta
 	inc a			;bb41
 	jr z,L_BB9A		;bb42
-	and 00fh		;bb44
+	and 00fh		;bb44   ; El contador del +1 da la vuelta cada dieciseis cuadros
 	ld (ix+001h),a		;bb46
-	ld a,(0ad2ch)		;bb49
+	ld a,(0ad2ch)		;bb49   ; La fila sale del scroll fino (0xAD2C) mas doce, y la columna es el +0 de la ficha: las seis torretas no tienen fila propia, van todas a la misma altura de pantalla
 	add a,00ch		;bb4c
 	ld h,a			;bb4e
 	ld l,(ix+000h)		;bb4f
@@ -7246,67 +7246,67 @@ L_BB3D:
 	ld c,l			;bb56
 	call lanza_tiro_torreta		;bb57   ; Cada torreta viva dispara: mete su tiro en la tabla de 0xAD04
 	pop hl			;bb5a
-	bit 3,(ix+001h)		;bb5b
+	bit 3,(ix+001h)		;bb5b   ; Solo con el bit 3 del contador -ocho cuadros de cada dieciseis- se dibuja y se deja alcanzar: apagada es invulnerable, pero tampoco deja de disparar
 	jr z,L_BB9A		;bb5f
 	push hl			;bb61
 	ld a,003h		;bb62
-	call pinta_glifo		;bb64
+	call pinta_glifo		;bb64   ; El dibujo 3 es la torreta
 	pop hl			;bb67
-	ld iy,0acbch		;bb68
+	ld iy,0acbch		;bb68   ; Contra la tabla de disparos del jugador, con caja de 4x8
 	ld de,00408h		;bb6c
 	ld bc,00200h		;bb6f
 	call choca_con_tabla		;bb72
 	jr c,L_BB9A		;bb75
-	ld (iy+002h),080h		;bb77
+	ld (iy+002h),080h		;bb77   ; El disparo que acerto se marca con 0x80, que es como se da de baja
 	ld a,014h		;bb7b
-	ld (0b879h),a		;bb7d
-	ld (ix+001h),0ffh		;bb80
+	ld (0b879h),a		;bb7d   ; Este 0x14 va a 0xB879, uno de los cuatro bytes de 0xB878-0xB87B que no lee nadie en todo el bloque
+	ld (ix+001h),0ffh		;bb80   ; La torreta, muerta
 	xor a			;bb84
-	ld (0bc30h),a		;bb85
+	ld (0bc30h),a		;bb85   ; Y la torre de la cuenta atras vuelve a cero: ninguna fila pintada y la punta otra vez abajo del todo
 	ld hl,0106fh		;bb88
 	ld (0bc31h),hl		;bb8b
-	ld hl,0b882h		;bb8e
-	ld a,00fh		;bb91
+	ld hl,0b882h		;bb8e   ; Los 200 puntos van sobre el digito de las centenas...
+	ld a,00fh		;bb91   ; ...pero aqui NO hay `ld b`, al reves que los otros tres premios del bloque: el 2 que se suma es el que quedo en B del `ld bc,00200h` que se le paso a choca_con_tabla como tamano de caja. Y este `ld a,00fh` no lo lee nadie, que suma_puntos pisa A en su primera instruccion
 	call premia		;bb93
-	ld hl,0bc33h		;bb96
+	ld hl,0bc33h		;bb96   ; Un objetivo menos de los seis
 	dec (hl)			;bb99
 L_BB9A:
-	inc ix		;bb9a
+	inc ix		;bb9a   ; Torreta siguiente, dos bytes
 	inc ix		;bb9c
 	pop bc			;bb9e
 	djnz L_BB3D		;bb9f
 	ret			;bba1
 tic_cuenta_atras:		; El tic de la torre: solo con los 6 objetivos muertos (0xBC33=0) y 1 de cada 16 del contador de cuadros 0xAD27; pinta una fila y a las 161 (0xBC30) salta a tiempo_agotado
-	ld a,(0bc33h)		;bba2
+	ld a,(0bc33h)		;bba2   ; Hasta que no caigan las seis torretas la cuenta atras no corre
 	and a			;bba5
 	ret nz			;bba6
-	ld a,(0ad27h)		;bba7
+	ld a,(0ad27h)		;bba7   ; Y aun asi, una fila cada dieciseis cuadros
 	and 00fh		;bbaa
 	ret nz			;bbac
 	ld a,(0bc30h)		;bbad
 	inc a			;bbb0
 	ld (0bc30h),a		;bbb1
-	cp 0a1h		;bbb4
+	cp 0a1h		;bbb4   ; A las 161 filas se acaba el tiempo, que es justo el cuadro siguiente al que llena la columna
 	jp z,tiempo_agotado		;bbb6
 	xor a			;bbb9
-	ld de,0cd9ch		;bbba
+	ld de,0cd9ch		;bbba   ; El tic, en el canal 0
 	call arranca_guion_libre		;bbbd
-	ld hl,(0bc31h)		;bbc0
+	ld hl,(0bc31h)		;bbc0   ; La punta de la torre, que va subiendo
 	call vram_pon_dir		;bbc3
-	ld a,07eh		;bbc6
+	ld a,07eh		;bbc6   ; Y 0x7E es la fila que se pinta: seis pixeles con un hueco a cada lado
 	out (098h),a		;bbc8   ; La fila que crece de la torre blanca de la cuenta atras
 	ei			;bbca
 	call avanza_torre		;bbcb
 	ld (0bc31h),hl		;bbce
 	ret			;bbd1
 avanza_torre:		; Sube la punta de la torre una fila (0xBC31/32); el salto de tercio del SCREEN 2 es el l|=0x3F / h-=8
-	ld a,l			;bbd2
+	ld a,l			;bbd2   ; Dentro del tercio se sube restando uno...
 	and 03fh		;bbd3
 	jr z,L_BBD9		;bbd5
 	dec hl			;bbd7
 	ret			;bbd8
 L_BBD9:
-	ld a,l			;bbd9
+	ld a,l			;bbd9   ; ...y al llegar al principio de la columna hay que saltar al tercio de arriba: su ultima fila (l or 0x3F) y 0x800 menos (h - 8)
 	or 03fh		;bbda
 	ld l,a			;bbdc
 	ld a,h			;bbdd
@@ -7314,7 +7314,7 @@ L_BBD9:
 	ld h,a			;bbe0
 	ret			;bbe1
 borra_torre:		; Borra la torre de la cuenta atras en los tres tercios: los patrones a cero en 0x0050, 0x0840 y 0x1040 (48, 64 y 48 bytes) y los colores a 0xF1 en los 0x2050, 0x2840 y 0x3040 correspondientes
-	ld bc,03098h		;bbe2
+	ld bc,03098h		;bbe2   ; Los tres tramos de la columna 1: 48 filas en el primer tercio, 64 en el segundo y 48 en el tercero. 160 en total, que es lo que mide la torre
 	ld hl,00050h		;bbe5
 	call vram_pone_ceros		;bbe8
 	ld b,040h		;bbeb
@@ -7325,11 +7325,11 @@ borra_torre:		; Borra la torre de la cuenta atras en los tres tercios: los patro
 vram_pone_ceros:		; Escribe B ceros seguidos por el puerto que traiga C, sin releer la direccion
 	call vram_pon_dir		;bbf8
 L_BBFB:
-	ld a,000h		;bbfb
+	ld a,000h		;bbfb   ; Un `nop` de respiro entre byte y byte, que es lo que el VDP necesita
 	out (c),a		;bbfd
 	nop			;bbff
 	djnz L_BBFB		;bc00
-	ld bc,03098h		;bc02
+	ld bc,03098h		;bc02   ; Y lo mismo en la tabla de colores, con 0xF1: tinta blanca sobre fondo negro
 	ld hl,02050h		;bc05
 	call vram_pone_f1		;bc08
 	ld b,040h		;bc0b

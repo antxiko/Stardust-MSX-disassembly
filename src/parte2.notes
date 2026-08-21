@@ -1210,7 +1210,7 @@ L 0xB396 copia_sprite La identidad de las cuatro: un `ldir` de 0x40 bytes del po
 L 0xBC60 pinta_nave Estampa en el buffer, desde HL y durante A filas, el dibujo de 64x64 de 0x7DDB leido con la pila (ocho `pop de` por fila); si 0xC468 no es cero le anade bajo las dos toberas una llama de (0xC468+8)/2 filas, sacada del final de las dos tablas de 24 bytes de detras del dibujo
 L 0xB3F7 alta_enemigo_cuadro El alta de enemigos cuadro a cuadro: una de cada cuatro tiradas -el freno de 0xB720 no llega a frenar: ese byte ya vale 0 en el bloque de textos y la unica escritura directa que tiene, la de 0xA480, tambien le mete 0-, saca columna al azar por debajo de 0xB0, elige nacer por arriba (fila 0x10) o por abajo (0xC0) con el bit 3 de esa misma columna, y con el bit 1 manda a la tabla de voladores o, si consulta_mapa da suelo firme, a la de andantes. Con la de voladores llena no se pierde la tirada: se prueba el andante
 L 0xB4CA rotula_menu Rotula el menu entero sobre el buffer con las cinco cadenas encadenadas de 0xB886, y remata poniendo la marca de seleccion en la linea que diga 0xB87C
-L 0xB65B scroll_records El scroll de la pantalla de records: baja el puntero de 0xB87D una fila del buffer por vuelta y rotula el titulo y las ocho fichas de 0xB8C8; cuando el rotulo se sale por arriba, el llamador desapila, arranca la musica y entra en la demo. Gemela de la de naves, 35 de 49 bytes
+L 0xB65B scroll_records El scroll de la pantalla de records: le resta al puntero de 0xB87D una fila del buffer por vuelta -o sea que el rotulo SUBE un escalon- y vuelve a rotular el titulo y las ocho fichas de 0xB8C8. Cuando el rotulo se ha ido por arriba no vuelve: el `pop hl` de 0xB6A7 se come su propia direccion de retorno, y de ahi sigue con la musica, la espera y la demo. Gemela de la de naves, 35 de 49 bytes
 L 0xB6D3 entra_en_records Mira si el marcador entra en la tabla: compara los seis digitos contra los ocho campos de puntuacion y, al ganar uno, hace hueco con un `lddr` y salta a la entrada del nombre. Es por donde vuelve todo game over. Gemela de la de naves, 57 de 71 bytes
 L 0xBABA rotula_glifo_menu rotula_glifo con otro recorte, solo para el menu: mismo glifo a doble altura y mismas mascaras de damero, pero sin el recorte de la entrada y con uno por fila que, tal como esta escrito, NO se cumple nunca (compara H contra C, que vale 0x18 fijo). No se nota porque el menu nunca baja tanto
 L 0xBB0A rotula_cadena_menu La cadena de rotula_glifo_menu: lee (IX), avanza y sale con el cero. Byte a byte la misma que rotula_cadena, cambiando solo a quien llama
@@ -2766,3 +2766,155 @@ C 0xB4E6 Y de aqui abajo, con el rotulador normal
 C 0xB4FB 0xB87C dice el mando elegido: 0 es teclado y cualquier otra cosa joystick
 C 0xB501 La marca se rotula ENCIMA de la palabra elegida, en su mismo sitio del buffer, y trae tantas flechas como letras tiene: ocho para JOYSTICK...
 C 0xB50E ...y siete para TECLADO. Como rotula_glifo solo borra por donde va a pintar, la palabra no se va: las flechas se le montan encima
+
+
+# ----------------------------------------------------------------------
+# LOS RECORDS, EL DISPARO Y LA TORRE DE LA CUENTA ATRAS
+# (0xB65B-0xB720 y 0xB9F3-0xBC23)
+# ----------------------------------------------------------------------
+# LA PANTALLA DE RECORDS es un rotulo que sube. 0xB68C planta el puntero de
+# rotulacion (0xB87D) en 0x4F08 -fila 160 y columna 8, o sea la primera fila
+# que NO se ve, justo debajo del buffer- y cada vuelta del bucle de 0xB692 le
+# resta 24, el ancho del buffer. El cuadro es: borrar, estrellas, rotular y
+# volcar. Las cuentas cierran al byte: del titulo a la primera ficha van sus 8
+# caracteres mas 0x235, que son 573 bytes = 24 filas mas abajo y columna 5; y
+# de una ficha a la siguiente, sus 14 caracteres mas 0x172, que son 384
+# justos, o sea 16 filas y la misma columna. 16 filas es lo que mide un
+# renglon, porque rotula_glifo pinta a doble altura.
+#
+# La ficha de record son QUINCE bytes: ocho de nombre, seis de puntos y el
+# cero. Por eso entra_en_records anda la tabla de quince en quince (0xB712) y
+# la corre de quince en quince al hacer hueco.
+#
+# Y scroll_records no vuelve nunca al bucle que la llama: cuando el rotulo se
+# ha ido por arriba, el `pop hl` de 0xB6A7 se come la direccion de retorno y
+# sigue por su cuenta -musica, espera y demo-.
+#
+# COMO SE ARRANCA LA DEMO (0xB6C4), que son dos cosas y no una:
+#   * el `call` del lector de mando (0xA688) se parchea al lector de la
+#     grabacion, 0xA6EE;
+#   * y la semilla del azar (0xAD28) se planta en un valor FIJO, 0xA7F8, que
+#     la mascara de azar (`and 01fh / or 020h`) convierte en 0x27F8. Sin eso
+#     la partida grabada no se repetiria igual dos veces, porque el azar de
+#     este juego es un puntero que se pasea por la ROM del BIOS.
+#
+# LA TORRE DE LA CUENTA ATRAS es la COLUMNA 1 entera. borra_torre la limpia en
+# tres tramos -0x0050 con 48 bytes, 0x0840 con 64 y 0x1040 con 48- que en la
+# geometria por columnas de este juego son los tres tercios de esa misma
+# columna: 48 + 64 + 48 = 160 filas de pixel. La punta arranca abajo del todo
+# (0x106F) y avanza_torre la sube de una en una, saltando de tercio con el
+# `l or 03fh / h - 8`. Y el tope de tiempo es 0xA1 = 161: se acaba justo el
+# cuadro despues de que la barra llegue arriba.
+#
+# LAS ESTRELLAS no son una tabla: pinta_estrellas saca 48 pares de bytes de la
+# ROM del BIOS (0x07D0-0x082F) y los usa como (pagina, columna), con la pagina
+# forzada a 0x40-0x4F. Como el buffer acaba en 0x4EFF, las que caigan en la
+# pagina 0x4F se escriben FUERA, en RAM sin dueno. Medido con la BIOS del
+# Philips VG-8020: 3 de las 48 caen fuera, y el reparto por paginas es de todo
+# menos uniforme -nueve estrellas en la 0x43 y ninguna en la 0x48 ni en la
+# 0x4E-. OJO: eso depende de la maquina, porque los bytes son los de SU BIOS.
+
+C 0xB65B El puntero donde se rotula, que 0xB68C arranca en 0x4F08
+C 0xB65E Restarle el ancho del buffer es subir el rotulo una fila: eso es todo el scroll
+C 0xB665 Y por encima de 0x4000 el rotulo entero se ha ido por arriba
+C 0xB66D El titulo, la primera de las cadenas encadenadas de 0xB886
+C 0xB674 Del titulo a la primera ficha: sus 8 caracteres mas 0x235 son 573 bytes, o sea 24 filas mas abajo y la columna 5
+C 0xB678 Las ocho fichas de record, que van seguidas: ocho de nombre, seis de puntos y el cero
+C 0xB67C De una ficha a la de abajo: sus 14 caracteres mas 0x172 son 384 justos, 16 filas, que es lo que mide un renglon a doble altura
+C 0xB683 Nombre y puntos se rotulan de una vez: son la misma cadena
+C 0xB687 Y a la ficha siguiente
+C 0xB68C La pantalla de records empieza con el rotulo por debajo del buffer, en la fila 160
+C 0xB692 El cuadro: borrar, estrellas, subir el rotulo un escalon y volcar
+C 0xB69E Con cualquier tecla se corta y se vuelve al titulo
+C 0xB6A7 Aqui ya no se vuelve: el `pop` se come la direccion de retorno del bucle de arriba
+C 0xB6A8 Con el rotulo fuera, la musica
+C 0xB6AB Tres `nop` seguidos detras del `call`, con pinta de algo quitado a mano; los mismos modales que los dos de 0xEEAF en la fase de naves
+C 0xB6AF Apagar 0xD10D es como se le pide a la musica que acabe: op_bucle (0xC78C) mira ese byte para decidir si el guion del canal 1 se repite o se termina
+C 0xB6B2 Y se espera a lo que llegue antes: una tecla...
+C 0xB6BD ...o que el canal 1 se quede sin puntero de ejecucion, o sea que la musica se haya acabado
+C 0xB6C4 La semilla del azar a un valor FIJO -0xA7F8, que la mascara de azar deja en 0x27F8-: sin eso la partida grabada no se repetiria igual
+C 0xB6CA Y el `call` del lector de mando parcheado al lector de la grabacion: esto de aqui es la DEMO
+C 0xB6D0 De ahi en adelante, como una partida cualquiera
+C 0xB6D3 Los puntos de la primera ficha; el nombre son los ocho bytes de delante
+C 0xB6D6 Las ocho fichas, de la mejor a la peor
+C 0xB6D8 Contra los seis digitos del marcador
+C 0xB6DE Digito a digito, empezando por el de mas peso
+C 0xB6E0 Menor: esta ficha no se supera, a probar con la siguiente
+C 0xB6E2 Iguales: al digito de al lado. Un empate exacto recorre los seis y acaba cayendo a la ficha de abajo, o sea que empatar no adelanta a nadie
+C 0xB6E4 Superada: 0xB931 es la ultima de las ocho, que es donde se escribe si no hay nada que correr
+C 0xB6E7 Y eso pasa justo cuando la superada es la ultima
+C 0xB6EA Si no, hay que bajar un puesto a todas las de debajo: quince bytes por ficha, contados como hl*16 - hl
+C 0xB6FD El `lddr` las corre de una en una desde el final, y la octava se cae de la tabla
+C 0xB6FF Y HL queda en el nombre del hueco que se acaba de abrir
+C 0xB700 Los puntos de la ficha superada, guardados antes del bucle de digitos
+C 0xB702 El marcador entero a su sitio...
+C 0xB70A ...y a meter el nombre, con el puntero al hueco en la pila
+C 0xB70D Digito siguiente
+C 0xB711 Ficha siguiente, quince bytes mas alla
+C 0xB9F4 Un paso de persecucion con inercia, con la velocidad en el +0/+1 y la posicion en el +2/+3
+C 0xB9FD La ficha se queda con lo que devuelva: velocidad nueva...
+C 0xBA03 ...y posicion nueva
+C 0xBA09 El bit 0 del reloj del +4 elige entre los dos dibujos del tiro, y el reloj baja un paso por cuadro
+C 0xBA15 Un disparo del jugador lo puede derribar aqui mismo
+C 0xBA18 Con el jugador ya sentenciado -0xA6ED de 4 en adelante- el tiro ya no puede alcanzarlo: el muerto no se muere dos veces
+C 0xBA25 Primero el eje horizontal contra la X del jugador...
+C 0xBA36 ...y solo si ese solapa, el vertical
+C 0xBA47 Ficha siguiente, cinco bytes
+C 0xBA52 Un tiro menos en la tabla
+C 0xBA58 Si el que se va es el ultimo del recorrido no hay nada que compactar
+C 0xBA61 Cinco `inc de` son la ficha siguiente...
+C 0xBA66 ...y de ahi hasta 0xAD0E, el final de la tabla, es lo que hay que subir un hueco. Esta mide hasta el final; la del otro compactador del bloque mide (B-1)*8
+C 0xBA70 IX no avanza: la ficha que ocupa el sitio se mira en la vuelta siguiente
+C 0xBA75 El bit 4 de la mascara del mando es el gatillo
+C 0xBA77 El estado del gatillo del cuadro anterior vive en 0xC45A
+C 0xBA82 Se guarda el de ahora...
+C 0xBA85 ...y el `xor` dice si ha CAMBIADO, no si esta pulsado: se dispara al apretar y otra vez al soltar
+C 0xBA8A El rumbo del disparo es el del jugador, en los tres bits bajos de 0xAD0E
+C 0xBA8F El disparo nace cuatro pixeles a la derecha y cuatro por debajo
+C 0xBA96 El primero, en el rumbo del jugador
+C 0xBA99 Y cada uno de los otros tres, dos rumbos mas alla: sobre ocho, dos son un cuarto de vuelta
+C 0xBA9E Sin la mejora de 0xC459 se queda en uno solo
+C 0xBABA El mismo `cp 020h` muerto que la de 0xB472, byte por byte
+C 0xBACB 0x18 es el ancho del buffer, y a la vez el numero contra el que se compara el byte alto del destino: de ahi que el recorte no sirva
+C 0xBAD1 El recorte por fila: si H fuese C, la fila se desviaria a 0xF1xx y se perderia. Pero C vale 0x18 y H es una pagina del buffer, de 0x40 a 0x4E: nunca coinciden
+C 0xBAD7 De aqui abajo es la de 0xB48E: borrar con el glifo corrido un pixel...
+C 0xBAF6 ...y pintar en damero, una fila los impares y la de al lado los pares
+C 0xBB0A Un caracter de la cadena de IX...
+C 0xBB10 ...y el cero la cierra
+C 0xBB14 Un byte del buffer por caracter
+C 0xBB1D Noventa y seis bytes de la ROM del BIOS: no hay tabla de estrellas, el ruido se coge prestado de la maquina
+C 0xBB20 Cuarenta y ocho estrellas
+C 0xBB24 El primer byte del par, enmascarado a cuatro bits y subido a la pagina del buffer: de 0x40 a 0x4F. Como el buffer acaba en 0x4EFF, las que salgan en la 0x4F se pintan fuera
+C 0xBB29 Y el segundo byte, tal cual, es la posicion dentro de la pagina
+C 0xBB2C El patron 0x18 son dos pixeles pegados en medio del byte: eso es una estrella
+C 0xBB3E 0xFF en el +1 quiere decir torreta muerta
+C 0xBB44 El contador del +1 da la vuelta cada dieciseis cuadros
+C 0xBB49 La fila sale del scroll fino (0xAD2C) mas doce, y la columna es el +0 de la ficha: las seis torretas no tienen fila propia, van todas a la misma altura de pantalla
+C 0xBB5B Solo con el bit 3 del contador -ocho cuadros de cada dieciseis- se dibuja y se deja alcanzar: apagada es invulnerable, pero tampoco deja de disparar
+C 0xBB64 El dibujo 3 es la torreta
+C 0xBB68 Contra la tabla de disparos del jugador, con caja de 4x8
+C 0xBB77 El disparo que acerto se marca con 0x80, que es como se da de baja
+C 0xBB7D Este 0x14 va a 0xB879, uno de los cuatro bytes de 0xB878-0xB87B que no lee nadie en todo el bloque
+C 0xBB80 La torreta, muerta
+C 0xBB85 Y la torre de la cuenta atras vuelve a cero: ninguna fila pintada y la punta otra vez abajo del todo
+C 0xBB8E Los 200 puntos van sobre el digito de las centenas...
+C 0xBB91 ...pero aqui NO hay `ld b`, al reves que los otros tres premios del bloque: el 2 que se suma es el que quedo en B del `ld bc,00200h` que se le paso a choca_con_tabla como tamano de caja. Y este `ld a,00fh` no lo lee nadie, que suma_puntos pisa A en su primera instruccion
+C 0xBB96 Un objetivo menos de los seis
+C 0xBB9A Torreta siguiente, dos bytes
+C 0xBBA2 Hasta que no caigan las seis torretas la cuenta atras no corre
+C 0xBBA7 Y aun asi, una fila cada dieciseis cuadros
+C 0xBBB4 A las 161 filas se acaba el tiempo, que es justo el cuadro siguiente al que llena la columna
+C 0xBBBA El tic, en el canal 0
+C 0xBBC0 La punta de la torre, que va subiendo
+C 0xBBC6 Y 0x7E es la fila que se pinta: seis pixeles con un hueco a cada lado
+C 0xBBD2 Dentro del tercio se sube restando uno...
+C 0xBBD9 ...y al llegar al principio de la columna hay que saltar al tercio de arriba: su ultima fila (l or 0x3F) y 0x800 menos (h - 8)
+C 0xBBE2 Los tres tramos de la columna 1: 48 filas en el primer tercio, 64 en el segundo y 48 en el tercero. 160 en total, que es lo que mide la torre
+C 0xBBFB Un `nop` de respiro entre byte y byte, que es lo que el VDP necesita
+C 0xBC02 Y lo mismo en la tabla de colores, con 0xF1: tinta blanca sobre fondo negro
+C 0xBADC Sumar el ancho del buffer es bajar una fila: cada fila del glifo se estampa dos veces
+C 0xBAE3 Byte siguiente del glifo
+C 0xBAE5 Ocho filas y fuera
+C 0xBAFD La otra mitad del damero, en la fila de al lado
+C 0xBB01 Y otra fila abajo
+C 0xBB04 Las ocho filas del glifo, tambien aqui
