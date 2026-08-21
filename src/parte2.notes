@@ -69,7 +69,35 @@ D 0x9FF3 0xA279 partida_grabada_de_la_demo La partida grabada de la DEMO de la f
 D 0xA5F0 0xA5F1 relleno_A5F0 Relleno o resto (1 B; 1 bytes)
 # 0xA6E9 0xA6FC tabla (19 B; racha 2.71, entropia 2.80, 9 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
 # 0xAB41 0xAB5E tabla (29 B; racha 1.57, entropia 3.36, 15 valores: pocos valores para ser un dibujo)  <- RETIRADO: la partida completa lo EJECUTO, es codigo (ver .entries)
-D 0xACA2 0xAD31 variables_del_juego_ACA2 Variables del juego (143 B): 0xACE3 contador y 0xACE4-0xACF7 la tabla de enemigos ANDANTES (4 entradas de 5 B: X, Y, rumbo/flags, animacion, extra — los "contadores de cuadro" 0xACE7/0xACEC/0xACF6 son el campo +3 de los objetos 0/1/3, y 0xACE9, que "solo cambiaba al andar", es la X del objeto 1); 0xACF8 contador y 0xACF9 la tabla de los VOLADORES (5 B); 0xAD03 tiros de torreta vivos, 0xAD04-0xAD0D los dos tiros (5 B cada uno), 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar, 0xAD2A/0xAD2C la camara (fila del mapa + scroll fino; 0xAD2B no lo toca nadie), 0xAD2D-0xAD2F trabajo del redibujado
+# Los 143 bytes de 0xACA2 a 0xAD30 figuraban como UN bloque, "variables del
+# juego". Son CINCO tablas de fichas, cada una con su contador delante, mas las
+# dos tablas de rumbo y un pufado de variables sueltas. Cada trozo va ahora con
+# su nombre y la anchura de su ficha; los limites cuadran uno con otro
+# (0xACA3+6x4 = 0xACBB, 0xACBC+9x4 = 0xACE0, 0xACE4+4x5 = 0xACF8,
+# 0xACF9+2x5 = 0xAD03, 0xAD04+2x5 = 0xAD0E, que es la constante del `ld hl` de
+# 0xBA66) y con lo que ponen a cero el reinicio de 0xA2E4 y el de 0xA462.
+D 0xACA2 0xACA3 contador_tiros_enemigos Cuantos tiros enemigos hay volando (1 B, tope 6). Va DELANTE de su tabla, y por eso mueve_tabla_disparos lo lee con (ix-001h)
+D 0xACA3 0xACBB tabla_tiros_enemigos Los tiros enemigos, seis fichas de 4 B (24 B): X, Y, rumbo -0x80 es la marca de muerto- y un cuarto byte que no escribe ni lee nadie. Las mueve mueve_tabla_disparos a 4 pixeles por cuadro y las da de alta alta_tiro_enemigo
+F 0xACA3 4
+D 0xACBB 0xACBC contador_disparos_jugador Cuantos disparos del jugador hay volando (1 B, tope 9)
+D 0xACBC 0xACE0 tabla_disparos_jugador Los disparos del jugador, nueve fichas de 4 B (36 B), con el mismo reparto que los enemigos pero a 10 pixeles por cuadro
+F 0xACBC 4
+D 0xACE0 0xACE3 trabajo_mueve_disparos Lo que aparca mueve_tabla_disparos para atender a las dos tablas con el mismo codigo (3 B): 0xACE0/0xACE1 donde acaba la tabla que toca y 0xACE2 cual de las dos es (5 la de enemigos, 4 la del jugador)
+D 0xACE3 0xACE4 contador_andantes Cuantos enemigos andantes hay vivos (1 B, tope 4)
+D 0xACE4 0xACF8 tabla_andantes Los enemigos ANDANTES, cuatro fichas de 5 B (20 B): X, Y, rumbo con banderas -el bit 5 elige entre los dos juegos de dibujos-, reloj (por debajo de 0x14 dice cuando volver a apuntar, de 0x1D en adelante es el contador de la explosion) y un quinto que escribe alta_enemigo y que no lee nadie
+F 0xACE4 5
+D 0xACF8 0xACF9 contador_voladores Cuantos voladores hay vivos (1 B, tope 2)
+D 0xACF9 0xAD03 tabla_voladores Los VOLADORES, dos fichas de 5 B (10 B): velocidad horizontal, velocidad vertical en los bits 0-5 con sesgo de 4 mas la fase del aleteo en los dos altos, X, Y y estado
+F 0xACF9 5
+D 0xAD03 0xAD04 contador_tiros_torreta Cuantos tiros de torreta hay volando (1 B, tope 2)
+D 0xAD04 0xAD0E tabla_tiros_torreta Los tiros de las torretas, dos fichas de 5 B (10 B): velocidad horizontal -que al alcanzar al jugador se recicla como contador de la explosion, ver 0xBA43-, velocidad vertical, X, Y y el reloj que decrece y decide cuando dejan de perseguir
+F 0xAD04 5
+D 0xAD0E 0xAD0F animacion_del_jugador El fotograma del protagonista (1 B). Es la quinta de las tablas que pone a cero el reinicio de 0xA2E4
+D 0xAD0F 0xAD17 tabla_rumbo_a_mascara De rumbo a mascara, las OCHO direcciones en el sentido de las agujas del reloj empezando por arriba (8 B): 0 arriba (0x02), 1 arriba-derecha (0x06), 2 derecha (0x04), 3 abajo-derecha (0x05), 4 abajo (0x01), 5 abajo-izquierda (0x09), 6 izquierda (0x08) y 7 arriba-izquierda (0x0A). La lee rumbo_a_mascara (0xAB92), y es BYTE A BYTE la misma que la 0xC9A4 de la fase de naves
+F 0xAD0F 1
+D 0xAD17 0xAD27 tabla_mascara_a_rumbo La vuelta: de mascara a rumbo, indexada por los cuatro bits (16 B). La lee rumbo_a_mascara2 (0xAB98). Las mascaras que se contradicen no son un descuido -el eje que se anula se cae y queda el otro: 0x07, arriba+abajo+derecha, da 2, que es derecha- y solo las cuatro en las que no sobrevive nada -0x00, 0x03, 0x0C y 0x0F- valen 0xFF. Tambien identica a su gemela de la fase de naves, la 0xC9AC
+F 0xAD17 1
+D 0xAD27 0xAD31 variables_de_cuadro Lo que cambia cada cuadro (10 B): 0xAD27 contador de cuadros global (parpadeo del DEMO y ritmo de la cuenta atras), 0xAD28/29 semilla del azar -que es un puntero paseandose por la ROM del BIOS, no un numero-, 0xAD2A/0xAD2C la camara (fila del mapa mas scroll fino; 0xAD2B no lo toca nadie) y 0xAD2D-0xAD30 el trabajo del redibujado
 D 0xB13E 0xB140 relleno_B13E Relleno o resto (2 B; 2 bytes)
 # 0xB2A6-0xB3AB ESTUVO AQUI como 262 B "sin clasificar" y son CUATRO RUTINAS.
 # Se retira y pasa a src/parte2.entries.
@@ -603,34 +631,59 @@ C 0xAA70 El byte de la izquierda de la ventana, el primero de los tres del ancho
 C 0xBBC8 La fila que crece de la torre blanca de la cuenta atras
 C 0xBFA8 FOSIL DEL SPECTRUM: 0xFE es el puerto del borde (y altavoz) del Spectrum; en MSX este out no hace nada
 
-# --- EL BORDE DEL PISO INFERIOR, EN CODIGO (2026-08-07) ----------------------
+# --- EL 0x7C DE LOS TIROS DE TORRETA (2026-08-07, CORREGIDO) ----------------
 #
-# El usuario jugando: los enemigos andando no pisan el piso inferior, y tocarlo
-# te hace caer al vacio y perder la vida. Lo que se ha encontrado en el codigo:
+# CORRECCION de lo que decia esta seccion. Aqui figuraba, y como
+# HECHO-VERIFICADO, que el `cp 07ch` de 0xB9CD era "el borde del piso inferior
+# (fila 124)" y que cruzarlo hacia caer al vacio al tiro de la torreta. NO ES
+# ESO: el byte que se compara no es una Y, y el 0x7C no es un borde sino una
+# marca que le planta otra rutina.
 #
-# HECHO-VERIFICADO: el borde esta en la constante 0x7C (fila 124 de las 160).
-# L_B9B0 mueve los objetos de la tabla 0xAD04 (contador en 0xAD03, MAXIMO DOS,
-# entradas de 5 bytes) y hace, literal:
-#     b9cb: add a,00ah / cp 07ch / jr c,<vuelo normal>
-#     b9dc: inc (ix+000h)          <- al cruzar el borde: CAE, un +1 por cuadro
-#     b9e2: cp 080h / jp nc,L_BA52 <- y en la fila 128 se borra de la tabla
-#                                     (L_BA52: dec (0xAD03) y compactar)
-# El +10 es el pie del objeto (su origen esta arriba). O sea: borde del piso en
-# Y=114 del origen, y el "vacio" son las 4 filas de caida hasta desaparecer.
+# Lo que prueba el listado, eslabon a eslabon:
+#   1. 0xB9BB carga C con (ix+000) y B con (ix+001); 0xB9C1 carga E con
+#      (ix+002) y D con (ix+003).
+#   2. 0xB9F3 hace `ex de,hl`, asi que persigue_con_inercia entra con HL en
+#      (+2,+3) y BC en (+0,+1). Y esa rutina hace `add hl,bc` (0xAD67): HL es
+#      la POSICION y BC la VELOCIDAD.
+#   3. Al volver, 0xB9FD-0xBA06 devuelve C y B al +0 y el +1, y E y D al +2 y
+#      el +3. O sea: +0/+1 velocidad, +2/+3 posicion. La poda vertical de
+#      verdad es el `ld a,d / cp 0e0h` de 0xB9F8.
+#   4. Y el 0x7C sale de 0xBA43: `ld (ix+000h),07ch`, JUSTO detras del
+#      `call impacto_doble` de 0xBA40, que es el impacto contra el jugador.
+#
+# O sea que el +0 hace DOS papeles, como tantos campos de este juego: mientras
+# el tiro vuela es la velocidad horizontal -arranca en 5 y persigue_con_inercia
+# la satura entre -5 y +5, asi que su valor mas 10 nunca llega a 0x7C-, y en
+# cuanto alcanza al jugador pasa a ser el contador de la explosion. De ahi que
+# 0xB9CD reparta: por debajo de 0x7C, vuelo; por encima, explosion.
+# La explosion son CUATRO fotogramas: 0xB9D7 hace sprite = (+0) + 10 - 0x3A, o
+# sea los dibujos 0x4C a 0x4F mientras el +0 va de 0x7C a 0x7F, con la posicion
+# corrida 4 y 4 (0xB9D2) para centrarlos; en 0x80 se borra de la tabla.
+#
+# Lo que el usuario vio jugando -que tocar el piso inferior te tira al vacio-
+# sigue en pie, pero no se decide aqui: el clamp de los andantes es
+# consulta_mapa (seccion siguiente) y la muerte del jugador esta en LA MUERTE
+# DEL JUGADOR, CAZADA, al final del fichero.
 #
 # QUIEN LOS LANZA: L_AC78, llamado desde 0xBB57, DENTRO del bucle de las seis
 # torretas (la tabla 0xBC24 de la cuenta atras): cada torreta viva dispara, con
 # la posicion sacada de su entrada y del scroll (0xAD2C+12), y con sonido
-# (0xCD91). Son LOS DISPAROS DE LAS TORRETAS los que caen al vacio en el borde.
-#
-# (Lo que aqui quedaba "SIN ENCONTRAR" ya esta: el clamp de los andantes es
-# consulta_mapa —seccion siguiente— y el camino de la muerte del jugador esta
-# en LA MUERTE DEL JUGADOR, CAZADA, al final del fichero.)
+# (0xCD91).
 
-L 0xB9B0 mueve_tiros_torreta Mueve los tiros de las torretas (tabla 0xAD04, max 2): al cruzar el borde del piso (Y+10 >= 0x7C) caen al vacio y en la fila 0x80 se borran
+L 0xB9B0 mueve_tiros_torreta Mueve los tiros de las torretas (tabla 0xAD04, max 2): mientras vuelan persiguen al jugador con inercia, y al alcanzarlo -0xBA43 les planta un 0x7C en el +0- pasan a los cuatro fotogramas de explosion
 L 0xAC78 lanza_tiro_torreta Mete un tiro de torreta en la tabla 0xAD04 si hay hueco (max 2), con su sonido
 C 0xBB57 Cada torreta viva dispara: mete su tiro en la tabla de 0xAD04
-C 0xB9CD El borde del piso inferior: Y+10 contra 0x7C (fila 124); cruzarlo es caer al vacio
+C 0xB9BB Los dos primeros campos son la velocidad y los dos siguientes la posicion, que es como los quiere persigue_con_inercia
+C 0xB9CA El +0 no es una coordenada: es la velocidad horizontal, entre -5 y +5, asi que sumandole 10 no llega a 0x7C ni de lejos
+C 0xB9CD Y por eso el 0x7C reparte: por debajo, el tiro vuela; por encima, esta explotando. El 0x7C se lo planta 0xBA43 al alcanzar al jugador
+C 0xB9D2 La posicion, corrida cuatro y cuatro para centrar el dibujo de la explosion, que es mas ancho que el tiro
+C 0xB9D7 El mismo byte da el fotograma: +0 mas 10 menos 0x3A son los dibujos 0x4C a 0x4F
+C 0xB9DC Un fotograma por cuadro...
+C 0xB9E2 ...y en 0x80, cuatro despues, se borra de la tabla
+C 0xB9E9 Mientras el reloj del +4 aguanta por encima de 0xB4 el tiro va a por el jugador...
+C 0xB9F0 ...y cuando baja, a un punto fijo de fuera de la pantalla: el tiro deja de perseguir y se va
+C 0xB9F8 La poda vertical de verdad, esta si sobre la fila: 0xE0 para arriba es haberse salido por el techo
+C 0xBA43 Alcanzado el jugador, el tiro se marca para explotar reutilizando el byte de la velocidad
 
 # --- COMO MIRAN LOS ENEMIGOS EL SUELO, Y EL MAPA QUE FALTABA (2026-08-07) ----
 #
@@ -2251,3 +2304,138 @@ C 0xAB1A Igual que 0xAA4F, pero para la ventana de 16 bits
 C 0xAB41 El atajo de ocho del dibujo, con cero de relleno
 C 0xAB47 Siete `adc hl,hl` y a estampar con `or`: la cuarta y ultima de las tiras del bloque, todas cortadas por el mismo patron
 C 0xAB49 El relleno de ceros lo trae ya puesto H desde 0xAB3B, asi que el acarreo con el que se entra tiene que estar limpio
+
+# ----------------------------------------------------------------------
+# LA BIBLIOTECA DE RUMBOS Y LAS ALTAS DE LAS TABLAS (0xAB6F-0xAEC1)
+# ----------------------------------------------------------------------
+# Las dos tablas de rumbo de esta fase, 0xAD0F y 0xAD17, son BYTE A BYTE las
+# mismas que las de la fase de naves (0xC9A4 y 0xC9AC). Los 24 bytes, sacados
+# de los dos listados:
+#     02 06 04 05 01 09 08 0A | FF 04 00 FF 02 03 01 02 06 05 07 06 FF 04 00 FF
+# Los ocho rumbos van en el sentido de las agujas del reloj empezando por
+# arriba, y la mascara reparte un bit por sentido: 0 bajar, 1 subir, 2 derecha
+# y 3 izquierda.
+
+C 0xAB6F El rumbo cabe en un byte: los bits 0-2 son hacia donde va y los 5-7 hacia donde quiere ir
+C 0xAB70 El de ahora, a E
+C 0xAB74 Tres rotaciones bajan los bits 5-7 al 0-2, y asi el pedido se lee con la misma mascara que el actual
+C 0xAB79 Lo que le falta de vuelta, en octavos y del 0 al 7
+C 0xAB7C Si ya coincide no hay nada que girar, y el byte sale como entro
+C 0xAB80 De 1 a 4 se sube y de 5 a 7 se baja: siempre el lado corto. La media vuelta justa -el 4- cae del lado de subir, porque el `cp` aun deja acarreo
+C 0xAB88 Un octavo, y otra vez modulo 8 para que el 7 y el 0 sean vecinos
+C 0xAB8E Se guarda todo lo demas del byte -el pedido y el bit 3- y solo se cambia el rumbo actual: por eso el pedido sigue ahi para el cuadro siguiente
+C 0xAB92 Los ocho rumbos en el sentido de las agujas del reloj empezando por arriba: 0 arriba (0x02), 1 arriba-derecha (0x06), 2 derecha (0x04), 3 abajo-derecha (0x05), 4 abajo (0x01), 5 abajo-izquierda (0x09), 6 izquierda (0x08) y 7 arriba-izquierda (0x0A). Es la misma tabla que la 0xC9A4 de la fase de naves, byte a byte
+C 0xAB98 Y la vuelta, indexada por los cuatro bits de la mascara: la que anula el eje que se contradice. Tambien identica a su gemela, la 0xC9AC
+C 0xAB9B El indice viene en A y la tabla en DE, asi que las dos entradas se reparten un solo cuerpo de siete instrucciones
+C 0xABA4 De rumbo a mascara, que es un bit por sentido
+C 0xABA7 DE es el paso que se va a dar, y arranca a cero por si la mascara no pide nada
+C 0xABAB Bit 0, bajar: la fila se lleva B
+C 0xABAF Bit 1, subir: la misma B, negada. Desde la tabla de rumbos los dos bits nunca vienen juntos, pero si vinieran ganaria este
+C 0xABB8 Bit 2, derecha: la columna se lleva C
+C 0xABBC Bit 3, izquierda: la misma C, negada
+C 0xABC3 Y las dos sumas de una vez, con H de fila y L de columna. Aqui no se recorta nada: quien llama mira despues si se ha salido
+C 0xABCA Fila del bicho menos fila del jugador...
+C 0xABCE ...y si el bicho esta mas abajo, el sentido es subir
+C 0xABD3 Y si esta mas arriba, bajar, con la resta al derecho para quedarse con la distancia a secas
+C 0xABD8 Lo mismo con las columnas: el bicho a la derecha del jugador pide izquierda, y a la izquierda, derecha
+C 0xABE6 Dos veces y media la distancia horizontal, con un desplazamiento y dos sumas. Y 2,5 es la aproximacion barata de 1+raiz(2) = 2,4142, que es la cotangente de 22,5 grados, o sea el reparto exacto de la rosa de ocho vientos
+C 0xABEA Si al doblarla ya no cabe en el byte, la horizontal manda de calle y no hace falta comparar
+C 0xABEF Vale la horizontal si 2,5 veces su distancia llega a la vertical
+C 0xABF0 Y si no llega, se cae y no entra en el resultado
+C 0xABF5 Y otra vez lo mismo con los papeles cambiados, para la vertical
+C 0xAC01 Si la vertical no cuenta, sale el sentido horizontal a secas, que es uno de los cuatro rectos
+C 0xAC03 Y si cuentan los dos, la diagonal. Con el factor 2,5 los ocho sectores salen casi iguales: 43,6 grados los cuatro rectos y 46,4 los cuatro diagonales
+C 0xAC07 La semilla no es un numero, es un PUNTERO que se pasea por la ROM del BIOS
+C 0xAC0B Se le encaja el rango 0x2000-0x3FFF, la mitad alta de la BIOS, que como tabla de ruido sobra
+C 0xAC10 El acumulador arranca a cero...
+C 0xAC12 ...y se traga tres bytes seguidos a golpe de `xor`
+C 0xAC18 Y encima se mezcla la propia direccion, sumando el byte alto y restando el bajo: asi dos ventanas de bytes iguales no dan lo mismo
+C 0xAC1A El puntero avanza de tres en tres y queda guardado para la llamada siguiente
+C 0xAC1F La pila se va a usar de brocha, asi que lo primero es guardarsela
+C 0xAC23 Y con SP fuera de sitio no puede entrar una interrupcion
+C 0xAC24 Se apunta al FINAL del buffer, porque `push` escribe hacia atras
+C 0xAC27 Ochenta vueltas...
+C 0xAC2C ...de veinticuatro `push` de dos bytes: 80 x 24 x 2 son los 3840 del buffer, o sea de 0x4000 a 0x4EFF. Sale a 5,7 ciclos por byte contando el `djnz`, cuando un `ldir` cuesta 21: cuatro veces mas
+C 0xAC46 SP a su sitio, y ya se puede volver a interrumpir
+C 0xAC49 Los andantes vivos, con tope cuatro
+C 0xAC4F Lleno: no entra, y se vuelve sin acarreo
+C 0xAC50 El hueco es el que dice el contador, que ademas es el numero de fichas
+C 0xAC51 Fichas de cinco bytes: indice*5 con dos `add hl,hl` y la suma del propio indice
+C 0xAC5D Los dos primeros campos son la posicion que traen BC: X en el +0 e Y en el +1
+C 0xAC61 El bit 5 del tercer campo se echa a suertes, y es el que elige entre los dos juegos de dibujos del pool; lo demas es fijo, y sus bits 0-2 dejan el rumbo en 4, mirando abajo
+C 0xAC6A El cuarto campo, el reloj que decide cuando volver a apuntar, arranca a cero
+C 0xAC6D Y el quinto lo trae A', que aqui no lo lee nadie
+C 0xAC6F El canal 0, para el guion de 0xCE35
+C 0xAC76 Acarreo: ha entrado
+C 0xAC78 Los tiros de torreta vivos, con tope dos
+C 0xAC7F Mismo reparto que los andantes -indice*5 sobre la tabla-, pero con los campos en otro orden
+C 0xAC8C El +0 es la velocidad horizontal, y arranca en 5, que es justo el tope al que satura persigue_con_inercia. Este mismo byte es despues el contador de la explosion: cuando el tiro alcanza al jugador, 0xBA43 le planta un 0x7C
+C 0xAC8F El +1 es la velocidad vertical, la que traiga A'
+C 0xAC92 Y el +2 y el +3, la posicion de salida
+C 0xAC96 El +4 arranca a cero y va BAJANDO, asi que da la vuelta en el primer `dec`: desde 0xFF hasta 0xB4 el tiro persigue al jugador -76 cuadros-, y por debajo de eso apunta al punto fijo de 0xFF60
+C 0xAC98 El canal 1, para el guion de 0xCD91
+C 0xAD31 La posicion de partida, guardada por si hay que rebotar
+C 0xAD34 Solo una de cada dos veces se corrige el rumbo: asi el tiro conserva inercia y describe una curva en vez de una linea quebrada
+C 0xAD3B La fila del tiro contra la del blanco...
+C 0xAD40 ...y la velocidad vertical sube un paso, saturando en +5
+C 0xAD48 O baja uno, saturando en -5. El sesgo de cinco es lo que permite hacer las dos cosas con comparaciones sin signo
+C 0xAD4E Quitado el sesgo, la velocidad vuelve a su rango de -5 a +5
+C 0xAD51 Y lo mismo con la columna
+C 0xAD67 El paso, sea el de siempre o el recien corregido
+C 0xAD68 Y el recorte, solo en la columna: aqui el ancho util es 0xB8, ocho mas que el que usan los bichos en vaga_o_persigue
+C 0xAD6D Se repone la X de partida y se niega la velocidad horizontal: el tiro rebota contra el lado en vez de morir
+C 0xAD76 Las dos tablas de disparos pasan por el mismo motor, y lo unico que cambia es el paso: se parchea EN CALIENTE el operando del `ld bc` de 0xADC4
+C 0xAD7A Los tiros enemigos, a cuatro pixeles por cuadro en los dos ejes
+C 0xAD82 Tabla de 0xACA3, que acaba en 0xACBB, con seis fichas de tope
+C 0xAD8E Y los del jugador a diez, dos veces y media mas rapidos que los enemigos
+C 0xAD9A Tabla de 0xACBC, que acaba en 0xACE0, con nueve de tope
+C 0xADA3 El motor comun aparca en 0xACE0 donde acaba la tabla y en 0xACE2 cual de las dos es, que es lo que la baja necesita para compactar
+C 0xADA9 El contador vive UN byte por delante de la tabla, de ahi el indice negativo
+C 0xADB0 El scroll del cuadro se le suma a la fila: los disparos van clavados al mundo, no a la pantalla
+C 0xADB9 La posicion, con L de columna y H de fila
+C 0xADBD El rumbo a 0x80 exacto es la marca de muerto, que pone quien acierta el impacto
+C 0xADC4 Aqui esta el operando que se parchea. El 0x0707 que trae el binario no lo escribe nadie: los dos llamantes lo pisan antes de entrar
+C 0xADCA Fuera por abajo...
+C 0xADCF ...o por la derecha, y en los dos casos se da de baja
+C 0xADD4 La posicion nueva, ya buena, vuelve a la ficha
+C 0xADDA El glifo del disparo, que es el dibujo 2
+C 0xADDF Cuatro bytes por ficha, no cinco: estas dos tablas son mas estrechas que las de bichos, y su cuarto byte no lo escribe ni lo lee nadie
+C 0xADE8 La baja: primero, cual de los dos contadores hay que bajar
+C 0xADF5 Una ficha menos
+C 0xADF8 Si la que muere es la ultima que quedaba por mirar, no hay nada que mover
+C 0xADFE El compactado: se trae encima todo lo que va detras de la ficha muerta...
+C 0xAE06 ...y lo que se mueve es lo que va de la ficha siguiente al final de la tabla
+C 0xAE10 Un `ldir` y hueco cerrado. IX no avanza, asi que la ficha que ocupa el sitio se mira en la vuelta siguiente y no se salta ninguna
+C 0xAE15 Los tiros enemigos: contador en 0xACA2, tope seis...
+C 0xAE1B ...canal 1 y guion 0xCD5F
+C 0xAE23 Y los del jugador: contador en 0xACBB, tope nueve...
+C 0xAE29 ...canal 2 y guion 0xCD53
+C 0xAE2E El juego alterno lleva el contador y el tope, que es lo unico que distingue a las dos entradas
+C 0xAE30 Lleno: no entra, y sin acarreo
+C 0xAE33 El sonido se arranca ANTES de escribir la ficha, aunque para eso haya que pasear A por la pila
+C 0xAE3A Una ficha mas, y la tabla empieza justo detras del contador
+C 0xAE3E Cuatro bytes por ficha: dos `add hl,hl` y ya
+C 0xAE44 Posicion en el +0 y el +1, y en el +2 el rumbo que trae A'. El +3 ni se toca
+C 0xAE4A Acarreo: ha entrado
+C 0xAE4C La posicion de partida, por si hay que deshacer el paso
+C 0xAE4F Tres de cada cuatro veces se sigue recto...
+C 0xAE56 ...y esas tres solo cuestan una suma
+C 0xAE5A La cuarta se corrige, un eje cada vez. La fila del bicho contra la del jugador...
+C 0xAE5F ...y la velocidad vertical sube un paso, saturando en +4
+C 0xAE67 O baja uno, saturando en -4
+C 0xAE6D El sesgo de cuatro, quitado: la velocidad vuelve a su rango de -4 a +4
+C 0xAE70 Y otra vez con la columna
+C 0xAE87 El recorte, solo en la columna: 0xB0 es el ancho util de esta fase
+C 0xAE8C Rebote: se niega la velocidad horizontal, se repone la posicion de partida y se da el paso otra vez, ya hacia dentro. Al bicho le cuesta el cuadro entero darse la vuelta
+C 0xAE95 Los voladores vivos, con tope dos
+C 0xAE9C Fichas de cinco bytes, como las de los andantes
+C 0xAEA9 El +0, la velocidad horizontal, arranca a cero: los voladores nacen subiendo o bajando en vertical
+C 0xAEAC El +1 lleva DOS cosas: la velocidad vertical en los bits 0-5, sesgada en cuatro, y la fase del aleteo en los dos altos
+C 0xAEB0 La fase se echa a suertes...
+C 0xAEB6 ...y el sesgo se quita del byte ENTERO, asi que cuando la velocidad es -4 el prestamo baja en uno los dos bits del azar. Como los cuatro valores siguen saliendo, lo unico que cambia es cual toca
+C 0xAEBA La posicion de salida, en el +2 y el +3
+C 0xAEBE Y el estado a cero, que es por donde empieza la vida del volador
+C 0xAEC2 BC corrige las dos coordenadas antes de comparar: lo que se mide es la esquina de la caja, no el punto que se pinta
+C 0xAEC4 Al que va delante se le suma SU tamano: si L queda por debajo de H, se mira si L+E alcanza a H...
+C 0xAECA ...y si no, si H+D alcanza a L. Vuelve con acarreo cuando NO se tocan
+
