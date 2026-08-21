@@ -6141,31 +6141,31 @@ recorta_x_objeto:		; Lo mismo para el objeto de IX, reponiendo L desde (ix+000h)
 	ld a,l			;b0d8   ; La misma poda que la del jugador, pero reponiendo desde la ficha de IX
 	cp 0b1h		;b0d9
 	ret c			;b0db
-	ld l,(ix+000h)		;b0dc
+	ld l,(ix+000h)		;b0dc   ; La misma poda, reponiendo desde la ficha de IX
 	ret			;b0df
 impacto_simple:		; Gasta un punto del escudo de 0xA6ED y, si ya estaba a cero, manda a mata_jugador_impacto. Gemela de la de naves cambiando solo la direccion del escudo
-	ld a,(0a6edh)		;b0e0
+	ld a,(0a6edh)		;b0e0   ; El escudo que le queda al jugador
 	and a			;b0e3
-	jr z,mata_jugador_impacto		;b0e4
+	jr z,mata_jugador_impacto		;b0e4   ; Ya estaba a cero: este impacto lo mata
 	dec a			;b0e6
 	ld (0a6edh),a		;b0e7
 	jr L_B0F9		;b0ea
 impacto_doble:		; Gasta dos puntos de 0xA6ED, comprobando entre uno y otro si el primero ya bastaba para matar. La usan los tiros de las torretas
-	ld a,(0a6edh)		;b0ec
+	ld a,(0a6edh)		;b0ec   ; El impacto doble baja dos, pero mira entre uno y otro...
 	and a			;b0ef
 	jr z,mata_jugador_impacto		;b0f0
 	dec a			;b0f2
-	jr z,mata_jugador_impacto		;b0f3
+	jr z,mata_jugador_impacto		;b0f3   ; ...porque con uno solo de escudo el primero ya basta y no hay que gastar el segundo
 	dec a			;b0f5
 	ld (0a6edh),a		;b0f6
 L_B0F9:
-	ld hl,02f50h		;b0f9
+	ld hl,02f50h		;b0f9   ; El HUD: A trae el escudo que queda, y el `xor 003h` lo vuelve del reves, o sea CUANTOS puntos se han perdido
 	xor 003h		;b0fc
-	ld c,011h		;b0fe
+	ld c,011h		;b0fe   ; Las tres celdas se marcan con el mismo color y van de ocho en ocho, que en la geometria de este juego -tercio*0x800 + columna*0x40 + fila- es la misma columna y filas seguidas. Se empieza por 0x2F50, la de abajo, y se sube
 	push af			;b100
 	call pinta_celda_color		;b101
 	pop af			;b104
-	dec a			;b105
+	dec a			;b105   ; Una celda por punto perdido: con el escudo entero no se marca ninguna mas
 	ret z			;b106
 	ld hl,02f48h		;b107
 	ld c,011h		;b10a
@@ -6176,18 +6176,18 @@ L_B0F9:
 	ret z			;b112
 	ld hl,02f40h		;b113
 	ld c,011h		;b116
-	jp pinta_celda_color		;b118
+	jp pinta_celda_color		;b118   ; Y la tercera con un `jp`, que ya no hay nada detras
 mata_jugador_impacto:		; Escudo agotado: 0xA6ED=4, sonido, y el update del jugador (operando 0xA57E) parcheado al cadaver de 0xB268
-	ld hl,02778h		;b11b
+	ld hl,02778h		;b11b   ; La marca del HUD que dice que se acabo
 	call pinta_marca_hud		;b11e
-	ld a,004h		;b121
+	ld a,004h		;b121   ; El 4 en 0xA6ED es la sentencia: de aqui en adelante ese byte deja de ser escudo y pasa a contar la agonia
 	ld (0a6edh),a		;b123
-	ld a,05bh		;b126
+	ld a,05bh		;b126   ; Y la animacion del jugador arranca en 0x5B, que es de donde tira el cadaver
 	ld (0ad0eh),a		;b128
-	xor a			;b12b
+	xor a			;b12b   ; El sonido de la muerte, en el canal 0
 	ld de,0cd6dh		;b12c
 	call arranca_guion		;b12f
-	ld hl,0b268h		;b132
+	ld hl,0b268h		;b132   ; **EL PARCHE**: se escribe cadaver_parabola en el operando de 0xA57E, o sea que el turno del jugador deja de ser el turno del jugador y pasa a ser la caida del cuerpo. Nadie comprueba una bandera: se cambia el codigo
 	ld (0a57eh),hl		;b135
 	ld hl,02f48h		;b138
 	jp pinta_marca_hud		;b13b
@@ -6204,7 +6204,7 @@ DATA_relleno_B13E:
 
 
 rota_fondo_sube:		; Rota el tile 0 una fila de pixel (ldir de 124 B) y deja el delta del cuadro en 0xC462 (+2): la trama del fondo, a mitad de velocidad que el scroll
-	push hl			;b140
+	push hl			;b140   ; Los cuatro primeros bytes de la tira, guardados...
 	ld hl,087f3h		;b141
 	ld e,(hl)			;b144
 	inc hl			;b145
@@ -6216,13 +6216,13 @@ rota_fondo_sube:		; Rota el tile 0 una fila de pixel (ldir de 124 B) y deja el d
 	ld d,(hl)			;b14b
 	push de			;b14c
 	inc hl			;b14d
-	ld de,087f3h		;b14e
+	ld de,087f3h		;b14e   ; ...los 124 que quedan suben cuatro posiciones...
 	ld bc,0007ch		;b151
 	ldir		;b154
 	ex de,hl			;b156
 	pop de			;b157
 	pop bc			;b158
-	ld (hl),c			;b159
+	ld (hl),c			;b159   ; ...y los guardados entran por el final: una rotacion circular de los 128 bytes de 0x87F3 a 0x8872, en pasos de cuatro
 	inc hl			;b15a
 	ld (hl),b			;b15b
 	inc hl			;b15c
@@ -6230,11 +6230,11 @@ rota_fondo_sube:		; Rota el tile 0 una fila de pixel (ldir de 124 B) y deja el d
 	inc hl			;b15e
 	ld (hl),d			;b15f
 	ld hl,0c462h		;b160
-	ld (hl),002h		;b163
+	ld (hl),002h		;b163   ; Y el delta del cuadro, que es lo que suman a su fila todos los que van clavados al mundo: mas dos
 	pop hl			;b165
 	ret			;b166
 rota_fondo_baja:		; El simetrico de rota_fondo_sube (lddr; 0xC462 = -2)
-	push hl			;b167
+	push hl			;b167   ; El simetrico exacto, empezando por el ultimo byte y con `lddr`
 	ld hl,08872h		;b168
 	ld e,(hl)			;b16b
 	dec hl			;b16c
@@ -6260,32 +6260,32 @@ rota_fondo_baja:		; El simetrico de rota_fondo_sube (lddr; 0xC462 = -2)
 	dec hl			;b185
 	ld (hl),d			;b186
 	ld hl,0c462h		;b187
-	ld (hl),0feh		;b18a
+	ld (hl),0feh		;b18a   ; Y aqui el delta es 0xFE, o sea menos dos
 	pop hl			;b18c
 	ret			;b18d
 consulta_mapa:		; Pasa la posicion a mundo (Y+0x28-fino, X+8) y lee la celda mapa[fila*6 + Y/32*6 + X/32 - 6] (celdas de 32x32): Z = celda 0 = vacio. Devuelve el valor en A pero nadie lo usa: para la fisica el mapa es binario
-	ld a,h			;b18e
+	ld a,h			;b18e   ; De pantalla a mundo: a la fila se le suman 0x28...
 	ld iy,0ad2ah		;b18f
 	add a,028h		;b193
-	sub (iy+002h)		;b195
+	sub (iy+002h)		;b195   ; ...y se le quita el scroll fino de la camara, que es el desfase del cuadro
 	ld h,a			;b198
-	ld a,l			;b199
+	ld a,l			;b199   ; A la columna, ocho: el punto que se consulta no es la esquina de la ficha sino su centro bajo
 	add a,008h		;b19a
 	ld l,a			;b19c
 	push hl			;b19d
-	call base_mapa		;b19e
+	call base_mapa		;b19e   ; La base del mapa de la zona, que cambia con la altura
 	pop hl			;b1a1
 	ld a,h			;b1a2
-	rlca			;b1a3
+	rlca			;b1a3   ; Cuatro rotaciones y `and 00eh` dejan (fila/32) por dos...
 	rlca			;b1a4
 	rlca			;b1a5
 	rlca			;b1a6
 	and 00eh		;b1a7
 	ld d,a			;b1a9
-	add a,a			;b1aa
+	add a,a			;b1aa   ; ...y con `add a,a / add a,d` se multiplica por tres: total, (fila/32) por SEIS, que es el ancho del mapa en celdas
 	add a,d			;b1ab
 	ld d,a			;b1ac
-	ld a,l			;b1ad
+	ld a,l			;b1ad   ; Tres rotaciones y `and 007h` dan la columna/32, sin multiplicar por nada
 	rlca			;b1ae
 	rlca			;b1af
 	rlca			;b1b0
@@ -6294,70 +6294,70 @@ consulta_mapa:		; Pasa la posicion a mundo (Y+0x28-fino, X+8) y lee la celda map
 	ld e,a			;b1b4
 	ld d,000h		;b1b5
 	add ix,de		;b1b7
-	ld a,(ix-006h)		;b1b9
-	and a			;b1bc
+	ld a,(ix-006h)		;b1b9   ; Menos seis es retroceder una fila entera del mapa, que mide seis celdas de ancho: con el 0x28 que se le sumo a la fila en 0xB193, es lo que alinea la consulta con el punto del bicho que importa
+	and a			;b1bc   ; Cero es vacio, y eso es todo lo que mira la fisica: el valor sale en A pero no lo lee nadie
 	ret			;b1bd
 consulta_mapa_fina:		; consulta_mapa mas el test de sub-celda: con celda vacia, carry solo si la posicion cae en la banda central [8,24) de la celda en X e Y. La usan SOLO los voladores (desde 0xB20F) para elegir hueco donde anidar
 	call consulta_mapa		;b1be
-	ret nz			;b1c1
+	ret nz			;b1c1   ; Con la celda ocupada no hay nada mas que preguntar
 	ld a,h			;b1c2
-	and 0e0h		;b1c3
+	and 0e0h		;b1c3   ; Los cinco bits bajos de cada eje son la posicion DENTRO de la celda de 32x32...
 	ld d,a			;b1c5
 	ld a,l			;b1c6
 	and 0e0h		;b1c7
 	ld e,a			;b1c9
 	sbc hl,de		;b1ca
 	ld a,h			;b1cc
-	sub 008h		;b1cd
+	sub 008h		;b1cd   ; ...y se exige que caiga en la banda central: el `sub 008h / ccf` descarta por abajo...
 	ccf			;b1cf
 	ret nc			;b1d0
-	sub 010h		;b1d1
+	sub 010h		;b1d1   ; ...y el `sub 010h` por arriba, o sea la banda [8,24) de las 32
 	ret nc			;b1d3
-	ld a,l			;b1d4
+	ld a,l			;b1d4   ; Lo mismo en la columna, y solo si los dos ejes caen dentro se vuelve con acarreo
 	sub 008h		;b1d5
 	ccf			;b1d7
 	ret nc			;b1d8
 	sub 010h		;b1d9
 	ret			;b1db
-mueve_voladores:		; El vuelo de los enemigos voladores (tabla 0xACF9, contador 0xACF8, 5 B por objeto): vuelan hacia el jugador (0x6858) y con consulta_mapa_fina deciden donde anidar
-	ld ix,0acf9h		;b1dc
+mueve_voladores:		; La PRIMERA mitad de la vida de los voladores (tabla 0xACF9, contador 0xACF8, 5 B por objeto), la de estado por debajo de 0x2E: vuelan hacia un PUNTO FIJO del centro -fila 0x68, columna 0x58, que el `ld de,06858h` de 0xB21D carga como valor, no como puntero- y en el estado 0x2D se plantan a probar con consulta_mapa_fina hasta dar con celda vacia y centrada. Perseguir al jugador de verdad es cosa del estado 0x33, en voladores_activos, que lo lee de memoria con `ld de,(0a6ebh)`
+	ld ix,0acf9h		;b1dc   ; Las dos fichas de voladores, otra vez
 	ld a,(0acf8h)		;b1e0
 	and a			;b1e3
 	ret z			;b1e4
 	ld b,a			;b1e5
 L_B1E6:
 	push bc			;b1e6
-	ld a,(ix+001h)		;b1e7
+	ld a,(ix+001h)		;b1e7   ; La velocidad vertical, limpia de los dos bits de la fase
 	add a,004h		;b1ea
 	and 03fh		;b1ec
 	sub 004h		;b1ee
 	ld b,a			;b1f0
 	ld a,(ix+004h)		;b1f1
-	cp 02eh		;b1f4
+	cp 02eh		;b1f4   ; De 0x2E en adelante la ficha es de voladores_activos: los dos cortes son complementarios y ninguna ficha se mira dos veces
 	jr nc,L_B25D		;b1f6
 	ld c,(ix+000h)		;b1f8
 	ld l,(ix+002h)		;b1fb
 	ld h,(ix+003h)		;b1fe
-	inc (ix+004h)		;b201
-	cp 02dh		;b204
+	inc (ix+004h)		;b201   ; El estado sube un paso por cuadro...
+	cp 02dh		;b204   ; ...menos en el 0x2D, que es donde el volador se planta a buscar sitio
 	jr c,L_B21D		;b206
-	dec (ix+004h)		;b208
+	dec (ix+004h)		;b208   ; Y para plantarse deshace su propio `inc`: mientras no encuentre hueco, el estado no se mueve del 0x2D
 	push hl			;b20b
 	push bc			;b20c
 	push ix		;b20d
-	call consulta_mapa_fina		;b20f
+	call consulta_mapa_fina		;b20f   ; Hueco es celda vacia Y bien centrado en ella
 	pop ix		;b212
 	pop bc			;b214
 	pop hl			;b215
-	jr nc,L_B21D		;b216
-	inc (ix+004h)		;b218
+	jr nc,L_B21D		;b216   ; Sin hueco, a seguir volando un cuadro mas
+	inc (ix+004h)		;b218   ; Con hueco, 0x2E: la ficha pasa a la otra mitad y ya no se mira mas en este bucle
 	jr L_B25D		;b21b
 L_B21D:
-	ld de,06858h		;b21d
+	ld de,06858h		;b21d   ; El blanco es un PUNTO FIJO -fila 0x68, columna 0x58, el centro-, no el jugador: es carga inmediata. Perseguir al jugador es cosa del estado 0x33, en la otra mitad
 	call vaga_o_persigue		;b220
 	ld a,h			;b223
 	cp 0e0h		;b224
-	ld de,lb262h		;b226
+	ld de,lb262h		;b226   ; La baja, con la direccion de vuelta en DE como siempre
 	jp nc,L_AFA7		;b229
 	ld (ix+000h),c		;b22c
 	ld a,b			;b22f
@@ -6371,7 +6371,7 @@ L_B21D:
 	ld (ix+001h),a		;b23d
 	ld (ix+002h),l		;b240
 	ld (ix+003h),h		;b243
-	ld a,(ix+001h)		;b246
+	ld a,(ix+001h)		;b246   ; Y el mismo dibujo y el mismo aleteo que en la otra mitad, byte por byte
 	add a,004h		;b249
 	push af			;b24b
 	and 0c0h		;b24c
@@ -6392,31 +6392,31 @@ L_B262:
 	jp nz,L_B1E6		;b264
 	ret			;b267
 cadaver_parabola:		; El cuerpo tras el impacto: sube y cae acelerando (h += estado-12), sin consultar el mapa; se retira pasado Y=0xC4
-	ld hl,(0a6ebh)		;b268
-	ld a,(0a6edh)		;b26b
+	ld hl,(0a6ebh)		;b268   ; La posicion desde donde arranca la caida
+	ld a,(0a6edh)		;b26b   ; El byte que era el escudo ahora cuenta la agonia, y sube un paso por cuadro
 	inc a			;b26e
 	ld (0a6edh),a		;b26f
-	sub 00ch		;b272
+	sub 00ch		;b272   ; Menos doce: el cuerpo sale despedido a siete pixeles hacia arriba y va perdiendo uno por cuadro, asi que a los siete se para y luego cae acelerando. La parabola no cuesta ni una variable mas
 	add a,h			;b274
 	push af			;b275
 	push hl			;b276
-	call nc,pinta_torre		;b277
+	call nc,pinta_torre		;b277   ; La torre se pinta ANTES o DESPUES del cuerpo segun el acarreo de esa suma, que es justo el que distingue el tramo que sube del que cae
 	pop hl			;b27a
 	pop af			;b27b
 	push af			;b27c
-	cp 0c4h		;b27d
+	cp 0c4h		;b27d   ; Pasada la fila 0xC4 el cuerpo ya no se pinta y la caida se acaba
 	jp nc,L_B2A4		;b27f
 	ld h,a			;b282
 	ld (0a6ebh),hl		;b283
-	ld a,(0ad0eh)		;b286
+	ld a,(0ad0eh)		;b286   ; El cuerpo va pasando por las ocho poses del protagonista, que es lo unico que hace el `and 007h`
 	and 007h		;b289
 	call pinta_sprite		;b28b
 	ld hl,(0a6ebh)		;b28e
-	ld h,068h		;b291
+	ld h,068h		;b291   ; Y encima, en fila fija, los cuatro dibujos de la explosion...
 	ld a,(0ad0eh)		;b293
 	inc a			;b296
 	ld (0ad0eh),a		;b297
-	cp 060h		;b29a
+	cp 060h		;b29a   ; ...que solo salen los cuatro primeros cuadros: de 0x60 en adelante queda el cuerpo dando vueltas a secas
 	call c,pinta_sprite		;b29c
 	pop af			;b29f
 	call c,pinta_torre		;b2a0
@@ -6425,7 +6425,7 @@ L_B2A4:
 	pop af			;b2a4
 	ret			;b2a5
 gira_sprite_dcha:		; Gira el sprite un cuarto de vuelta a la derecha sobre el slot de trabajo: cuatro pasadas de predesplaza_sprite, una por cada byte de la fila de cuatro
-	ld h,000h		;b2a6
+	ld h,000h		;b2a6   ; Cada dibujo del pool ocupa 64 bytes, de ahi las seis duplicaciones
 	ld l,a			;b2a8
 	add hl,hl			;b2a9
 	add hl,hl			;b2aa
@@ -6435,7 +6435,7 @@ gira_sprite_dcha:		; Gira el sprite un cuarto de vuelta a la derecha sobre el sl
 	add hl,hl			;b2ae
 	ld de,06555h		;b2af
 	add hl,de			;b2b2
-	ld de,00004h		;b2b3
+	ld de,00004h		;b2b3   ; Los cuatro destinos no van seguidos: 0x7D55, 0x7D75, 0x7D57 y 0x7D77, o sea una rejilla de dos por dos con pasos de 0x20 y de 2. Trasponer cada bloque y ademas permutarlos es lo que da el cuarto de vuelta
 	ld iy,07d55h		;b2b6
 	call predesplaza_sprite		;b2ba
 	inc hl			;b2bd

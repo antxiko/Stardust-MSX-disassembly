@@ -900,7 +900,7 @@ C 0xA98E El opcode parcheado: 0xC2 solo las celdas vacias, 0xCA solo las solidas
 # (game over de verdad). Para eso hay que mirar el acarreo, y no se ha hecho.
 
 L 0xB1BE consulta_mapa_fina consulta_mapa mas el test de sub-celda: con celda vacia, carry solo si la posicion cae en la banda central [8,24) de la celda en X e Y. La usan SOLO los voladores (desde 0xB20F) para elegir hueco donde anidar
-L 0xB1DC mueve_voladores El vuelo de los enemigos voladores (tabla 0xACF9, contador 0xACF8, 5 B por objeto): vuelan hacia el jugador (0x6858) y con consulta_mapa_fina deciden donde anidar
+L 0xB1DC mueve_voladores La PRIMERA mitad de la vida de los voladores (tabla 0xACF9, contador 0xACF8, 5 B por objeto), la de estado por debajo de 0x2E: vuelan hacia un PUNTO FIJO del centro -fila 0x68, columna 0x58, que el `ld de,06858h` de 0xB21D carga como valor, no como puntero- y en el estado 0x2D se plantan a probar con consulta_mapa_fina hasta dar con celda vacia y centrada. Perseguir al jugador de verdad es cosa del estado 0x33, en voladores_activos, que lo lee de memoria con `ld de,(0a6ebh)`
 L 0xB11B mata_jugador_impacto Escudo agotado: 0xA6ED=4, sonido, y el update del jugador (operando 0xA57E) parcheado al cadaver de 0xB268
 L 0xB268 cadaver_parabola El cuerpo tras el impacto: sube y cae acelerando (h += estado-12), sin consultar el mapa; se retira pasado Y=0xC4
 L 0xA439 respawn Devuelve al jugador a la ultima posicion pisada en firme (0xA6E9) con la camara del checkpoint 0xC466/67, escudo a 3, tablas de enemigos vaciadas y el update restaurado
@@ -2535,4 +2535,85 @@ C 0xB0C1 El sesgo de 16 no es adorno: mete las dieciseis columnas negativas -0xF
 C 0xB0C6 Por debajo de la columna 3, fuera el bit de la izquierda
 C 0xB0CE Y de la 174 en adelante, fuera el de la derecha
 C 0xB0D8 La misma poda que la del jugador, pero reponiendo desde la ficha de IX
+
+
+# ----------------------------------------------------------------------
+# LA MUERTE, EL MAPA Y LA OTRA MITAD DE LOS VOLADORES (0xB0DC-0xB2A5)
+# ----------------------------------------------------------------------
+# CORRECCION de la ficha de mueve_voladores, que decia que los voladores
+# "vuelan hacia el jugador (0x6858)". El 0xB21D es `ld de,06858h`, carga
+# INMEDIATA: DE no es un puntero sino el propio blanco, fila 0x68 y columna
+# 0x58, un punto fijo del centro de la pantalla. Cuando de verdad se persigue
+# al jugador se lee de memoria, y eso esta en la OTRA mitad: el
+# `ld de,(0a6ebh)` de 0xAF09. Los que entran van al centro; los ya activos, a
+# por ti.
+#
+# LA VIDA DE UN VOLADOR, de punta a punta, juntando las dos mitades:
+#   estado 0x00-0x2C  vuela hacia el punto fijo del centro, un paso de estado
+#                     por cuadro (mueve_voladores)
+#   estado 0x2D       ATASCADO A PROPOSITO: cada cuadro prueba con
+#                     consulta_mapa_fina si esta sobre celda vacia y centrado
+#                     en ella, y hasta que no lo esta deshace su propio `inc`
+#   estado 0x2E-0x32  cinco cuadros subiendo tres pixeles a pelo
+#                     (voladores_activos)
+#   estado 0x33       la vida de verdad: vaga o persigue al jugador y dispara
+#                     una de cada 64 veces
+#   estado 0x34-0x37  los cuatro dibujos de la explosion, y baja de la tabla
+
+C 0xB0DC La misma poda, reponiendo desde la ficha de IX
+C 0xB0E0 El escudo que le queda al jugador
+C 0xB0E4 Ya estaba a cero: este impacto lo mata
+C 0xB0EC El impacto doble baja dos, pero mira entre uno y otro...
+C 0xB0F3 ...porque con uno solo de escudo el primero ya basta y no hay que gastar el segundo
+C 0xB0F9 El HUD: A trae el escudo que queda, y el `xor 003h` lo vuelve del reves, o sea CUANTOS puntos se han perdido
+C 0xB0FE Las tres celdas se marcan con el mismo color y van de ocho en ocho, que en la geometria de este juego -tercio*0x800 + columna*0x40 + fila- es la misma columna y filas seguidas. Se empieza por 0x2F50, la de abajo, y se sube
+C 0xB105 Una celda por punto perdido: con el escudo entero no se marca ninguna mas
+C 0xB118 Y la tercera con un `jp`, que ya no hay nada detras
+C 0xB11B La marca del HUD que dice que se acabo
+C 0xB121 El 4 en 0xA6ED es la sentencia: de aqui en adelante ese byte deja de ser escudo y pasa a contar la agonia
+C 0xB126 Y la animacion del jugador arranca en 0x5B, que es de donde tira el cadaver
+C 0xB12B El sonido de la muerte, en el canal 0
+C 0xB132 **EL PARCHE**: se escribe cadaver_parabola en el operando de 0xA57E, o sea que el turno del jugador deja de ser el turno del jugador y pasa a ser la caida del cuerpo. Nadie comprueba una bandera: se cambia el codigo
+C 0xB140 Los cuatro primeros bytes de la tira, guardados...
+C 0xB14E ...los 124 que quedan suben cuatro posiciones...
+C 0xB159 ...y los guardados entran por el final: una rotacion circular de los 128 bytes de 0x87F3 a 0x8872, en pasos de cuatro
+C 0xB163 Y el delta del cuadro, que es lo que suman a su fila todos los que van clavados al mundo: mas dos
+C 0xB167 El simetrico exacto, empezando por el ultimo byte y con `lddr`
+C 0xB18A Y aqui el delta es 0xFE, o sea menos dos
+C 0xB18E De pantalla a mundo: a la fila se le suman 0x28...
+C 0xB195 ...y se le quita el scroll fino de la camara, que es el desfase del cuadro
+C 0xB199 A la columna, ocho: el punto que se consulta no es la esquina de la ficha sino su centro bajo
+C 0xB19E La base del mapa de la zona, que cambia con la altura
+C 0xB1A3 Cuatro rotaciones y `and 00eh` dejan (fila/32) por dos...
+C 0xB1AA ...y con `add a,a / add a,d` se multiplica por tres: total, (fila/32) por SEIS, que es el ancho del mapa en celdas
+C 0xB1AD Tres rotaciones y `and 007h` dan la columna/32, sin multiplicar por nada
+C 0xB1B9 Menos seis es retroceder una fila entera del mapa, que mide seis celdas de ancho: con el 0x28 que se le sumo a la fila en 0xB193, es lo que alinea la consulta con el punto del bicho que importa
+C 0xB1BC Cero es vacio, y eso es todo lo que mira la fisica: el valor sale en A pero no lo lee nadie
+C 0xB1C1 Con la celda ocupada no hay nada mas que preguntar
+C 0xB1C3 Los cinco bits bajos de cada eje son la posicion DENTRO de la celda de 32x32...
+C 0xB1CD ...y se exige que caiga en la banda central: el `sub 008h / ccf` descarta por abajo...
+C 0xB1D1 ...y el `sub 010h` por arriba, o sea la banda [8,24) de las 32
+C 0xB1D4 Lo mismo en la columna, y solo si los dos ejes caen dentro se vuelve con acarreo
+C 0xB1DC Las dos fichas de voladores, otra vez
+C 0xB1E7 La velocidad vertical, limpia de los dos bits de la fase
+C 0xB1F4 De 0x2E en adelante la ficha es de voladores_activos: los dos cortes son complementarios y ninguna ficha se mira dos veces
+C 0xB201 El estado sube un paso por cuadro...
+C 0xB204 ...menos en el 0x2D, que es donde el volador se planta a buscar sitio
+C 0xB208 Y para plantarse deshace su propio `inc`: mientras no encuentre hueco, el estado no se mueve del 0x2D
+C 0xB20F Hueco es celda vacia Y bien centrado en ella
+C 0xB216 Sin hueco, a seguir volando un cuadro mas
+C 0xB218 Con hueco, 0x2E: la ficha pasa a la otra mitad y ya no se mira mas en este bucle
+C 0xB21D El blanco es un PUNTO FIJO -fila 0x68, columna 0x58, el centro-, no el jugador: es carga inmediata. Perseguir al jugador es cosa del estado 0x33, en la otra mitad
+C 0xB226 La baja, con la direccion de vuelta en DE como siempre
+C 0xB246 Y el mismo dibujo y el mismo aleteo que en la otra mitad, byte por byte
+C 0xB268 La posicion desde donde arranca la caida
+C 0xB26B El byte que era el escudo ahora cuenta la agonia, y sube un paso por cuadro
+C 0xB272 Menos doce: el cuerpo sale despedido a siete pixeles hacia arriba y va perdiendo uno por cuadro, asi que a los siete se para y luego cae acelerando. La parabola no cuesta ni una variable mas
+C 0xB277 La torre se pinta ANTES o DESPUES del cuerpo segun el acarreo de esa suma, que es justo el que distingue el tramo que sube del que cae
+C 0xB27D Pasada la fila 0xC4 el cuerpo ya no se pinta y la caida se acaba
+C 0xB286 El cuerpo va pasando por las ocho poses del protagonista, que es lo unico que hace el `and 007h`
+C 0xB291 Y encima, en fila fija, los cuatro dibujos de la explosion...
+C 0xB29A ...que solo salen los cuatro primeros cuadros: de 0x60 en adelante queda el cuerpo dando vueltas a secas
+C 0xB2A6 Cada dibujo del pool ocupa 64 bytes, de ahi las seis duplicaciones
+C 0xB2B3 Los cuatro destinos no van seguidos: 0x7D55, 0x7D75, 0x7D57 y 0x7D77, o sea una rejilla de dos por dos con pasos de 0x20 y de 2. Trasponer cada bloque y ademas permutarlos es lo que da el cuarto de vuelta
 
