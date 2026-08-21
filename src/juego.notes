@@ -4003,3 +4003,19 @@ C 0xE5B0 El resto sube una posicion y se le prueba a restar el divisor...
 C 0xE5B6 ...y si no cabia, se deshace la resta
 C 0xE5B7 El `ccf` da la vuelta al acarreo: lo que salio como "no cabia" entra como el 0 del cociente
 C 0xE5BA La ultima vuelta, fuera del bucle, es la que mete el bit dieciseis
+
+C 0xE207 El canal que toca se deja en 0xEE19, que es de donde lo leen todas las rutinas de aqui abajo
+C 0xE20A La cuenta atras de la duracion: mientras no llegue a cero no se lee ni un byte mas del guion
+C 0xE213 Y al llegar a cero, lo primero es CALLAR: con A a cero el mezclador no enciende nada, y en el PSG el bit a uno es el canal mudo
+C 0xE217 El puntero del guion...
+C 0xE21F ...y si es cero, este canal no tiene nada que interpretar
+C 0xE223 El corte esta en 0x80: por debajo, una nota; por encima, un comando
+C 0xE228 El comando menos 0x80 indexa la tabla de los quince, que empieza en 0xE7A3 y acaba justo donde empieza la de las frases (0xE7C1): 15 por 2 son 30 bytes y cierran al byte
+C 0xE230 `jp (hl)` y no `call`: cada comando vuelve por su cuenta al bucle, casi siempre a 0xE222
+C 0xE232 A la nota se le suma su transposicion antes de nada
+C 0xE237 La tabla de periodos, indexada por el numero de nota ya transpuesto
+C 0xE23D El periodo queda en (ix+00A/00B), listo para el volcado al PSG
+C 0xE244 Los bits de tono y ruido que dejo el comando 0x83, y con ellos se abre el mezclador
+C 0xE24A Las dos envolventes del instrumento, cada una con su contador a cero
+C 0xE25C Aqui es donde el guion avanza de verdad: el puntero nuevo se guarda...
+C 0xE262 ...y la duracion se recarga desde su copia de (ix+006/007), que es la que el comando de duracion escribe

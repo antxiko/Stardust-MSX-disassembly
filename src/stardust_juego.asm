@@ -12349,47 +12349,47 @@ L_E203:
 	push hl			;e204
 	push de			;e205
 	push bc			;e206
-	ld (0ee19h),a		;e207
-	ld a,(ix+004h)		;e20a
+	ld (0ee19h),a		;e207   ; El canal que toca se deja en 0xEE19, que es de donde lo leen todas las rutinas de aqui abajo
+	ld a,(ix+004h)		;e20a   ; La cuenta atras de la duracion: mientras no llegue a cero no se lee ni un byte mas del guion
 	or (ix+005h)		;e20d
 	jp nz,L_E26E		;e210
-	xor a			;e213
+	xor a			;e213   ; Y al llegar a cero, lo primero es CALLAR: con A a cero el mezclador no enciende nada, y en el PSG el bit a uno es el canal mudo
 	call mezclador_canal		;e214
-	ld c,(ix+002h)		;e217
+	ld c,(ix+002h)		;e217   ; El puntero del guion...
 	ld b,(ix+003h)		;e21a
 	ld a,b			;e21d
 	or c			;e21e
-	jp z,L_E327		;e21f
+	jp z,L_E327		;e21f   ; ...y si es cero, este canal no tiene nada que interpretar
 L_E222:
 	ld a,(bc)			;e222
-	cp 080h		;e223
+	cp 080h		;e223   ; El corte esta en 0x80: por debajo, una nota; por encima, un comando
 	jp c,lee_nota		;e225
-	sub 080h		;e228
+	sub 080h		;e228   ; El comando menos 0x80 indexa la tabla de los quince, que empieza en 0xE7A3 y acaba justo donde empieza la de las frases (0xE7C1): 15 por 2 son 30 bytes y cierran al byte
 	ld hl,0e7a3h		;e22a
 	call lee_puntero		;e22d
-	jp (hl)			;e230
+	jp (hl)			;e230   ; `jp (hl)` y no `call`: cada comando vuelve por su cuenta al bucle, casi siempre a 0xE222
 lee_nota:		; Un byte por debajo de 0x80 es una nota: le suma la transposicion de 0xEE21+canal, busca el periodo en la tabla de 0xE6E3 y lo deja en (ix+00A/00B)
 	push af			;e231
-	call entrada_transporte		;e232
+	call entrada_transporte		;e232   ; A la nota se le suma su transposicion antes de nada
 	pop af			;e235
 	add a,(hl)			;e236
-	ld hl,0e6e3h		;e237
+	ld hl,0e6e3h		;e237   ; La tabla de periodos, indexada por el numero de nota ya transpuesto
 	call lee_puntero		;e23a
-	ld (ix+00ah),l		;e23d
+	ld (ix+00ah),l		;e23d   ; El periodo queda en (ix+00A/00B), listo para el volcado al PSG
 	ld (ix+00bh),h		;e240
 	inc bc			;e243
 ataca_nota:		; El ataque: abre tono y ruido en el mezclador, monta la envolvente del instrumento y la pone a cero. Es justo lo que se salta el comando 0x84
-	ld a,(ix+008h)		;e244
+	ld a,(ix+008h)		;e244   ; Los bits de tono y ruido que dejo el comando 0x83, y con ellos se abre el mezclador
 	call mezclador_canal		;e247
-	call carga_envolvente_1		;e24a
+	call carga_envolvente_1		;e24a   ; Las dos envolventes del instrumento, cada una con su contador a cero
 	ld (ix+02ah),000h		;e24d
 	call carga_envolvente_2		;e251
 	ld (ix+02bh),000h		;e254
 	ld (ix+02ch),000h		;e258
 arranca_duracion:		; Guarda el puntero del guion en (ix+002/003) y recarga la cuenta atras de la duracion (ix+004/005) desde (ix+006/007)
-	ld (ix+002h),c		;e25c
+	ld (ix+002h),c		;e25c   ; Aqui es donde el guion avanza de verdad: el puntero nuevo se guarda...
 	ld (ix+003h),b		;e25f
-	ld l,(ix+006h)		;e262
+	ld l,(ix+006h)		;e262   ; ...y la duracion se recarga desde su copia de (ix+006/007), que es la que el comando de duracion escribe
 	ld h,(ix+007h)		;e265
 	ld (ix+004h),l		;e268
 	ld (ix+005h),h		;e26b
