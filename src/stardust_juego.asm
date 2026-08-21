@@ -11322,7 +11322,7 @@ L_D726:
 	ld hl,0dd80h		;d728
 	ld bc,00006h		;d72b
 	ldir		;d72e
-	jp L_F671		;d730
+	jp pide_nombre		;d730
 L_D733:
 	inc hl			;d733
 	inc de			;d734
@@ -14310,49 +14310,49 @@ L_F662:
 	cp d			;f66d
 	ret z			;f66e   ; Y si las nueve dan 0xFF, vuelve con Z: no hay nadie tocando el teclado
 	jr L_F662		;f66f
-L_F671:
+pide_nombre:		; La pantalla de meter el nombre en la tabla de records: seis letras, con ENTER para cerrar, ESPACIO y DEL para borrar. Entra con el puntero a la entrada del record EN LA PILA, metido por 0xD727
 	call borra_buffer		;f671
 	call vuelca_pantalla		;f674
-	ld ix,0dd87h		;f677
+	ld ix,0dd87h		;f677   ; El rotulo que pide el nombre, y su sitio en la pantalla
 	ld hl,00118h		;f67b
 	call rotula_secuencia		;f67e
-	pop de			;f681
+	pop de			;f681   ; Esto NO es la direccion de retorno: es el puntero a la entrada de la tabla de records, que 0xD727 dejo en la pila justo antes del salto
 	push hl			;f682
 	ld h,d			;f683
 	ld l,e			;f684
 	inc de			;f685
 	ld bc,00005h		;f686
-	ld (hl),020h		;f689
+	ld (hl),020h		;f689   ; La entrada se rellena con seis espacios antes de empezar, por si el jugador cierra sin escribir
 	ldir		;f68b
 	ld bc,00005h		;f68d
 	and a			;f690
-	sbc hl,bc		;f691
+	sbc hl,bc		;f691   ; Deshace los cinco del `ldir` para volver al principio de la entrada
 	ex de,hl			;f693
-	ld b,006h		;f694
+	ld b,006h		;f694   ; Seis letras, ni una mas
 	pop hl			;f696
-L_F697:
+pide_nombre_letra:		; Una vuelta por letra: espera a que suelten, lee la tecla y la trata segun lo que diga la tabla de nombres de 0xDC09
 	push bc			;f697
 	push de			;f698
 L_F699:
-	call hay_tecla		;f699
+	call hay_tecla		;f699   ; Espera a que SUELTEN: mientras haya cualquier tecla pulsada no sigue
 	jr nz,L_F699		;f69c
-	ld bc,007d0h		;f69e
+	ld bc,007d0h		;f69e   ; 2000 vueltas de espera: el antirrebote
 	call espera_bc		;f6a1
 	call lee_tecla_pulsada		;f6a4
 	ld d,000h		;f6a7
 	push hl			;f6a9
-	ld hl,0dc09h		;f6aa
+	ld hl,0dc09h		;f6aa   ; La tecla no da su letra directamente, la da la tabla de 0xDC09...
 	add hl,de			;f6ad
 	ld a,(hl)			;f6ae
 	pop hl			;f6af
-	and 07fh		;f6b0
-	cp 030h		;f6b2
+	and 07fh		;f6b0   ; ...y el bit 7 hay que quitarlo, que ahi es la marca de "tecla ya usada" de la pantalla de redefinir
+	cp 030h		;f6b2   ; De 0x30 para arriba es un caracter imprimible -de '0' a 'Z'-, y se mete tal cual
 	jr nc,L_F6C8		;f6b4
-	cp 014h		;f6b6
-	jr z,L_F6E6		;f6b8
-	cp 011h		;f6ba
+	cp 014h		;f6b6   ; Por debajo de 0x15 el valor es el numero de cadena de la tabla de 0xDC52, y ahi solo valen tres: la 20 es DEL...
+	jr z,pide_nombre_borra		;f6b8
+	cp 011h		;f6ba   ; ...la 17 es SPACE, que entra como un espacio normal...
 	jr z,L_F6C6		;f6bc
-	cp 010h		;f6be
+	cp 010h		;f6be   ; ...y la 16 es ENTER, que cierra el nombre. Cualquier otra tecla se ignora y a esperar de nuevo
 	jr nz,L_F699		;f6c0
 	pop de			;f6c2
 	pop bc			;f6c3
@@ -14363,17 +14363,17 @@ L_F6C8:
 	pop de			;f6c8
 	pop bc			;f6c9
 	push bc			;f6ca
-	ld (de),a			;f6cb
+	ld (de),a			;f6cb   ; La letra, a la entrada del record...
 	push de			;f6cc
-	call rotulador_cmd		;f6cd
+	call rotulador_cmd		;f6cd   ; ...y a la pantalla, que la pinta y deja el cursor en la celda siguiente
 	pop de			;f6d0
 	inc de			;f6d1
 	pop bc			;f6d2
-	djnz L_F697		;f6d3
+	djnz pide_nombre_letra		;f6d3
 L_F6D5:
-	ld a,00dh		;f6d5
+	ld a,00dh		;f6d5   ; Al cerrar, un salto de linea...
 	call rotulador_cmd		;f6d7
-	ld bc,00000h		;f6da
+	ld bc,00000h		;f6da   ; ...y la vuelta entera del contador, 65536, para que de tiempo a leerlo
 L_F6DD:
 	dec bc			;f6dd
 	ld a,b			;f6de
@@ -14381,43 +14381,43 @@ L_F6DD:
 	jr nz,L_F6DD		;f6e0
 	pop hl			;f6e2
 	jp L_D560		;f6e3
-L_F6E6:
+pide_nombre_borra:		; El DEL: borra la celda, retrocede una columna y repinta alli el cursor
 	pop de			;f6e6
 	pop bc			;f6e7
 	ld a,b			;f6e8
 	push bc			;f6e9
 	push de			;f6ea
-	cp 006h		;f6eb
+	cp 006h		;f6eb   ; Con B a 6 no se ha escrito nada todavia: el DEL no tiene nada que borrar
 	jp z,L_F699		;f6ed
 	call vram_pon_dir		;f6f0
 	ld b,008h		;f6f3
 L_F6F5:
-	ld a,000h		;f6f5
+	ld a,000h		;f6f5   ; Ocho ceros borran la celda, y aqui el retardo entre escrituras es un `nop`, no el doble `and a` del resto del bloque
 	out (098h),a		;f6f7
 	nop			;f6f9
 	djnz L_F6F5		;f6fa
 	ei			;f6fc
-	ld de,00040h		;f6fd
+	ld de,00040h		;f6fd   ; Una columna atras: 0x40 menos
 	and a			;f700
 	sbc hl,de		;f701
 	call vram_pon_dir		;f703
 	ld b,007h		;f706
 L_F708:
-	ld a,07fh		;f708
+	ld a,07fh		;f708   ; Y el cursor repintado en la celda a la que se ha vuelto
 	out (098h),a		;f70a
 	nop			;f70c
 	djnz L_F708		;f70d
 	out (098h),a		;f70f
 	ei			;f711
 	pop de			;f712
-	dec de			;f713
-	ld a,020h		;f714
+	dec de			;f713   ; Y el puntero del nombre, un byte atras...
+	ld a,020h		;f714   ; ...con un espacio encima, que es lo que deja el hueco borrado
 	ld (de),a			;f716
 	pop bc			;f717
-	inc b			;f718
-	jp L_F697		;f719
+	inc b			;f718   ; `inc b` deshace la letra: el contador de seis vuelve a subir
+	jp pide_nombre_letra		;f719
 L_F71C:
-	ld a,0c2h		;f71c
+	ld a,0c2h		;f71c   ; El par (0xC2, 0x81) es el registro 1 del VDP: pantalla encendida, interrupcion del VDP abierta y sprites de 16x16
 	out (099h),a		;f71e
 	and a			;f720
 	and a			;f721
@@ -14429,23 +14429,23 @@ L_F71C:
 	ld hl,00108h		;f730
 	call rotula_secuencia		;f733
 L_F736:
-	call hay_tecla		;f736
+	call hay_tecla		;f736   ; Aqui espera lo contrario que la pantalla del nombre: no sigue HASTA que se pulse una tecla
 	jr z,L_F736		;f739
 L_F73B:
 	call vuelca_pantalla		;f73b
 	ld ix,0f7d6h		;f73e
 	ld hl,001f0h		;f742
 	call rotula_secuencia		;f745
-	ld hl,0dd08h		;f748
+	ld hl,0dd08h		;f748   ; 0x7F bytes de 0xDD08 a 0xD6D8: la tabla de records se pone a salvo antes de tocar la cinta
 	ld de,0d6d8h		;f74b
 	ld bc,0007fh		;f74e
 	ldir		;f751
-	nop			;f753
+	nop			;f753   ; Tres `nop` seguidos, que huelen a algo quitado a mano
 	nop			;f754
 	nop			;f755
 L_F756:
 	ld a,0f9h		;f756
-	ld (0f81ah),a		;f758
+	ld (0f81ah),a		;f758   ; Codigo automodificable: planta un 0xF9 dentro de carga_cinta, en 0xF81A
 	ld ix,0f77dh		;f75b
 	ld de,00008h		;f75f
 	ld a,000h		;f762

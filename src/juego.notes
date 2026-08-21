@@ -3887,3 +3887,37 @@ C 0xF660 Las nueve filas de la matriz, de 0xF0 a 0xF8
 C 0xF667 0xFF es "ninguna tecla en esta fila": la logica va al reves, el bit a cero es la tecla pulsada
 C 0xF669 Con que una fila no valga 0xFF ya vuelve con NZ, sin mirar las demas
 C 0xF66E Y si las nueve dan 0xFF, vuelve con Z: no hay nadie tocando el teclado
+
+L 0xF671 pide_nombre La pantalla de meter el nombre en la tabla de records: seis letras, con ENTER para cerrar, ESPACIO y DEL para borrar. Entra con el puntero a la entrada del record EN LA PILA, metido por 0xD727
+L 0xF697 pide_nombre_letra Una vuelta por letra: espera a que suelten, lee la tecla y la trata segun lo que diga la tabla de nombres de 0xDC09
+L 0xF6E6 pide_nombre_borra El DEL: borra la celda, retrocede una columna y repinta alli el cursor
+C 0xF677 El rotulo que pide el nombre, y su sitio en la pantalla
+C 0xF681 Esto NO es la direccion de retorno: es el puntero a la entrada de la tabla de records, que 0xD727 dejo en la pila justo antes del salto
+C 0xF689 La entrada se rellena con seis espacios antes de empezar, por si el jugador cierra sin escribir
+C 0xF691 Deshace los cinco del `ldir` para volver al principio de la entrada
+C 0xF694 Seis letras, ni una mas
+C 0xF699 Espera a que SUELTEN: mientras haya cualquier tecla pulsada no sigue
+C 0xF69E 2000 vueltas de espera: el antirrebote
+C 0xF6AA La tecla no da su letra directamente, la da la tabla de 0xDC09...
+C 0xF6B0 ...y el bit 7 hay que quitarlo, que ahi es la marca de "tecla ya usada" de la pantalla de redefinir
+C 0xF6B2 De 0x30 para arriba es un caracter imprimible -de '0' a 'Z'-, y se mete tal cual
+C 0xF6B6 Por debajo de 0x15 el valor es el numero de cadena de la tabla de 0xDC52, y ahi solo valen tres: la 20 es DEL...
+C 0xF6BA ...la 17 es SPACE, que entra como un espacio normal...
+C 0xF6BE ...y la 16 es ENTER, que cierra el nombre. Cualquier otra tecla se ignora y a esperar de nuevo
+C 0xF6CB La letra, a la entrada del record...
+C 0xF6CD ...y a la pantalla, que la pinta y deja el cursor en la celda siguiente
+C 0xF6D5 Al cerrar, un salto de linea...
+C 0xF6DA ...y la vuelta entera del contador, 65536, para que de tiempo a leerlo
+C 0xF6EB Con B a 6 no se ha escrito nada todavia: el DEL no tiene nada que borrar
+C 0xF6F5 Ocho ceros borran la celda, y aqui el retardo entre escrituras es un `nop`, no el doble `and a` del resto del bloque
+C 0xF6FD Una columna atras: 0x40 menos
+C 0xF708 Y el cursor repintado en la celda a la que se ha vuelto
+
+C 0xF713 Y el puntero del nombre, un byte atras...
+C 0xF714 ...con un espacio encima, que es lo que deja el hueco borrado
+C 0xF718 `inc b` deshace la letra: el contador de seis vuelve a subir
+C 0xF71C El par (0xC2, 0x81) es el registro 1 del VDP: pantalla encendida, interrupcion del VDP abierta y sprites de 16x16
+C 0xF736 Aqui espera lo contrario que la pantalla del nombre: no sigue HASTA que se pulse una tecla
+C 0xF748 0x7F bytes de 0xDD08 a 0xD6D8: la tabla de records se pone a salvo antes de tocar la cinta
+C 0xF753 Tres `nop` seguidos, que huelen a algo quitado a mano
+C 0xF758 Codigo automodificable: planta un 0xF9 dentro de carga_cinta, en 0xF81A
