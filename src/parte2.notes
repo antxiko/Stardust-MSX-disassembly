@@ -152,7 +152,7 @@ D 0xD348 0xD35B tabla_D348 Tabla (19 B; racha 2.45, entropia 3.72, 14 valores: p
 D 0xC001 0xC3DC graficos_C001 Graficos (987 B; racha 10.91, entropia 1.35, 29 valores: rachas mas largas que el azar)
 D 0x7C78 0x7C9D pool_de_sprites_cola Pool de sprites de la fase (cola de la entrada 0x48)
 F 0x7C78 2
-D 0xA6E9 0xA6EE relleno_A6E9 Relleno o resto (5 B; 5 bytes)
+D 0xA6E9 0xA6EE variables_del_jugador Las CINCO variables del jugador, y no relleno: 0xA6E9/0xA6EA la ultima posicion pisada en firme -el checkpoint que apunta juega_en_firme y repone respawn-, 0xA6EB/0xA6EC la posicion actual (X en el byte bajo, fila en el alto, clavada en 0x68) y 0xA6ED el semaforo de escudo y agonia. Caen aqui, entre dos trozos de codigo, porque el programa las lleva incrustadas en su propio cuerpo
 
 # --- EL ROTULO DEMO DE LA FASE DE A PIE --------------------------------------
 #
@@ -1833,3 +1833,203 @@ B 0x6555 cero": es `dibujo and mascara == dibujo` en las 16 lineas, o sea que
 B 0x6555 el dibujo va DENTRO de la mascara. Asi que aqui la mascara es la
 B 0x6555 SILUETA del sprite -uno donde ocupa-, no el hueco, y quien lo pinta
 B 0x6555 tiene que invertirla antes del `and`.
+
+# ============================================================================
+# EL CUERPO DEL TURNO DEL JUGADOR Y LOS ENEMIGOS ANDANTES, comentado linea a
+# linea (0xA580-0xA8B9). Sigue justo donde acabo el armazon: el reparto por
+# estado, las dos muertes, el paso en firme, los dos lectores de mando y el
+# bucle de los cuatro bichos que andan.
+# ============================================================================
+
+L 0xA580 turno_jugador_vivo El destino normal del `jp` parcheable de 0xA57D: el turno del jugador cuando no le han dado
+L 0xA583 reparte_estado_jugador El semaforo de 0xA6ED: por debajo de 4 se juega, 4 es la sentencia de caida y de 5 en adelante corre la agonia -dos cuadros deslizandose, doce dibujos de derrumbe a dos cuadros cada uno y catorce de espera hasta el 0x2D que le cuesta la vida-
+L 0xA5D0 desliza_cadaver Los DOS cuadros -estados 5 y 6- en que el cuerpo ya no anda pero sigue moviendose: dos pixeles por el rumbo de la caida y sin mirar el mapa, girando sobre si mismo porque 0xA65C le deja pedido el rumbo OPUESTO. Con un octavo por cuadro y solo dos cuadros, el giro que se ve es un cuarto de vuelta
+L 0xA5F1 elige_lado_de_la_caida Firmada la sentencia, decide hacia cual de los CUATRO lados cardinales se derrumba el cuerpo. Con rumbo par no hay nada que elegir; con rumbo diagonal mira la celda dos pixeles al lado contrario y se queda con la componente que le hizo cruzar el borde
+L 0xA61C caida_diagonal_dcha La mitad de las diagonales que van hacia la derecha (rumbos 1 y 3): mira el suelo dos pixeles a la izquierda, que es de donde viene
+L 0xA632 elige_giro_del_cadaver Traduce el lado de la caida al giro que hay que darle al dibujo, y lo deja escrito en el operando del `call` de 0xA5C5. Los doce fotogramas del derrumbe existen SOLO mirando hacia arriba: las otras tres direcciones se sacan girandolos al vuelo
+L 0xA6D1 remata_turno_jugador El cierre del turno: elige el dibujo del ciclo de andar, lo estampa, pinta la torre encima y cobra los tiros enemigos que le hayan alcanzado
+L 0xA733 lee_teclado El camino de teclado de lee_mando: recorre las CINCO primeras entradas de 0xB86A metiendo cada tecla por el bit 7 de C y remata con tres `rrca`. Gemela de la de 0xC1F4 de la fase de naves
+L 0xA739 lee_teclado_bucle Una entrada de la tabla: fila por el puerto 0xAA, lectura por el 0xA9, mascara del bit y el resultado a C por acarreo
+L 0xA787 elige_rumbo_andante El rumbo de un andante vivo: una tirada de azar decide, mitad y mitad, entre vagar hacia un rumbo cualquiera y perseguir al jugador
+L 0xA897 borra_andante Saca la ficha de la tabla: una menos en 0xACE3 y todo lo que hay detras sube cinco bytes con un `ldir`, dejando IX quieto para que la vuelta siguiente procese la ficha que ha caido en el hueco
+
+C 0xA580 Este `ld hl` no sirve de nada: dos instrucciones mas alla, 0xA586 vuelve a cargar la misma posicion. Lo util del `jp` de arriba empieza en la linea siguiente
+C 0xA583 0xA6ED hace de semaforo: 1 a 3 es el escudo mientras se vive, 4 la sentencia de muerte y de 5 en adelante la cuenta de la agonia
+C 0xA586 HL, la posicion: L es la X y H la fila, clavada siempre en 0x68
+C 0xA58B Por debajo de 4 el jugador esta en pie: a mirar el suelo que pisa
+C 0xA58E Exactamente 4 es la sentencia recien firmada. El destino de este `jr` es 0xA58E+99 = 0xA5F1, donde se decide hacia donde se derrumba
+C 0xA590 De 5 en adelante la agonia avanza sola, un punto por cuadro y sin mirar el mando
+C 0xA594 La torre se sigue dibujando mientras el jugador se muere
+C 0xA59A Pasado 0x1F ya no hay nada que pintar: quedan catorce cuadros de espera hasta el 0x2D que el bucle de 0xA51B vigila para restar la vida
+C 0xA59D 7 es el primer cuadro del derrumbe, asi que lo que queda en A es el numero de cuadro contado desde ahi: de 0 a 0x17
+C 0xA59F Los cuadros 5 y 6 todavia son el monigote de pie, deslizandose
+C 0xA5A1 Guarda el cuadro Y el acarreo -que aqui es cero-, porque el `rra` de 0xA5C2 va a contar con el
+C 0xA5A2 Lo de abajo pasa una sola vez, en el cuadro 7 exacto
+C 0xA5A4 Reabre el sonido: repone el `di` que sonido_off habia machacado en la cabecera de las dos rutinas de arranque
+C 0xA5A7 Canal 2...
+C 0xA5A9 ...y el guion de 0xCDA5, el sonido de la caida
+C 0xA5AF Y vuelve a cerrar la puerta: con el `ret` otra vez en la cabecera de arranca_guion, nada de lo que suene despues puede pisar a este
+C 0xA5B2 Las tres llamadas de arriba han machacado A; esto lo devuelve al 0 que traia, para que la comparacion de la linea siguiente valga
+C 0xA5B3 El cuadro 0x14 del derrumbe -0x1B en 0xA6ED-, ya casi al final
+C 0xA5B7 Canal 0 esta vez...
+C 0xA5B8 ...y el segundo guion, 0xCE1E
+C 0xA5BB El `di` a mano, porque...
+C 0xA5BC ...esta llamada entra POR DETRAS del `di`: sonido_off dejo un `ret` en 0xC4D0 y saltar a 0xC4D1 es la unica forma de arrancar un guion con la puerta cerrada
+C 0xA5BF Repone A como hizo el `xor a` de 0xA5B2, pero aqui sobra: el `pop af` de la linea siguiente lo pisa antes de que nadie lo lea
+C 0xA5C1 Recupera el cuadro (0 a 0x17) y con el el acarreo a cero que guardo 0xA5A1
+C 0xA5C2 Entre dos: cada dibujo del derrumbe dura DOS cuadros, y por eso los doce llenan los 24
+C 0xA5C3 Los doce fotogramas del derrumbe son las entradas 0x50 a 0x5B del pool de sprites
+C 0xA5C5 No es la BIOS: el 0x0000 es un hueco, y el operando de verdad lo escribe 0xA64D en 0xA5C6. Vale copia_sprite, gira_sprite_dcha, voltea_sprite o gira_sprite_izda, o sea que doce dibujos por cuatro giros dan 48 poses de derrumbe sin gastar un byte mas de graficos
+C 0xA5CB 0x60 es el slot de trabajo (0x7D55 = 0x6555 + 0x60*64), donde acaba de quedar el dibujo ya girado
+C 0xA5D0 Aqui 0xAD0E ya no lleva fase de animacion: 0xA650 lo dejo con el rumbo de la caida a secas, 0, 2, 4 o 6
+C 0xA5D6 Dos pixeles por cuadro en las dos coordenadas, el mismo paso que andando
+C 0xA5D9 El cuerpo se desliza sin consultar el mapa: por eso se le ve salirse de la plataforma
+C 0xA5DF 0xC469 es el rumbo del cadaver: el actual en los bits 0-2 y el pedido en los 5-7
+C 0xA5E2 Un octavo de vuelta por cuadro hacia el rumbo OPUESTO que le dejo pedido 0xA65C. Media vuelta serian cuatro cuadros, pero aqui solo se pasa DOS veces -los estados 5 y 6-, asi que al cuerpo le da tiempo a un cuarto de vuelta antes de que arranque el derrumbe
+C 0xA5E8 El dibujo es el rumbo pelado, 0 a 7: las ocho poses de pie del pool
+C 0xA5F1 El 4 pasa a 5: la sentencia se vuelve agonia, y con eso este reparto no se ejecuta mas de una vez
+C 0xA5F5 0xAD0E: rumbo en los bits 0-2, fase del ciclo de andar en los bits 3-4
+C 0xA5F8 La fase se tira; a partir de aqui el byte es solo el rumbo de la caida
+C 0xA5FD Rumbo PAR -arriba, derecha, abajo o izquierda- y no hay nada que decidir: el cuerpo cae hacia donde iba
+C 0xA601 Los cuatro rumbos diagonales hay que romperlos en uno de los cuatro cardinales, que son los unicos que saben girar el dibujo
+C 0xA603 1 y 3 son las diagonales que tiran a la derecha; 5 y 7, las que tiran a la izquierda
+C 0xA605 Diagonal hacia la izquierda: mira la celda DOS pixeles a la derecha, o sea la que acaba de dejar atras
+C 0xA60C Si ahi todavia hay suelo es que acaba de cruzar el borde de lado, y el cuerpo se va por la IZQUIERDA
+C 0xA610 Y si tampoco hay suelo detras, manda la componente vertical de la diagonal
+C 0xA615 Rumbo 5, abajo-izquierda: cae hacia ABAJO
+C 0xA619 Rumbo 7, arriba-izquierda: cae hacia ARRIBA
+C 0xA61C La simetrica, para las diagonales de la derecha: la celda que se prueba es la de dos pixeles a la IZQUIERDA
+C 0xA623 Con suelo detras, el cuerpo se va por la DERECHA
+C 0xA627 Sin suelo detras, decide otra vez la componente vertical
+C 0xA62C El `dec a` separa el 1 del 3; el `ld` de debajo no toca banderas
+C 0xA62D Rumbo 3, abajo-derecha: ABAJO
+C 0xA631 Rumbo 1, arriba-derecha: ARRIBA
+C 0xA632 Cuatro comparaciones encadenadas, una por lado. Arriba se lleva copia_sprite, que es la identidad: los doce fotogramas estan dibujados mirando hacia arriba
+C 0xA638 Derecha: un cuarto de vuelta a la derecha, que es transponer el bloque bit a bit
+C 0xA63F Abajo: media vuelta, la del truco de leer el sprite con `ld sp,hl` y `pop`
+C 0xA646 Izquierda: el cuarto de vuelta del otro lado
+C 0xA64D Y el elegido se escribe en el operando del `call` de 0xA5C5, tres bytes mas atras del sitio donde se va a usar
+C 0xA650 0xAD0E se queda con el rumbo de la caida a pelo, sin fase de animacion: es lo que desliza_cadaver da por supuesto
+C 0xA654 Mas cuatro de ocho es el rumbo OPUESTO...
+C 0xA658 ...subido a los bits 5-7, que es donde gira_rumbo busca el pedido
+C 0xA65C Asi el cuerpo empieza a darse la vuelta mientras se desliza; como solo hay dos cuadros de deslizamiento, se queda a mitad de camino
+C 0xA65F La torre otra vez, antes de irse a pintar el cadaver
+C 0xA668 Celda con suelo: turno normal
+C 0xA66A Celda vacia: sentencia firmada, y la vuelta al reparto de arriba con el 4 ya puesto pinta el primer cuadro de la caida en ESTE mismo cuadro, sin esperar al siguiente
+C 0xA672 El delta del scroll de este cuadro a cero ANTES de dar el paso: quien lo levanta es actualiza_scroll, y mas abajo es lo que dice si el jugador se ha movido de verdad
+C 0xA676 El CHECKPOINT: mientras se pise firme se apunta la posicion...
+C 0xA67C ...y la camara entera, fila y scroll fino. Es lo que repone respawn despues de cada muerte
+C 0xA688 El operando de este `call` esta en 0xA689 y se parchea: lee_mando en partida y lee_mando_demo (0xA6EE) mientras corre la grabacion
+C 0xA68B El byte de controles queda a la vista en 0xC45B, que es de donde lo saca el bucle del titulo para elegir opcion del menu
+C 0xA68E dispara devuelve A intacto, asi que el mismo byte sigue sirviendo para lo de abajo
+C 0xA691 El nibble bajo YA es una mascara de movimiento -bit 0 abajo, 1 arriba, 2 derecha, 3 izquierda-, y lo montan asi tanto el camino de joystick como el de teclado
+C 0xA693 Los topes laterales: con X=0 se cae el bit de izquierda y con X=0xB0 el de derecha
+C 0xA696 Tabla 0xAD17, la INVERSA de la de rumbos: de mascara a rumbo 0 a 7, con 0xFF para las combinaciones que no dicen nada (nada pulsado, o izquierda y derecha a la vez)
+C 0xA69E Sin direccion pedida no se gira ni se anda: se salta directo a repintar lo que ya hay
+C 0xA6A0 El rumbo pedido sube a los bits 5-7...
+C 0xA6A7 ...y se pega al rumbo actual y a la fase, que viven en los bits 0-4
+C 0xA6AA Un octavo de vuelta por cuadro y por el lado corto: el protagonista no cambia de direccion de golpe, gira
+C 0xA6B0 Dos pixeles de paso
+C 0xA6B2 El paso solo avanza en lo que el rumbo actual y el pedido tienen en comun, asi que mientras gira casi no se mueve. Y ademas mueve la CAMARA: la fila vuelve siempre a 0x68 y lo que sube o baja es el mundo
+C 0xA6B5 Y si el paso lateral se ha salido por la derecha, se deshace
+C 0xA6BB Se ha movido de verdad? Si la camara ha cambiado, si...
+C 0xA6C1 ...y si no, se compara la X de ahora con la que se apunto en el checkpoint, unas lineas antes de leer el mando
+C 0xA6C5 Mismo sitio: la fase no avanza, y el monigote se queda quieto en vez de pedalear contra la pared
+C 0xA6CA Se conserva el rumbo (bits 0-2) y la fase (bits 3-4)
+C 0xA6CC Mas ocho es una fase mas del ciclo de andar: 0, 1, 2, 3 y vuelta a empezar
+C 0xA6D4 El numero de dibujo del pool es fase*8 + rumbo
+C 0xA6D6 Las fases 1 y 3 comparten dibujo...
+C 0xA6DA ...porque bajar el bit 4 convierte la 3 en la 1. El ciclo de andar es 0-1-2-1: tres dibujos por cada uno de los ocho rumbos, o sea las 24 primeras entradas del pool
+C 0xA6DF La torre se pinta DESPUES del jugador, o sea por encima de el
+C 0xA6E5 Y lo ultimo del turno es cobrar: los tiros enemigos contra la posicion nueva
+C 0xA6EE El puntero de la grabacion, que 0xA3FF dejo apuntando a 0x9FF3
+C 0xA6F2 Un byte por cuadro, y el byte ES el estado de los cinco controles en el mismo formato que devuelve lee_mando: la demo se grabo asi de barata
+C 0xA6F7 Y avanza, sin tope ni vuelta atras: la demo la corta el bucle de juego, en cuanto se toca una tecla o el jugador de mentira se mata
+C 0xA6FC 0 es teclado y cualquier otra cosa es joystick. Quien lo escribe es el menu del titulo, y le mete la ALTURA del cursor: el "cualquier otra cosa" es literal
+C 0xA700 En C se va montando el resultado bit a bit
+C 0xA704 0xC45C lo levanta el titulo: mientras se elige en el menu el joystick no vale aunque este seleccionado
+C 0xA70A Registro 7 del PSG, el mezclador...
+C 0xA70E ...a 0xFF entero. El volcado de sonido lo repone en el siguiente tic de interrupcion, asi que este valor solo dura las dos instrucciones que faltan hasta el `in`
+C 0xA712 Registro 14, que es donde el MSX cablea el mando
+C 0xA716 La lectura del PSG va por el puerto 0xA2, no por el 0xA1 con el que se escribe
+C 0xA718 Cinco `rra` que reparten los bits UNO A UNO, porque el orden del joystick del MSX no es el de la mascara de movimiento del juego
+C 0xA719 El puerto trae 0 en lo que esta pulsado
+C 0xA71B Arriba del joystick -> bit 1
+C 0xA720 Abajo -> bit 0
+C 0xA725 Izquierda -> bit 3
+C 0xA72A Derecha -> bit 2
+C 0xA72F Disparo -> bit 4, el unico que cae en su sitio
+C 0xA731 Y el byte montado a mano se devuelve en A
+C 0xA733 La tabla de teclas: dos bytes por entrada, mascara del bit y valor de la fila
+C 0xA737 CINCO, no siete: PARAR y ABANDONAR se leen aparte, en 0xA539 y 0xA507
+C 0xA739 La fila, por el puerto 0xAA...
+C 0xA73E ...y los ocho bits de esa fila, por el 0xA9
+C 0xA740 Filtrados con la mascara del bit de esa tecla
+C 0xA745 Las teclas dan CERO al pulsarse, asi que el acarreo se pone justo cuando el `and` sale a cero
+C 0xA746 Que entra por el bit 7 de C y va bajando vuelta a vuelta
+C 0xA748 Dos bytes por entrada
+C 0xA74F Tras las cinco vueltas los bits estan del 7 al 3; estos tres `rrca` los bajan al 4 al 0 y en el orden de la tabla, que es ABAJO, ARRIBA, DERECHA, IZQUIERDA, DISPARO. O sea, exactamente la mascara de movimiento que espera la tabla de 0xAD17
+C 0xA753 IX recorre la tabla: cuatro fichas de cinco bytes -X, Y, rumbo con banderas, reloj y un quinto que escribe alta_enemigo y que aqui no lee nadie-
+C 0xA757 Cuantos andantes hay vivos ahora mismo
+C 0xA75E El delta del scroll de este cuadro se le suma a la Y: los andantes van anclados al MUNDO, no a la pantalla
+C 0xA767 El cuarto byte de la ficha hace dos papeles: por debajo de 0x14 es el reloj que dice cuando volver a apuntar, y de 0x1D en adelante es el contador de la explosion
+C 0xA76E Explotando la ficha ya no anda ni dispara, solo pasa fotogramas
+C 0xA774 Mas 0x3F sobre el contador 0x1D..0x20 da los dibujos 0x5C a 0x5F del pool: los cuatro cuadros de explosion, los mismos que se lleva el jugador reventado de un impacto
+C 0xA77F Agotado el cuarto, la ficha se borra de la tabla
+C 0xA787 B la Y y C la X, que es como las quiere rumbo_al_jugador
+C 0xA78D Una tirada de azar por bicho y por cuadro
+C 0xA790 El bit 4 echa la moneda: vagar o perseguir, mitad y mitad
+C 0xA794 Vagar: los tres bits bajos del mismo numero dan un rumbo cualquiera de los ocho...
+C 0xA796 ...traducido a mascara, que es la forma en que sale el otro camino
+C 0xA79B Perseguir: DE es la posicion del jugador, E la X y D la fila
+C 0xA79F Devuelve la mascara de la direccion dominante, con las dos componentes si las distancias no se llevan mas de dos veces y media
+C 0xA7A2 Los mismos topes laterales que el jugador, pero con el margen de tres pixeles que lleva la version de objeto
+C 0xA7A5 De vuelta a rumbo por la tabla inversa de 0xAD17
+C 0xA7A8 Y el rumbo pedido se aparca en 0xB13F hasta 0xA83F, que lo compara con el que de verdad lleva para decidir si el bicho puede disparar
+C 0xA7B1 A los bits 5-7, que es el sitio del rumbo pedido
+C 0xA7B5 El reloj de la ficha...
+C 0xA7B9 ...que corre de 0 a 9: solo una vez cada nueve cuadros se corrige el rumbo, y por eso los bichos describen curvas en vez de perseguir en linea recta
+C 0xA7BE El tercer byte: rumbo en los bits 0-2, fase de andar en los 3-4 y el TIPO de bicho en el 5
+C 0xA7C3 Toca corregir: el reloj vuelve a cero...
+C 0xA7C7 ...se junta el rumbo actual con el pedido...
+C 0xA7CA ...y se gira un octavo, con la misma rutina que el jugador
+C 0xA7CD El bit 5 no puede perderse por el camino: es lo que elige entre los dos juegos de dibujos
+C 0xA7D9 La posicion vieja se recarga entera, que lo de arriba solo tocaba el rumbo
+C 0xA7DF Solo el rumbo ACTUAL: el bicho anda hacia donde mira, no hacia donde quiere ir
+C 0xA7E1 Dos pixeles, el mismo paso que el jugador
+C 0xA7E7 Y el mismo recorte lateral
+C 0xA7EB consulta_mapa machaca IX, y en IX va la ficha
+C 0xA7F5 Celda vacia: el paso se deshace y la ficha se queda donde estaba. Los andantes NO se caen de la torre; el unico que se cae es el jugador
+C 0xA7FE DE la posicion de antes del paso, HL la de despues
+C 0xA805 Se ha movido de verdad?
+C 0xA807 No: la fase de andar se queda quieta, la misma regla que el jugador
+C 0xA809 Si: mas ocho en los bits 3-4...
+C 0xA80E ...con la vuelta al cero hecha por la mascara, y sin tocar ni el rumbo ni el bit del tipo
+C 0xA81A HL llevaba la diferencia desde el `sbc`; el `add` le devuelve la posicion nueva
+C 0xA821 Por encima de 0xE0 la fila ha dado la vuelta -por arriba o por abajo- y la ficha se borra. Es el unico limite vertical que tienen
+C 0xA827 El dibujo: fase por ocho mas rumbo, igual que el jugador
+C 0xA82C Y la misma doblez, la fase 3 dibujada como la 1
+C 0xA832 Los andantes empiezan en la entrada 0x18 del pool: las 24 de delante son el protagonista
+C 0xA834 Y el bit 5 de la ficha, echado a suertes al darla de alta (0xAC61: azar, `and 020h`, `or 014h`), suma otras 24: cada andante tira de uno de DOS juegos del pool, 0x18-0x2F o 0x30-0x47. Que los dibujos de los dos juegos sean distintos de verdad esta sin comprobar en pantalla
+C 0xA83F El rumbo que se pidio arriba...
+C 0xA842 ...contra el que de verdad lleva: solo dispara el que YA mira hacia donde quiere ir, o sea el que persigue y ha terminado de girar
+C 0xA849 El tiro sale con el rumbo del bicho...
+C 0xA84E ...que es como lo espera alta_tiro_enemigo, en A'
+C 0xA84F Y aun asi, una de cada 32 veces
+C 0xA856 El tiro nace en el centro del bicho, cuatro pixeles adentro en las dos coordenadas
+C 0xA865 Los disparos del jugador contra este bicho
+C 0xA868 Con el jugador ya sentenciado (0xA6ED por encima de 3) no hay contacto que valga
+C 0xA875 solapa_eje vuelve con acarreo cuando NO se tocan
+C 0xA87A Tocarse mata a los dos: el bicho pasa a explosion...
+C 0xA87E ...con el contador puesto en 0x1D, el primero de los cuatro cuadros
+C 0xA889 ...y al jugador lo mata DIRECTAMENTE, sin gastar escudo. Chocar con un andante es muerte segura; sus tiros, en cambio, solo cuestan un punto de escudo (impacto_simple)
+C 0xA88C Cinco bytes por ficha
+C 0xA891 El contador de la vuelta, que se guardo en la pila al entrar
+C 0xA893 Y a por la siguiente ficha
+C 0xA897 Una ficha menos...
+C 0xA89B ...y si la que se va es la ultima que quedaba por recorrer no hay nada detras que mover
+C 0xA89D B es lo que queda de vuelta, no cuantas fichas hay en la tabla
+C 0xA8A2 DE, la ficha que se va...
+C 0xA8A6 ...y cinco bytes mas adelante, la siguiente
+C 0xA8AB 0xACF8 es el byte de despues del final de la tabla: la resta da cuantos hay que subir
+C 0xA8B5 Todo lo de detras sube cinco bytes, e IX se queda donde estaba: la vuelta siguiente procesa la ficha que acaba de caer en este hueco
