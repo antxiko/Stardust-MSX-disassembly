@@ -7340,7 +7340,7 @@ L_BBFB:
 vram_pone_f1:		; Lo mismo con el valor 0xF1: la pareja de la de arriba, para la tabla de colores
 	call vram_pon_dir		;bc18
 L_BC1B:
-	ld a,0f1h		;bc1b
+	ld a,0f1h		;bc1b   ; Y este es el mismo con 0xF1, byte a byte y con su `nop` de respiro
 	out (c),a		;bc1d
 	nop			;bc1f
 	djnz L_BC1B		;bc20
@@ -7373,53 +7373,53 @@ DATA_variables_de_la_cuenta_atras:
 
 pinta_torre:		; Dibuja la torre, y solo cuando el scroll ha llegado: `ld a,(ix+000h) / sub 044h / ret c` sobre la fila de 0xAD2A, o sea que por debajo de la fila 0x44 no pinta nada
 	ld ix,0ad2ah		;bc35
-	ld a,(ix+000h)		;bc39
-	sub 044h		;bc3c
+	ld a,(ix+000h)		;bc39   ; La fila del mapa en la que esta la camara
+	sub 044h		;bc3c   ; Por debajo de la fila 0x44 la nave todavia no asoma
 	ret c			;bc3e
-	sub 003h		;bc3f
+	sub 003h		;bc3f   ; Las cuatro filas de arriba del mapa, contadas al reves: 0x47 menos la fila
 	neg		;bc41
-	add a,a			;bc43
+	add a,a			;bc43   ; Por 32, que es lo que mide de alto una fila del mapa
 	add a,a			;bc44
 	add a,a			;bc45
 	add a,a			;bc46
 	add a,a			;bc47
-	add a,040h		;bc48
+	add a,040h		;bc48   ; Mas el margen y el scroll fino, y ya sale la fila de pantalla de la nave
 	add a,(ix+002h)		;bc4a
 	ld c,a			;bc4d
-	ld a,(0c462h)		;bc4e
+	ld a,(0c462h)		;bc4e   ; Menos el paso del scroll de este cuadro, que el fondo ya se ha movido
 	sub c			;bc51
 	neg		;bc52
 	ld c,a			;bc54
 	ld h,a			;bc55
-	ld l,008h		;bc56
+	ld l,008h		;bc56   ; Siempre en la columna 8
 	call buffer_dir		;bc58
 	ld a,c			;bc5b
-	sub 0a0h		;bc5c
+	sub 0a0h		;bc5c   ; Y hasta la fila 0xA0: solo se pinta el trozo de nave que ha entrado
 	neg		;bc5e
 pinta_nave:		; Estampa en el buffer, desde HL y durante A filas, el dibujo de 64x64 de 0x7DDB leido con la pila (ocho `pop de` por fila); si 0xC468 no es cero le anade bajo las dos toberas una llama de (0xC468+8)/2 filas, sacada del final de las dos tablas de 24 bytes de detras del dibujo
 	ld c,a			;bc60
 	ld a,h			;bc61
-	cp 04fh		;bc62
+	cp 04fh		;bc62   ; Si el sitio se ha ido del buffer, no se pinta nada
 	ret nc			;bc64
 	ld a,c			;bc65
-	ld bc,00011h		;bc66
+	ld bc,00011h		;bc66   ; 0x11 son 17: con los siete `inc l` del cuerpo hacen las 24 columnas del buffer, o sea la fila siguiente
 	exx			;bc69
-	cp 041h		;bc6a
+	cp 041h		;bc6a   ; Sesenta y cuatro filas como mucho, que es lo que mide el dibujo
 	jr c,L_BC70		;bc6c
 	ld a,040h		;bc6e
 L_BC70:
 	ld b,a			;bc70
-	ld (L_BCE9+1),sp		;bc71
+	ld (L_BCE9+1),sp		;bc71   ; SP se va a usar de lector, asi que el bueno se guarda en el operando del `ld sp` de 0xBCE9
 	di			;bc75
-	ld sp,07ddbh		;bc76
+	ld sp,07ddbh		;bc76   ; El dibujo de la nave: 64x64 con la mascara y el dibujo intercalados
 L_BC79:
 	exx			;bc79
-	pop de			;bc7a
-	ld a,(hl)			;bc7b
+	pop de			;bc7a   ; Cada `pop` trae la pareja de esta columna: E la mascara y D el dibujo
+	ld a,(hl)			;bc7b   ; El fondo se abre con `and` y se rellena con `or`, sin invertir nada: la mascara viene ya del derecho
 	and e			;bc7c
 	or d			;bc7d
 	ld (hl),a			;bc7e
-	inc l			;bc7f
+	inc l			;bc7f   ; Ocho bytes seguidos, que son los 64 pixeles de ancho...
 	pop de			;bc80
 	ld a,(hl)			;bc81
 	and e			;bc82
@@ -7461,103 +7461,103 @@ L_BC79:
 	and e			;bca6
 	or d			;bca7
 	ld (hl),a			;bca8
-	add hl,bc			;bca9
+	add hl,bc			;bca9   ; ...y el paso de 0x11 lleva a la fila de abajo
 	exx			;bcaa
-	djnz L_BC79		;bcab
+	djnz L_BC79		;bcab   ; Sesenta y cuatro filas
 	exx			;bcad
-	ld a,(0ad27h)		;bcae
+	ld a,(0ad27h)		;bcae   ; El bit 0 del contador de cuadros elige una de las dos tablas de llama, que son de 24 bytes y van seguidas: la llama parpadea cada cuadro
 	and 001h		;bcb1
 	ld de,081dbh		;bcb3
 	jr z,L_BCBB		;bcb6
 	ld de,081f3h		;bcb8
 L_BCBB:
-	ld a,(0c468h)		;bcbb
+	ld a,(0c468h)		;bcbb   ; Con 0xC468 a cero no hay llama
 	and a			;bcbe
 	jp z,L_BCE9		;bcbf
-	add a,008h		;bcc2
+	add a,008h		;bcc2   ; Y si la hay, mide (0xC468 + 8) / 2 filas
 	rra			;bcc4
 	exx			;bcc5
 	ld b,a			;bcc6
 	exx			;bcc7
-	ld a,(0c468h)		;bcc8
+	ld a,(0c468h)		;bcc8   ; Se entra en la tabla por el final: cuanto mas grande es la llama, mas atras se empieza
 	sub 010h		;bccb
 	neg		;bccd
 	ld c,a			;bccf
 	ex de,hl			;bcd0
 	add hl,bc			;bcd1
-	ld sp,hl			;bcd2
+	ld sp,hl			;bcd2   ; La tabla de la llama, a la pila
 	ex de,hl			;bcd3
-	inc l			;bcd4
+	inc l			;bcd4   ; Y un byte a la derecha del dibujo, que es donde caen las toberas
 	exx			;bcd5
 L_BCD6:
 	exx			;bcd6
-	pop de			;bcd7
+	pop de			;bcd7   ; Una sola pareja por fila, que se estampa DOS veces...
 	ld a,(hl)			;bcd8
 	and e			;bcd9
 	or d			;bcda
 	ld (hl),a			;bcdb
-	ld c,005h		;bcdc
+	ld c,005h		;bcdc   ; ...separadas cinco bytes: las dos toberas echan el mismo fuego
 	add hl,bc			;bcde
 	ld a,(hl)			;bcdf
 	and e			;bce0
 	or d			;bce1
 	ld (hl),a			;bce2
-	ld c,013h		;bce3
+	ld c,013h		;bce3   ; Y 0x13 mas para caer en la fila siguiente: 1 + 5 + 19 son 24
 	add hl,bc			;bce5
 	exx			;bce6
 	djnz L_BCD6		;bce7
 L_BCE9:
-	ld sp,00000h		;bce9
+	ld sp,00000h		;bce9   ; SP repuesto con el que guardo 0xBC71
 	ei			;bcec
 	ret			;bced
 tiempo_agotado:		; Se acabo el tiempo: flash de dameros, decaimiento de pixeles al azar, y a la tabla de records: game over sin FELICIDADES
-	ld hl,0bdaah		;bcee
+	ld hl,0bdaah		;bcee   ; Los dos bytes del patron del destello, sembrados a 0x7E
 	ld (hl),07eh		;bcf1
 	inc hl			;bcf3
 	ld (hl),07eh		;bcf4
-	ld a,002h		;bcf6
+	ld a,002h		;bcf6   ; El sonido del final de tiempo, en el canal 2
 	ld de,0ce07h		;bcf8
 	call arranca_guion		;bcfb
-	ld b,014h		;bcfe
+	ld b,014h		;bcfe   ; Veinte destellos...
 L_BD00:
 	push bc			;bd00
-	ld de,02a54h		;bd01
+	ld de,02a54h		;bd01   ; ...cada uno con las dos parejas cruzadas: como el patron se acumula con `xor`, la barra va pasando por 0x54, 0x00, 0x2A y 0x7E
 	call flash_dameros		;bd04
 	ld de,0542ah		;bd07
 	call flash_dameros		;bd0a
 	pop bc			;bd0d
 	djnz L_BD00		;bd0e
-	ld hl,0bdaah		;bd10
+	ld hl,0bdaah		;bd10   ; El patron, otra vez a 0x7E para lo que viene
 	ld (hl),07eh		;bd13
 	inc hl			;bd15
 	ld (hl),07eh		;bd16
-	ld a,002h		;bd18
+	ld a,002h		;bd18   ; Y otro guion para el desvanecido
 	ld de,0ce11h		;bd1a
 	call arranca_guion		;bd1d
-	ld bc,0005ah		;bd20
+	ld bc,0005ah		;bd20   ; 90 por 256 puntos: la pantalla se cae a cachos
 L_BD23:
-	call azar		;bd23
+	call azar		;bd23   ; La fila, al azar y mezclada con los dos contadores del bucle
 	xor b			;bd26
 	xor c			;bd27
-	cp 0a0h		;bd28
+	cp 0a0h		;bd28   ; Encajada entre la 8 y la 0xA7, que son las 160 filas del buffer
 	jr c,L_BD2E		;bd2a
 	sub 080h		;bd2c
 L_BD2E:
 	add a,008h		;bd2e
 	ld d,a			;bd30
-	call azar		;bd31
+	call azar		;bd31   ; Y la columna, igual...
 	xor b			;bd34
 	xor c			;bd35
-	and 01fh		;bd36
+	and 01fh		;bd36   ; ...entre la 4 y la 0x1B, las 24 del area de juego
 	cp 018h		;bd38
 	jr c,L_BD3E		;bd3a
 	sub 010h		;bd3c
 L_BD3E:
 	add a,004h		;bd3e
 	ld e,a			;bd40
-	call dir_vram_de_fila_columna		;bd41
+	call dir_vram_de_fila_columna		;bd41   ; De fila y columna a direccion de VRAM
 	di			;bd44
-	in a,(099h)		;bd45
+	in a,(099h)		;bd45   ; Aqui se LEE de la VRAM a pelo: el `in a,(099h)` desengancha el latch del puerto y los `add a,a` son el respiro entre acceso y acceso
 	ld a,l			;bd47
 	out (099h),a		;bd48
 	add a,a			;bd4a
@@ -7568,19 +7568,19 @@ L_BD3E:
 	in a,(098h)		;bd50
 	ei			;bd52
 	ld e,a			;bd53
-	call azar		;bd54
+	call azar		;bd54   ; El byte leido se cruza con otro numero al azar: apaga unos pixeles y deja los otros
 	and e			;bd57
 	ld e,a			;bd58
-	call vram_pon_dir		;bd59
+	call vram_pon_dir		;bd59   ; Y se devuelve a su sitio
 	ld a,e			;bd5c
 	out (098h),a		;bd5d
 	ei			;bd5f
-	call azar		;bd60
+	call azar		;bd60   ; Este `and 018h` no lo lee nadie -el `call azar` de dos lineas mas abajo pisa A-: las tres llamadas seguidas son tiempo y semilla, no un numero
 	and 018h		;bd63
 	nop			;bd65
 	call azar		;bd66
 	call azar		;bd69
-	and 007h		;bd6c
+	and 007h		;bd6c   ; El retardo de verdad: de 1 a 8 vueltas en vacio, para que el desvanecido no sea instantaneo
 	inc a			;bd6e
 L_BD6F:
 	dec a			;bd6f
@@ -7588,9 +7588,9 @@ L_BD6F:
 	djnz L_BD23		;bd73
 	dec c			;bd75
 	jr nz,L_BD23		;bd76
-	jp L_A2D2		;bd78
-flash_dameros:		; XOR de los tres tercios de la pantalla con el patron DE (0x2A54/0x542A alternados): el destello de la explosion
-	ld hl,0bdaah		;bd7b
+	jp L_A2D2		;bd78   ; Y de ahi a la tabla de records: game over sin FELICIDADES
+flash_dameros:		; El parpadeo del final de tiempo, y NO es de la pantalla entera como figuraba: son los tres tramos de la COLUMNA DE LA TORRE (0x0050, 0x0840 y 0x1040, los mismos sitios que borra_torre pero la mitad de largos), o sea la barra de la cuenta atras. El patron se ACUMULA con `xor` sobre los dos bytes de 0xBDAA, asi que la pareja 0x2A54/0x542A partiendo de 0x7E da la vuelta cada cuatro llamadas -0x54, 0x00, 0x2A, 0x7E- y las veinte del bucle son diez parpadeos
+	ld hl,0bdaah		;bd7b   ; El patron no se pone, se ACUMULA: cada llamada le hace `xor` a lo que quedo de la anterior
 	ld a,(hl)			;bd7e
 	xor d			;bd7f
 	ld (hl),a			;bd80
@@ -7600,7 +7600,7 @@ flash_dameros:		; XOR de los tres tercios de la pantalla con el patron DE (0x2A5
 	xor e			;bd84
 	ld (hl),a			;bd85
 	ld e,a			;bd86
-	ld b,018h		;bd87
+	ld b,018h		;bd87   ; Los tres tramos de la columna de la torre, los mismos sitios que borra_torre pero la mitad de largos
 	ld hl,00050h		;bd89
 	call escribe_par_vram		;bd8c
 	ld b,020h		;bd8f
@@ -7608,13 +7608,13 @@ flash_dameros:		; XOR de los tres tercios de la pantalla con el patron DE (0x2A5
 	call escribe_par_vram		;bd94
 	ld b,018h		;bd97
 	ld hl,01040h		;bd99
-escribe_par_vram:		; Escribe la pareja D,E en la VRAM B veces seguidas, avanzando la direccion de una en una
-	call vram_pon_dir		;bd9c
+escribe_par_vram:		; Escribe la pareja D,E en la VRAM B veces, pero volviendo a dar la direccion en cada vuelta y subiendo HL de UNO en uno: la D de cada vuelta cae encima de la E de la anterior. Lo que queda es la banda entera de D con la E solo en el ultimo byte, asi que la pareja nunca llega a alternarse
+	call vram_pon_dir		;bd9c   ; Aqui se vuelve a dar la direccion en CADA vuelta y HL solo sube uno, asi que la D de esta pisa la E de la anterior: la banda acaba entera de D y solo el ultimo byte se queda con E
 	ld a,d			;bd9f
 	out (098h),a		;bda0
 	ld a,e			;bda2
 	inc hl			;bda3
-	out (098h),a		;bda4
+	out (098h),a		;bda4   ; El segundo byte va detras sin volver a dar direccion, que el VDP la sube solo
 	ei			;bda6
 	djnz escribe_par_vram		;bda7
 	ret			;bda9
@@ -7631,34 +7631,34 @@ DATA_relleno_BDAA:
 
 
 rehace_pantalla:		; Coloca la camara en 0x4638, parchea el salto de 0xA98E con el 0xDA que no salta nunca -para que el dibujado pinte todas las celdas de una pasada- y arranca el guion 0xCD80
-	ld hl,04638h		;bdac
+	ld hl,04638h		;bdac   ; La camara al sitio desde el que arranca el final
 	ld (0a6ebh),hl		;bdaf
-	ld a,0dah		;bdb2
+	ld a,0dah		;bdb2   ; El 0xDA parchea el `jp` de 0xA98E: `jp c` con el acarreo apagado no salta nunca, y asi el fondo se pinta entero de una pasada en vez de en dos mitades
 	ld (0a98eh),a		;bdb4
 	xor a			;bdb7
-	ld de,0cd80h		;bdb8
+	ld de,0cd80h		;bdb8   ; La musica del despegue, en el canal 0
 	call arranca_guion		;bdbb
-	ld b,010h		;bdbe
+	ld b,010h		;bdbe   ; Dieciseis pasadas, subiendo una fila del buffer cada una: la nave sale de la torre
 L_BDC0:
 	push bc			;bdc0
 	call repinta_todo		;bdc1
 	pop bc			;bdc4
-	ld hl,(0a6ebh)		;bdc5
+	ld hl,(0a6ebh)		;bdc5   ; La posicion del jugador, que a estas alturas ya es la nave...
 	ld de,00018h		;bdc8
 	and a			;bdcb
-	sbc hl,de		;bdcc
+	sbc hl,de		;bdcc   ; ...una fila del buffer mas arriba en cada pasada
 	ld (0a6ebh),hl		;bdce
 	djnz L_BDC0		;bdd1
-	ld a,002h		;bdd3
+	ld a,002h		;bdd3   ; La llama arranca valiendo 2
 	ld (0c468h),a		;bdd5
 L_BDD8:
-	ld b,00ah		;bdd8
+	ld b,00ah		;bdd8   ; Diez repintados por vuelta
 L_BDDA:
 	push bc			;bdda
 	call repinta_todo		;bddb
-	ld hl,0ad27h		;bdde
+	ld hl,0ad27h		;bdde   ; El contador global hay que subirlo a mano, que aqui no corre el cuadro normal
 	inc (hl)			;bde1
-	ld a,(0c468h)		;bde2
+	ld a,(0c468h)		;bde2   ; Los pasos de scroll son la mitad de la llama: cuanto mas fuego, mas deprisa sube
 	rrca			;bde5
 L_BDE6:
 	push af			;bde6
@@ -7667,12 +7667,12 @@ L_BDE6:
 	pop af			;bdeb
 	dec a			;bdec
 	jr nz,L_BDE6		;bded
-	ld a,(0ad2ah)		;bdef
+	ld a,(0ad2ah)		;bdef   ; Con la fila del mapa a cero se ha llegado arriba del todo: escena final
 	and a			;bdf2
 	pop bc			;bdf3
 	jr z,escena_final		;bdf4
 	djnz L_BDDA		;bdf6
-	ld a,(0c468h)		;bdf8
+	ld a,(0c468h)		;bdf8   ; Y si no, la llama crece de dos en dos hasta 16, y ahi se queda
 	cp 010h		;bdfb
 	jr z,L_BDD8		;bdfd
 	inc a			;bdff

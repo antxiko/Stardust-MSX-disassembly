@@ -622,7 +622,7 @@ L 0xB71A espera Espera de BC vueltas: el paso de las escenas del final
 L 0xBBA2 tic_cuenta_atras El tic de la torre: solo con los 6 objetivos muertos (0xBC33=0) y 1 de cada 16 del contador de cuadros 0xAD27; pinta una fila y a las 161 (0xBC30) salta a tiempo_agotado
 L 0xBBD2 avanza_torre Sube la punta de la torre una fila (0xBC31/32); el salto de tercio del SCREEN 2 es el l|=0x3F / h-=8
 L 0xBCEE tiempo_agotado Se acabo el tiempo: flash de dameros, decaimiento de pixeles al azar, y a la tabla de records: game over sin FELICIDADES
-L 0xBD7B flash_dameros XOR de los tres tercios de la pantalla con el patron DE (0x2A54/0x542A alternados): el destello de la explosion
+L 0xBD7B flash_dameros El parpadeo del final de tiempo, y NO es de la pantalla entera como figuraba: son los tres tramos de la COLUMNA DE LA TORRE (0x0050, 0x0840 y 0x1040, los mismos sitios que borra_torre pero la mitad de largos), o sea la barra de la cuenta atras. El patron se ACUMULA con `xor` sobre los dos bytes de 0xBDAA, asi que la pareja 0x2A54/0x542A partiendo de 0x7E da la vuelta cada cuatro llamadas -0x54, 0x00, 0x2A, 0x7E- y las veinte del bucle son diez parpadeos
 L 0xBF6F mueve_metralla Mueve y pinta las 200 particulas del final feliz: posicion+velocidad en un solo add hl,de, poda fuera de pantalla, y 4 filas de brillo al azar en el buffer
 L 0xBFB6 siembra_metralla Siembra las 200 particulas de la nave insignia explotando: dx -7..+8, dy -13..+2 sesgado hacia ARRIBA (metralla en fuente), tabla en 0xBFEB
 L 0xD252 imprime_marco El impresor del marco: DIRECTO a la VRAM con la fuente de 0x5F00; A<0x20 es control (0 borra la celda, 1 posiciona con el parametro de (IX))
@@ -1543,7 +1543,7 @@ L 0xBE06 repinta_todo Rehace la pantalla entera: el fondo desde el mapa, el juga
 # en 0x4638 y arranca el guion 0xCD80: cuando hay que rehacer la pantalla
 # entera de golpe no interesa el doble pase.
 L 0xB336 predesplaza_sprite_izq La simetrica: mismo bucle, sacando los bits con `rrca` y metiendolos con `rl`, y con los ocho destinos en (iy+000), +004, +008, +00C, +010, +014, +018 y +01C. Traspone en el otro sentido
-L 0xBD9C escribe_par_vram Escribe la pareja D,E en la VRAM B veces seguidas, avanzando la direccion de una en una
+L 0xBD9C escribe_par_vram Escribe la pareja D,E en la VRAM B veces, pero volviendo a dar la direccion en cada vuelta y subiendo HL de UNO en uno: la D de cada vuelta cae encima de la E de la anterior. Lo que queda es la banda entera de D con la E solo en el ultimo byte, asi que la pareja nunca llega a alternarse
 L 0xBDAC rehace_pantalla Coloca la camara en 0x4638, parchea el salto de 0xA98E con el 0xDA que no salta nunca -para que el dibujado pinte todas las celdas de una pasada- y arranca el guion 0xCD80
 L 0xB436 repinta_escudo Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro posiciones -0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1- que son ocho celdas, porque pinta_celda_color pinta siempre la de la direccion y la de la columna de al lado. Deshace lo que marcaron el HUD de 0xB0F9 (color 0x11 por cada punto de escudo perdido) y la marca de muerte de 0x2778
 L 0xD331 rellena_tercio El nucleo de rellena_colores: 24 filas de C bytes cada una, avanzando 0x40 en la VRAM entre fila y fila
@@ -2918,3 +2918,107 @@ C 0xBAE5 Ocho filas y fuera
 C 0xBAFD La otra mitad del damero, en la fila de al lado
 C 0xBB01 Y otra fila abajo
 C 0xBB04 Las ocho filas del glifo, tambien aqui
+
+
+# ----------------------------------------------------------------------
+# LA NAVE, EL FIN DE TIEMPO Y EL DESPEGUE (0xBC35-0xBE05)
+# ----------------------------------------------------------------------
+# LA NAVE del final se pinta con el mismo truco de la pila que voltea_sprite:
+# 64x64 pixeles guardados en 0x7DDB como mascara y dibujo intercalados, ocho
+# `pop de` por fila -0x11 de paso al acabar, que con los siete `inc l` del
+# cuerpo hacen las 24 columnas del buffer- y las 64 filas contadas en B. Solo
+# se pinta lo que ha entrado por abajo: pinta_torre saca la fila de pantalla de
+# la camara y pinta_nave recorta contra el final del buffer.
+# La llama son DOS tablas de 24 bytes seguidas (0x81DB y 0x81F3) que se turnan
+# con el bit 0 del contador de cuadros; se entra por el final -cuanto mas vale
+# 0xC468, mas atras- y cada fila se estampa dos veces separadas cinco bytes,
+# que son las dos toberas.
+#
+# EL DESPEGUE (rehace_pantalla) es un cuadro cocinado a mano, sin el bucle
+# normal: sube la camara dieciseis filas, planta la llama en 2 y a partir de
+# ahi da vueltas de diez repintados subiendo la llama de dos en dos hasta 16.
+# Los pasos de scroll por vuelta son la mitad de la llama, asi que la nave
+# acelera segun crece el fuego. Se acaba cuando la fila del mapa llega a 0.
+#
+# EL DESVANECIDO DEL FIN DE TIEMPO: 90 x 256 pasadas en las que se elige un
+# punto al azar DENTRO del area de juego -fila entre 8 y 0xA7 (las 160 del
+# buffer) y columna entre 4 y 0x1B (las 24 de ancho)-, se LEE ese byte de la
+# VRAM a pelo y se devuelve cruzado con `and` contra otro numero al azar. Cada
+# pasada apaga unos pixeles y deja otros, y por eso la pantalla se cae a
+# cachos en vez de borrarse.
+#
+# CORRECCION de la ficha de flash_dameros, que decia "los tres tercios de la
+# pantalla": son los tres tramos de la COLUMNA DE LA TORRE -0x0050, 0x0840 y
+# 0x1040, los mismos sitios que borra_torre pero a la mitad de largo-, o sea
+# que lo que parpadea al acabarse el tiempo es la barra de la cuenta atras.
+# Y el "damero" no llega a serlo: escribe_par_vram vuelve a dar la direccion en
+# cada vuelta y solo sube HL de uno en uno, asi que la D de cada vuelta pisa la
+# E de la anterior y la banda acaba entera de D, con la E solo en el ultimo
+# byte. Lo que se ve es la barra cambiando de patron, no un ajedrez: como el
+# patron se ACUMULA con `xor` sobre los dos bytes de 0xBDAA, la pareja
+# 0x2A54/0x542A partiendo de 0x7E da la vuelta cada cuatro llamadas
+# -0x54, 0x00, 0x2A, 0x7E- y las veinte vueltas son diez parpadeos.
+
+C 0xBC1B Y este es el mismo con 0xF1, byte a byte y con su `nop` de respiro
+C 0xBC39 La fila del mapa en la que esta la camara
+C 0xBC3C Por debajo de la fila 0x44 la nave todavia no asoma
+C 0xBC3F Las cuatro filas de arriba del mapa, contadas al reves: 0x47 menos la fila
+C 0xBC43 Por 32, que es lo que mide de alto una fila del mapa
+C 0xBC48 Mas el margen y el scroll fino, y ya sale la fila de pantalla de la nave
+C 0xBC4E Menos el paso del scroll de este cuadro, que el fondo ya se ha movido
+C 0xBC56 Siempre en la columna 8
+C 0xBC5C Y hasta la fila 0xA0: solo se pinta el trozo de nave que ha entrado
+C 0xBC62 Si el sitio se ha ido del buffer, no se pinta nada
+C 0xBC66 0x11 son 17: con los siete `inc l` del cuerpo hacen las 24 columnas del buffer, o sea la fila siguiente
+C 0xBC6A Sesenta y cuatro filas como mucho, que es lo que mide el dibujo
+C 0xBC71 SP se va a usar de lector, asi que el bueno se guarda en el operando del `ld sp` de 0xBCE9
+C 0xBC76 El dibujo de la nave: 64x64 con la mascara y el dibujo intercalados
+C 0xBC7A Cada `pop` trae la pareja de esta columna: E la mascara y D el dibujo
+C 0xBC7B El fondo se abre con `and` y se rellena con `or`, sin invertir nada: la mascara viene ya del derecho
+C 0xBC7F Ocho bytes seguidos, que son los 64 pixeles de ancho...
+C 0xBCA9 ...y el paso de 0x11 lleva a la fila de abajo
+C 0xBCAB Sesenta y cuatro filas
+C 0xBCAE El bit 0 del contador de cuadros elige una de las dos tablas de llama, que son de 24 bytes y van seguidas: la llama parpadea cada cuadro
+C 0xBCBB Con 0xC468 a cero no hay llama
+C 0xBCC2 Y si la hay, mide (0xC468 + 8) / 2 filas
+C 0xBCC8 Se entra en la tabla por el final: cuanto mas grande es la llama, mas atras se empieza
+C 0xBCD2 La tabla de la llama, a la pila
+C 0xBCD4 Y un byte a la derecha del dibujo, que es donde caen las toberas
+C 0xBCD7 Una sola pareja por fila, que se estampa DOS veces...
+C 0xBCDC ...separadas cinco bytes: las dos toberas echan el mismo fuego
+C 0xBCE3 Y 0x13 mas para caer en la fila siguiente: 1 + 5 + 19 son 24
+C 0xBCE9 SP repuesto con el que guardo 0xBC71
+C 0xBCEE Los dos bytes del patron del destello, sembrados a 0x7E
+C 0xBCF6 El sonido del final de tiempo, en el canal 2
+C 0xBCFE Veinte destellos...
+C 0xBD01 ...cada uno con las dos parejas cruzadas: como el patron se acumula con `xor`, la barra va pasando por 0x54, 0x00, 0x2A y 0x7E
+C 0xBD10 El patron, otra vez a 0x7E para lo que viene
+C 0xBD18 Y otro guion para el desvanecido
+C 0xBD20 90 por 256 puntos: la pantalla se cae a cachos
+C 0xBD23 La fila, al azar y mezclada con los dos contadores del bucle
+C 0xBD28 Encajada entre la 8 y la 0xA7, que son las 160 filas del buffer
+C 0xBD31 Y la columna, igual...
+C 0xBD36 ...entre la 4 y la 0x1B, las 24 del area de juego
+C 0xBD41 De fila y columna a direccion de VRAM
+C 0xBD45 Aqui se LEE de la VRAM a pelo: el `in a,(099h)` desengancha el latch del puerto y los `add a,a` son el respiro entre acceso y acceso
+C 0xBD54 El byte leido se cruza con otro numero al azar: apaga unos pixeles y deja los otros
+C 0xBD59 Y se devuelve a su sitio
+C 0xBD60 Este `and 018h` no lo lee nadie -el `call azar` de dos lineas mas abajo pisa A-: las tres llamadas seguidas son tiempo y semilla, no un numero
+C 0xBD6C El retardo de verdad: de 1 a 8 vueltas en vacio, para que el desvanecido no sea instantaneo
+C 0xBD78 Y de ahi a la tabla de records: game over sin FELICIDADES
+C 0xBD7B El patron no se pone, se ACUMULA: cada llamada le hace `xor` a lo que quedo de la anterior
+C 0xBD87 Los tres tramos de la columna de la torre, los mismos sitios que borra_torre pero la mitad de largos
+C 0xBD9C Aqui se vuelve a dar la direccion en CADA vuelta y HL solo sube uno, asi que la D de esta pisa la E de la anterior: la banda acaba entera de D y solo el ultimo byte se queda con E
+C 0xBDA4 El segundo byte va detras sin volver a dar direccion, que el VDP la sube solo
+C 0xBDAC La camara al sitio desde el que arranca el final
+C 0xBDB2 El 0xDA parchea el `jp` de 0xA98E: `jp c` con el acarreo apagado no salta nunca, y asi el fondo se pinta entero de una pasada en vez de en dos mitades
+C 0xBDB8 La musica del despegue, en el canal 0
+C 0xBDBE Dieciseis pasadas, subiendo una fila del buffer cada una: la nave sale de la torre
+C 0xBDD3 La llama arranca valiendo 2
+C 0xBDD8 Diez repintados por vuelta
+C 0xBDDE El contador global hay que subirlo a mano, que aqui no corre el cuadro normal
+C 0xBDE2 Los pasos de scroll son la mitad de la llama: cuanto mas fuego, mas deprisa sube
+C 0xBDEF Con la fila del mapa a cero se ha llegado arriba del todo: escena final
+C 0xBDF8 Y si no, la llama crece de dos en dos hasta 16, y ahi se queda
+C 0xBDC5 La posicion del jugador, que a estas alturas ya es la nave...
+C 0xBDCC ...una fila del buffer mas arriba en cada pasada
