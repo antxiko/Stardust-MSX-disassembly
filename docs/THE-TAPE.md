@@ -46,6 +46,35 @@ game.
 The eight-byte descriptor and the last block aren't loaded by it at all:
 the game itself asks for them later, on clearing the last zone.
 
+## And the eight-byte descriptor isn't data: it's code
+
+Those eight bytes are the prettiest thing on the whole tape. The game asks
+for them at 0xF77D, and that address is no ordinary mailbox: it is the exact
+spot where the two instructions that will load the next block live, in the
+listing itself. The header **lands on top of them** and they are executed
+right afterwards.
+
+On tape, the eight bytes are:
+
+```
+02 DD 21 D0 61 11 A5 74
+```
+
+The `02` is the type, and the game checks it before anything else. The other
+seven are, as they stand, `ld ix,061D0h` and `ld de,074A5h`: the destination
+address and the length, opcodes included. That is why the jump at 0xF77B is
+a `jr $+3`, which skips the type byte and lands right on them.
+
+It adds up on all four sides: the next block is 0x74A5 bytes long,
+0x61D0 + 0x74A5 = 0xD675, and the loader's final jump, to 0xA279, falls
+inside what has just been loaded.
+
+And the same `2` does three jobs: it is the header's type, it is the last
+byte of the data block —the mark that it arrived whole— and it is the
+constant the two are compared against. The game does not keep that constant
+anywhere separate: it reads it from the operand of its own `cp 002h`, at
+0xF76E. Three uses, one single byte.
+
 ## The blocks tread on each other
 
 And this is exactly what forces you to look at the tape differently. In

@@ -45,6 +45,35 @@ por fin salta a 0xBD85, que es el juego.
 El descriptor de ocho bytes y el último bloque no los carga él: los pide el
 propio juego, más tarde, al superar la última zona.
 
+## Y el descriptor de ocho bytes no son datos: es código
+
+Esos ocho bytes son lo más bonito de toda la cinta. El juego los pide a
+0xF77D, y esa dirección no es un buzón cualquiera: es el sitio exacto donde
+viven, en el propio listado, las dos instrucciones que van a cargar el
+bloque siguiente. La cabecera **cae encima de ellas** y acto seguido se
+ejecutan.
+
+En la cinta, los ocho bytes son:
+
+```
+02 DD 21 D0 61 11 A5 74
+```
+
+El `02` es el tipo, y el juego lo comprueba antes de nada. Los otros siete
+son, tal cual, `ld ix,061D0h` y `ld de,074A5h`: la dirección de destino y la
+longitud, con sus códigos de operación puestos. Por eso el salto de 0xF77B
+es un `jr $+3`, que se salta el byte de tipo y aterriza justo en ellas.
+
+Cuadra por los cuatro costados: el bloque siguiente mide 0x74A5 bytes,
+0x61D0 + 0x74A5 = 0xD675, y el salto final del cargador, a 0xA279, cae
+dentro de lo que se acaba de cargar.
+
+Y el mismo `2` hace tres trabajos: es el tipo de la cabecera, es el último
+byte del bloque de datos —la marca de que ha llegado entero— y es la
+constante con que se comparan los dos. Esa constante el juego no la lleva
+aparte: la lee del operando de su propio `cp 002h`, en 0xF76E. Tres usos y
+un solo byte.
+
 ## Los bloques se pisan unos a otros
 
 Y esto es justo lo que obliga a mirar la cinta de otra manera. En memoria,

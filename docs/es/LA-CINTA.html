@@ -95,6 +95,13 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 50 DEFUSR=54000!:A=USR(0) &#x27; 54000 = 0xD2F0: ahora si</code></pre>
 <p>Y sigue en el cargador turbo, que hace esto por orden: busca RAM y la mapea en las páginas 1 y 2, para tener 48K planos de 0x4000 a 0xFFFF, como los del Spectrum; se copia 300 bytes a sí mismo en 0x4000 y salta allí; salva 94 bytes de 0xDAC0 a 0xFDE8, que es el buzón de parches, y pone la pila; carga el bloque de la pantalla y lo ejecuta; carga el bloque del juego encima, machacando al anterior; aplica los parches del buzón, si los hay; y por fin salta a 0xBD85, que es el juego.</p>
 <p>El descriptor de ocho bytes y el último bloque no los carga él: los pide el propio juego, más tarde, al superar la última zona.</p>
+<h2 id="y-el-descriptor-de-ocho-bytes-no-son-datos-es-codigo">Y el descriptor de ocho bytes no son datos: es código</h2>
+<p>Esos ocho bytes son lo más bonito de toda la cinta. El juego los pide a 0xF77D, y esa dirección no es un buzón cualquiera: es el sitio exacto donde viven, en el propio listado, las dos instrucciones que van a cargar el bloque siguiente. La cabecera <b>cae encima de ellas</b> y acto seguido se ejecutan.</p>
+<p>En la cinta, los ocho bytes son:</p>
+<pre><code>02 DD 21 D0 61 11 A5 74</code></pre>
+<p>El <code>02</code> es el tipo, y el juego lo comprueba antes de nada. Los otros siete son, tal cual, <code>ld ix,061D0h</code> y <code>ld de,074A5h</code>: la dirección de destino y la longitud, con sus códigos de operación puestos. Por eso el salto de 0xF77B es un <code>jr $+3</code>, que se salta el byte de tipo y aterriza justo en ellas.</p>
+<p>Cuadra por los cuatro costados: el bloque siguiente mide 0x74A5 bytes, 0x61D0 + 0x74A5 = 0xD675, y el salto final del cargador, a 0xA279, cae dentro de lo que se acaba de cargar.</p>
+<p>Y el mismo <code>2</code> hace tres trabajos: es el tipo de la cabecera, es el último byte del bloque de datos —la marca de que ha llegado entero— y es la constante con que se comparan los dos. Esa constante el juego no la lleva aparte: la lee del operando de su propio <code>cp 002h</code>, en 0xF76E. Tres usos y un solo byte.</p>
 <h2 id="los-bloques-se-pisan-unos-a-otros">Los bloques se pisan unos a otros</h2>
 <p>Y esto es justo lo que obliga a mirar la cinta de otra manera. En memoria, los bloques no conviven en absoluto:</p>
 <pre><code>pantalla de carga   0x9B8C - 0xCC3F

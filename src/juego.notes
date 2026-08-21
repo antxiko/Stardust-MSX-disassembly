@@ -3921,3 +3921,32 @@ C 0xF736 Aqui espera lo contrario que la pantalla del nombre: no sigue HASTA que
 C 0xF748 0x7F bytes de 0xDD08 a 0xD6D8: la tabla de records se pone a salvo antes de tocar la cinta
 C 0xF753 Tres `nop` seguidos, que huelen a algo quitado a mano
 C 0xF758 Codigo automodificable: planta un 0xF9 dentro de carga_cinta, en 0xF81A
+
+L 0xF71C carga_parte2 Carga la segunda parte desde la cinta y salta a ella. La cabecera de ocho bytes NO son datos: son las dos instrucciones que hay debajo, y se cargan ENCIMA de ellas para luego ejecutarse
+B 0xF71C LA CABECERA DE LA CINTA ES CODIGO. La primera llamada a carga_cinta
+B 0xF71C pide 8 bytes a 0xF77D, que es justo donde viven el `defb` de
+B 0xF77D y las dos instrucciones `ld ix,0` y `ld de,0` de 0xF77E-0xF784:
+B 0xF71C la cabecera las machaca con la direccion y la longitud de verdad, y
+B 0xF71C el `jr $+3` de 0xF77B se salta el byte de tipo para caer justo en
+B 0xF71C ellas y ejecutarlas.
+B 0xF71C MEDIDO sobre la cinta extraida (extracted/block11.raw), no deducido:
+B 0xF71C los ocho bytes son 02 DD 21 D0 61 11 A5 74, o sea tipo 2 y
+B 0xF71C `ld ix,061D0h / ld de,074A5h` con sus opcodes puestos. El bloque
+B 0xF71C siguiente (block12.raw) mide 29863 bytes = 0x74A5 mas los dos del
+B 0xF71C formato, y 0x61D0 + 0x74A5 = 0xD675, con lo que el `jp 0A279h` del
+B 0xF71C final cae dentro de lo cargado.
+B 0xF71C Y el 2 se usa TRES veces: como tipo de la cabecera, como ultimo
+B 0xF71C byte del bloque de datos -comprobado, block12.raw acaba en 04 02 1A-
+B 0xF71C y como constante para compararlos, leyendola del operando de su
+B 0xF71C propio `cp 002h` (0xF76E). Tres usos y un solo byte.
+C 0xF76A El primer byte de lo cargado tiene que ser un 2, o la cabecera no vale y se reintenta
+C 0xF771 El rotulo de "cargando", ya con la cabecera buena
+C 0xF77B `jr $+3` se salta el byte de tipo de 0xF77D y cae en las dos instrucciones que acaba de traer la cinta
+C 0xF77E La direccion de destino: aqui pone cero, pero al ejecutarse ya lleva el 0x61D0 que vino en la cabecera
+C 0xF782 Y la longitud, 0x74A5 en la cinta de verdad
+C 0xF786 Otro parcheo de carga_cinta, esta vez con 0: la segunda llamada trabaja distinto que la de la cabecera
+C 0xF789 0xFF: ahora se carga el bloque entero, no una cabecera de ocho bytes
+C 0xF791 El ultimo byte cargado...
+C 0xF796 ...contra el 2 del operando del `cp` de 0xF76D: si cuadra, el bloque ha llegado entero
+C 0xF79D Si algo falla, el cartel de error y a intentarlo otra vez desde el principio
+C 0xF7B0 Y si todo ha ido bien, 0xA529 = 1 y a la segunda parte, que empieza en 0xA279

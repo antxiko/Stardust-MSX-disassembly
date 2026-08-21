@@ -11424,7 +11424,7 @@ L_D803:
 	pop hl			;d80b
 	ld a,(0e157h)		;d80c
 	cp 008h		;d80f
-	jp z,L_F71C		;d811
+	jp z,carga_parte2		;d811
 	jp carga_zona		;d814
 espera_1000:		; espera_bc con BC = 1000
 	ld bc,003e8h		;d817
@@ -14416,7 +14416,25 @@ L_F708:
 	pop bc			;f717
 	inc b			;f718   ; `inc b` deshace la letra: el contador de seis vuelve a subir
 	jp pide_nombre_letra		;f719
-L_F71C:
+
+; ----------------------------------------------------------------------
+; LA CABECERA DE LA CINTA ES CODIGO. La primera llamada a carga_cinta
+; pide 8 bytes a 0xF77D, que es justo donde viven el `defb` de
+; la cabecera las machaca con la direccion y la longitud de verdad, y
+; el `jr $+3` de 0xF77B se salta el byte de tipo para caer justo en
+; ellas y ejecutarlas.
+; MEDIDO sobre la cinta extraida (extracted/block11.raw), no deducido:
+; los ocho bytes son 02 DD 21 D0 61 11 A5 74, o sea tipo 2 y
+; `ld ix,061D0h / ld de,074A5h` con sus opcodes puestos. El bloque
+; siguiente (block12.raw) mide 29863 bytes = 0x74A5 mas los dos del
+; formato, y 0x61D0 + 0x74A5 = 0xD675, con lo que el `jp 0A279h` del
+; final cae dentro de lo cargado.
+; Y el 2 se usa TRES veces: como tipo de la cabecera, como ultimo
+; byte del bloque de datos -comprobado, block12.raw acaba en 04 02 1A-
+; y como constante para compararlos, leyendola del operando de su
+; propio `cp 002h` (0xF76E). Tres usos y un solo byte.
+; ----------------------------------------------------------------------
+carga_parte2:		; Carga la segunda parte desde la cinta y salta a ella. La cabecera de ocho bytes NO son datos: son las dos instrucciones que hay debajo, y se cargan ENCIMA de ellas para luego ejecutarse
 	ld a,0c2h		;f71c   ; El par (0xC2, 0x81) es el registro 1 del VDP: pantalla encendida, interrupcion del VDP abierta y sprites de 16x16
 	out (099h),a		;f71e
 	and a			;f720
@@ -14452,17 +14470,21 @@ L_F756:
 	scf			;f764
 	call carga_cinta		;f765
 	jr nc,L_F756		;f768
-	ld a,(0f77dh)		;f76a
+	ld a,(0f77dh)		;f76a   ; El primer byte de lo cargado tiene que ser un 2, o la cabecera no vale y se reintenta
 	cp 002h		;f76d
 	jr nz,L_F756		;f76f
-	ld ix,0f7e6h		;f771
+	ld ix,0f7e6h		;f771   ; El rotulo de "cargando", ya con la cabecera buena
 	ld hl,009d0h		;f775
 	call rotula_secuencia		;f778
-	jr $+3		;f77b
+	jr $+3		;f77b   ; `jr $+3` se salta el byte de tipo de 0xF77D y cae en las dos instrucciones que acaba de traer la cinta
 
 ; ----------------------------------------------------------------------
 ; DATOS relleno_F77D: Relleno o resto (1 B; 1 bytes)
 ;   0xf77d..0xf77e  (1 bytes)
+
+; ----------------------------------------------------------------------
+; y las dos instrucciones `ld ix,0` y `ld de,0` de 0xF77E-0xF784:
+; ----------------------------------------------------------------------
 DATA_relleno_F77D:
 	defb 000h	; f77d
 
@@ -14472,28 +14494,28 @@ DATA_relleno_F77D:
 
 
 L_F77E:
-	ld ix,00000h		;f77e
-	ld de,00000h		;f782
+	ld ix,00000h		;f77e   ; La direccion de destino: aqui pone cero, pero al ejecutarse ya lleva el 0x61D0 que vino en la cabecera
+	ld de,00000h		;f782   ; Y la longitud, 0x74A5 en la cinta de verdad
 	xor a			;f785
-	ld (0f81ah),a		;f786
-	ld a,0ffh		;f789
+	ld (0f81ah),a		;f786   ; Otro parcheo de carga_cinta, esta vez con 0: la segunda llamada trabaja distinto que la de la cabecera
+	ld a,0ffh		;f789   ; 0xFF: ahora se carga el bloque entero, no una cabecera de ocho bytes
 	scf			;f78b
 	call carga_cinta		;f78c
 	jr nc,L_F79D		;f78f
-	dec ix		;f791
+	dec ix		;f791   ; El ultimo byte cargado...
 	ld b,(ix+000h)		;f793
-	ld a,(0f76eh)		;f796
+	ld a,(0f76eh)		;f796   ; ...contra el 2 del operando del `cp` de 0xF76D: si cuadra, el bloque ha llegado entero
 	cp b			;f799
 	jp z,L_F7B0		;f79a
 L_F79D:
-	call vuelca_pantalla		;f79d
+	call vuelca_pantalla		;f79d   ; Si algo falla, el cartel de error y a intentarlo otra vez desde el principio
 	ld ix,0f7c7h		;f7a0
 	ld hl,001f8h		;f7a4
 	call rotula_secuencia		;f7a7
 	call pausa_larga		;f7aa
 	jp L_F73B		;f7ad
 L_F7B0:
-	ld a,001h		;f7b0
+	ld a,001h		;f7b0   ; Y si todo ha ido bien, 0xA529 = 1 y a la segunda parte, que empieza en 0xA279
 	ld (0a529h),a		;f7b2
 	jp 0a279h		;f7b5
 pausa_larga:		; Ocho vueltas de un bucle de 65536, para que de tiempo a leer el ERROR DE CARGA antes de reintentar. Es lo unico que la llama (0xF7AA)

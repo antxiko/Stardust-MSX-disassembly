@@ -95,6 +95,13 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 50 DEFUSR=54000!:A=USR(0) &#x27; 54000 = 0xD2F0: now it does</code></pre>
 <p>And it carries on in the turbo loader, which does all this in order: hunts for RAM and maps it into pages 1 and 2, to get a flat 48K from 0x4000 to 0xFFFF, like the Spectrum&#x27;s; copies 300 bytes of itself to 0x4000 and jumps there; saves 94 bytes from 0xDAC0 to 0xFDE8, the patch mailbox, and sets the stack; loads the loading-screen block and executes it; loads the game block right on top, wiping out the previous one; applies the patches from the mailbox, if there are any; and finally jumps to 0xBD85, which is the game.</p>
 <p>The eight-byte descriptor and the last block aren&#x27;t loaded by it at all: the game itself asks for them later, on clearing the last zone.</p>
+<h2 id="and-the-eight-byte-descriptor-isn-t-data-it-s-code">And the eight-byte descriptor isn&#x27;t data: it&#x27;s code</h2>
+<p>Those eight bytes are the prettiest thing on the whole tape. The game asks for them at 0xF77D, and that address is no ordinary mailbox: it is the exact spot where the two instructions that will load the next block live, in the listing itself. The header <b>lands on top of them</b> and they are executed right afterwards.</p>
+<p>On tape, the eight bytes are:</p>
+<pre><code>02 DD 21 D0 61 11 A5 74</code></pre>
+<p>The <code>02</code> is the type, and the game checks it before anything else. The other seven are, as they stand, <code>ld ix,061D0h</code> and <code>ld de,074A5h</code>: the destination address and the length, opcodes included. That is why the jump at 0xF77B is a <code>jr $+3</code>, which skips the type byte and lands right on them.</p>
+<p>It adds up on all four sides: the next block is 0x74A5 bytes long, 0x61D0 + 0x74A5 = 0xD675, and the loader&#x27;s final jump, to 0xA279, falls inside what has just been loaded.</p>
+<p>And the same <code>2</code> does three jobs: it is the header&#x27;s type, it is the last byte of the data block —the mark that it arrived whole— and it is the constant the two are compared against. The game does not keep that constant anywhere separate: it reads it from the operand of its own <code>cp 002h</code>, at 0xF76E. Three uses, one single byte.</p>
 <h2 id="the-blocks-tread-on-each-other">The blocks tread on each other</h2>
 <p>And this is exactly what forces you to look at the tape differently. In memory, the blocks don&#x27;t coexist at all:</p>
 <pre><code>loading screen   0x9B8C - 0xCC3F
