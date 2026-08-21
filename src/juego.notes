@@ -3953,8 +3953,9 @@ C 0xF7B0 Y si todo ha ido bien, 0xA529 = 1 y a la segunda parte, que empieza en 
 
 C 0xE41C 0x2E son 46, los bytes que ocupa el estado de una voz
 C 0xE422 0xF3 es el `di`: se repone al principio de las DOS puertas del arranque, 0xE18F y 0xE1BC, que sonido_off deja machacadas
-C 0xE42A Si 0xEE19 y 0xEE0C no valen lo mismo es que queda alguna voz sonando, y entonces no se toca nada mas
-C 0xE434 Y si era la ultima, a cero las variables comunes del sonido...
+C 0xE42A El canal que acaba de callarse...
+C 0xE42D ...se compara con el que anoto op_efecto en 0xEE0C (0xE523): 0xEE0C no cuenta voces vivas, guarda el DUENO del barrido de ruido, y si no es este canal el barrido es de otro y no se toca nada
+C 0xE434 Y si el que acaba es el dueno, a cero las variables comunes del sonido...
 C 0xE43E ...aunque el `ldir` deja fuera 0xEE0A a proposito: el `inc de` se lo salta, asi que el registro de RUIDO sobrevive al silencio
 C 0xE446 El argumento del tempo...
 C 0xE448 ...por ocho...
@@ -4019,3 +4020,275 @@ C 0xE244 Los bits de tono y ruido que dejo el comando 0x83, y con ellos se abre 
 C 0xE24A Las dos envolventes del instrumento, cada una con su contador a cero
 C 0xE25C Aqui es donde el guion avanza de verdad: el puntero nuevo se guarda...
 C 0xE262 ...y la duracion se recarga desde su copia de (ix+006/007), que es la que el comando de duracion escribe
+
+# ------------------------------------------- el interprete de sonido, por dentro
+# Portados desde `parte2`, donde el mismo motor esta comentado linea a linea:
+# las 473 instrucciones de 0xC509-0xC8DC de `parte2` casan una a una con las de
+# 0xE1F5-0xE5C8 de aqui (delta 0x1CEC hasta op_fin, 0x1CEB a partir de ahi,
+# porque parte2 gasta un byte mas: donde alli hay `call entrada_transporte /
+# ld (hl),b` -que ademas pone a cero la transposicion- aqui solo hay
+# `ld a,(0ee19h)`). Las variables van con delta 0x1D0D y las tablas con 0x1CE5.
+C 0xE1F5 Los tres canales, uno detras de otro
+C 0xE1F9 IX al primer bloque de canal, DE a los registros de periodo del PSG (0xEE0D es el R0) y HL a los de volumen (0xEE15 es el R8): el bloque sombra es la imagen de los once registros
+C 0xE21D Sin puntero no hay guion: canal muerto
+C 0xE222 El byte al que apunta el puntero de ejecucion, que vive en BC
+C 0xE231 La nota se apila porque entrada_transporte machaca A con el numero de canal: vuelve en el `pop af` de 0xE235, justo para sumarle la transposicion
+C 0xE24D ...y lo que las dos envolventes llevan sumado al volumen y al periodo arranca a cero
+C 0xE26E Un cuadro menos de nota, siempre, suene lo que suene
+C 0xE27B IY recorre las fases mientras IX se queda en la cabecera del bloque
+C 0xE27F La envolvente de volumen tiene DOS fases
+C 0xE283 Si a la fase le faltan cuadros para el paso siguiente, se descuenta uno y se acabo el cuadro
+C 0xE290 Y si ya toca paso, se mira cuantos le quedan a la fase
+C 0xE29A El paso: al volumen acumulado se le suma lo que diga la fase
+C 0xE2A3 Y se recarga la espera desde la plantilla
+C 0xE2AC Fase agotada: a la siguiente
+C 0xE2B1 Si ninguna de las dos fases hizo nada, la envolvente esta terminada...
+C 0xE2B5 ...y el bit 0 del +2D decide si vuelve a empezar o se queda ahi
+C 0xE2C0 La de periodo va igual, pero con TRES fases
+C 0xE2C4 La espera de la fase
+C 0xE2D1 Los pasos que le quedan
+C 0xE2DB El paso es con signo: si el delta es negativo...
+C 0xE2E2 ...se le da la vuelta y se RESTA con acarreo de los dos bytes
+C 0xE2F4 El periodo del PSG son doce bits: el `and 00fh` recorta el byte alto
+C 0xE2FB Y con delta positivo, la suma de siempre
+C 0xE30E La espera, recargada desde la plantilla
+C 0xE317 Fase agotada: a la siguiente de las tres
+C 0xE34B El numero de canal sube -es lo que mira el mezclador- y HL pasa al registro de volumen de al lado
+C 0xE355 Dos fases, y el mismo bucle que la de volumen
+C 0xE359 La espera de la fase...
+C 0xE366 ...y los pasos que le quedan
+C 0xE370 El paso se suma en 0xEE0B, que es lo que la envolvente lleva puesto al periodo de ruido
+C 0xE382 Fase agotada: a la otra
+C 0xE38B Si ninguna hizo nada, el bit 2 de las banderas globales decide si se recarga y vuelve a empezar
+C 0xE393 Lo que llega al chip es el periodo de ruido que puso op_ruido mas lo que lleve la envolvente
+C 0xE39E Y ahora si, los once registros de la sombra al PSG: una sola vez por interrupcion, con los tres canales ya resueltos
+C 0xE3A7 Dos parejas: la espera desde el +20 y los pasos desde el +16
+C 0xE3B3 El `inc ix` pasa a la fase siguiente, que van byte a byte
+C 0xE3BF Y aqui tres parejas, desde el +22 y el +18
+C 0xE3DB Las globales del ruido se rearman igual, con sus dos fases
+C 0xE467 Cambiar el periodo de ruido rearma de paso la envolvente global: las dos fases vuelven a su plantilla
+C 0xE477 Solo el canal 1 se pregunta si la musica tiene que acabarse...
+C 0xE47D ...y acaba de verdad cuando 0xEE1A esta apagado, que es como espera_fin_musica (0xD57B) le pide el final
+C 0xE483 Si no, el puntero de ejecucion vuelve al de inicio y el guion empieza otra vez
+C 0xE4BE Se copian a partir del +16, que es donde vive la plantilla del instrumento
+C 0xE5C1 El indice por dos, que las entradas de la tabla son palabras
+C 0xE5C7 Y la palabra, leida en dos pasos para no gastar mas registros
+
+# ============================================================================
+# EL FONDO Y LOS CUATRO PINTORES (0xC33F-0xC5E2), linea a linea.
+# Buena parte esta portada de `parte2`, que lleva el mismo codigo: los dos
+# listados comparten unas 2.300 instrucciones repartidas en cuarenta tramos, y
+# este es uno de los mas largos. Lo que NO se ha portado son las cifras: el
+# pozo de tiles, el de sprites y el mapa son los de aqui, medidos aqui.
+# ============================================================================
+
+# ---------------------------------------------------------- las estrellas
+L 0xC33F mueve_estrellas Las 48 estrellas de 0xCB09: a cada una le baja una fila por cuadro con vuelta en 0xA0 (el alto del buffer) y la pinta SIEMPRE en su sitio -nunca la mueve-, pero solo si tiene sitio: su propio byte y los siete de debajo a cero o, si ahi hay algo, su propio byte y los siete de encima. Si las dos catas chocan con el decorado, esa estrella se queda sin pintar ese cuadro. El patron es el 0x18 fijo, dos pixeles
+C 0xC33F Las 48 estrellas, un byte de fila cada una...
+C 0xC342 ...y el indice, que cuenta al reves, de 48 a 1
+C 0xC344 La fila donde iba esta estrella...
+C 0xC346 ...una mas abajo, con vuelta al llegar a 160, que es el alto del buffer
+C 0xC34C La fila nueva se guarda ya, se llegue a pintar o no
+C 0xC34E El indice hace de columna EN BYTES, y va de 1 a 48 cuando el buffer solo mide 24 de ancho: las estrellas con indice de 24 a 47 caen una fila mas abajo de la que dice su byte, y la 48 dos filas
+C 0xC352 La direccion se aparta en 0xD3CD, el bloc de dos bytes que comparten esta rutina, repinta_fondo y pinta_sprite
+C 0xC355 Ocho catas hacia abajo, contando la de la propia estrella
+C 0xC357 Cada byte del buffer son ocho pixeles de UNA fila, asi que un cero es "aqui no hay nada dibujado"
+C 0xC359 Al primer byte ocupado se deja de mirar hacia abajo y se prueba hacia arriba
+C 0xC35C 24 bytes es una fila entera: las catas van por la misma columna de ocho pixeles, fila a fila
+C 0xC363 Y si el byte alto da la vuelta, se ha salido del buffer por abajo: tampoco vale
+C 0xC367 Ocho filas limpias por debajo: se pinta
+C 0xC36A Vuelta al punto de partida...
+C 0xC36D ...y las mismas ocho catas hacia arriba
+C 0xC372 Una fila menos cada vez
+C 0xC37A 0x40 es el byte alto donde empieza el buffer: por encima de esa fila ya no hay buffer
+C 0xC37C Con algo ocupado por arriba Y por abajo, esta estrella no se pinta este cuadro
+C 0xC380 Y se pinta en SU sitio: 0xD3CD trae la direccion de partida, no la de la ultima cata
+C 0xC386 A la estrella siguiente
+
+# ------------------------------------------------- el redibujado del fondo
+C 0xC38A IY al bloc del scroll: +0 la fila del mapa, +1 si el scroll esta encendido, +2 el desplazamiento fino, y +3/+4/+5 los tres bytes de trabajo de esta rutina -la tira que toca, cuantas filas de pixel se copian de ella y por donde hay que empezar a leer el tile-
+C 0xC38E A la tira 0, la de arriba
+C 0xC392 IX = 0x5C32 + fila*6: la fila del mapa que asoma por el borde de arriba
+C 0xC395 Y el destino, el principio del buffer: 24 bytes por 160 filas, de 0x4000 a 0x4EFF
+C 0xC398 El desplazamiento fino es lo que manda el reparto en tiras
+C 0xC39B Con el fino a tope las celdas cuadran con el borde de la pantalla: cinco tiras de 32 filas dan las 160 justas y ninguna sale partida
+C 0xC39F Con cualquier otro valor hacen falta SEIS tiras, y las de los extremos van cortadas
+C 0xC3A3 La 0 es la de arriba, de la que solo se ve la parte de abajo
+C 0xC3A5 La 5 es la de abajo, de la que solo se ve la parte de arriba...
+C 0xC3A7 ...32 - fino filas de ella. El `ld a` va delante del `jr` a proposito: cargar no toca las banderas del `cp`
+C 0xC3A9 Las tiras 1 a 4 son enteras, 32 filas cada una
+C 0xC3B0 La tira de arriba: se ven `fino` filas de pixel, y son las de ABAJO del tile
+C 0xC3B5 Por cuatro, que es lo que ocupa una fila de tile -4 bytes, 32 px-: sale el desplazamiento en BYTES desde el que hay que empezar a leer
+C 0xC3B7 Ese desplazamiento solo es distinto de cero en esta tira; en las otras cinco el tile se lee desde el principio
+C 0xC3BA Y de la tira 0 se copian justo las filas del fino: fino + 4*32 + (32-fino) = 160, el alto del buffer, salga el fino que salga
+C 0xC3C3 Las demas tiras: las filas ya vienen en A y el tile se lee desde arriba
+C 0xC3CA SEIS celdas por tira, que es lo que mide de ancho una fila del mapa: 6 de 32 px son los 192 del buffer
+C 0xC3CC El contador de columnas se aparca en el A alternativo, porque A hace falta entera para la celda
+C 0xC3CD En 0xD3CD, la direccion de esta columna en el buffer: hay que reponerla en cada vuelta porque los `ldi` mueven el destino
+C 0xC3D1 El numero de celda entra por el byte ALTO, o sea multiplicado por 256...
+C 0xC3D6 ...y un desplazamiento de 16 bits a la derecha lo deja en celda*128, que es lo que mide un tile
+C 0xC3DA El pozo de tiles: 111 dibujos de 32x32 a 128 bytes cada uno, de 0x6DE0 a 0xA55F
+C 0xC3DE Las filas que hay que copiar y desde donde, los dos bytes que dejo el reparto en tiras
+C 0xC3E8 Y el destino, de 0xD3CD
+C 0xC3ED Pasada la fila 0x5000 ya no hay buffer: esta columna se salta entera
+C 0xC3F1 C alto a proposito: los `ldi` decrementan BC entero, y arrancando en 0xFF no llegan a robarle una vuelta a B, que es el contador de filas de verdad
+C 0xC3FB Una fila menos de la tira
+C 0xC3FE Los cuatro `ldi` ya han adelantado el destino cuatro bytes; con estos veinte mas suman los 24 del ancho del buffer, o sea la fila de abajo. El origen no hay que tocarlo: dentro del tile las filas van seguidas
+C 0xC402 Lo normal es que el byte bajo no se lleve nada y la vuelta se de sin tocar D
+C 0xC409 Vuelve el contador de columnas del A alternativo
+C 0xC40B Las seis hechas: se cierra la tira
+C 0xC40D Del principio de la columna de antes...
+C 0xC411 ...cuatro bytes a la derecha, que es la de al lado
+C 0xC418 Una tira mas hecha
+C 0xC41B Cuantas tiras hay depende otra vez del fino...
+C 0xC422 ...y se resuelve con el acarreo del `cp` de arriba, sin un solo salto: cinco con el fino a tope, seis si no
+C 0xC424 Mientras queden tiras, otra vuelta
+C 0xC42A Con el scroll apagado el fondo se redibuja igual, pero no avanza
+C 0xC42F Completadas las 32 filas de pixel de un tile se baja una fila de mapa...
+C 0xC436 ...y si no, dos pixeles mas: el fino va 2, 4, 6... hasta 32, o sea DIECISEIS cuadros por fila de mapa
+C 0xC43C Con el mapa en la fila 0 se ha llegado al final de la zona
+C 0xC443 El fino vuelve a 2, no a 0: el cuadro en el que se cambia de fila ya cuenta como el primero
+C 0xC447 Una fila menos de mapa, que es hacia donde avanza la camara
+C 0xC44A La fila NUEVA, la que acaba de asomar por arriba
+C 0xC450 Sus seis celdas, una a una
+C 0xC452 De cada celda solo importa si es de las que tienen vida propia...
+C 0xC453 ...la 0x5D lo es...
+C 0xC457 ...de la 0x47 en adelante no...
+C 0xC45B ...y tampoco por debajo de la 0x30: las que se dan de alta al asomar son la 0x5D y las de 0x30 a 0x46
+C 0xC476 Fin de la zona: 0xCB39 a cero es lo que mira el bucle de partida para saber que se ha acabado
+
+# ---------------------------------------- el pintor de sprites, y el de glifos
+C 0xC4C1 ...y el `scf` pone el primer uno que va a entrar por la derecha, porque ni el `inc hl` ni el `ex de,hl` tocan el acarreo
+C 0xC4CF Se entra por el peldano que deja 8-(X and 7) pasos, con lo que el sprite acaba a (X and 7) pixeles del borde izquierdo de la ventana, que es justo donde se le quiere. Los otros tres desplazadores del bloque son esta misma tira con el relleno o el ancho cambiados
+C 0xC4E1 Las dos mitades bajas de la ventana pasan a DE...
+C 0xC4E2 ...y HL vuelve a ser el destino en el buffer
+C 0xC4E4 El byte de la izquierda de la ventana, el primero de los tres del ancho de 24
+C 0xC4E5 Tres bytes seguidos, 24 pixeles, para un sprite de 16: los 8 de sobra son el margen que hace falta para poder colocarlo en cualquier X
+C 0xC4EE ...dos bytes mas alla, que es donde empieza el DIBUJO de esta misma fila
+C 0xC4FA El otro `jr` parcheado, con el mismo numero que el de la mascara
+C 0xC4FC El atajo gemelo, cambiando los unos por ceros
+C 0xC503 La tira gemela: los mismos siete peldanos, y lo unico distinto es con que se entra y que abajo se estampa con `or`
+C 0xC506 Siete peldanos como la de la mascara, ni uno mas: 8 es el maximo desplazamiento y ese se despacha con el atajo de arriba
+C 0xC518 Las dos mitades bajas, igual que en la mascara
+C 0xC51A `or` en vez de `and`: el dibujo enciende lo blanco del sprite. En 1.283 de las 1.328 filas del pozo el dibujo cae DENTRO de la mascara, o sea que no pisa lo que la mascara acaba de dejar en negro; las 45 que no son de cinco dibujos tramados (0x18 y 0x4B-0x4E), donde el negro y el blanco caen en el mismo pixel y gana el blanco porque el `or` va detras
+C 0xC533 Si no se ha pasado, este `sub` deshace el `add` de arriba y H sale como entro: la comprobacion no cuesta ni una instruccion de mas
+C 0xC542 L trae la columna y H la fila; se cambian de sitio para poder multiplicar la fila
+C 0xC557 Cuatro veces por dos: 16 bytes por glifo, que son 8 filas de un byte de mascara y otro de dibujo
+C 0xC568 Y el mismo desplazamiento fino, pero la tira de 16 bits gasta DOS bytes por peldano en vez de tres, asi que el numero es otro
+C 0xC587 El destino a la pila, que HL va a hacer de ventana
+C 0xC596 La ventana cabe entera en HL, asi que aqui sobra el `adc a,a` que la de 24 bits necesitaba para arrastrar su tercer byte
+C 0xC5A6 Y vuelve el destino
+C 0xC5A8 Dos bytes, 16 pixeles, para un glifo de 8: el mismo margen y el mismo `and` que en los sprites
+C 0xC5AD El destino otra vez a la pila, que hace falta para el dibujo
+C 0xC5B0 El segundo byte de la fila es el dibujo
+C 0xC5B3 El `jr` gemelo, con el mismo numero
+C 0xC5B5 El atajo de ocho del dibujo, con cero de relleno
+C 0xC5BB Siete `adc hl,hl` y a estampar con `or`: la cuarta y ultima de las tiras del bloque, todas cortadas por el mismo patron
+C 0xC5BD El relleno de ceros lo trae ya puesto H, asi que el acarreo con el que se entra tiene que estar limpio
+C 0xC5CC ...estampados con `or`, y de derecha a izquierda: escribiendo primero el byte de la derecha y bajando con un `dec hl` se ahorra el `push` que haria falta para volver al principio
+C 0xC5D6 Lo normal es que no se lleve nada y no haya que tocar H
+
+# ============================================================================
+# LAS DOS TABLAS DE DISPAROS Y LOS DOS PERSEGUIDORES (0xCB84-0xCD90).
+# Otro de los tramos que `parte2` tiene comentado y aqui estaba en blanco. Las
+# cifras -topes, recortes y direcciones de tabla- son las de este listado.
+# ============================================================================
+
+C 0xCB84 El contador de vueltas, a la pila: la rutina de la ficha se lleva por delante los registros
+C 0xCB85 Un cuadro mas de vida para este tile especial
+C 0xCB8B A los 0x60 cuadros se le da de baja y no se le gobierna mas
+C 0xCB8F La vuelta se apila a mano y se salta con `jp (hl)`: asi la rutina de la ficha vuelve sola a 0xCB9D, sin que este bucle gaste un `call`
+C 0xCB93 Cada ficha lleva en el +3/+4 la direccion de quien la gobierna
+C 0xCB9D Ocho bytes por ficha
+C 0xCBA6 La posicion de partida, guardada por si hay que rebotar
+C 0xCBA9 Solo una de cada dos veces se corrige el rumbo: asi el tiro conserva inercia y describe una curva en vez de una linea quebrada
+C 0xCBB0 La fila del tiro contra la del blanco...
+C 0xCBB5 ...y la velocidad vertical sube un paso, saturando en +5
+C 0xCBBD O baja uno, saturando en -5. El sesgo de cinco es lo que permite hacer las dos cosas con comparaciones sin signo
+C 0xCBC3 Quitado el sesgo, la velocidad vuelve a su rango de -5 a +5
+C 0xCBC6 Y lo mismo con la columna
+C 0xCBDC El paso, sea el de siempre o el recien corregido
+C 0xCBDD El recorte, solo en la columna: 0xB8 de ancho util, cuatro MENOS que el 0xBC con el que poda mueve_tabla
+C 0xCBE2 Se repone la X de partida y se niega la velocidad horizontal: el tiro rebota contra el lado en vez de morir
+C 0xCBEB Las dos tablas de disparos pasan por el mismo motor, y lo unico que cambia es el paso: se parchea EN CALIENTE el operando del `ld bc` de 0xCC32
+C 0xCBEF Seis por eje para los tiros enemigos...
+C 0xCBF7 ...sobre la tabla de 0xC93A, que acaba en 0xC952, y con el 5 por identificador
+C 0xCC07 Nueve por eje para los disparos del jugador, que van mas rapidos...
+C 0xCC0F ...sobre la de 0xC953, que acaba en 0xC977, con el 4 por identificador
+C 0xCC18 El motor comun aparca en 0xC977 donde acaba la tabla que va a recorrer y en 0xC979 cual de las dos es, que es lo que la baja necesita para compactar
+C 0xCC1E El contador vive UN byte por delante de la tabla, de ahi el indice negativo
+C 0xCC22 Sin ninguno vivo no hay nada que recorrer
+C 0xCC24 El contador de vueltas se aparca, que la baja lo va a mirar en la pila
+C 0xCC2B El rumbo a 0x80 exacto es la marca de muerto, que pone quien acierta el impacto
+C 0xCC32 Aqui esta el operando que se parchea. El 0x0707 que trae el binario no lo escribe nadie: los dos llamantes lo pisan antes de entrar
+C 0xCC38 Fuera por abajo...
+C 0xCC3D ...o por la derecha, y en los dos casos se da de baja
+C 0xCC42 La posicion nueva, ya buena, vuelve a la ficha
+C 0xCC48 Los dos disparos se pintan con el mismo glifo, el 2 de la fuente de 0xCA93
+C 0xCC4D Cuatro bytes por ficha, y a la siguiente
+C 0xCC56 La baja: primero, cual de los dos contadores hay que bajar
+C 0xCC63 Una ficha menos
+C 0xCC66 Si la que muere es la ultima que quedaba por mirar, no hay nada que mover
+C 0xCC6C El compactado: se trae encima todo lo que va detras de la ficha muerta...
+C 0xCC74 ...y lo que se mueve es lo que va de la ficha siguiente al final de la tabla, que es el 0xC977 que se aparco al entrar
+C 0xCC7E Un `ldir` y hueco cerrado. IX no avanza, asi que la ficha que ocupa el sitio se mira en la vuelta siguiente y no se salta ninguna
+C 0xCCB0 Llena: no entra
+C 0xCCBA Una ficha mas
+C 0xCCBE Por cuatro: entradas de cuatro bytes...
+C 0xCCCC La posicion de partida, por si hay que deshacer el paso
+C 0xCCE1 ...y esas tres solo cuestan una suma
+C 0xCCE5 La cuarta se corrige, un eje cada vez. La fila del bicho contra la del jugador...
+C 0xCCEA ...y la velocidad vertical sube un paso, saturando en +4
+C 0xCCF2 O baja uno, saturando en -4
+C 0xCCF8 El sesgo de cuatro, quitado: la velocidad vuelve a su rango de -4 a +4
+C 0xCCFB Y otra vez con la columna
+C 0xCD12 El recorte, solo en la columna, con el 0xB0 del area de juego
+C 0xCD17 Rebote: se niega la velocidad horizontal, se repone la posicion de partida y se da el paso otra vez, ya hacia dentro. Al bicho le cuesta el cuadro entero darse la vuelta
+C 0xCD7A BC corrige las dos coordenadas antes de comparar: lo que se mide es la esquina de la caja, no el punto que se pinta
+C 0xCD7C Al que va delante se le suma SU tamano: si L queda por debajo de H, se mira si L+E alcanza a H...
+C 0xCD82 ...y si no, si H+D alcanza a L. Vuelve con acarreo cuando NO se tocan
+
+# ============================================================================
+# EL ROTULADOR A DOBLE ALTURA, EL MENU Y LA PANTALLA DE RECORDS
+# (0xD486-0xD5A9). Tercer tramo portado de `parte2`, con las cifras de aqui.
+# ============================================================================
+
+C 0xD488 El byte va a pelo por el puerto de datos, sin volver a dar la direccion: el VDP la sube solo
+C 0xD48A El `and a` no comprueba nada -el `dec b` de detras vuelve a poner las banderas-: esta para darle tiempo al VDP entre byte y byte
+C 0xD48F La celda de al lado esta 0x40 mas alla, que en la geometria por columnas de este juego es la columna siguiente
+C 0xD493 Y ahi si hay que volver a dar la direccion, que la de antes se quedo ocho bytes mas alla
+C 0xD49C El buffer acaba en 0x4EFF: si el rotulo ha caido en 0x4F00 o mas alla, no se pinta
+C 0xD4A1 Este `cp 020h` -mirar si el caracter es un espacio- no lo lee nadie: lo unico que mira banderas detras es el `dec a` del bucle, y las pone el mismo
+C 0xD4A4 El glifo son ocho bytes en 0x5F00 + caracter*8
+C 0xD4B2 0x18 es el ancho del buffer: sumarlo es bajar una fila
+C 0xD4B5 Ocho filas de glifo...
+C 0xD4B7 ...y cada una se estampa en DOS filas del buffer: el rotulo sale a doble altura
+C 0xD4B9 Esta pasada BORRA, y borra el glifo corrido un pixel a la izquierda: el `rlca` lo corre y el `cpl` lo pone del reves para el `and`
+C 0xD4C4 Byte siguiente del glifo
+C 0xD4CC La segunda pasada arranca una fila mas abajo que la de borrar, asi que lo borrado asoma una fila por encima del trazo
+C 0xD4D2 Y ahora se pinta con `or`, pero tramado: en una fila los pixeles impares...
+C 0xD4D8 ...y en la de al lado los pares, o sea un damero que deja ver el fondo entre trazo y trazo
+C 0xD4DD Byte siguiente, igual que en la pasada de borrar
+C 0xD4E5 Un caracter de la cadena de IX...
+C 0xD4EB ...y el cero la cierra
+C 0xD4EF Un byte del buffer por caracter: los glifos van pegados
+C 0xD4F3 Las cinco cadenas van SEGUIDAS desde 0xDCC6, y cada una rotulada deja IX apuntando a la siguiente: por eso el menu entero se pinta con un solo IX y cinco destinos
+C 0xD515 Con 0xDCC3 apagado el selector va en TECLADO y con el encendido en JOYSTICK, cada uno con su cadena de flechas
+C 0xD52F El puntero donde se rotula, que el bucle de 0xD560 arranca en 0x4F08, o sea fila 160 -justo debajo del buffer- y columna 8
+C 0xD532 Restarle el ancho del buffer es subir el rotulo una fila: eso es todo el scroll
+C 0xD539 Y por debajo de 0x4000 el rotulo entero se ha ido por arriba
+C 0xD541 El titulo, la primera de las cadenas encadenadas de 0xDCC6
+C 0xD548 Del titulo a la primera ficha: sus 8 caracteres mas 0x235 son 573 bytes, que a 24 por fila son 24 filas mas abajo y la columna 5
+C 0xD54C Las ocho fichas de record, que van seguidas: ocho de nombre, seis de puntos y el cero
+C 0xD550 De una ficha a la de abajo: sus 14 caracteres mas 0x172 son 384 justos, o sea 16 filas, que es lo que mide un renglon a doble altura
+C 0xD557 Nombre y puntos se rotulan de una vez: son la misma cadena
+C 0xD55B Y a la ficha siguiente
+C 0xD566 El cuadro de la pantalla de records, en cuatro pasos: borrar el buffer, mover las estrellas, subir el rotulo un escalon y volcar
+C 0xD572 Con cualquier tecla se corta y se vuelve al menu
+C 0xD583 Mil vueltas de espera entre cata y cata del teclado
+C 0xD589 Y el final de la musica se nota en que el canal 1 se queda sin puntero de ejecucion
+C 0xD591 El `pop hl` se come la vuelta al bucle de 0xD566: aqui no se vuelve a scroll_records, se sale de la pantalla de records
+C 0xD592 Tres `nop` seguidos, con pinta de que algo se quito a mano
+C 0xD595 La musica de la demo, y aqui se espera a que acabe
+C 0xD59B La semilla del azar se planta en 0xA710 SIEMPRE, asi que la demo sale igual todas las veces
+C 0xD5A1 Y el mando pasa a leerse de la demo: 0xC1AF en el operando del `call` de 0xC090, que el arranque de partida vuelve a poner en lee_mando (0xBE1B)

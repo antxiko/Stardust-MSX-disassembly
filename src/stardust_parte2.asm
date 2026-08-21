@@ -8347,7 +8347,7 @@ L_C536:
 	jp (hl)			;c544
 L_C545:
 	push af			;c545   ; Por debajo de 0x80 es una NOTA, y se le suma la transposicion del canal
-	call estado_canal_actual		;c546
+	call entrada_transporte		;c546
 	pop af			;c549
 	add a,(hl)			;c54a
 	ld hl,0c9feh		;c54b   ; La tabla de notas de 0xC9FE da el periodo, que se guarda en el +0A/+0B
@@ -8612,7 +8612,7 @@ L_C732:
 	ld a,0f3h		;c736   ; El `di` repuesto en las dos cabeceras: se deshace el `ret` que planto sonido_off y el sonido vuelve a estar abierto
 	ld (arranca_guion_libre),a		;c738
 	ld (arranca_guion),a		;c73b
-	call estado_canal_actual		;c73e   ; La transposicion del canal, tambien a cero: B viene valiendo 0 del bucle de arriba
+	call entrada_transporte		;c73e   ; La transposicion del canal, tambien a cero: B viene valiendo 0 del bucle de arriba
 	ld (hl),b			;c741
 	ld hl,0d0ffh		;c742   ; Y si el canal que acaba es el que anoto op_efecto...
 	xor (hl)			;c745
@@ -8789,14 +8789,14 @@ op_vuelve:		; 0x8D: el RET del interprete, sin argumento. Recupera BC del hueco 
 	inc hl			;c88c
 	ld b,(hl)			;c88d
 	jp L_C536		;c88e
-op_transporte:		; 0x8E n: escribe el argumento en 0xD114 + canal, que es la TRANSPOSICION de la voz: el lector de notas se lo suma al numero de nota antes de buscar el periodo en la tabla de 0xC9FE (`call estado_canal_actual / add a,(hl)` en 0xC546). La musica lo usa 34 veces, con 2, 5, 9, 11 y 14 hacia arriba y con 0xF6, 0xFD y 0xFF -o sea -10, -3 y -1 semitonos- hacia abajo
+op_transporte:		; 0x8E n: escribe el argumento en 0xD114 + canal, que es la TRANSPOSICION de la voz: el lector de notas se lo suma al numero de nota antes de buscar el periodo en la tabla de 0xC9FE (`call entrada_transporte / add a,(hl)` en 0xC546). La musica lo usa 34 veces, con 2, 5, 9, 11 y 14 hacia arriba y con 0xF6, 0xFD y 0xFF -o sea -10, -3 y -1 semitonos- hacia abajo
 	inc bc			;c891
-	call estado_canal_actual		;c892   ; La entrada de este canal en la tabla de transposiciones
+	call entrada_transporte		;c892   ; La entrada de este canal en la tabla de transposiciones
 	ld a,(bc)			;c895   ; Y el argumento tal cual: es lo que el lector de notas suma al numero de nota
 	inc bc			;c896
 	ld (hl),a			;c897
 	jp L_C536		;c898
-estado_canal_actual:		; HL = 0xD114 + el numero que haya en 0xD10C: la entrada del canal que el interprete esta atendiendo
+entrada_transporte:		; HL = 0xD114 + el numero que haya en 0xD10C: la entrada del canal que el interprete esta atendiendo
 	ld a,(0d10ch)		;c89b   ; 0xD10C es el canal que el interprete esta atendiendo en este momento
 	ld l,a			;c89e
 	ld h,000h		;c89f
