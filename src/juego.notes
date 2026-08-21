@@ -103,8 +103,12 @@ D 0x48A0 0x51A0 patrones_del_marco Patrones del MARCO de la pantalla de juego -e
 F 0x48A0 8
 D 0x51A0 0x5AA0 colores_del_marco Colores del MARCO de la pantalla de juego (los mismos 0x900 B, segunda llamada a L_EF28 con destino VRAM 0x2000). Aqui vivian los rangos "colores de tiles" medidos por su firma de nibble: la firma era verdad, pero son los colores del marco, no de los tiles del juego
 F 0x51A0 8
-D 0x5AA0 0x5C31 tabla_5AA0 Tabla (401 B; racha 7.98, entropia 1.05, 4 valores: pocos valores para ser un dibujo)
-D 0x5C31 0x5FFD area_de_trabajo_5C31 Area de trabajo, que en la cinta llega a ceros y por eso parecia relleno (972 B): los 510 primeros bytes son la tabla de 85 entradas de 6 que indexa 0xC464, y el arranque los limpia con el `ldir` de 0xBDC2 (ver el bloque de abajo)
+D 0x5AA0 0x5B32 tabla_5AA0 Tabla sin identificar (146 B; racha 7.98, entropia 1.05, 4 valores: pocos valores para ser un dibujo). Lo que sigue, que iba dentro de este mismo cajon, YA se sabe lo que es: las dos tablas de las particulas
+D 0x5B32 0x5BB2 velocidades_de_las_particulas Las velocidades de las 64 particulas de la explosion de la nave (128 B): dos bytes cada una, fila en el alto y columna en el bajo. Las lee y las escribe mueve_particulas con IX desde 0x5B32 (0xC613), sumandole una fila por cuadro, que es la gravedad
+F 0x5B32 2
+D 0x5BB2 0x5C32 posiciones_de_las_particulas Las posiciones de esas mismas 64 particulas (128 B): dos bytes cada una, con el mismo reparto. siembra_particulas las llena todas con la posicion de la nave (0xC5E3) y mueve_particulas aparca en 0xFF00 la que se sale del buffer. Cierran al byte con la tabla del mapa, que empieza en 0x5C32
+F 0x5BB2 2
+D 0x5C32 0x5FFD area_de_trabajo_5C31 Area de trabajo, que en la cinta llega a ceros y por eso parecia relleno (971 B): los 510 primeros bytes son la tabla de 85 entradas de 6 que indexa 0xC464, y el arranque los limpia con el `ldir` de 0xBDC2 (ver el bloque de abajo). Empezaba declarada en 0x5C31, un byte antes: ese byte es el ultimo de las posiciones de las particulas, y la tabla de 85 entradas va de 0x5C32 a 0x5E2F
 D 0x61D8 0x62D7 datos_nivel_1 Level 1 Data
 D 0x62D7 0x63D4 datos_nivel_2 Level 2 Data
 D 0x63D4 0x64D4 datos_nivel_3 Level 3 Data
@@ -716,7 +720,7 @@ L 0xCE73 tile_45 El tile 0x45 suelta al perseguidor: cuando su fila llega a 0x2D
 L 0xCEBC aparece_perseguidor Los 16 cuadros de la aparicion: pinta dos parejas de sprites (0x19/0x1A y 0x1B/0x1C) reflejadas respecto a 0xD3C5, subiendolas 4 y 3 filas por cuadro; al agotarse el contador pone 0xD3C5 a 1 -ya vuela-, le da tres impactos de vida y suena 0xEA98
 L 0xC05C recarga_escudo Pone el escudo (0xC188) a 3 y sigue en actualiza_nave. Nadie la llama en el juego original -su direccion no aparece ni una vez en el bloque-: es donde aterriza el POKE de inmortalidad de Input MSX 19, que cambia el `jr c` de 0xC06E por un `jr -20`
 L 0xC5E3 siembra_particulas Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
-L 0xC60C mueve_particulas Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
+L 0xC60C mueve_particulas Mueve y pinta las 64 particulas de la explosion de la nave CON GRAVEDAD: velocidades en 0x5B32 y posiciones en 0x5BB2, dos bytes cada una, las dos tablas seguidas y cerrando al byte en 0x5C32. Cada cuadro suma la velocidad a la posicion, le sube una fila a la velocidad y estampa cuatro filas con `or (hl)`; la que se sale del buffer se aparca en 0xFF00 y ya no vuelve. El dibujo NO es un pixel suelto: son los bits 2 a 5 de un byte de la ROM del BIOS leido con IY desde 0x03E8, uno por fila, o sea 256 bytes para las 64 particulas
 L 0xC83F azar El generador de azar: identico al de la segunda parte (lee la ROM del BIOS como tabla de entropia), semilla en 0xCA8F sembrada con ld a,r en el arranque
 C 0xC3F3 El blitter de fondo: cuatro ldi por tira de 4 columnas, paso 24, leyendo del pozo de graficos 0x6DE0-0x9ADF; redibuja las tres bandas enteras
 C 0xC383 Pinta una estrella: el patron fijo 0x18 (dos pixeles) donde dicta la tabla de las 48 estrellas de 0xCB09
@@ -1912,7 +1916,7 @@ L 0xF48C redefine_tecla Espera una tecla y guarda su entrada en la tabla: la mas
 # retiran con `ld a,c / add a,00ah / cp 07ch`, que es la Y mas 10 contra la
 # fila 124, la misma comprobacion con los mismos dos numeros que hace la fase
 # de a pie con los tiros de las torretas.
-L 0xDF0F mueve_disparos Recorre los disparos de 0xC999 (contador en 0xC998, dos como maximo): los mueve, y al cruzar el borde del piso -Y+10 contra 0x7C- los pinta ya como impacto, con el sprite base 0x69
+L 0xDF0F mueve_disparos Recorre los tiros que persiguen de 0xC999 (contador en 0xC998, dos como maximo, fichas de 5 bytes). El +0 hace DOS papeles: mientras el tiro vuela es su VELOCIDAD horizontal -entre -5 y +5, asi que sumarle 10 no lo acerca a 0x7C ni de lejos-, y desde que 0xDFA2 le escribe un 0x7C es el contador de la EXPLOSION, que el `sub 069h` de 0xDF36 traduce a los sprites 0x1D a 0x20. La posicion va en el +2/+3 -es lo que 0xDF5C/0xDF62 devuelven de persigue_con_velocidad- y el contador de dibujo en el +4. (Estuvo publicado como "al cruzar el borde del piso, Y+10 contra 0x7C": el byte comparado no es una Y, y el mismo error se corrigio en la rutina gemela de la segunda parte)
 
 # ============================================================================
 # LA VELOCIDAD DE LOS OBJETOS SE PARCHEA DENTRO DEL BUCLE
@@ -4317,3 +4321,109 @@ C 0xD740 El contador del guion del bonus de zona, a cero
 C 0xD744 Los dos digitos que va a cobrar el bonus: (zona + 0x32) y un '0', o sea "30" en la zona 1 y "90" en la 7, que son 3.000 y 9.000 puntos
 C 0xD751 Y la zona, una mas
 C 0xD758 El HUD, ya con la zona nueva
+
+# ============================================================================
+# QUINTA TANDA DE PORTE DESDE `parte2`: los tramos sueltos que quedaban con
+# comentarios aprovechables. Las cifras -cajas, premios y direcciones- son las
+# de este listado, remedidas aqui.
+# ============================================================================
+
+# --------------------------------- el disparo que derriba un bicho de la bandada
+C 0xCFA1 La posicion del enemigo, con la columna en el +0 y la fila en el +1
+C 0xCFA7 Contra la tabla de disparos del jugador, entera
+C 0xCFAB Las dos cajas, iguales en los dos ejes: 4 el disparo y 0x0C el bicho...
+C 0xCFAE ...y BC corrige dos pixeles cada coordenada antes de comparar
+C 0xCFB4 Sin contacto, no hay nada mas que hacer
+C 0xCFB5 El sonido del derribo, en el canal 0
+C 0xCFBC El bicho pasa a explotar: 0xFF en el rumbo lo deja quieto y el 0x1D arranca los cuatro dibujos
+C 0xCFC4 Y el disparo que acerto se marca con 0x80, que es como mueve_tabla sabe que hay que darlo de baja
+C 0xCFC8 0xDD84 es el digito de las DECENAS del marcador, y B trae 13: son 130 puntos
+
+# -------------------------------------- el contacto contra una tabla cualquiera
+C 0xCFD1 El juego alterno guarda el contador de vueltas, porque HL hace falta entero para la posicion
+C 0xCFD2 El contador vive delante de la tabla, como en todas las de este juego
+C 0xCFD6 Tabla vacia: se vuelve con acarreo, que aqui significa "no toca nada"
+C 0xCFDB Primero el eje horizontal: L es la X propia y H se pisa con la del candidato
+C 0xCFE2 Si en un eje no se solapan, ya no hace falta mirar el otro
+C 0xCFE5 Y ahora el vertical, con la Y propia bajada a L y la del candidato en H
+C 0xCFED Solapan los dos ejes: contacto, y se sale SIN acarreo con IY apuntando al culpable
+C 0xCFEF Cuatro bytes por ficha, que es la anchura de las dos tablas de disparos
+C 0xCFF7 Recorrida entera sin tocar nada
+
+# ------------------------------------------------ el escudo y sus dos impactos
+C 0xD2B6 El escudo que le queda al jugador
+C 0xD2BA Ya estaba a cero: este impacto lo mata
+C 0xD2C2 El impacto doble baja dos, pero mira entre uno y otro...
+C 0xD2C9 ...porque con uno solo de escudo el primero ya basta y no hay que gastar el segundo
+C 0xD2CF El indicador se repinta borrando celdas desde arriba: 0x6F50, 0x6F48 y 0x6F40
+C 0xD2D2 A trae el escudo que QUEDA, y el `xor 003h` lo vuelve del reves: cuantos puntos se han perdido, que son las celdas que hay que borrar
+
+# ------------------------------------------------- los dos tiros que persiguen
+C 0xDF1A La velocidad en BC y la posicion en DE, que es como los quiere persigue_con_velocidad
+C 0xDF29 El +0 no es una coordenada: mientras el tiro vuela es su velocidad horizontal, entre -5 y +5
+C 0xDF2C Y por eso el 0x7C reparte: por debajo el tiro vuela, y de ahi para arriba esta explotando. Ese 0x7C se lo escribe 0xDFA2 al alcanzar al jugador
+C 0xDF31 La posicion, corrida cuatro y cuatro para centrar el dibujo de la explosion, que es mas ancho que el tiro
+C 0xDF36 Y de ahi salen los cuatro cuadros: 0x7C + 10 - 0x69 es 0x1D, y el `cp 080h` de 0xDF41 corta en el 0x20
+
+# ------------------------------------------------ la pantalla de redefinir teclas
+C 0xF445 La pantalla de redefinir teclas empieza limpia...
+C 0xF44B ...y forzando teclado, que aqui el joystick no vale
+C 0xF44F A los 72 nombres de tecla -nueve filas de ocho- se les quita el bit 7, que es la marca de "ya usada": se sueltan todas
+C 0xF454 Un nombre por vuelta
+C 0xF459 Ocho vueltas: el titulo y las siete teclas
+C 0xF45F IY recorre las siete entradas de 0xDCB1, dos bytes cada una
+C 0xF467 Cada vuelta rotula su trozo de texto...
+C 0xF46B ...y las siete primeras piden ademas una tecla
+C 0xF47F Se rota hasta que salga un cero: ese es el bit de la tecla, y E lleva fila*8 + bit
+C 0xF48C Se espera a que pulsen
+C 0xF491 De numero de bit a MASCARA: el `scf` mete un uno y las vueltas del `djnz` lo colocan
+C 0xF4B2 El hueco del rotulo, seis espacios
+C 0xF4C6 Los nombres largos hay que buscarlos en la lista de 0xDC52, contando ceros
+C 0xF4E7 Y el texto se va pasando caracter a caracter al impresor del marco
+C 0xF516 Los tres canales, arrancados con un guion NULO: quedan a cero y callados
+C 0xF54F ...para sumarle la columna que trae el propio texto, por 0x40, que es lo que ocupa una columna
+C 0xF581 ...se salta al tercio siguiente, que es 0x800, mas 0x100 de las cuatro columnas del margen
+C 0xF5AA El glifo del caracter, en 0x5F00 + caracter*8
+C 0xF5CD Siete filas de 0x7F otra vez, que es como se repinta el cursor
+
+# ------------------------------------- la direccion de VRAM de fila y columna
+C 0xF8AE La columna se parte en dos: los bits 2-4 al byte alto y los 0-1 arriba del bajo
+C 0xF8BA La fila dentro del tercio, seis bits, al byte bajo
+C 0xF8BF Y el tercio, que son los bits 6-7 de la fila, a los bits 3-4 del alto
+
+# ============================================================================
+# LAS PARTICULAS DE LA MUERTE DE LA NAVE (0xC5E3-0xC677) y los remates del
+# anillo de pinta_rejilla. Este tramo NO lo comparte con `parte2`: leido aqui.
+# ============================================================================
+
+C 0xC5E3 Las 64 posiciones, todas sembradas con la misma: la de la nave, que llega en HL
+C 0xC5E6 64 particulas, dos bytes cada una
+C 0xC5E8 El `ex de,hl` deja el destino en HL y la posicion en DE, que es lo que se va a repetir 64 veces
+C 0xC5EF Y detras, los tres guiones de la explosion, uno por canal, con sonido_off al final para que no se repitan
+C 0xC60C Las posiciones...
+C 0xC60F ...la tabla de entropia de la ROM del BIOS, de donde sale el dibujo de cada particula...
+C 0xC613 ...y las velocidades, que van en su propia tabla
+C 0xC619 El contador de las 64 y la entrada, a la pila
+C 0xC61B La posicion guardada...
+C 0xC61E ...y 0xFF00 quiere decir aparcada: esa particula ya se salio y no se toca mas
+C 0xC623 Se le quita una fila a la posicion y se le suma una a la velocidad, y el efecto neto es que el paso que se aplica es el del cuadro ANTERIOR: la gravedad de este no cuenta hasta el siguiente
+C 0xC62F El paso
+C 0xC630 Pasada la fila 0xA0 -las 160 del buffer- se aparca
+C 0xC635 Y pasada la columna 0xC0 -los 192 pixeles de ancho- tambien
+C 0xC63E La posicion nueva, de vuelta a la tabla
+C 0xC645 La columna entera se guarda antes de dividirla: los tres bits bajos son el pixel dentro del byte y el resto la columna en bytes
+C 0xC650 La direccion en el buffer, ya con la columna en bytes
+C 0xC653 **Y AQUI SE TIRA EL TRABAJO**: estas cuatro instrucciones montan la mascara del pixel -un uno corrido a la derecha tantas veces como diga el bit-, y el `ld a,(iy+000h)` de 0xC65A la machaca sin haberla usado. Comprobado sobre el binario: entre el `djnz` y el `ld a` no hay nada. Asi que la particula no cae en su pixel: cae en su BYTE, y con el dibujo que le toque de la ROM
+C 0xC658 Cuatro filas por particula
+C 0xC65A Un byte de la ROM del BIOS por fila, y el puntero avanza
+C 0xC65F Recortado a los bits 2-5, o sea que la particula sale como mucho de cuatro pixeles de ancho y centrada en su byte; con el byte que toque puede salir incluso vacia
+C 0xC667 La fila de abajo, 24 bytes mas alla
+C 0xC66D La entrada siguiente: dos bytes en cada tabla
+C 0xC675 Y las 64, una por una
+
+# ------------------------------------- los remates del anillo de pinta_rejilla
+C 0xC6F5 El anillo de 512 filas: hasta 0x50 es pantalla y se sigue...
+C 0xC6FA ...de 0x51 a 0x6F se sigue tambien, que aun es anillo...
+C 0xC6FF ...y de 0x70 en adelante se vuelve a 0x40, que es dar la vuelta
+C 0xC733 La fila de abajo, y con ella el anillo otra vez: hasta 0x50 se pinta, de 0x51 a 0x6F se SALTA la escritura -sigue dentro del anillo pero fuera de la pantalla- y de 0x70 en adelante se vuelve a 0x40
+C 0xC741 Detras de la fila par, la misma comprobacion; aqui las dos salidas van al mismo sitio, asi que lo unico que decide es si hay que dar la vuelta

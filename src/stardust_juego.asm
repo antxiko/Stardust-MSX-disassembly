@@ -653,9 +653,11 @@ DATA_colores_del_marco:
 	defb 0c1h,0c1h,0c1h,0c1h,071h,071h,071h,071h	; 5a98  ....qqqq
 
 ; ----------------------------------------------------------------------
-; DATOS tabla_5AA0: Tabla (401 B; racha 7.98, entropia 1.05, 4 valores: pocos
-;   valores para ser un dibujo)
-;   0x5aa0..0x5c31  (401 bytes)
+; DATOS tabla_5AA0: Tabla sin identificar (146 B; racha 7.98, entropia 1.05, 4
+;   valores: pocos valores para ser un dibujo). Lo que sigue, que iba dentro
+;   de este mismo cajon, YA se sabe lo que es: las dos tablas de las
+;   particulas
+;   0x5aa0..0x5b32  (146 bytes)
 DATA_tabla_5AA0:
 	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5aa0  ................
 	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5ab0  ................
@@ -666,92 +668,223 @@ DATA_tabla_5AA0:
 	defb 0f7h,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b00  ................
 	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b10  ................
 	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b20  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b30  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b40  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b50  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b60  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5b70  ................
-	defb 008h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5b80  ................
-	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5b90  ................
-	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5ba0  ................
-	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5bb0  ................
-	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5bc0  ................
-	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5bd0  ................
-	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5be0  ................
-	defb 000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh	; 5bf0  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5c00  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5c10  ................
-	defb 0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h,0ffh,000h	; 5c20  ................
-	defb 0ffh	; 5c30
+	defb 0ffh,000h	; 5b30
+
+; ----------------------------------------------------------------------
+; DATOS velocidades_de_las_particulas: Las velocidades de las 64 particulas de
+;   la explosion de la nave (128 B): dos bytes cada una, fila en el alto y
+;   columna en el bajo. Las lee y las escribe mueve_particulas con IX desde
+;   0x5B32 (0xC613), sumandole una fila por cuadro, que es la gravedad
+;   0x5b32..0x5bb2  (128 bytes)
+DATA_velocidades_de_las_particulas:
+	defb 0ffh,000h	; 5b32
+	defb 0ffh,000h	; 5b34
+	defb 0ffh,000h	; 5b36
+	defb 0ffh,000h	; 5b38
+	defb 0ffh,000h	; 5b3a
+	defb 0ffh,000h	; 5b3c
+	defb 0ffh,000h	; 5b3e
+	defb 0ffh,000h	; 5b40
+	defb 0ffh,000h	; 5b42
+	defb 0ffh,000h	; 5b44
+	defb 0ffh,000h	; 5b46
+	defb 0ffh,000h	; 5b48
+	defb 0ffh,000h	; 5b4a
+	defb 0ffh,000h	; 5b4c
+	defb 0ffh,000h	; 5b4e
+	defb 0ffh,000h	; 5b50
+	defb 0ffh,000h	; 5b52
+	defb 0ffh,000h	; 5b54
+	defb 0ffh,000h	; 5b56
+	defb 0ffh,000h	; 5b58
+	defb 0ffh,000h	; 5b5a
+	defb 0ffh,000h	; 5b5c
+	defb 0ffh,000h	; 5b5e
+	defb 0ffh,000h	; 5b60
+	defb 0ffh,000h	; 5b62
+	defb 0ffh,000h	; 5b64
+	defb 0ffh,000h	; 5b66
+	defb 0ffh,000h	; 5b68
+	defb 0ffh,000h	; 5b6a
+	defb 0ffh,000h	; 5b6c
+	defb 0ffh,000h	; 5b6e
+	defb 0ffh,000h	; 5b70
+	defb 0ffh,000h	; 5b72
+	defb 0ffh,000h	; 5b74
+	defb 0ffh,000h	; 5b76
+	defb 0ffh,000h	; 5b78
+	defb 0ffh,000h	; 5b7a
+	defb 0ffh,000h	; 5b7c
+	defb 0ffh,000h	; 5b7e
+	defb 008h,0ffh	; 5b80
+	defb 000h,0ffh	; 5b82
+	defb 000h,0ffh	; 5b84
+	defb 000h,0ffh	; 5b86
+	defb 000h,0ffh	; 5b88
+	defb 000h,0ffh	; 5b8a
+	defb 000h,0ffh	; 5b8c
+	defb 000h,0ffh	; 5b8e
+	defb 000h,0ffh	; 5b90
+	defb 000h,0ffh	; 5b92
+	defb 000h,0ffh	; 5b94
+	defb 000h,0ffh	; 5b96
+	defb 000h,0ffh	; 5b98
+	defb 000h,0ffh	; 5b9a
+	defb 000h,0ffh	; 5b9c
+	defb 000h,0ffh	; 5b9e
+	defb 000h,0ffh	; 5ba0
+	defb 000h,0ffh	; 5ba2
+	defb 000h,0ffh	; 5ba4
+	defb 000h,0ffh	; 5ba6
+	defb 000h,0ffh	; 5ba8
+	defb 000h,0ffh	; 5baa
+	defb 000h,0ffh	; 5bac
+	defb 000h,0ffh	; 5bae
+	defb 000h,0ffh	; 5bb0
+
+; ----------------------------------------------------------------------
+; DATOS posiciones_de_las_particulas: Las posiciones de esas mismas 64
+;   particulas (128 B): dos bytes cada una, con el mismo reparto.
+;   siembra_particulas las llena todas con la posicion de la nave (0xC5E3) y
+;   mueve_particulas aparca en 0xFF00 la que se sale del buffer. Cierran al
+;   byte con la tabla del mapa, que empieza en 0x5C32
+;   0x5bb2..0x5c32  (128 bytes)
+DATA_posiciones_de_las_particulas:
+	defb 000h,0ffh	; 5bb2
+	defb 000h,0ffh	; 5bb4
+	defb 000h,0ffh	; 5bb6
+	defb 000h,0ffh	; 5bb8
+	defb 000h,0ffh	; 5bba
+	defb 000h,0ffh	; 5bbc
+	defb 000h,0ffh	; 5bbe
+	defb 000h,0ffh	; 5bc0
+	defb 000h,0ffh	; 5bc2
+	defb 000h,0ffh	; 5bc4
+	defb 000h,0ffh	; 5bc6
+	defb 000h,0ffh	; 5bc8
+	defb 000h,0ffh	; 5bca
+	defb 000h,0ffh	; 5bcc
+	defb 000h,0ffh	; 5bce
+	defb 000h,0ffh	; 5bd0
+	defb 000h,0ffh	; 5bd2
+	defb 000h,0ffh	; 5bd4
+	defb 000h,0ffh	; 5bd6
+	defb 000h,0ffh	; 5bd8
+	defb 000h,0ffh	; 5bda
+	defb 000h,0ffh	; 5bdc
+	defb 000h,0ffh	; 5bde
+	defb 000h,0ffh	; 5be0
+	defb 000h,0ffh	; 5be2
+	defb 000h,0ffh	; 5be4
+	defb 000h,0ffh	; 5be6
+	defb 000h,0ffh	; 5be8
+	defb 000h,0ffh	; 5bea
+	defb 000h,0ffh	; 5bec
+	defb 000h,0ffh	; 5bee
+	defb 000h,0ffh	; 5bf0
+	defb 000h,0ffh	; 5bf2
+	defb 000h,0ffh	; 5bf4
+	defb 000h,0ffh	; 5bf6
+	defb 000h,0ffh	; 5bf8
+	defb 000h,0ffh	; 5bfa
+	defb 000h,0ffh	; 5bfc
+	defb 000h,0ffh	; 5bfe
+	defb 0ffh,000h	; 5c00
+	defb 0ffh,000h	; 5c02
+	defb 0ffh,000h	; 5c04
+	defb 0ffh,000h	; 5c06
+	defb 0ffh,000h	; 5c08
+	defb 0ffh,000h	; 5c0a
+	defb 0ffh,000h	; 5c0c
+	defb 0ffh,000h	; 5c0e
+	defb 0ffh,000h	; 5c10
+	defb 0ffh,000h	; 5c12
+	defb 0ffh,000h	; 5c14
+	defb 0ffh,000h	; 5c16
+	defb 0ffh,000h	; 5c18
+	defb 0ffh,000h	; 5c1a
+	defb 0ffh,000h	; 5c1c
+	defb 0ffh,000h	; 5c1e
+	defb 0ffh,000h	; 5c20
+	defb 0ffh,000h	; 5c22
+	defb 0ffh,000h	; 5c24
+	defb 0ffh,000h	; 5c26
+	defb 0ffh,000h	; 5c28
+	defb 0ffh,000h	; 5c2a
+	defb 0ffh,000h	; 5c2c
+	defb 0ffh,000h	; 5c2e
+	defb 0ffh,000h	; 5c30
 
 ; ----------------------------------------------------------------------
 ; DATOS area_de_trabajo_5C31: Area de trabajo, que en la cinta llega a ceros y
-;   por eso parecia relleno (972 B): los 510 primeros bytes son la tabla de 85
+;   por eso parecia relleno (971 B): los 510 primeros bytes son la tabla de 85
 ;   entradas de 6 que indexa 0xC464, y el arranque los limpia con el `ldir` de
-;   0xBDC2 (ver el bloque de abajo)
-;   0x5c31..0x5ffd  (972 bytes)
+;   0xBDC2 (ver el bloque de abajo). Empezaba declarada en 0x5C31, un byte
+;   antes: ese byte es el ultimo de las posiciones de las particulas, y la
+;   tabla de 85 entradas va de 0x5C32 a 0x5E2F
+;   0x5c32..0x5ffd  (971 bytes)
 DATA_area_de_trabajo_5C31:
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c31  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c41  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c51  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c61  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c71  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c81  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c91  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ca1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cb1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cc1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cd1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ce1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cf1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d01  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d11  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d21  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d31  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d41  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d51  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d61  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d71  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d81  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d91  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5da1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5db1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5dc1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5dd1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5de1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5df1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e01  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e11  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e21  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e31  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e41  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e51  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e61  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e71  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e81  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e91  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ea1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5eb1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ec1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ed1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ee1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ef1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f01  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f11  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f21  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f31  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f41  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f51  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f61  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f71  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f81  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f91  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fa1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fb1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fc1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fd1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fe1  ................
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ff1  ............
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c32  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c42  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c52  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c62  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c72  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c82  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5c92  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ca2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cb2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cc2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cd2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ce2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5cf2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d02  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d12  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d22  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d32  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d42  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d52  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d62  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d72  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d82  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5d92  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5da2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5db2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5dc2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5dd2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5de2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5df2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e02  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e12  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e22  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e32  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e42  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e52  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e62  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e72  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e82  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5e92  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ea2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5eb2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ec2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ed2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ee2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ef2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f02  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f12  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f22  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f32  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f42  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f52  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f62  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f72  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f82  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5f92  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fa2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fb2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fc2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fd2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5fe2  ................
+	defb 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h	; 5ff2  ...........
 
 ; ----------------------------------------------------------------------
 ; DATOS sin_identificar_5FFD: Tres bytes entre el bloque anterior y el
@@ -8862,16 +8995,16 @@ L_C5E0:
 	djnz L_C57E		;c5e0   ; Las ocho filas del glifo
 	ret			;c5e2
 siembra_particulas:		; Siembra las 64 particulas de la muerte de la nave, centradas en su posicion (0xC184); tablas 0x5B32/0x5BB2
-	ld de,05bb2h		;c5e3
-	ld b,040h		;c5e6
-	ex de,hl			;c5e8
+	ld de,05bb2h		;c5e3   ; Las 64 posiciones, todas sembradas con la misma: la de la nave, que llega en HL
+	ld b,040h		;c5e6   ; 64 particulas, dos bytes cada una
+	ex de,hl			;c5e8   ; El `ex de,hl` deja el destino en HL y la posicion en DE, que es lo que se va a repetir 64 veces
 L_C5E9:
 	ld (hl),e			;c5e9
 	inc hl			;c5ea
 	ld (hl),d			;c5eb
 	inc hl			;c5ec
 	djnz L_C5E9		;c5ed
-	call sonido_reset		;c5ef
+	call sonido_reset		;c5ef   ; Y detras, los tres guiones de la explosion, uno por canal, con sonido_off al final para que no se repitan
 	ld a,080h		;c5f2
 	ld de,0eb00h		;c5f4
 	call arranca_guion		;c5f7
@@ -8882,78 +9015,78 @@ L_C5E9:
 	ld de,0eb21h		;c603
 	call arranca_guion		;c606
 	jp sonido_off		;c609
-mueve_particulas:		; Mueve y pinta las 64 particulas CON GRAVEDAD (inc d cada cuadro): pixeles sueltos con or (hl) sobre el buffer; las que salen se aparcan en 0xFF00
-	ld hl,05bb2h		;c60c
-	ld iy,003e8h		;c60f
-	ld ix,05b32h		;c613
+mueve_particulas:		; Mueve y pinta las 64 particulas de la explosion de la nave CON GRAVEDAD: velocidades en 0x5B32 y posiciones en 0x5BB2, dos bytes cada una, las dos tablas seguidas y cerrando al byte en 0x5C32. Cada cuadro suma la velocidad a la posicion, le sube una fila a la velocidad y estampa cuatro filas con `or (hl)`; la que se sale del buffer se aparca en 0xFF00 y ya no vuelve. El dibujo NO es un pixel suelto: son los bits 2 a 5 de un byte de la ROM del BIOS leido con IY desde 0x03E8, uno por fila, o sea 256 bytes para las 64 particulas
+	ld hl,05bb2h		;c60c   ; Las posiciones...
+	ld iy,003e8h		;c60f   ; ...la tabla de entropia de la ROM del BIOS, de donde sale el dibujo de cada particula...
+	ld ix,05b32h		;c613   ; ...y las velocidades, que van en su propia tabla
 	ld b,040h		;c617
 L_C619:
-	push bc			;c619
+	push bc			;c619   ; El contador de las 64 y la entrada, a la pila
 	push hl			;c61a
-	ld e,(hl)			;c61b
+	ld e,(hl)			;c61b   ; La posicion guardada...
 	inc hl			;c61c
 	ld d,(hl)			;c61d
-	ld a,d			;c61e
+	ld a,d			;c61e   ; ...y 0xFF00 quiere decir aparcada: esa particula ya se salio y no se toca mas
 	inc a			;c61f
 	or e			;c620
 	jr z,L_C66D		;c621
-	dec d			;c623
+	dec d			;c623   ; Se le quita una fila a la posicion y se le suma una a la velocidad, y el efecto neto es que el paso que se aplica es el del cuadro ANTERIOR: la gravedad de este no cuenta hasta el siguiente
 	ex de,hl			;c624
 	ld e,(ix+000h)		;c625
 	ld d,(ix+001h)		;c628
 	inc d			;c62b
 	ld (ix+001h),d		;c62c
-	add hl,de			;c62f
-	ld a,h			;c630
+	add hl,de			;c62f   ; El paso
+	ld a,h			;c630   ; Pasada la fila 0xA0 -las 160 del buffer- se aparca
 	cp 0a0h		;c631
 	jr nc,L_C63A		;c633
-	ld a,l			;c635
+	ld a,l			;c635   ; Y pasada la columna 0xC0 -los 192 pixeles de ancho- tambien
 	cp 0c0h		;c636
 	jr c,L_C63D		;c638
 L_C63A:
 	ld hl,0ff00h		;c63a
 L_C63D:
 	ex de,hl			;c63d
-	pop hl			;c63e
+	pop hl			;c63e   ; La posicion nueva, de vuelta a la tabla
 	ld (hl),e			;c63f
 	inc hl			;c640
 	ld (hl),d			;c641
 	dec hl			;c642
 	push hl			;c643
 	ex de,hl			;c644
-	ld a,l			;c645
+	ld a,l			;c645   ; La columna entera se guarda antes de dividirla: los tres bits bajos son el pixel dentro del byte y el resto la columna en bytes
 	srl l		;c646
 	srl l		;c648
 	srl l		;c64a
 	and 007h		;c64c
 	ld b,a			;c64e
 	inc b			;c64f
-	call buffer_dir		;c650
-	xor a			;c653
+	call buffer_dir		;c650   ; La direccion en el buffer, ya con la columna en bytes
+	xor a			;c653   ; **Y AQUI SE TIRA EL TRABAJO**: estas cuatro instrucciones montan la mascara del pixel -un uno corrido a la derecha tantas veces como diga el bit-, y el `ld a,(iy+000h)` de 0xC65A la machaca sin haberla usado. Comprobado sobre el binario: entre el `djnz` y el `ld a` no hay nada. Asi que la particula no cae en su pixel: cae en su BYTE, y con el dibujo que le toque de la ROM
 	scf			;c654
 L_C655:
 	rra			;c655
 	djnz L_C655		;c656
-	ld b,004h		;c658
+	ld b,004h		;c658   ; Cuatro filas por particula
 L_C65A:
-	ld a,(iy+000h)		;c65a
+	ld a,(iy+000h)		;c65a   ; Un byte de la ROM del BIOS por fila, y el puntero avanza
 	inc iy		;c65d
-	and 03ch		;c65f
+	and 03ch		;c65f   ; Recortado a los bits 2-5, o sea que la particula sale como mucho de cuatro pixeles de ancho y centrada en su byte; con el byte que toque puede salir incluso vacia
 	or (hl)			;c661
 	ld (hl),a			;c662
 	and 018h		;c663
 	out (0feh),a		;c665   ; FOSIL DEL SPECTRUM: 0xFE es el puerto del borde del Spectrum; alli cada particula hacia parpadear el borde, en MSX este out no hace nada
-	ld de,00018h		;c667
+	ld de,00018h		;c667   ; La fila de abajo, 24 bytes mas alla
 	add hl,de			;c66a
 	djnz L_C65A		;c66b
 L_C66D:
-	pop hl			;c66d
+	pop hl			;c66d   ; La entrada siguiente: dos bytes en cada tabla
 	inc hl			;c66e
 	inc hl			;c66f
 	inc ix		;c670
 	inc ix		;c672
 	pop bc			;c674
-	djnz L_C619		;c675
+	djnz L_C619		;c675   ; Y las 64, una por una
 	ret			;c677
 baja_tile_especial:		; Da de baja una entrada de la tabla de tiles especiales: resta uno al contador, compacta con un `ldir` de (B-1)*8 bytes y retrocede IX ocho para que el recorrido no se salte la entrada que ocupa el hueco. El `dec b / ret z` de 0xC67F es lo que evita el `ldir` de 65536 bytes cuando la que se va es la ultima
 	ld a,(0ca92h)		;c678   ; Una entrada menos en la cuenta de tiles especiales
@@ -9043,13 +9176,13 @@ L_C6EE:
 	ld l,a			;c6f0
 	jp nc,L_C701		;c6f1
 	inc h			;c6f4
-	ld a,050h		;c6f5
+	ld a,050h		;c6f5   ; El anillo de 512 filas: hasta 0x50 es pantalla y se sigue...
 	cp h			;c6f7
 	jr nc,L_C701		;c6f8
-	ld a,06fh		;c6fa
+	ld a,06fh		;c6fa   ; ...de 0x51 a 0x6F se sigue tambien, que aun es anillo...
 	cp h			;c6fc
 	jr nc,L_C701		;c6fd
-	ld h,040h		;c6ff
+	ld h,040h		;c6ff   ; ...y de 0x70 en adelante se vuelve a 0x40, que es dar la vuelta
 L_C701:
 	inc de			;c701   ; La fila siguiente de la fuente
 	djnz L_C6DF		;c702
@@ -9088,7 +9221,7 @@ L_C72C:
 	jr c,L_C733		;c72f
 	ld (hl),04eh		;c731   ; Fila impar: 0x4E
 L_C733:
-	add hl,de			;c733
+	add hl,de			;c733   ; La fila de abajo, y con ella el anillo otra vez: hasta 0x50 se pinta, de 0x51 a 0x6F se SALTA la escritura -sigue dentro del anillo pero fuera de la pantalla- y de 0x70 en adelante se vuelve a 0x40
 	ld a,050h		;c734
 	cp h			;c736
 	jr nc,L_C740		;c737
@@ -9099,7 +9232,7 @@ L_C733:
 L_C740:
 	ld (hl),c			;c740   ; Fila par: 0x56
 L_C741:
-	add hl,de			;c741
+	add hl,de			;c741   ; Detras de la fila par, la misma comprobacion; aqui las dos salidas van al mismo sitio, asi que lo unico que decide es si hay que dar la vuelta
 	ld a,050h		;c742
 	cp h			;c744
 	jr nc,L_C74E		;c745
@@ -10260,50 +10393,50 @@ L_CF9C:
 	ld (0d3c5h),a		;cf9d
 	ret			;cfa0
 disparo_derriba_bandada:		; Mira si un disparo del jugador ha tocado al enemigo de IX -posicion en (ix+000/001), caja 4x0x0C-: lo pasa a explosion (0xFF/0x1D en (ix+002/003)), marca el disparo con 0x80, suena 0xEA52 y paga 130 puntos
-	ld l,(ix+000h)		;cfa1
+	ld l,(ix+000h)		;cfa1   ; La posicion del enemigo, con la columna en el +0 y la fila en el +1
 	ld h,(ix+001h)		;cfa4
-	ld iy,0c953h		;cfa7
-	ld de,0040ch		;cfab
-	ld bc,00202h		;cfae
+	ld iy,0c953h		;cfa7   ; Contra la tabla de disparos del jugador, entera
+	ld de,0040ch		;cfab   ; Las dos cajas, iguales en los dos ejes: 4 el disparo y 0x0C el bicho...
+	ld bc,00202h		;cfae   ; ...y BC corrige dos pixeles cada coordenada antes de comparar
 	call choca_con_tabla		;cfb1
-	ret c			;cfb4
-	xor a			;cfb5
+	ret c			;cfb4   ; Sin contacto, no hay nada mas que hacer
+	xor a			;cfb5   ; El sonido del derribo, en el canal 0
 	ld de,0ea52h		;cfb6
 	call arranca_guion_libre		;cfb9
-	ld (ix+002h),0ffh		;cfbc
+	ld (ix+002h),0ffh		;cfbc   ; El bicho pasa a explotar: 0xFF en el rumbo lo deja quieto y el 0x1D arranca los cuatro dibujos
 	ld (ix+003h),01dh		;cfc0
-	ld (iy+002h),080h		;cfc4
-	ld hl,0dd84h		;cfc8
+	ld (iy+002h),080h		;cfc4   ; Y el disparo que acerto se marca con 0x80, que es como mueve_tabla sabe que hay que darlo de baja
+	ld hl,0dd84h		;cfc8   ; 0xDD84 es el digito de las DECENAS del marcador, y B trae 13: son 130 puntos
 	ld b,00dh		;cfcb
 	call premia		;cfcd
 	ret			;cfd0
 choca_con_tabla:		; Busca contacto entre HL y toda una tabla de objetos: IY apunta a la primera entrada y (iy-1) es el contador, entradas de 4 B, dos solapa_eje por objeto. Vuelve con carry si no choco con ninguno, y si choco deja IY en el culpable
-	exx			;cfd1
-	ld a,(iy-001h)		;cfd2
+	exx			;cfd1   ; El juego alterno guarda el contador de vueltas, porque HL hace falta entero para la posicion
+	ld a,(iy-001h)		;cfd2   ; El contador vive delante de la tabla, como en todas las de este juego
 	and a			;cfd5
-	scf			;cfd6
+	scf			;cfd6   ; Tabla vacia: se vuelve con acarreo, que aqui significa "no toca nada"
 	ret z			;cfd7
 	ld b,a			;cfd8
 L_CFD9:
 	exx			;cfd9
 	push hl			;cfda
-	ld h,(iy+000h)		;cfdb
+	ld h,(iy+000h)		;cfdb   ; Primero el eje horizontal: L es la X propia y H se pisa con la del candidato
 	call solapa_eje		;cfde
 	pop hl			;cfe1
-	jr c,L_CFEE		;cfe2
+	jr c,L_CFEE		;cfe2   ; Si en un eje no se solapan, ya no hace falta mirar el otro
 	push hl			;cfe4
-	ld l,h			;cfe5
+	ld l,h			;cfe5   ; Y ahora el vertical, con la Y propia bajada a L y la del candidato en H
 	ld h,(iy+001h)		;cfe6
 	call solapa_eje		;cfe9
 	pop hl			;cfec
-	ret nc			;cfed
+	ret nc			;cfed   ; Solapan los dos ejes: contacto, y se sale SIN acarreo con IY apuntando al culpable
 L_CFEE:
 	exx			;cfee
-	ld de,00004h		;cfef
+	ld de,00004h		;cfef   ; Cuatro bytes por ficha, que es la anchura de las dos tablas de disparos
 	add iy,de		;cff2
 	djnz L_CFD9		;cff4
 	exx			;cff6
-	scf			;cff7
+	scf			;cff7   ; Recorrida entera sin tocar nada
 	ret			;cff8
 choca_y_revienta:		; Contacto del objeto de IX contra la tabla de 0xC953: al chocar marca al otro con el 0x80 de la explosion, suena 0xEA52, mete al de IX en el estado 0xD933, escribe 0x0C por el puntero de (ix+005/006), se salta la vuelta con `pop hl` y premia 160 puntos
 	ld a,(ix+000h)		;cff9   ; La columna de la celda, ocho pixeles por unidad...
@@ -10671,23 +10804,23 @@ L_D2A0:
 	ld (0d3c2h),a		;d2b2
 	ret			;d2b5
 impacto_simple:		; Gasta un punto de escudo, y si ya estaba a cero manda a mata_nave
-	ld a,(0c188h)		;d2b6
+	ld a,(0c188h)		;d2b6   ; El escudo que le queda al jugador
 	and a			;d2b9
-	jr z,mata_nave		;d2ba
+	jr z,mata_nave		;d2ba   ; Ya estaba a cero: este impacto lo mata
 	dec a			;d2bc
 	ld (0c188h),a		;d2bd
 	jr L_D2CF		;d2c0
 impacto_doble:		; Gasta dos puntos de escudo, comprobando entre uno y otro si el primero ya bastaba para matar
-	ld a,(0c188h)		;d2c2
+	ld a,(0c188h)		;d2c2   ; El impacto doble baja dos, pero mira entre uno y otro...
 	and a			;d2c5
 	jr z,mata_nave		;d2c6
 	dec a			;d2c8
-	jr z,mata_nave		;d2c9
+	jr z,mata_nave		;d2c9   ; ...porque con uno solo de escudo el primero ya basta y no hay que gastar el segundo
 	dec a			;d2cb
 	ld (0c188h),a		;d2cc
 L_D2CF:
-	ld hl,06f50h		;d2cf
-	xor 003h		;d2d2
+	ld hl,06f50h		;d2cf   ; El indicador se repinta borrando celdas desde arriba: 0x6F50, 0x6F48 y 0x6F40
+	xor 003h		;d2d2   ; A trae el escudo que QUEDA, y el `xor 003h` lo vuelve del reves: cuantos puntos se han perdido, que son las celdas que hay que borrar
 	call borra_celda		;d2d4
 	dec a			;d2d7
 	ret z			;d2d8
@@ -11923,7 +12056,7 @@ DATA_textos_del_juego_DE9A:
 ; ======================================================================
 
 
-mueve_disparos:		; Recorre los disparos de 0xC999 (contador en 0xC998, dos como maximo): los mueve, y al cruzar el borde del piso -Y+10 contra 0x7C- los pinta ya como impacto, con el sprite base 0x69
+mueve_disparos:		; Recorre los tiros que persiguen de 0xC999 (contador en 0xC998, dos como maximo, fichas de 5 bytes). El +0 hace DOS papeles: mientras el tiro vuela es su VELOCIDAD horizontal -entre -5 y +5, asi que sumarle 10 no lo acerca a 0x7C ni de lejos-, y desde que 0xDFA2 le escribe un 0x7C es el contador de la EXPLOSION, que el `sub 069h` de 0xDF36 traduce a los sprites 0x1D a 0x20. La posicion va en el +2/+3 -es lo que 0xDF5C/0xDF62 devuelven de persigue_con_velocidad- y el contador de dibujo en el +4. (Estuvo publicado como "al cruzar el borde del piso, Y+10 contra 0x7C": el byte comparado no es una Y, y el mismo error se corrigio en la rutina gemela de la segunda parte)
 	ld ix,0c999h		;df0f
 	ld a,(0c998h)		;df13
 	and a			;df16
@@ -11931,19 +12064,19 @@ mueve_disparos:		; Recorre los disparos de 0xC999 (contador en 0xC998, dos como 
 	ld b,a			;df18
 L_DF19:
 	push bc			;df19
-	ld c,(ix+000h)		;df1a
+	ld c,(ix+000h)		;df1a   ; La velocidad en BC y la posicion en DE, que es como los quiere persigue_con_velocidad
 	ld b,(ix+001h)		;df1d
 	ld e,(ix+002h)		;df20
 	ld d,(ix+003h)		;df23
 	ld hl,(0c184h)		;df26
-	ld a,c			;df29
+	ld a,c			;df29   ; El +0 no es una coordenada: mientras el tiro vuela es su velocidad horizontal, entre -5 y +5
 	add a,00ah		;df2a
-	cp 07ch		;df2c
+	cp 07ch		;df2c   ; Y por eso el 0x7C reparte: por debajo el tiro vuela, y de ahi para arriba esta explotando. Ese 0x7C se lo escribe 0xDFA2 al alcanzar al jugador
 	jr c,L_DF48		;df2e
 	ex de,hl			;df30
-	ld bc,00404h		;df31
+	ld bc,00404h		;df31   ; La posicion, corrida cuatro y cuatro para centrar el dibujo de la explosion, que es mas ancho que el tiro
 	sbc hl,bc		;df34
-	sub 069h		;df36
+	sub 069h		;df36   ; Y de ahi salen los cuatro cuadros: 0x7C + 10 - 0x69 es 0x1D, y el `cp 080h` de 0xDF41 corta en el 0x20
 	call pinta_sprite		;df38
 	inc (ix+000h)		;df3b
 	ld a,(ix+000h)		;df3e
@@ -13943,25 +14076,25 @@ L_F432:
 	inc ix		;f440
 	jp hud_imprime		;f442   ; `jp` en vez de `call`: se llama a si misma sin gastar pila, que es un bucle con otro nombre
 redefine_teclas:		; La pantalla de REDEFINIR TECLAS: limpia el buffer, marca como libres los nombres de tecla quitandoles el bit 7, fuerza teclado en 0xDCC3 y da ocho vueltas rotulando desde 0xDB68, con siete llamadas intercaladas que rellenan las siete entradas de la tabla de 0xDCB1
-	call borra_buffer		;f445
+	call borra_buffer		;f445   ; La pantalla de redefinir teclas empieza limpia...
 	call vuelca_pantalla		;f448
-	xor a			;f44b
+	xor a			;f44b   ; ...y forzando teclado, que aqui el joystick no vale
 	ld (0dcc3h),a		;f44c
-	ld hl,0dc09h		;f44f
+	ld hl,0dc09h		;f44f   ; A los 72 nombres de tecla -nueve filas de ocho- se les quita el bit 7, que es la marca de "ya usada": se sueltan todas
 	ld b,048h		;f452
 L_F454:
-	res 7,(hl)		;f454
+	res 7,(hl)		;f454   ; Un nombre por vuelta
 	inc hl			;f456
 	djnz L_F454		;f457
-	ld c,008h		;f459
+	ld c,008h		;f459   ; Ocho vueltas: el titulo y las siete teclas
 	ld ix,0db68h		;f45b
-	ld iy,0dcb1h		;f45f
+	ld iy,0dcb1h		;f45f   ; IY recorre las siete entradas de 0xDCB1, dos bytes cada una
 	ld hl,00120h		;f463
 L_F466:
 	push bc			;f466
-	call rotula_secuencia		;f467
+	call rotula_secuencia		;f467   ; Cada vuelta rotula su trozo de texto...
 	pop bc			;f46a
-	dec c			;f46b
+	dec c			;f46b   ; ...y las siete primeras piden ademas una tecla
 	jr nz,redefine_tecla		;f46c
 	ld b,c			;f46e   ; C acaba de llegar a cero, asi que BC queda a cero y el retardo de abajo da la vuelta completa
 espera_vuelta_entera:		; Retardo puro: entra con BC a cero, asi que el `dec bc` da la vuelta entera y son 65536 vueltas. Ojo, no es la pausa_larga de 0xF7B8, que es la del error de carga
@@ -13978,7 +14111,7 @@ L_F478:
 	in a,(0a9h)		;f47b   ; ...y sus ocho teclas leidas del 0xA9, con la logica al reves: el bit a CERO es la tecla pulsada
 	ld b,008h		;f47d
 L_F47F:
-	rrca			;f47f
+	rrca			;f47f   ; Se rota hasta que salga un cero: ese es el bit de la tecla, y E lleva fila*8 + bit
 	ret nc			;f480   ; De ahi el `ret nc`: en cuanto sale un bit a cero se vuelve, con E en el indice de esa tecla y B en lo que le faltaba al bucle
 	inc e			;f481
 	djnz L_F47F		;f482
@@ -13988,11 +14121,11 @@ L_F47F:
 	jr z,lee_tecla_pulsada		;f488
 	jr L_F478		;f48a
 redefine_tecla:		; Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001), y saca su nombre de 0xDC09
-	call lee_tecla_pulsada		;f48c
+	call lee_tecla_pulsada		;f48c   ; Se espera a que pulsen
 	xor a			;f48f   ; El bit pulsado, hecho mascara: un 1 por el acarreo que baja B posiciones a golpe de `rra`
 	scf			;f490
 L_F491:
-	rra			;f491
+	rra			;f491   ; De numero de bit a MASCARA: el `scf` mete un uno y las vueltas del `djnz` lo colocan
 	djnz L_F491		;f492
 	ld (iy+000h),a		;f494   ; La mascara del bit en el primer byte de la entrada...
 	inc iy		;f497
@@ -14011,7 +14144,7 @@ L_F491:
 	jr redefine_tecla		;f4ae
 L_F4B0:
 	set 7,(hl)		;f4b0   ; Y aqui se marca como cogida, para que no valga dos veces
-	push ix		;f4b2
+	push ix		;f4b2   ; El hueco del rotulo, seis espacios
 	pop hl			;f4b4
 	ld b,006h		;f4b5
 L_F4B7:
@@ -14024,7 +14157,7 @@ L_F4B7:
 	pop hl			;f4c3
 	jr L_F466		;f4c4
 L_F4C6:
-	ld b,a			;f4c6
+	ld b,a			;f4c6   ; Los nombres largos hay que buscarlos en la lista de 0xDC52, contando ceros
 	ld hl,0dc52h		;f4c7   ; Las palabras viven en 0xDC52, una detras de otra y terminadas en cero...
 	jr L_F4D2		;f4ca
 L_F4CC:
@@ -14050,7 +14183,7 @@ L_F4E1:
 rotula_secuencia:		; Recorre la cadena de (IX) hasta el 0 pasandole cada byte a rotulador_cmd, tras dejar el sonido en su sitio
 	call sonido_reset		;f4e4   ; Antes de rotular, el sonido a su sitio...
 L_F4E7:
-	ld a,(ix+000h)		;f4e7
+	ld a,(ix+000h)		;f4e7   ; Y el texto se va pasando caracter a caracter al impresor del marco
 	inc ix		;f4ea
 	and a			;f4ec
 	jr z,sonido_reset		;f4ed   ; ...y al acabar la cadena, otra vez: el `jr z` a sonido_reset es la vuelta de la rutina
@@ -14073,7 +14206,7 @@ sonido_reset:		; Reabre el sonido reponiendo el `di` (0xF3) que sonido_off macha
 	ld a,0f3h		;f50e   ; 0xF3 es el codigo del `di`: sonido_reset lo REPONE en dos sitios que sonido_off habia machacado, o sea que este sonido se apaga a base de tocarse el propio codigo
 	ld (0e1bch),a		;f510
 	ld (0e18fh),a		;f513
-	xor a			;f516
+	xor a			;f516   ; Los tres canales, arrancados con un guion NULO: quedan a cero y callados
 	ld de,00000h		;f517   ; Guion nulo, direccion cero: los tres canales se quedan callados pero vivos
 	push hl			;f51a
 	call arranca_guion		;f51b
@@ -14109,7 +14242,7 @@ L_F53A:
 	ld a,l			;f54b
 	and 038h		;f54c
 	ld l,a			;f54e
-	ld a,(ix+000h)		;f54f
+	ld a,(ix+000h)		;f54f   ; ...para sumarle la columna que trae el propio texto, por 0x40, que es lo que ocupa una columna
 	inc ix		;f552
 	push hl			;f554
 	ld l,a			;f555
@@ -14139,7 +14272,7 @@ L_F574:
 	cp 038h		;f57c   ; Si la fila era la ultima del tercio (la septima), hay que cambiar de tercio...
 	jr nz,L_F588		;f57e
 	ld a,h			;f580   ; ...que es H mas 8, y el 9 lleva ademas la columna 4, donde empieza el texto
-	add a,009h		;f581
+	add a,009h		;f581   ; ...se salta al tercio siguiente, que es 0x800, mas 0x100 de las cuatro columnas del margen
 	ld h,a			;f583
 	ld l,000h		;f584
 	jr L_F58C		;f586
@@ -14165,7 +14298,7 @@ L_F591:
 	ret			;f5a8
 L_F5A9:
 	push hl			;f5a9
-	ld l,a			;f5aa
+	ld l,a			;f5aa   ; El glifo del caracter, en 0x5F00 + caracter*8
 	ld h,000h		;f5ab
 	add hl,hl			;f5ad   ; El indice por ocho, que es lo que mide un glifo...
 	add hl,hl			;f5ae
@@ -14190,7 +14323,7 @@ pinta_cursor:		; Deja el cursor -siete filas de 0x7F- en la celda donde toca esc
 	call vram_pon_dir		;f5c8
 	ld b,007h		;f5cb
 L_F5CD:
-	ld a,07fh		;f5cd
+	ld a,07fh		;f5cd   ; Siete filas de 0x7F otra vez, que es como se repinta el cursor
 	out (098h),a		;f5cf
 	and a			;f5d1
 	and a			;f5d2
@@ -14673,7 +14806,7 @@ carga_vuelta:		; El final de la carga, y la direccion que carga_cinta se empuja 
 	out (099h),a		;f8ab
 	ret			;f8ad
 dir_vram_de_fila_columna:		; De la fila de pixel D y la columna de caracter E a la direccion de VRAM: tercio*0x800 + columna*0x40 + fila dentro del tercio, el orden por columnas que impone la tabla de nombres heredada de la pantalla de carga. Identica byte a byte a la de la fase de a pie
-	ld l,000h		;f8ae
+	ld l,000h		;f8ae   ; La columna se parte en dos: los bits 2-4 al byte alto y los 0-1 arriba del bajo
 	ld a,e			;f8b0
 	rra			;f8b1
 	rr l		;f8b2
@@ -14681,11 +14814,11 @@ dir_vram_de_fila_columna:		; De la fila de pixel D y la columna de caracter E a 
 	rr l		;f8b5
 	and 007h		;f8b7
 	ld h,a			;f8b9
-	ld a,d			;f8ba
+	ld a,d			;f8ba   ; La fila dentro del tercio, seis bits, al byte bajo
 	and 03fh		;f8bb
 	or l			;f8bd
 	ld l,a			;f8be
-	ld a,d			;f8bf
+	ld a,d			;f8bf   ; Y el tercio, que son los bits 6-7 de la fila, a los bits 3-4 del alto
 	rra			;f8c0
 	rra			;f8c1
 	rra			;f8c2
