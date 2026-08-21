@@ -658,7 +658,7 @@ L 0xC066 nave_estado El despachador de 0xC188, que es ESCUDO y agonia en la mism
 #     f015: call 0000h    <- se rellena con HL
 #     f018: call 0000h    <- se rellena con DE
 #
-# En la cinta esos dos operandos son 00 00, asi que el listado en frio enseña
+# En la cinta esos dos operandos son 00 00, asi que el listado en frio ensena
 # `call 0000h` con un comentario de la BIOS que no pinta nada. En marcha son
 # 0xF07B y 0xF02C, o al reves, segun el `ex de,hl` de 0xEFFB.
 #
@@ -760,7 +760,7 @@ C 0xBDD4 Rellena la tabla de las 48 estrellas (0xCB09) con alturas al azar menor
 #     0xBE98 pone 2 (el arranque de partida). Identico al par 0xA30B/0xA3CB de
 #     la fase de a pie, hasta en el orden.
 #   - Descuento en 0xBFF8: `ld a,(0e156h) / sub 001h / ld (0e156h),a /
-#     jp c,L_BDE2` — con acarreo, game over.
+#     jp c,L_BDE2` ? con acarreo, game over.
 #   - Vida extra por puntos en 0xD40F, con TOPE 9 (`cp 009h / ret nc / inc
 #     (hl)`), igual que el tope de 0xC45F a pie.
 #   - Y el descuento solo se dispara con `ld a,(0c188h) / cp 02dh / jr nc`
@@ -790,7 +790,7 @@ L 0xD3CF suma_puntos Suma al marcador de 0xDD80 en ASCII con acarreo decimal a m
 # no eran del logo: son de la TRANSICION DE LOS CREDITOS.
 #
 # La secuencia entera es el bucle de 0xEE92, cinco vueltas con la tabla de
-# 0xF1E7 —que cae dentro del bloque de creditos ya conocido, 0xF124-0xF2D0—:
+# 0xF1E7 ?que cae dentro del bloque de creditos ya conocido, 0xF124-0xF2D0?:
 #
 #   ld hl,00900h / call L_F4E4   pinta el cartel en el tercio CENTRAL
 #   ld b,0c8h / call retardo     (dos veces: la pausa para leerlo)
@@ -906,7 +906,7 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # --- CUANTOS SONIDOS HAY, Y COMO SE DISPARAN --------------------------------
 #
 # Recorriendo de 0xEA38 a 0xED74 salen VEINTIUN bloques: diecinueve acaban en
-# 0x8B (fin) y dos en 0x82 (bucle) — estos dos suenan en bucle hasta que algo
+# 0x8B (fin) y dos en 0x82 (bucle) ? estos dos suenan en bucle hasta que algo
 # los pare. Diecisiete son cortos, de 9 a 31 bytes: son los EFECTOS. Y dos son
 # largos, de 378 y 149 bytes (0xEB52 y 0xECCC): esas son las MUSICAS.
 #
@@ -1129,7 +1129,7 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # Y la musica de este juego se arranca UNA sola vez en esos 250 s, con
 # arranca_musica instalando las tres voces de golpe:
 #
-#     t=1047,56   canal 0 <- 0xEB52 · canal 1 <- 0xEC4A · canal 2 <- 0xECCB
+#     t=1047,56   canal 0 <- 0xEB52 ? canal 1 <- 0xEC4A ? canal 2 <- 0xECCB
 #
 # que es, medido en el hardware, exactamente lo que dice el listado de 0xE16F.
 
@@ -4576,3 +4576,138 @@ C 0xE0E3 0x33, 0x34, 0x35 y 0x36: uno por cuadro, sin la mitad de velocidad del 
 C 0xE0E8 Al 0x36 se corta y la celda vuelve al 0x32 en el mismo cuadro, o sea que el 0x36 no llega a dibujarse nunca
 C 0xE0EB Y la copia de la ficha con ella, que llevaba subiendo suelta desde 0xE0D2
 C 0xE0EE Cerrado el ciclo: a esperar la tirada de 16 del cuadro siguiente
+
+C 0xCE57 con B = 1 la ficha que se borra es la ultima: no hay nada que subir
+C 0xCE64 0xC998 es el final de la tabla: lo que va de aqui alli es lo que hay que subir cuatro bytes
+C 0xCF36 el perseguidor solo se mueve cuando 0xD3C5 dice que ya ha terminado de aparecer
+C 0xCF40 se apunta al centro de la nave, ocho pixeles de margen en los dos ejes
+C 0xCF4D el rumbo se calcula y luego se recorta a las direcciones que el bicho sabe seguir
+C 0xCF56 dos pixeles por cuadro en cada eje
+C 0xCF5D por debajo de la columna 0xA0 sigue; de ahi en adelante se queda donde estaba
+C 0xCF65 y ademas dispara: uno de cada 64 cuadros, mas o menos
+C 0xCF6F el disparo sale doce pixeles por delante, en los dos ejes
+C 0xCF7D el sprite 0x19 es el cuerpo del perseguidor
+
+C 0xD0BD la nave explotando no choca con nada
+C 0xD0C9 la caja de esta comprobacion es de 5 por 3 contra 0x16 por 0x0A: la mas ancha de las tres
+C 0xD0CF primero el eje de las filas y luego el de las columnas
+C 0xD164 la estela solo arranca si queda carga (iy+4) y no hay otra en marcha
+C 0xD174 una carga menos, y se repinta el indicador
+C 0xD17A tres cuadros de estela
+C 0xD182 la estela sale 0x18 filas por encima de la nave
+C 0xD189 con un suelo de 0x34: mas arriba no se dibuja
+C 0xD18F la fila entre dos y la columna entre cuatro: la estela va en la rejilla gruesa
+C 0xD19F si la columna cae justa en la rejilla, la mascara es 0x03C0; si no, 0x003C
+C 0xD1AF la estela se pinta durante tres cuadros y se va borrando sola
+C 0xD1C1 0x19 bytes de una fila del buffer a la siguiente
+C 0xD1E5 los dos bytes de la mascara se meten con `or`: la estela se suma a lo que ya hay
+C 0xD1F5 el bit 2 de (ix+7) es el impacto de hace tres cuadros
+C 0xD201 el objeto se convierte en el premio de 0xC190
+C 0xD20A 0x28 cuadros de premio en pantalla
+C 0xD216 y ademas puntua: dos veces la tabla de 0xDD83
+C 0xD21F el `sla` del historial de contactos corre los bits: el de arriba se pierde y entra un cero
+C 0xD22F la fila por dos: el objeto va en la rejilla gruesa y la nave en la fina
+C 0xD235 al chocar se apaga el escudo (0xD3C2)
+C 0xD2E6 el historial se recorre con el mismo `sla`
+C 0xD2F4 y aqui se mira el bit 2, el contacto de hace tres cuadros
+C 0xD303 matar la nave es poner 4 en 0xC188, que es el estado de explosion
+C 0xD383 el dibujo de la banda se sortea entre dos, el de 0xD3AD y el de 0xD3B5, y se pinta en ocho filas
+C 0xD394 el byte de la banda se aplica en dos pasos: primero se BORRA con la mascara (rotada y complementada) y luego se pinta con `or`
+
+C 0xC464 por seis: las entradas de la tabla de 0x5C32 son de seis bytes
+C 0xC46F por tres y luego por dos, que es por seis
+C 0xC5E9 dos bytes por vuelta: la palabra que se siembra en el buffer
+C 0xD9CA el tile parpadea uno de cada cuatro cuadros, y el parpadeo es un `xor 1` sobre su byte
+C 0xD9DB la nave explotando ya no choca
+C 0xD9E4 la fila del objeto por dos: va en la rejilla gruesa
+C 0xD9EA las cajas: 0x38 por 0x0C de alto y 4 por 2 de ancho
+C 0xDA03 y si se tocan, la nave muere
+C 0xDA06 el descompresor: 0xFF acaba, los valores positivos van tal cual y los negativos son un token
+C 0xDA0F la tabla de tokens de 0xDE18 se recorre saltando lo que diga cada cabecera
+C 0xDA20 y cada token se expande llamando otra vez al mismo descompresor
+C 0xDA2A los positivos se copian al destino y ya
+C 0xDA3D el tile 0x5D no hace nada hasta llegar a la fila 10
+C 0xDA43 y entonces se cambia a si mismo la rutina: pasa a esperar
+C 0xDA55 la zona esta despejada cuando no queda ninguna de las cuatro listas de bichos ni el perseguidor
+C 0xDA72 con la zona despejada, el tile se apaga
+C 0xDA7A y ademas la nave tiene que estar en la columna 0x58 y el contador en 8
+C 0xDA86 aqui se cambian dos rutinas del bucle de partida: la nave pasa a ser arrastrada y el escudo deja de pintarse
+C 0xDA9D el arrastre pinta la nave y, encima, el sprite 0x18
+C 0xDAB4 sube de dos en dos filas hasta 0xC8
+C 0xDABD y la fila de la nave se iguala a la del arrastre: la nave va detras
+
+C 0xE16F la musica del menu son tres guiones, uno por canal
+C 0xE5D4 un byte por vuelta al puerto 0xA0/0xA1: es el volcado al PSG registro a registro
+C 0xEE24 poner la direccion de VRAM para escribir: el bit 6 en el segundo byte
+C 0xEE26 el `in a,(0x99)` no lee nada util: es para dejar el VDP en su primer byte de direccion
+C 0xEE34 la presentacion: se limpia la pantalla y se enciende
+C 0xEE43 los colores a 0x71, blanco sobre negro
+C 0xEE57 la tabla de 0xF126 lleva los pasos de la animacion del logotipo
+C 0xEE62 un 0xFF cierra la lista y se pasa a los creditos
+C 0xEE71 una pausa corta entre paso y paso
+C 0xEECE dos filas de caracter por tercio, 0x100 bytes cada una
+C 0xEEDE y 0x100 mas para caer en la fila siguiente
+C 0xEEEA veinticuatro tiras de ocho bytes: el borde izquierdo del marco
+C 0xEEFE y otras veinticuatro de 0x18: el borde derecho
+C 0xEF49 la segunda mitad del marco: 24 tiras de ocho bytes
+C 0xEF5E y las ultimas 24, de 0x18 bytes
+C 0xEF6D la transicion de los creditos: la fila se rellena consigo misma con un `ldir` solapado
+C 0xEF7B se lee la tabla de nombres, se corre 0x20 casillas y se vuelve a escribir: el cartel sube una fila
+C 0xEF86 ocho veces, o sea ocho filas de subida
+C 0xEFBA el `add a,8` con el `jr nc` recorre los 32 valores de ocho en ocho, dando la vuelta: es un barrido, no una cuenta
+
+C 0xEFC6 el retardo es un bucle vacio de 0x1F4 vueltas, repetido B veces
+C 0xEFCA la cuenta pelada: ni mira teclado ni espera al VDP
+C 0xEFD3 la animacion del logotipo compara el paso nuevo con el anterior y elige estirar o borrar
+C 0xEFE6 con los dos iguales, la comparacion pasa al otro par de bytes
+C 0xEFF0 el orden se le da la vuelta: lo que crecia ahora se borra
+C 0xEFFD (ix+004) es cuantas filas hay que mover
+C 0xF000 y aqui se PARCHEAN las dos llamadas de 0xF015 y 0xF018: la animacion se escribe a si misma que rutina usar
+C 0xF00A la fila y la columna 8 dan la direccion de VRAM donde empieza el logotipo
+C 0xF02C el estirado: 0x20 menos la posicion, y dieciseis filas
+C 0xF05C al desplazamiento se le suma C, y de ahi sale si la fila ya esta llena
+C 0xF069 con B a cero se acabaron las dieciseis filas
+C 0xF07B el borrado: la fila se corre un byte a la derecha metiendo un cero por delante
+C 0xF0AE avanzar de fila son 0x10 bytes en el buffer, y ademas se cuenta en 0xF125
+C 0xF0BD el volcado: dieciseis columnas, cada una con sus filas
+C 0xF0CB un byte por vuelta al puerto 0x98, saltando 0x10 bytes cada vez: se vuelca por columnas y no por filas
+C 0xF0EB el `ex af,af'` guarda el valor mientras se pone la direccion
+C 0xF0FA y aqui se escribe
+C 0xF109 y aqui se lee
+C 0xF114 poner la direccion para leer: sin el bit 6
+
+C 0xF33E la direccion de VRAM se pone a mano, sin pasar por la BIOS
+C 0xF394 el premio de 0x12B0 puntos, sumado a la tabla de 0xDD80
+C 0xF6DD el bucle de espera del teclado: una cuenta vacia
+C 0xF6E6 el DEL: si no se ha escrito nada, no hay nada que borrar
+C 0xF726 se borra el buffer y se vuelca antes de encender
+C 0xF7BE otra cuenta vacia, la del retardo del cargador
+C 0xF7F6 EL CARGADOR DE CINTA, escrito a mano y sin BIOS
+C 0xF7FD el puerto 0xAB pone el motor del casete...
+C 0xF801 ...y el 0xA0 con 0x0E deja el registro 14 del PSG a la escucha
+C 0xF808 se busca la cabecera midiendo pulsos: los umbrales son 0x9C, 0xC6, 0xC9 y 0xD4
+C 0xF814 una cuenta larga de guarda antes de empezar a medir
+C 0xF820 el tren de pulsos largos de la cabecera
+C 0xF82F y el de los cortos, que es el que cierra
+C 0xF845 cada byte leido va al destino, y el bit de paridad se lleva en C
+C 0xF85F un bit por vuelta: se mide el pulso y se mete en L con `rl`
+C 0xF866 0xCB es el umbral que separa el cero del uno
+C 0xF874 al final se comprueba la paridad: tiene que dar 1
+C 0xF878 y aqui la espera entre bloque y bloque
+C 0xF882 el bucle de medida: se cuenta con B mientras el bit del puerto 0xA2 no cambie
+C 0xF887 el puerto 0xA2 es donde entra la senal del casete
+C 0xF89F y aqui se vuelve del cargador con las interrupciones otra vez abiertas
+C 0xEF92 y el resultado se devuelve a la VRAM
+C 0xEF9E una pausa corta entre fila y fila
+C 0xD3A0 0x18 bytes de una fila del buffer a la siguiente, con el acarreo al byte alto
+
+C 0xF0D6 y la fila siguiente del buffer
+C 0xDA5F las dos primeras listas de bichos
+C 0xDA68 y las otras dos
+C 0xE5DC el registro siguiente del PSG
+C 0xF837 0xD4 es el umbral del segundo tren
+C 0xF84D el bit leido se mete en C, que lleva la paridad
+C 0xF851 y C se corre para el bit siguiente
+C 0xD397 el `and (hl)` borra y el `or (hl)` de dos lineas mas abajo pinta
+C 0xF03B dieciseis `ldi` seguidos, sin bucle: media fila del logotipo de una tacada
+C 0xF043 la fila se copia entera de golpe, ocho `ldi` por cada mitad

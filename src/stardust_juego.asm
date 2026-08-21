@@ -8698,12 +8698,12 @@ L_C460:
 	djnz L_C452		;c461
 	ret			;c463
 entrada_tabla_5c32:		; IX = 0x5C32 + (iy+000)*6: la entrada de la tabla de 85 huecos de 6 bytes que el arranque limpia con el ldir de 0xBDC2
-	ld ix,05c32h		;c464
+	ld ix,05c32h		;c464   ; por seis: las entradas de la tabla de 0x5C32 son de seis bytes
 	ld l,(iy+000h)		;c468
 	ld h,000h		;c46b
 	ld d,h			;c46d
 	ld e,l			;c46e
-	add hl,hl			;c46f
+	add hl,hl			;c46f   ; por tres y luego por dos, que es por seis
 	add hl,de			;c470
 	add hl,hl			;c471
 	ex de,hl			;c472
@@ -8999,7 +8999,7 @@ siembra_particulas:		; Siembra las 64 particulas de la muerte de la nave, centra
 	ld b,040h		;c5e6   ; 64 particulas, dos bytes cada una
 	ex de,hl			;c5e8   ; El `ex de,hl` deja el destino en HL y la posicion en DE, que es lo que se va a repetir 64 veces
 L_C5E9:
-	ld (hl),e			;c5e9
+	ld (hl),e			;c5e9   ; dos bytes por vuelta: la palabra que se siembra en el buffer
 	inc hl			;c5ea
 	ld (hl),d			;c5eb
 	inc hl			;c5ec
@@ -10221,7 +10221,7 @@ L_CE51:
 	dec (hl)			;ce54
 	pop bc			;ce55
 	push bc			;ce56
-	ld a,b			;ce57
+	ld a,b			;ce57   ; con B = 1 la ficha que se borra es la ultima: no hay nada que subir
 	cp 001h		;ce58
 	jr z,L_CE4B		;ce5a
 	push ix		;ce5c
@@ -10231,7 +10231,7 @@ L_CE51:
 	inc de			;ce61
 	inc de			;ce62
 	inc de			;ce63
-	ld hl,0c998h		;ce64
+	ld hl,0c998h		;ce64   ; 0xC998 es el final de la tabla: lo que va de aqui alli es lo que hay que subir cuatro bytes
 	and a			;ce67
 	sbc hl,de		;ce68
 	ld b,h			;ce6a
@@ -10337,33 +10337,33 @@ pinta_pareja:		; Pinta el sprite B en HL y el B+1 en la posicion reflejada respe
 	ld e,a			;cf34
 	ret			;cf35
 mueve_perseguidor:		; Con el estado de 0xD3C5 en 1, apunta la posicion de 0xD3C7 hacia la nave con rumbo_hacia y la mueve de dos en dos
-	ld a,(0d3c5h)		;cf36
+	ld a,(0d3c5h)		;cf36   ; el perseguidor solo se mueve cuando 0xD3C5 dice que ya ha terminado de aparecer
 	cp 005h		;cf39
 	jr nc,L_CF85		;cf3b
 	cp 001h		;cf3d
 	ret nz			;cf3f
-	ld hl,(0d3c7h)		;cf40
+	ld hl,(0d3c7h)		;cf40   ; se apunta al centro de la nave, ocho pixeles de margen en los dos ejes
 	ld bc,00808h		;cf43
 	add hl,bc			;cf46
 	ld b,h			;cf47
 	ld c,l			;cf48
 	ld de,(0c184h)		;cf49
-	call rumbo_hacia		;cf4d
+	call rumbo_hacia		;cf4d   ; el rumbo se calcula y luego se recorta a las direcciones que el bicho sabe seguir
 	call rumbo_a_mascara2		;cf50
 	ld hl,(0d3c7h)		;cf53
-	ld bc,00202h		;cf56
+	ld bc,00202h		;cf56   ; dos pixeles por cuadro en cada eje
 	call aplica_rumbo		;cf59
 	ld a,l			;cf5c
-	cp 0a0h		;cf5d
+	cp 0a0h		;cf5d   ; por debajo de la columna 0xA0 sigue; de ahi en adelante se queda donde estaba
 	jr c,L_CF65		;cf5f
 	ld a,(0d3c7h)		;cf61
 	ld l,a			;cf64
 L_CF65:
-	ld (0d3c7h),hl		;cf65
+	ld (0d3c7h),hl		;cf65   ; y ademas dispara: uno de cada 64 cuadros, mas o menos
 	call azar		;cf68
 	and 03fh		;cf6b
 	jr nz,L_CF7D		;cf6d
-	ld bc,00c0ch		;cf6f
+	ld bc,00c0ch		;cf6f   ; el disparo sale doce pixeles por delante, en los dos ejes
 	add hl,bc			;cf72
 	ld b,h			;cf73
 	ld c,l			;cf74
@@ -10372,7 +10372,7 @@ L_CF65:
 	call alta_disparo		;cf77
 	ld hl,(0d3c7h)		;cf7a
 L_CF7D:
-	ld a,019h		;cf7d
+	ld a,019h		;cf7d   ; el sprite 0x19 es el cuerpo del perseguidor
 	call pinta_figura32		;cf7f
 	jp L_D25E		;cf82
 L_CF85:
@@ -10521,16 +10521,16 @@ choca_con_nave2:		; El otro contacto con la nave, con la caja pequena: solapa_ej
 	ld l,a			;d0b9
 	jp solapa_eje		;d0ba
 choca_con_nave3:		; La tercera caja de contacto con la nave, 5x3 contra 0x16x0A, y la unica que ademas se asegura antes de que la nave siga viva (0xC188 por debajo de 4)
-	ld a,(0c188h)		;d0bd
+	ld a,(0c188h)		;d0bd   ; la nave explotando no choca con nada
 	cp 004h		;d0c0
 	ccf			;d0c2
 	ret c			;d0c3
 	push hl			;d0c4
 	ld a,(0c185h)		;d0c5
 	ld l,a			;d0c8
-	ld bc,00503h		;d0c9
+	ld bc,00503h		;d0c9   ; la caja de esta comprobacion es de 5 por 3 contra 0x16 por 0x0A: la mas ancha de las tres
 	ld de,0160ah		;d0cc
-	call solapa_eje		;d0cf
+	call solapa_eje		;d0cf   ; primero el eje de las filas y luego el de las columnas
 	pop hl			;d0d2
 	ret c			;d0d3
 	ld h,l			;d0d4
@@ -10632,26 +10632,26 @@ recorta_x_objeto:		; Deshace el paso lateral del objeto de IX si se ha salido: c
 	ld l,(ix+000h)		;d160   ; Si se ha salido, se repone la columna que habia a la entrada, y el objeto se queda pegado al borde
 	ret			;d163
 arranca_estela:		; Si queda barra (0xD3C1) y la puerta de (iy+000)|(iy+005) esta a cero, gasta un punto, repinta la barra y lanza la estela de 0xD3BD desde la posicion de la nave, con vida 3 y paso 0x03C0 o 0x003C segun la columna. La llama dispara al terminar
-	ld iy,0d3bdh		;d164
+	ld iy,0d3bdh		;d164   ; la estela solo arranca si queda carga (iy+4) y no hay otra en marcha
 	ld a,(iy+004h)		;d168
 	and a			;d16b
 	ret z			;d16c
 	ld a,(iy+005h)		;d16d
 	or (iy+000h)		;d170
 	ret nz			;d173
-	dec (iy+004h)		;d174
+	dec (iy+004h)		;d174   ; una carga menos, y se repinta el indicador
 	call pinta_energia		;d177
-	ld (iy+000h),003h		;d17a
+	ld (iy+000h),003h		;d17a   ; tres cuadros de estela
 	ld hl,(0c184h)		;d17e
 	ld a,h			;d181
-	sub 018h		;d182
+	sub 018h		;d182   ; la estela sale 0x18 filas por encima de la nave
 	ld (iy+002h),a		;d184
 	sub 008h		;d187
-	cp 034h		;d189
+	cp 034h		;d189   ; con un suelo de 0x34: mas arriba no se dibuja
 	jr c,L_D18F		;d18b
 	ld a,034h		;d18d
 L_D18F:
-	rrca			;d18f
+	rrca			;d18f   ; la fila entre dos y la columna entre cuatro: la estela va en la rejilla gruesa
 	and 07fh		;d190
 	ld (iy+003h),a		;d192
 	ld a,l			;d195
@@ -10661,7 +10661,7 @@ L_D18F:
 	ld e,a			;d199
 	and 01fh		;d19a
 	ld (iy+001h),a		;d19c
-	cp e			;d19f
+	cp e			;d19f   ; si la columna cae justa en la rejilla, la mascara es 0x03C0; si no, 0x003C
 	ld hl,003c0h		;d1a0
 	jr z,L_D1A8		;d1a3
 	ld hl,0003ch		;d1a5
@@ -10670,14 +10670,14 @@ L_D1A8:
 	ld (iy+007h),l		;d1ab
 	ret			;d1ae
 traza_estela:		; Anima la estela del objeto de 0xD3BD en tres fotogramas segun la vida que le queda, y siempre en vertical sobre la misma columna: con vida 3 pinta (iy+003) puntos subiendo desde la base, con vida 2 pasa DOS veces por el nucleo y saca el trazo entero de 2*(iy+003), y con vida 1 sube primero (iy+003) filas SIN pintar -su bucle de 0xD1D3 no escribe en el buffer- y pinta solo la mitad alta. O sea que el chorro crece, llega entero y se despega por abajo. El 24 y el 25 no son "recta o diagonal": los dos valen una fila, y el 25 solo compensa el `inc hl` del segundo byte de cada punto
-	ld iy,0d3bdh		;d1af
+	ld iy,0d3bdh		;d1af   ; la estela se pinta durante tres cuadros y se va borrando sola
 	ld a,(iy+000h)		;d1b3
 	and a			;d1b6
 	ret z			;d1b7
 	ld l,(iy+001h)		;d1b8
 	ld h,(iy+002h)		;d1bb
 	call buffer_dir		;d1be
-	ld de,00019h		;d1c1
+	ld de,00019h		;d1c1   ; 0x19 bytes de una fila del buffer a la siguiente
 	ld a,(iy+000h)		;d1c4
 	dec (iy+000h)		;d1c7
 	cp 002h		;d1ca
@@ -10700,7 +10700,7 @@ L_D1DE:
 pinta_tramo_estela:		; El nucleo de traza_estela: pinta (iy+003) puntos de la estela subiendo por el buffer, dos bytes por punto -(iy+006) y (iy+007) con `or (hl)`- y restando DE=25 entre uno y otro. Como el `inc hl` del segundo byte suma 1 antes de la resta, el paso NETO es de 24, el ancho justo de la fila: cada punto cae en la misma columna una fila mas arriba, y la estela sale vertical. traza_estela entra aqui una vez con vida 3, DOS con vida 2 (la llama en 0xD1DB y ademas cae dentro tras el `cp 003h / ret nc` de 0xD1DF), y con vida 1 una sola vez pero despues de subir (iy+003) filas de 24 sin pintar nada
 	ld b,(iy+003h)		;d1e2
 L_D1E5:
-	ld a,(iy+006h)		;d1e5
+	ld a,(iy+006h)		;d1e5   ; los dos bytes de la mascara se meten con `or`: la estela se suma a lo que ya hay
 	or (hl)			;d1e8
 	ld (hl),a			;d1e9
 	inc hl			;d1ea
@@ -10711,34 +10711,34 @@ L_D1E5:
 	djnz L_D1E5		;d1f2
 	ret			;d1f4
 impacto_objeto:		; Si el objeto de IX esta marcado y 0xD3BD lo permite, lo pasa al estado 0xC190, le pone 0x28 en (ix+002), suena 0xEA52, descarta la vuelta con `pop hl` y premia 200 puntos. Si no, comprueba el contacto con la nave -y solo si la nave esta viva, 0xC188 por debajo de 4-
-	bit 2,(ix+007h)		;d1f5
+	bit 2,(ix+007h)		;d1f5   ; el bit 2 de (ix+7) es el impacto de hace tres cuadros
 	jr z,L_D21F		;d1f9
 	ld a,(0d3bdh)		;d1fb
 	dec a			;d1fe
 	jr nz,L_D21F		;d1ff
-	ld hl,0c190h		;d201
+	ld hl,0c190h		;d201   ; el objeto se convierte en el premio de 0xC190
 	ld (ix+003h),l		;d204
 	ld (ix+004h),h		;d207
-	ld (ix+002h),028h		;d20a
+	ld (ix+002h),028h		;d20a   ; 0x28 cuadros de premio en pantalla
 	xor a			;d20e
 	ld de,0ea52h		;d20f
 	call arranca_guion_libre		;d212
 	pop hl			;d215
-	ld hl,0dd83h		;d216
+	ld hl,0dd83h		;d216   ; y ademas puntua: dos veces la tabla de 0xDD83
 	ld b,002h		;d219
 	call premia		;d21b
 	ret			;d21e
 L_D21F:
-	ld a,(0c188h)		;d21f
+	ld a,(0c188h)		;d21f   ; el `sla` del historial de contactos corre los bits: el de arriba se pierde y entra un cero
 	sla (ix+007h)		;d222
 	cp 004h		;d226
 	ret nc			;d228
 	ld l,(ix+001h)		;d229
 	ld h,(ix+000h)		;d22c
-	sla h		;d22f
+	sla h		;d22f   ; la fila por dos: el objeto va en la rejilla gruesa y la nave en la fina
 	call choca_con_nave		;d231
 	ret c			;d234
-	set 0,(ix+007h)		;d235
+	set 0,(ix+007h)		;d235   ; al chocar se apaga el escudo (0xD3C2)
 	xor a			;d239
 	ld (0d3c2h),a		;d23a
 	ret			;d23d
@@ -10832,7 +10832,7 @@ L_D2CF:
 borra_celda:		; Escribe el valor 0x11 ocho veces en dos celdas de VRAM separadas 0x40, con el puerto en C para poder usar `out (c),b`
 	ld e,002h		;d2e4
 L_D2E6:
-	di			;d2e6
+	di			;d2e6   ; el historial se recorre con el mismo `sla`
 	ld c,099h		;d2e7
 	out (c),l		;d2e9
 	and a			;d2eb
@@ -10842,7 +10842,7 @@ L_D2E6:
 	ld b,011h		;d2f0
 	ld d,008h		;d2f2
 L_D2F4:
-	out (c),b		;d2f4
+	out (c),b		;d2f4   ; y aqui se mira el bit 2, el contacto de hace tres cuadros
 	and a			;d2f6
 	dec d			;d2f7
 	jr nz,L_D2F4		;d2f8
@@ -10853,7 +10853,7 @@ L_D2F4:
 	jr nz,L_D2E6		;d300
 	ret			;d302
 mata_nave:		; La unica puerta de la muerte: apaga las dos marcas del HUD y mete un 4 en 0xC188, que es lo que arranca la explosion. Diez sitios del listado acaban aqui
-	ld hl,02778h		;d303
+	ld hl,02778h		;d303   ; matar la nave es poner 4 en 0xC188, que es el estado de explosion
 	call pinta_marca_hud		;d306
 	ld hl,02f48h		;d309
 	ld a,004h		;d30c
@@ -10922,7 +10922,7 @@ L_D328:
 	ret c			;d37f
 	jp mata_nave		;d380   ; Se tocan por los dos ejes: muerto
 pinta_banda_ruido:		; La brocha de tile_46, y solo suya: pinta B columnas de un byte por 8 filas del buffer, y para CADA columna echa a suertes (`call azar / and 001h`) entre los dos patrones de 8 bytes de 0xD3AD y 0xD3B5, que son los dieciseis primeros de los 34 que figuraban en 0xD3AD como tabla sin dueno. Cada byte lo borra primero con el patron rotado y complementado (`ld a,(de) / rrca / cpl / and (hl)`) y lo pinta despues con `or (hl)`; entre fila y fila suma 24, el ancho del buffer, y entre columna y columna un `inc hl`
-	push bc			;d383
+	push bc			;d383   ; el dibujo de la banda se sortea entre dos, el de 0xD3AD y el de 0xD3B5, y se pinta en ocho filas
 	call azar		;d384
 	and 001h		;d387
 	ld de,0d3adh		;d389
@@ -10932,10 +10932,10 @@ L_D391:
 	ld b,008h		;d391
 	push hl			;d393
 L_D394:
-	ld a,(de)			;d394
+	ld a,(de)			;d394   ; el byte de la banda se aplica en dos pasos: primero se BORRA con la mascara (rotada y complementada) y luego se pinta con `or`
 	rrca			;d395
 	cpl			;d396
-	and (hl)			;d397
+	and (hl)			;d397   ; el `and (hl)` borra y el `or (hl)` de dos lineas mas abajo pinta
 	ld (hl),a			;d398
 	ld a,(de)			;d399
 	or (hl)			;d39a
@@ -10943,7 +10943,7 @@ L_D394:
 	ld a,l			;d39c
 	add a,018h		;d39d
 	ld l,a			;d39f
-	ld a,h			;d3a0
+	ld a,h			;d3a0   ; 0x18 bytes de una fila del buffer a la siguiente, con el acarreo al byte alto
 	adc a,000h		;d3a1
 	ld h,a			;d3a3
 	inc de			;d3a4
@@ -11789,7 +11789,7 @@ L_D9BF:
 	call premia		;d9c4
 	jp retira_instalacion		;d9c7   ; Y la instalacion se retira
 L_D9CA:
-	ld a,(0ca8eh)		;d9ca
+	ld a,(0ca8eh)		;d9ca   ; el tile parpadea uno de cada cuatro cuadros, y el parpadeo es un `xor 1` sobre su byte
 	and 003h		;d9cd
 	ret nz			;d9cf
 	ld l,(ix+005h)		;d9d0
@@ -11799,14 +11799,14 @@ L_D9CA:
 	ld (hl),a			;d9d9
 	ret			;d9da
 choca_con_nave4:		; La cuarta caja de contacto con la nave, y la unica alargada: 4x2 contra 0x38 x 0x0C en el primer eje y 7 contra 0x12 en el segundo
-	ld a,(0c188h)		;d9db
+	ld a,(0c188h)		;d9db   ; la nave explotando ya no choca
 	cp 004h		;d9de
 	ret nc			;d9e0
 	ld h,(ix+000h)		;d9e1
-	sla h		;d9e4
+	sla h		;d9e4   ; la fila del objeto por dos: va en la rejilla gruesa
 	ld a,(0c185h)		;d9e6
 	ld l,a			;d9e9
-	ld de,0380ch		;d9ea
+	ld de,0380ch		;d9ea   ; las cajas: 0x38 por 0x0C de alto y 4 por 2 de ancho
 	ld bc,00402h		;d9ed
 	call solapa_eje		;d9f0
 	ret c			;d9f3
@@ -11817,14 +11817,14 @@ choca_con_nave4:		; La cuarta caja de contacto con la nave, y la unica alargada:
 	ld b,007h		;d9fd
 	call solapa_eje		;d9ff
 	ret c			;da02
-	jp mata_nave		;da03
+	jp mata_nave		;da03   ; y si se tocan, la nave muere
 descomprime_token:		; Expande un token del mapa comprimido: si el bit 7 esta a cero es un literal, que escribe en (ix+000) y avanza IX; si esta a uno, sus siete bits bajos son el numero de frase del diccionario de 0xDE18, adonde llega saltando de frase en frase por el tamano que cada una lleva en su primer byte, y la expande LLAMANDOSE A SI MISMA una vez por cada token que contenga, de modo que una frase puede contener otras. El 0xFF cierra el flujo y se come la vuelta con el `pop hl` de 0xDA31
-	ld a,(hl)			;da06
+	ld a,(hl)			;da06   ; el descompresor: 0xFF acaba, los valores positivos van tal cual y los negativos son un token
 	cp 0ffh		;da07
 	jr z,L_DA31		;da09
 	jp p,L_DA2A		;da0b
 	push hl			;da0e
-	ld hl,0de18h		;da0f
+	ld hl,0de18h		;da0f   ; la tabla de tokens de 0xDE18 se recorre saltando lo que diga cada cabecera
 	ld d,000h		;da12
 	and 07fh		;da14
 	jr z,L_DA1D		;da16
@@ -11838,7 +11838,7 @@ L_DA1D:
 	dec b			;da1e
 	inc hl			;da1f
 L_DA20:
-	push bc			;da20
+	push bc			;da20   ; y cada token se expande llamando otra vez al mismo descompresor
 	call descomprime_token		;da21
 	pop bc			;da24
 	djnz L_DA20		;da25
@@ -11846,7 +11846,7 @@ L_DA20:
 	inc hl			;da28
 	ret			;da29
 L_DA2A:
-	ld (ix+000h),a		;da2a
+	ld (ix+000h),a		;da2a   ; los positivos se copian al destino y ya
 	inc ix		;da2d
 	inc hl			;da2f
 	ret			;da30
@@ -11859,10 +11859,10 @@ L_DA37:
 	call descomprime_token		;da37
 	jp L_DA37		;da3a
 tile_5D:		; La rutina de gobierno que el despachador de 0xC170 le da al tile 0x5D (`cp 05dh / ld de,0da3dh`), el que cierra la zona 7. Al decimo cuadro de vida -(ix+000), que recorre_tiles_especiales sube uno por cuadro, contra el `cp 00ah / ret c` de 0xDA40- CONGELA EL SCROLL poniendo 0xCB04 a cero, que es la puerta que mira repinta_fondo en 0xC42A antes de bajar una fila del mapa, levanta la bandera 0xDAC5 -que corta la aparicion de enemigos sueltos en 0xD420 y la creacion de tandas nuevas en 0xD82C- y se cambia a si misma la rutina de gobierno por la de 0xDA72
-	ld a,(ix+000h)		;da3d
+	ld a,(ix+000h)		;da3d   ; el tile 0x5D no hace nada hasta llegar a la fila 10
 	cp 00ah		;da40
 	ret c			;da42
-	xor a			;da43
+	xor a			;da43   ; y entonces se cambia a si mismo la rutina: pasa a esperar
 	ld (0cb04h),a		;da44
 	inc a			;da47
 	ld (0dac5h),a		;da48
@@ -11871,33 +11871,33 @@ tile_5D:		; La rutina de gobierno que el despachador de 0xC170 le da al tile 0x5
 	ld (ix+004h),h		;da51
 	ret			;da54
 zona_despejada:		; Vuelve con Z solo si no queda nada en pantalla: 0xCA91 en 0x80 y los cinco contadores de objetos -0xC98F, 0xC97A, 0xC939, 0xC998 y 0xD3C5- todos a cero, juntados con OR
-	ld a,(0ca91h)		;da55
+	ld a,(0ca91h)		;da55   ; la zona esta despejada cuando no queda ninguna de las cuatro listas de bichos ni el perseguidor
 	cp 080h		;da58
 	ret nz			;da5a
 	ld a,(0c98fh)		;da5b
 	ld e,a			;da5e
-	ld a,(0c97ah)		;da5f
+	ld a,(0c97ah)		;da5f   ; las dos primeras listas de bichos
 	or e			;da62
 	ret nz			;da63
 	ld a,(0c939h)		;da64
 	ld e,a			;da67
-	ld a,(0c998h)		;da68
+	ld a,(0c998h)		;da68   ; y las otras dos
 	or e			;da6b
 	ret nz			;da6c
 	ld a,(0d3c5h)		;da6d
 	or e			;da70
 	ret			;da71
 tile_5D_espera:		; El 0x5D esperando: cada cuadro repone (ix+000) a cero para no caducar nunca en el `cp 060h` de recorre_tiles_especiales, y no hace nada hasta que se dan tres condiciones a la vez -que zona_despejada diga que no queda nada, que la nave este en la columna 0x58 (la misma en la que la deja el arranque de zona con `ld hl,0a058h`) y que 0xC9A3 valga exactamente 8-. Cuando se cumplen, parchea el operando del `jp` de va_a_nave_estado (0xC064) para que el bucle principal llame a arrastra_nave en vez de a la nave, parchea el de pinta_escudo (0xD0DD) con el `ret` de 0xD959 para apagar el indicador -los dos mismos trampolines que hud_reset repone en 0xBE9F y 0xBEA8-, devuelve el scroll poniendo 0xCB04 = 8, siembra 0xC9A3 con 0x1F y se da de baja
-	call zona_despejada		;da72
+	call zona_despejada		;da72   ; con la zona despejada, el tile se apaga
 	ld (ix+000h),000h		;da75
 	ret nz			;da79
-	ld a,(0c184h)		;da7a
+	ld a,(0c184h)		;da7a   ; y ademas la nave tiene que estar en la columna 0x58 y el contador en 8
 	cp 058h		;da7d
 	ret nz			;da7f
 	ld a,(0c9a3h)		;da80
 	cp 008h		;da83
 	ret nz			;da85
-	ld hl,arrastra_nave		;da86
+	ld hl,arrastra_nave		;da86   ; aqui se cambian dos rutinas del bucle de partida: la nave pasa a ser arrastrada y el escudo deja de pintarse
 	ld (0c064h),hl		;da89
 	ld hl,ld959h		;da8c
 	ld (0d0ddh),hl		;da8f
@@ -11906,7 +11906,7 @@ tile_5D_espera:		; El 0x5D esperando: cada cuadro repone (ix+000) a cero para no
 	ld (0c9a3h),a		;da97
 	jp baja_tile_especial		;da9a
 arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zona 7: pinta el sprite 8 en la posicion de la nave (0xC184/85) y el sprite 0x18 en esa misma columna a la altura que marca 0xC9A3 -reutilizado como coordenada desde que tile_5D_espera lo puso a 0x1F-, y baja esa altura de dos en dos cuadro a cuadro hasta el tope de 0xC8. En cuanto alcanza a la nave (`cp h` contra la Y de 0xC185) le impone su propia fila, o sea que la arrastra hacia abajo y la saca de la banda de juego, que acaba en 0xB0. Los dos sprites NO son la misma clase de cosa, aunque caigan en el mismo tramo: el 8 es la nave del jugador quieta y mirando hacia arriba -gira_rumbo remata con `or 008h`, o sea que los reposos de los ocho rumbos son 0x08 a 0x0F, y el rumbo 0 es arriba-, y por eso el relevo es continuo, con tile_5D_espera exigiendo justamente 0xC9A3 == 8 antes de disparar la escena; el 0x18, en cambio, no es ningun fotograma de vuelo -la aritmetica de gira_rumbo no lo alcanza nunca- sino CUATRO BARRAS HORIZONTALES blancas con trama de ajedrez entre ellas, un haz rayado del ancho de la nave, y el unico sitio de todo el bloque que lo pinta es esta rutina. O sea que lo que baja es el HAZ y lo que se arrastra es la NAVE
-	ld hl,(0c184h)		;da9d
+	ld hl,(0c184h)		;da9d   ; el arrastre pinta la nave y, encima, el sprite 0x18
 	push hl			;daa0
 	ld a,008h		;daa1
 	call pinta_sprite		;daa3
@@ -11919,7 +11919,7 @@ arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zon
 	call pinta_sprite		;daaf
 	pop af			;dab2
 	pop hl			;dab3
-	cp 0c8h		;dab4
+	cp 0c8h		;dab4   ; sube de dos en dos filas hasta 0xC8
 	ret nc			;dab6
 	inc a			;dab7
 	inc a			;dab8
@@ -11927,7 +11927,7 @@ arrastra_nave:		; Lo que sustituye al gobierno de la nave en el cierre de la zon
 	jr c,L_DABD		;daba
 	ld h,a			;dabc
 L_DABD:
-	ld (0c9a3h),a		;dabd
+	ld (0c9a3h),a		;dabd   ; y la fila de la nave se iguala a la del arrastre: la nave va detras
 	ld a,h			;dac0
 	ld (0c185h),a		;dac1
 	ret			;dac4
@@ -12381,7 +12381,7 @@ interrupcion:		; El epilogo de la interrupcion, lo que el arranque engancha en H
 	ei			;e16d   ; Y la vuelta de la interrupcion sale de aqui, no de la ROM
 	ret			;e16e
 arranca_musica:		; Instala la musica de la partida de golpe: canal 0 <- 0xEB52, canal 1 <- 0xEC4A, canal 2 <- 0xECCB. Medido en el emulador, es exactamente lo que se ve arrancar (ver el bloque de la partitura)
-	ld a,080h		;e16f
+	ld a,080h		;e16f   ; la musica del menu son tres guiones, uno por canal
 	ld de,0eb52h		;e171
 	call arranca_guion		;e174
 	inc a			;e177
@@ -13013,13 +13013,13 @@ vuelca_psg:		; El volcado al chip, y el unico `out (0a1h),a` de sonido del bloqu
 	ld a,000h		;e5d0
 	ld d,00bh		;e5d2
 L_E5D4:
-	push af			;e5d4
+	push af			;e5d4   ; un byte por vuelta al puerto 0xA0/0xA1: es el volcado al PSG registro a registro
 	ld c,(hl)			;e5d5
 	out (0a0h),a		;e5d6
 	ld a,c			;e5d8
 	out (0a1h),a		;e5d9
 	pop af			;e5db
-	inc a			;e5dc
+	inc a			;e5dc   ; el registro siguiente del PSG
 	inc hl			;e5dd
 	dec d			;e5de
 	jr nz,L_E5D4		;e5df
@@ -13234,9 +13234,9 @@ DATA_variables_del_interprete:
 
 
 vram_pon_dir:		; Fija la direccion de ESCRITURA del VDP por el puerto 0x99, con el bit 0x40 puesto
-	di			;ee24
+	di			;ee24   ; poner la direccion de VRAM para escribir: el bit 6 en el segundo byte
 	push af			;ee25
-	in a,(099h)		;ee26
+	in a,(099h)		;ee26   ; el `in a,(0x99)` no lee nada util: es para dejar el VDP en su primer byte de direccion
 	ld a,l			;ee28
 	out (099h),a		;ee29
 	ld a,h			;ee2b
@@ -13246,13 +13246,13 @@ vram_pon_dir:		; Fija la direccion de ESCRITURA del VDP por el puerto 0x99, con 
 	pop af			;ee32
 	ret			;ee33
 presentacion:		; La presentacion, lo primero que hace el juego (call en 0xBDA6): borra los 6144 B de patrones, pone los de color a 0x71, enciende la pantalla y recorre los 96 pares de 0xF126 llamando a anima_logo, hasta el 0xFF de 0xF1E6; luego caen los creditos
-	ld b,032h		;ee34
+	ld b,032h		;ee34   ; la presentacion: se limpia la pantalla y se enciende
 	call retardo		;ee36
 	ld hl,00000h		;ee39
 	ld bc,01800h		;ee3c
 	xor a			;ee3f
 	call vram_rellena		;ee40
-	ld hl,02000h		;ee43
+	ld hl,02000h		;ee43   ; los colores a 0x71, blanco sobre negro
 	ld bc,01800h		;ee46
 	ld a,071h		;ee49
 	call vram_rellena		;ee4b
@@ -13261,12 +13261,12 @@ presentacion:		; La presentacion, lo primero que hace el juego (call en 0xBDA6):
 	and a			;ee52
 	ld a,081h		;ee53
 	out (099h),a		;ee55
-	ld ix,0f120h		;ee57
+	ld ix,0f120h		;ee57   ; la tabla de 0xF126 lleva los pasos de la animacion del logotipo
 	ld hl,0f126h		;ee5b
 	ld a,(hl)			;ee5e
 	ld (ix+001h),a		;ee5f
 L_EE62:
-	ld a,(hl)			;ee62
+	ld a,(hl)			;ee62   ; un 0xFF cierra la lista y se pasa a los creditos
 	cp 0ffh		;ee63
 	jr z,creditos		;ee65
 	ld (ix+000h),a		;ee67
@@ -13275,7 +13275,7 @@ L_EE62:
 	ld (ix+002h),a		;ee6c
 	inc hl			;ee6f
 	push hl			;ee70
-	ld b,001h		;ee71
+	ld b,001h		;ee71   ; una pausa corta entre paso y paso
 	call retardo		;ee73
 	call anima_logo		;ee76
 	pop hl			;ee79
@@ -13321,7 +13321,7 @@ L_EE92:
 L_EECC:
 	ld b,002h		;eecc
 L_EECE:
-	push bc			;eece
+	push bc			;eece   ; dos filas de caracter por tercio, 0x100 bytes cada una
 	ld bc,00100h		;eecf
 	ld a,011h		;eed2
 	call vram_rellena		;eed4
@@ -13329,14 +13329,14 @@ L_EECE:
 	add hl,bc			;eeda
 	pop bc			;eedb
 	djnz L_EECE		;eedc
-	ld de,00100h		;eede
+	ld de,00100h		;eede   ; y 0x100 mas para caer en la fila siguiente
 	add hl,de			;eee1
 	dec c			;eee2
 	jr nz,L_EECC		;eee3
 	ld hl,02100h		;eee5
 	ld e,018h		;eee8
 L_EEEA:
-	ld a,011h		;eeea
+	ld a,011h		;eeea   ; veinticuatro tiras de ocho bytes: el borde izquierdo del marco
 	ld bc,00008h		;eeec
 	call vram_rellena		;eeef
 	ld bc,00040h		;eef2
@@ -13346,7 +13346,7 @@ L_EEEA:
 	ld hl,03128h		;eef9
 	ld e,018h		;eefc
 L_EEFE:
-	ld a,011h		;eefe
+	ld a,011h		;eefe   ; y otras veinticuatro de 0x18: el borde derecho
 L_EF00:
 	ld bc,00018h		;ef00
 	call vram_rellena		;ef03
@@ -13391,7 +13391,7 @@ L_EF2D:
 	ld b,018h		;ef46
 	push hl			;ef48
 L_EF49:
-	push bc			;ef49
+	push bc			;ef49   ; la segunda mitad del marco: 24 tiras de ocho bytes
 	ld bc,00008h		;ef4a   ; ...de ocho bytes cada una...
 	call vram_escribe		;ef4d
 	ld bc,00040h		;ef50
@@ -13403,7 +13403,7 @@ L_EF49:
 	add hl,bc			;ef5b
 	ld b,018h		;ef5c
 L_EF5E:
-	push bc			;ef5e
+	push bc			;ef5e   ; y las ultimas 24, de 0x18 bytes
 	ld bc,00018h		;ef5f
 	call vram_escribe		;ef62
 	ld bc,00040h		;ef65
@@ -13412,26 +13412,26 @@ L_EF5E:
 	djnz L_EF5E		;ef6a
 	ret			;ef6c
 creditos_transicion:		; Despide el cartel deslizandolo hacia arriba, y lo hace moviendo la tabla de NOMBRES (256 bytes) en vez de los patrones (2048): ocho pasos de 0x20 = una fila. Al final borra los dibujos del tercio y reconstruye la tabla con el intercalado de a 8 de la pantalla de carga
-	ld hl,04100h		;ef6d
+	ld hl,04100h		;ef6d   ; la transicion de los creditos: la fila se rellena consigo misma con un `ldir` solapado
 	ld de,04101h		;ef70
 	ld bc,0001fh		;ef73
 	ldir		;ef76
 	ld de,04000h		;ef78
-	ld hl,01900h		;ef7b
+	ld hl,01900h		;ef7b   ; se lee la tabla de nombres, se corre 0x20 casillas y se vuelve a escribir: el cartel sube una fila
 	ld bc,00100h		;ef7e
 	call vram_lee		;ef81
 	ld a,008h		;ef84
 L_EF86:
-	ex af,af'			;ef86
+	ex af,af'			;ef86   ; ocho veces, o sea ocho filas de subida
 	ld de,04000h		;ef87
 	ld hl,04020h		;ef8a
 	ld bc,00100h		;ef8d
 	ldir		;ef90
-	ld hl,01900h		;ef92
+	ld hl,01900h		;ef92   ; y el resultado se devuelve a la VRAM
 	ld de,04000h		;ef95
 	ld bc,00100h		;ef98
 	call vram_escribe		;ef9b
-	ld b,00ah		;ef9e
+	ld b,00ah		;ef9e   ; una pausa corta entre fila y fila
 	call retardo		;efa0
 	ex af,af'			;efa3
 	dec a			;efa4
@@ -13445,7 +13445,7 @@ L_EF86:
 	ld c,098h		;efb7
 	xor a			;efb9
 L_EFBA:
-	out (c),a		;efba
+	out (c),a		;efba   ; el `add a,8` con el `jr nc` recorre los 32 valores de ocho en ocho, dando la vuelta: es un barrido, no una cuenta
 	add a,008h		;efbc
 	jr nc,L_EFBA		;efbe
 	inc a			;efc0
@@ -13453,10 +13453,10 @@ L_EFBA:
 	jr nz,L_EFBA		;efc3
 	ret			;efc5
 retardo:		; Espera activa: B vueltas de un bucle de 0x1F4
-	push bc			;efc6
+	push bc			;efc6   ; el retardo es un bucle vacio de 0x1F4 vueltas, repetido B veces
 	ld bc,001f4h		;efc7
 L_EFCA:
-	dec bc			;efca
+	dec bc			;efca   ; la cuenta pelada: ni mira teclado ni espera al VDP
 	ld a,b			;efcb
 	or c			;efcc
 	jr nz,L_EFCA		;efcd
@@ -13464,31 +13464,31 @@ L_EFCA:
 	djnz retardo		;efd0
 	ret			;efd2
 anima_logo:		; Un fotograma del logo sobre el estado de 0xF120: compara fila y altura con las del fotograma anterior, calcula en (ix+004) cuantas filas hay que borrar y SE PARCHEA los operandos de los dos `call` de 0xF015/0xF018 para dibujar antes de borrar si el logo sube, o al reves si baja
-	ld a,(ix+000h)		;efd3
+	ld a,(ix+000h)		;efd3   ; la animacion del logotipo compara el paso nuevo con el anterior y elige estirar o borrar
 	sub (ix+001h)		;efd6
 	ld de,logo_estira		;efd9
 	ld hl,logo_borra		;efdc
 	ld c,(ix+001h)		;efdf
 	jr c,L_EFF0		;efe2
 	jr nz,L_EFFD		;efe4
-	ld a,(ix+002h)		;efe6
+	ld a,(ix+002h)		;efe6   ; con los dos iguales, la comparacion pasa al otro par de bytes
 	cp (ix+003h)		;efe9
 	ld a,000h		;efec
 	jr nc,L_EFFD		;efee
 L_EFF0:
-	ld c,(ix+000h)		;eff0
+	ld c,(ix+000h)		;eff0   ; el orden se le da la vuelta: lo que crecia ahora se borra
 	neg		;eff3
 	sub (ix+002h)		;eff5
 	add a,(ix+003h)		;eff8
 	ex de,hl			;effb
 	inc a			;effc
 L_EFFD:
-	ld (ix+004h),a		;effd
-	ld (0f016h),hl		;f000
+	ld (ix+004h),a		;effd   ; (ix+004) es cuantas filas hay que mover
+	ld (0f016h),hl		;f000   ; y aqui se PARCHEAN las dos llamadas de 0xF015 y 0xF018: la animacion se escribe a si misma que rutina usar
 	ld (0f019h),de		;f003
 	ld d,c			;f007
 	ld e,008h		;f008
-	call dir_vram_de_fila_columna		;f00a
+	call dir_vram_de_fila_columna		;f00a   ; la fila y la columna 8 dan la direccion de VRAM donde empieza el logotipo
 	xor a			;f00d
 	ld (0f125h),a		;f00e
 	push hl			;f011
@@ -13503,7 +13503,7 @@ L_EFFD:
 	ld (ix+003h),a		;f028
 	ret			;f02b
 logo_estira:		; Estira el logo de 0x47A0 -16 filas de 16 B- sobre el montaje que apunta DE, repartiendolo en (ix+002) filas con un acumulador que arranca en 8: con altura 16 sale copia fila a fila, y con altura 1, dos filas
-	ld a,020h		;f02c
+	ld a,020h		;f02c   ; el estirado: 0x20 menos la posicion, y dieciseis filas
 	ld b,010h		;f02e
 	sub (ix+002h)		;f030
 	ld c,a			;f033
@@ -13512,11 +13512,11 @@ logo_estira:		; Estira el logo de 0x47A0 -16 filas de 16 B- sobre el montaje que
 	ld hl,047a0h		;f037
 L_F03A:
 	push de			;f03a
-	ldi		;f03b
+	ldi		;f03b   ; dieciseis `ldi` seguidos, sin bucle: media fila del logotipo de una tacada
 	ldi		;f03d
 	ldi		;f03f
 	ldi		;f041
-	ldi		;f043
+	ldi		;f043   ; la fila se copia entera de golpe, ocho `ldi` por cada mitad
 	ldi		;f045
 	ldi		;f047
 	ldi		;f049
@@ -13529,7 +13529,7 @@ L_F03A:
 	ldi		;f057
 	ldi		;f059
 	pop de			;f05b
-	add a,c			;f05c
+	add a,c			;f05c   ; al desplazamiento se le suma C, y de ahi sale si la fila ya esta llena
 	cp 010h		;f05d
 	jr nc,L_F069		;f05f
 	ex af,af'			;f061
@@ -13538,7 +13538,7 @@ L_F03A:
 	add a,010h		;f066
 	scf			;f068
 L_F069:
-	dec b			;f069
+	dec b			;f069   ; con B a cero se acabaron las dieciseis filas
 	jr z,L_F077		;f06a
 	and a			;f06c
 	sbc a,010h		;f06d
@@ -13552,7 +13552,7 @@ L_F077:
 	ret c			;f077
 	jp logo_avanza		;f078
 logo_borra:		; Pone a cero (ix+004) filas de 16 B desde DE, con `ld (hl),000h` y quince `ldi` desenrollados que arrastran el cero. Con (ix+004) a cero vuelve sin tocar nada
-	ld a,(ix+004h)		;f07b
+	ld a,(ix+004h)		;f07b   ; el borrado: la fila se corre un byte a la derecha metiendo un cero por delante
 	and a			;f07e
 	ret z			;f07f
 L_F080:
@@ -13582,7 +13582,7 @@ L_F080:
 	ret z			;f0ab
 	jr L_F080		;f0ac
 logo_avanza:		; Cierra una fila del montaje: suma 16 a DE y sube el contador de filas de (ix+005), que es lo que luego mira logo_vuelca
-	push hl			;f0ae
+	push hl			;f0ae   ; avanzar de fila son 0x10 bytes en el buffer, y ademas se cuenta en 0xF125
 	ld hl,00010h		;f0af
 	add hl,de			;f0b2
 	ex de,hl			;f0b3
@@ -13592,7 +13592,7 @@ logo_avanza:		; Cierra una fila del montaje: suma 16 a DE y sube el contador de 
 	ld (0f125h),a		;f0b9
 	ret			;f0bc
 logo_vuelca:		; Suelta el montaje de 0x4000 a la VRAM transponiendolo: 16 columnas y, en cada una, las filas que diga (ix+005), leyendo a saltos de 16 en la RAM y bajando por la VRAM
-	ld c,010h		;f0bd
+	ld c,010h		;f0bd   ; el volcado: dieciseis columnas, cada una con sus filas
 	ld de,04000h		;f0bf
 L_F0C2:
 	call vram_pon_dir		;f0c2
@@ -13601,7 +13601,7 @@ L_F0C2:
 	ld b,a			;f0c9
 	push hl			;f0ca
 L_F0CB:
-	ld a,(de)			;f0cb
+	ld a,(de)			;f0cb   ; un byte por vuelta al puerto 0x98, saltando 0x10 bytes cada vez: se vuelca por columnas y no por filas
 	out (098h),a		;f0cc
 	ld a,e			;f0ce
 	add a,010h		;f0cf
@@ -13609,7 +13609,7 @@ L_F0CB:
 	ld a,d			;f0d2
 	adc a,000h		;f0d3
 	ld d,a			;f0d5
-	call vram_avanza_fila		;f0d6
+	call vram_avanza_fila		;f0d6   ; y la fila siguiente del buffer
 	djnz L_F0CB		;f0d9
 	pop hl			;f0db
 	ld de,00040h		;f0dc
@@ -13624,7 +13624,7 @@ vram_rellena:		; Escribe BC veces el valor de A en VRAM desde HL
 	ex af,af'			;f0e7
 	call vram_pon_dir		;f0e8
 L_F0EB:
-	ex af,af'			;f0eb
+	ex af,af'			;f0eb   ; el `ex af,af'` guarda el valor mientras se pone la direccion
 	out (098h),a		;f0ec
 	ex af,af'			;f0ee
 	dec bc			;f0ef
@@ -13637,7 +13637,7 @@ L_F0EB:
 vram_escribe:		; Copia BC bytes de RAM (DE) a VRAM (HL) por el puerto 0x98
 	call vram_pon_dir		;f0f7
 L_F0FA:
-	ld a,(de)			;f0fa
+	ld a,(de)			;f0fa   ; y aqui se escribe
 	out (098h),a		;f0fb
 	inc de			;f0fd
 	dec bc			;f0fe
@@ -13650,7 +13650,7 @@ vram_lee:		; Copia BC bytes de VRAM (HL) a RAM (DE) leyendo del puerto 0x98
 	call vram_pon_dir_lee		;f105
 	and a			;f108
 L_F109:
-	in a,(098h)		;f109
+	in a,(098h)		;f109   ; y aqui se lee
 	ld (de),a			;f10b
 	inc de			;f10c
 	dec bc			;f10d
@@ -13660,7 +13660,7 @@ L_F109:
 	ei			;f112
 	ret			;f113
 vram_pon_dir_lee:		; Fija la direccion de LECTURA del VDP por el puerto 0x99, sin el bit 0x40: es la gemela de vram_pon_dir
-	di			;f114
+	di			;f114   ; poner la direccion para leer: sin el bit 6
 	in a,(099h)		;f115
 	ld a,l			;f117
 	out (099h),a		;f118
@@ -13889,7 +13889,7 @@ apaga_barra_resto:		; Recupera de la pila los segmentos que faltan hasta 20 y lo
 	ret z			;f33c
 	ld b,a			;f33d
 L_F33E:
-	di			;f33e
+	di			;f33e   ; la direccion de VRAM se pone a mano, sin pasar por la BIOS
 	ld a,l			;f33f
 	out (099h),a		;f340
 	and a			;f342
@@ -13961,7 +13961,7 @@ DATA_relleno_F393:
 
 
 premia:		; Suma B al marcador por el digito que apunte HL (dentro de los seis de 0xDD80) y lo repinta en 0x12B0: es suma_puntos con IX y DE ya puestos, y salvando IX
-	push ix		;f394
+	push ix		;f394   ; el premio de 0x12B0 puntos, sumado a la tabla de 0xDD80
 	ld ix,0dd80h		;f396
 	ld de,012b0h		;f39a
 	call suma_puntos		;f39d
@@ -14508,14 +14508,14 @@ L_F6D5:
 	call rotulador_cmd		;f6d7
 	ld bc,00000h		;f6da   ; ...y la vuelta entera del contador, 65536, para que de tiempo a leerlo
 L_F6DD:
-	dec bc			;f6dd
+	dec bc			;f6dd   ; el bucle de espera del teclado: una cuenta vacia
 	ld a,b			;f6de
 	or c			;f6df
 	jr nz,L_F6DD		;f6e0
 	pop hl			;f6e2
 	jp L_D560		;f6e3
 pide_nombre_borra:		; El DEL: borra la celda, retrocede una columna y repinta alli el cursor
-	pop de			;f6e6
+	pop de			;f6e6   ; el DEL: si no se ha escrito nada, no hay nada que borrar
 	pop bc			;f6e7
 	ld a,b			;f6e8
 	push bc			;f6e9
@@ -14574,7 +14574,7 @@ carga_parte2:		; Carga la segunda parte desde la cinta y salta a ella. La cabece
 	and a			;f721
 	ld a,081h		;f722
 	out (099h),a		;f724
-	call borra_buffer		;f726
+	call borra_buffer		;f726   ; se borra el buffer y se vuelca antes de encender
 	call vuelca_pantalla		;f729
 	ld ix,0dac6h		;f72c
 	ld hl,00108h		;f730
@@ -14657,7 +14657,7 @@ L_F7BA:
 	push bc			;f7ba
 	ld bc,00000h		;f7bb
 L_F7BE:
-	dec bc			;f7be
+	dec bc			;f7be   ; otra cuenta vacia, la del retardo del cargador
 	ld a,b			;f7bf
 	or c			;f7c0
 	jr nz,L_F7BE		;f7c1
@@ -14680,19 +14680,19 @@ DATA_tabla_F7C7:
 
 
 carga_cinta:		; La carga de la segunda parte: empuja a mano la vuelta a 0xF89F, arranca el motor (0xAB) y el registro 14 del PSG, y engancha el tono guia midiendo pulsos contra 0x9C y 0xC6. Es LD-BYTES de la ROM del Spectrum, con la lectura del bit adaptada al PSG del MSX
-	ld hl,carga_vuelta		;f7f6
+	ld hl,carga_vuelta		;f7f6   ; EL CARGADOR DE CINTA, escrito a mano y sin BIOS
 	push hl			;f7f9
 	push af			;f7fa
 	ld a,008h		;f7fb
-	out (0abh),a		;f7fd
+	out (0abh),a		;f7fd   ; el puerto 0xAB pone el motor del casete...
 	ld a,00eh		;f7ff
-	out (0a0h),a		;f801
+	out (0a0h),a		;f801   ; ...y el 0xA0 con 0x0E deja el registro 14 del PSG a la escucha
 	pop af			;f803
 	inc d			;f804
 	ex af,af'			;f805
 	dec d			;f806
 	di			;f807
-	ld a,005h		;f808
+	ld a,005h		;f808   ; se busca la cabecera midiendo pulsos: los umbrales son 0x9C, 0xC6, 0xC9 y 0xD4
 	ld c,a			;f80a
 	cp a			;f80b
 L_F80C:
@@ -14700,7 +14700,7 @@ L_F80C:
 	jr nc,L_F80C		;f80f
 	ld hl,00415h		;f811
 L_F814:
-	djnz L_F814		;f814
+	djnz L_F814		;f814   ; una cuenta larga de guarda antes de empezar a medir
 	dec hl			;f816
 	ld a,h			;f817
 	or l			;f818
@@ -14708,7 +14708,7 @@ L_F814:
 	call lee_bit_cinta2		;f81b
 	jr nc,L_F80C		;f81e
 L_F820:
-	ld b,09ch		;f820
+	ld b,09ch		;f820   ; el tren de pulsos largos de la cabecera
 	call lee_bit_cinta2		;f822
 	jr nc,L_F80C		;f825
 	ld a,0c6h		;f827
@@ -14717,11 +14717,11 @@ L_F820:
 	inc h			;f82c
 	jr nz,L_F820		;f82d
 L_F82F:
-	ld b,0c9h		;f82f
+	ld b,0c9h		;f82f   ; y el de los cortos, que es el que cierra
 	call lee_bit_cinta		;f831
 	jr nc,L_F80C		;f834
 	ld a,b			;f836
-	cp 0d4h		;f837
+	cp 0d4h		;f837   ; 0xD4 es el umbral del segundo tren
 	jr nc,L_F82F		;f839
 	call lee_bit_cinta		;f83b
 	ret nc			;f83e
@@ -14729,15 +14729,15 @@ L_F82F:
 	ld b,0b0h		;f841
 	jr L_F85D		;f843
 L_F845:
-	ex af,af'			;f845
+	ex af,af'			;f845   ; cada byte leido va al destino, y el bit de paridad se lleva en C
 	jr nz,L_F84D		;f846
 	ld (ix+000h),l		;f848
 	jr L_F857		;f84b
 L_F84D:
-	rr c		;f84d
+	rr c		;f84d   ; el bit leido se mete en C, que lleva la paridad
 	xor l			;f84f
 	ret nz			;f850
-	ld a,c			;f851
+	ld a,c			;f851   ; y C se corre para el bit siguiente
 	rla			;f852
 	ld c,a			;f853
 	inc de			;f854
@@ -14751,11 +14751,11 @@ L_F859:
 L_F85D:
 	ld l,001h		;f85d
 L_F85F:
-	call lee_bit_cinta2		;f85f
+	call lee_bit_cinta2		;f85f   ; un bit por vuelta: se mide el pulso y se mete en L con `rl`
 	ret nc			;f862
 	ld a,0cbh		;f863
 	cp b			;f865
-	rl l		;f866
+	rl l		;f866   ; 0xCB es el umbral que separa el cero del uno
 	ld b,0b0h		;f868
 	jp nc,L_F85F		;f86a
 	ld a,h			;f86d
@@ -14764,11 +14764,11 @@ L_F85F:
 	ld a,d			;f870
 	or e			;f871
 	jr nz,L_F845		;f872
-	ld a,h			;f874
+	ld a,h			;f874   ; al final se comprueba la paridad: tiene que dar 1
 	cp 001h		;f875
 	ret			;f877
 lee_bit_cinta2:		; Dos flancos seguidos con lee_bit_cinta, y vuelve en cuanto el primero falla
-	call lee_bit_cinta		;f878
+	call lee_bit_cinta		;f878   ; y aqui la espera entre bloque y bloque
 	ret nc			;f87b
 lee_bit_cinta:		; Espera el siguiente flanco en el bit 7 del puerto 0xA2 contando vueltas en B, y de paso remueve el color del borde (registro 7 del VDP) con `ld a,r`, que es como el Spectrum hace rayas mientras carga
 	ld a,016h		;f87c
@@ -14777,11 +14777,11 @@ L_F87E:
 	jr nz,L_F87E		;f87f
 	and a			;f881
 L_F882:
-	inc b			;f882
+	inc b			;f882   ; el bucle de medida: se cuenta con B mientras el bit del puerto 0xA2 no cambie
 	nop			;f883
 	ret z			;f884
 	ld a,000h		;f885
-	in a,(0a2h)		;f887
+	in a,(0a2h)		;f887   ; el puerto 0xA2 es donde entra la senal del casete
 	cpl			;f889
 	xor c			;f88a
 	and 080h		;f88b
@@ -14797,7 +14797,7 @@ L_F882:
 	scf			;f89d
 	ret			;f89e
 carga_vuelta:		; El final de la carga, y la direccion que carga_cinta se empuja a si misma en 0xF7F7: para el motor de la cinta y devuelve el borde a negro por el registro 7 del VDP, deshaciendo el `ld a,r` con que 0xF893 lo hace parpadear. No toca ni una bandera, para que el acarreo de exito llegue intacto
-	ld e,013h		;f89f
+	ld e,013h		;f89f   ; y aqui se vuelve del cargador con las interrupciones otra vez abiertas
 	ld a,009h		;f8a1
 	out (0abh),a		;f8a3
 	ld a,001h		;f8a5
