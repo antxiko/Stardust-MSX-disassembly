@@ -3950,3 +3950,25 @@ C 0xF791 El ultimo byte cargado...
 C 0xF796 ...contra el 2 del operando del `cp` de 0xF76D: si cuadra, el bloque ha llegado entero
 C 0xF79D Si algo falla, el cartel de error y a intentarlo otra vez desde el principio
 C 0xF7B0 Y si todo ha ido bien, 0xA529 = 1 y a la segunda parte, que empieza en 0xA279
+
+C 0xE41C 0x2E son 46, los bytes que ocupa el estado de una voz
+C 0xE422 0xF3 es el `di`: se repone al principio de las DOS puertas del arranque, 0xE18F y 0xE1BC, que sonido_off deja machacadas
+C 0xE42A Si 0xEE19 y 0xEE0C no valen lo mismo es que queda alguna voz sonando, y entonces no se toca nada mas
+C 0xE434 Y si era la ultima, a cero las variables comunes del sonido...
+C 0xE43E ...aunque el `ldir` deja fuera 0xEE0A a proposito: el `inc de` se lo salta, asi que el registro de RUIDO sobrevive al silencio
+C 0xE446 El argumento del tempo...
+C 0xE448 ...por ocho...
+C 0xE44E ...y 6000 entre eso: cuanto mayor el argumento, mas lento va
+C 0xE457 Solo se guarda el byte bajo del cociente
+C 0xE460 El argumento del ruido...
+C 0xE462 ...recortado a cinco bits, que es lo que mide el registro de ruido del PSG
+C 0xE46A El argumento entero se recupera de la pila con su bit 7 intacto...
+C 0xE46D ...y ese bit decide el camino: con el bit puesto sigue el guion sin tocar la nota, y sin el, la ataca
+
+C 0xE494 El argumento se guarda en E porque hace falta dos veces
+C 0xE495 `or`, no `ld`: enciende bits y no apaga ninguno, ni en las del canal...
+C 0xE49B ...ni en las globales de 0xEE09
+C 0xE4A7 Los bits 0 y 1 se apagan aparte: cambiar de instrumento los quita siempre
+C 0xE4B0 Quince bytes por instrumento, asi que el numero se multiplica por quince
+C 0xE4BA IX se salva porque el bucle lo usa de puntero de escritura y acaba quince bytes mas alla
+C 0xE4CC Y ocho campos del estado a cero: lo que el instrumento anterior hubiera dejado a medias no se hereda

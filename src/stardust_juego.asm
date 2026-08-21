@@ -12627,52 +12627,52 @@ op_fin:		; 0x8B: cierra la voz borrando los 46 bytes de su estado y reponiendo e
 	push ix		;e418   ; Y esto es callar un canal del todo: sus 46 bytes de estado a cero
 	pop hl			;e41a
 	xor a			;e41b
-	ld b,02eh		;e41c
+	ld b,02eh		;e41c   ; 0x2E son 46, los bytes que ocupa el estado de una voz
 L_E41E:
 	ld (hl),a			;e41e
 	inc hl			;e41f
 	djnz L_E41E		;e420
-	ld a,0f3h		;e422
+	ld a,0f3h		;e422   ; 0xF3 es el `di`: se repone al principio de las DOS puertas del arranque, 0xE18F y 0xE1BC, que sonido_off deja machacadas
 	ld (arranca_guion_libre),a		;e424
 	ld (arranca_guion),a		;e427
-	ld a,(0ee19h)		;e42a
+	ld a,(0ee19h)		;e42a   ; Si 0xEE19 y 0xEE0C no valen lo mismo es que queda alguna voz sonando, y entonces no se toca nada mas
 	ld hl,0ee0ch		;e42d
 	xor (hl)			;e430
 	jp nz,L_E327		;e431
-	ld hl,0edffh		;e434
+	ld hl,0edffh		;e434   ; Y si era la ultima, a cero las variables comunes del sonido...
 	ld de,0ee00h		;e437
 	ld bc,0000ah		;e43a
 	ld (hl),a			;e43d
-	ldir		;e43e
+	ldir		;e43e   ; ...aunque el `ldir` deja fuera 0xEE0A a proposito: el `inc de` se lo salta, asi que el registro de RUIDO sobrevive al silencio
 	inc de			;e440
 	ld (de),a			;e441
 	jp L_E327		;e442
 op_tempo:		; 0x85 n: 0xEE18 = 6000 / (argumento * 8), con la division de div_bc_de
 	inc bc			;e445
-	ld a,(bc)			;e446
+	ld a,(bc)			;e446   ; El argumento del tempo...
 	push bc			;e447
-	ld de,00008h		;e448
+	ld de,00008h		;e448   ; ...por ocho...
 	call mul_a_de		;e44b
-	ld bc,01770h		;e44e
+	ld bc,01770h		;e44e   ; ...y 6000 entre eso: cuanto mayor el argumento, mas lento va
 	push hl			;e451
 	pop de			;e452
 	call div_bc_de		;e453
 	ld a,c			;e456
-	ld (0ee18h),a		;e457
+	ld (0ee18h),a		;e457   ; Solo se guarda el byte bajo del cociente
 	pop bc			;e45a
 	inc bc			;e45b
 	jp L_E222		;e45c
 op_ruido:		; 0x88 n: 0xEE0A = argumento and 0x1F, los cinco bits del registro de ruido del PSG. El bit 7 del argumento decide por donde sigue el interprete
 	inc bc			;e45f
-	ld a,(bc)			;e460
+	ld a,(bc)			;e460   ; El argumento del ruido...
 	push af			;e461
-	and 01fh		;e462
+	and 01fh		;e462   ; ...recortado a cinco bits, que es lo que mide el registro de ruido del PSG
 	ld (0ee0ah),a		;e464
 	call refresca_globales_sonido		;e467
-	pop af			;e46a
+	pop af			;e46a   ; El argumento entero se recupera de la pila con su bit 7 intacto...
 	inc bc			;e46b
 	or a			;e46c
-	jp m,L_E222		;e46d
+	jp m,L_E222		;e46d   ; ...y ese bit decide el camino: con el bit puesto sigue el guion sin tocar la nota, y sin el, la ataca
 	jp ataca_nota		;e470
 op_liga:		; 0x84: sin argumento. Cuenta una duracion mas SIN reatacar, porque vuelve por 0xE25C y se salta el tramo del ataque: ni mezclador, ni instrumento, ni envolvente a cero. Lo que estuviera sonando sigue igual
 	inc bc			;e473
@@ -12693,24 +12693,24 @@ L_E483:
 op_banderas:		; 0x8A n: enciende bits, con OR y sin apagar nada, en las banderas del canal (ix+02D) y en las globales de 0xEE09
 	inc bc			;e492
 	ld a,(bc)			;e493
-	ld e,a			;e494
-	or (ix+02dh)		;e495
+	ld e,a			;e494   ; El argumento se guarda en E porque hace falta dos veces
+	or (ix+02dh)		;e495   ; `or`, no `ld`: enciende bits y no apaga ninguno, ni en las del canal...
 	ld (ix+02dh),a		;e498
-	ld a,(0ee09h)		;e49b
+	ld a,(0ee09h)		;e49b   ; ...ni en las globales de 0xEE09
 	or e			;e49e
 	ld (0ee09h),a		;e49f
 	inc bc			;e4a2
 	jp L_E222		;e4a3
 op_instrumento:		; 0x87 n: copia los QUINCE bytes del instrumento n -que vive en 0xE5E2 + n*15- a (ix+016) y siguientes, y de paso limpia los bits 0 y 1 de las banderas
 	inc bc			;e4a6
-	res 0,(ix+02dh)		;e4a7
+	res 0,(ix+02dh)		;e4a7   ; Los bits 0 y 1 se apagan aparte: cambiar de instrumento los quita siempre
 	res 1,(ix+02dh)		;e4ab
 	ld a,(bc)			;e4af
-	ld de,0000fh		;e4b0
+	ld de,0000fh		;e4b0   ; Quince bytes por instrumento, asi que el numero se multiplica por quince
 	call mul_a_de		;e4b3
 	ld de,0e5e2h		;e4b6
 	add hl,de			;e4b9
-	push ix		;e4ba
+	push ix		;e4ba   ; IX se salva porque el bucle lo usa de puntero de escritura y acaba quince bytes mas alla
 	ld d,00fh		;e4bc
 L_E4BE:
 	ld a,(hl)			;e4be
@@ -12721,7 +12721,7 @@ L_E4BE:
 	jp nz,L_E4BE		;e4c6
 	pop ix		;e4c9
 	inc bc			;e4cb
-	ld (ix+00ch),000h		;e4cc
+	ld (ix+00ch),000h		;e4cc   ; Y ocho campos del estado a cero: lo que el instrumento anterior hubiera dejado a medias no se hereda
 	ld (ix+00dh),000h		;e4d0
 	ld (ix+010h),000h		;e4d4
 	ld (ix+011h),000h		;e4d8
