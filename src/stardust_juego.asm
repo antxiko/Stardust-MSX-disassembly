@@ -11363,62 +11363,62 @@ recorre_instalaciones:		; Recorre las instalaciones de la zona (contador 0xC8D7,
 	ld b,a			;d681
 	ld ix,0c8d8h		;d682
 L_D686:
-	push bc			;d686
-	ld a,(0ca8dh)		;d687
-	add a,(ix+001h)		;d68a
-	ld (ix+007h),a		;d68d
-	ld a,(0ca8ch)		;d690
-	jr nc,L_D697		;d693
+	push bc			;d686   ; La cuenta de las que quedan, a la pila: de aqui a la vuelta se pasa por una rutina de gobierno cualquiera, y ninguna respeta BC
+	ld a,(0ca8dh)		;d687   ; Los ocho bits bajos del scroll de la tanda...
+	add a,(ix+001h)		;d68a   ; ...mas la fila que esta celda ocupa dentro de la formacion, que el constructor sembro en 0xD630 y solo puede valer 0, 0x18, 0x30, 0x48 o 0x60
+	ld (ix+007h),a		;d68d   ; Y ahi queda la fila en pantalla de ESTA instalacion. La tanda no baja en bloque: cada entrada lleva su fila calculada aparte, y por eso las cinco filas de la formacion pueden estar repartidas entre la pantalla y la pagina de entrada
+	ld a,(0ca8ch)		;d690   ; El byte que comparte la columna de la tanda (bits 0-6) con el noveno bit del scroll (bit 7)
+	jr nc,L_D697		;d693   ; El acarreo sigue siendo el del `add` de 0xD68A: los dos `ld` de en medio se eligieron porque no tocan banderas. Sumarle ese acarreo a un solo bit es cambiarlo de estado, o sea un `xor`
 	xor 080h		;d695
 L_D697:
-	and 080h		;d697
-	res 7,(ix+000h)		;d699
+	and 080h		;d697   ; De todo el byte solo interesa ese bit...
+	res 7,(ix+000h)		;d699   ; ...que se guarda en el bit 7 de (ix+000), encima de la columna. Cada instalacion lleva asi su PROPIA fila de nueve bits, repartida entre el +0 y el +7 de su entrada
 	or (ix+000h)		;d69d
 	ld (ix+000h),a		;d6a0
-	bit 7,a		;d6a3
+	bit 7,a		;d6a3   ; Con el noveno bit puesto la fila pasa de 255: la instalacion sigue en la pagina de entrada, y este cuadro ni se la gobierna ni se la retira
 	jr nz,L_D6BC		;d6a5
-	ld a,(ix+007h)		;d6a7
-	cp 0c0h		;d6aa
+	ld a,(ix+007h)		;d6a7   ; Ya en pantalla, decide la fila de ocho bits
+	cp 0c0h		;d6aa   ; Pasada la 0xC0 -treinta y dos por debajo de las 160 del buffer- se ha ido por abajo y no vuelve
 	jr nc,L_D6B9		;d6ac
-	ld hl,L_D6BC		;d6ae
+	ld hl,L_D6BC		;d6ae   ; La vuelta apilada a mano, igual que en el recorrido de los tiles especiales: la rutina de gobierno vuelve sola a 0xD6BC y este bucle se ahorra el `call`
 	push hl			;d6b1
-	ld h,(ix+004h)		;d6b2
+	ld h,(ix+004h)		;d6b2   ; En el +3/+4 esta quien la gobierna, y es tambien por donde se le cambia el estado: ahi escriben choca_y_revienta (0xD933) y retira_instalacion (0xD959)
 	ld l,(ix+003h)		;d6b5
 	jp (hl)			;d6b8
 L_D6B9:
-	call retira_instalacion		;d6b9
+	call retira_instalacion		;d6b9   ; Retirarla no es borrar la entrada: le pone de rutina la direccion de un `ret`, y sigue recorriendose en balde hasta el fin de la zona
 L_D6BC:
-	ld de,00008h		;d6bc
+	ld de,00008h		;d6bc   ; Ocho bytes por entrada, como en la tabla de los tiles especiales
 	add ix,de		;d6bf
 	pop bc			;d6c1
 	djnz L_D686		;d6c2
 	ret			;d6c4
 tile_43:		; El comportamiento del tile 0x43 (`ld de,0d6c5h` en 0xC158): entra por contacto_instalacion, o sea que mata a la nave al tocarla, y anima el aparato alternando su celda del mapa entre los tiles 0x43 y 0x44 con un `ld a,007h / xor (hl)` cada ocho cuadros. La fase la echa a suertes: en su primer cuadro -(ix+000) valiendo 1- mete en (ix+007) un `azar and 007h`, de modo que dos tiles 0x43 en pantalla no parpadeen a la vez. Dibujados desde el pozo de tiles, el 0x43 y el 0x44 son el mismo aparato con el interior cambiado
-	call contacto_instalacion		;d6c5
-	ld a,(ix+000h)		;d6c8
+	call contacto_instalacion		;d6c5   ; Y NADA MAS que esto: el 0x43 no llama a impacto_objeto, o sea que el disparo del jugador le pasa por encima. Junto con el 0x32 y el 0x5D es uno de los tres casos del despachador que no se pueden reventar
+	ld a,(ix+000h)		;d6c8   ; (ix+000) es la edad en cuadros, y el recorrido la sube antes de llamar (0xCB85): el 1 es el primer cuadro gobernado
 	dec a			;d6cb
 	jr nz,L_D6D6		;d6cc
-	call azar		;d6ce
+	call azar		;d6ce   ; La fase del parpadeo, echada a suertes en ese primer cuadro...
 	and 007h		;d6d1
-	ld (ix+007h),a		;d6d3
+	ld (ix+007h),a		;d6d3   ; ...que es lo que evita que dos aparatos 0x43 en pantalla vayan sincronizados
 L_D6D6:
-	ld a,(ix+007h)		;d6d6
+	ld a,(ix+007h)		;d6d6   ; La fase se lee ANTES de subirla, asi que el cambio cae en el cuadro en que valia multiplo de ocho, no en el siguiente
 	inc (ix+007h)		;d6d9
-	and 007h		;d6dc
+	and 007h		;d6dc   ; Uno de cada ocho cuadros; los otros siete se vuelve sin tocar nada
 	ret nz			;d6de
-	ld l,(ix+005h)		;d6df
+	ld l,(ix+005h)		;d6df   ; El puntero al byte del mapa que dejo el alta en 0xC17D: el tile no guarda su fotograma, lo escribe en el mapa
 	ld h,(ix+006h)		;d6e2
-	ld a,007h		;d6e5
+	ld a,007h		;d6e5   ; 0x43 xor 7 = 0x44 y 0x44 xor 7 = 0x43. El `xor` alterna los dos dibujos sin que haya que guardar en cual va: el propio mapa es el estado
 	xor (hl)			;d6e7
 	ld (hl),a			;d6e8
 	ret			;d6e9
-contacto_instalacion:		; La caja de la instalacion de IX contra la nave: HL sale de (ix+000/001) con la fila doblada, y de ahi a choca_con_nave3
-	ld h,(ix+000h)		;d6ea
-	ld l,(ix+001h)		;d6ed
-	sla h		;d6f0
-	call choca_con_nave3		;d6f2
+contacto_instalacion:		; La caja de contacto de la ficha de IX contra la nave. OJO CON EL NOMBRE, QUE ES DE LA PASADA VIEJA Y ENGANNA: no la llama ninguna instalacion. Sus dos unicos llamadores estan en el listado -0xC18C, dentro de tile_30_31, y 0xD6C5, dentro de tile_43- y los dos son TILES ESPECIALES, no entradas de 0xC8D8. Por eso lee la ficha con el reparto de la tabla de 0xCB3A y no con el de las instalaciones: (ix+000) es la edad en cuadros, que doblada por el `sla h` de 0xD6F0 da la fila en pixeles porque el fondo baja dos por cuadro, y (ix+001) la columna que sembro 0xC106. Va a choca_con_nave3 -la unica caja que ademas se asegura de que la nave siga viva- y, si hay contacto, cae en mata_nave con un `jp`: tocar uno de estos tiles no quita energia, mata
+	ld h,(ix+000h)		;d6ea   ; La edad ES la fila: el tile nace en la 0 (0xC0F8) y el fondo baja dos pixeles por cuadro (repinta_fondo)
+	ld l,(ix+001h)		;d6ed   ; Y la columna en pixeles, uno de los seis multiplos de 32 que reparte 0xC103
+	sla h		;d6f0   ; Por dos, que es lo que cae el scroll en un cuadro: de ahi sale la fila en pixeles
+	call choca_con_nave3		;d6f2   ; choca_con_nave3 vuelve CON carry cuando no hay contacto, y es la unica de las cuatro cajas que ademas comprueba que la nave siga viva
 	ret c			;d6f5
-	jp mata_nave		;d6f6
+	jp mata_nave		;d6f6   ; Un `jp` y no un `call`: la vuelta que hay en la pila es la del recorrido de tiles especiales, y mata_nave la usa
 entra_en_records:		; Mira si el marcador entra en la tabla de records, y es por donde pasa TODO game over: la llama 0xBDE2, adonde llegan tanto quedarse sin vidas (0xC000) como la tecla ABANDONAR (0xBFE8). Compara los seis digitos de 0xDD80 contra los ocho campos de puntuacion de 0xDD10 + n*15 y, al ganar uno, hace hueco con un `lddr` de (7-n)*15 bytes que empuja las fichas de abajo y tira la ultima, copia ahi la puntuacion con un `ldir` de 6 y salta a 0xF671 -la entrada del nombre- con la direccion del nombre nuevo en la pila. La tabla son ocho fichas de 15 bytes desde 0xDD08 -8 de nombre, 6 de puntuacion y el cero-, y cierra al byte: 0xDD08 + 120 = 0xDD80, que es el marcador. Gemela de la entra_en_records de la fase de a pie: 57 de sus 71 bytes son identicos
 	ld hl,0dd10h		;d6f9   ; Los puntos de la primera ficha; el nombre son los ocho bytes de delante
 	ld c,008h		;d6fc   ; Las ocho fichas, de la mejor a la peor
@@ -11534,13 +11534,13 @@ bonus_zona:		; El remate de la zona, dentro del bucle de 0xD75B: mientras zona_d
 	dec a			;d7dd
 	ld (0ddfeh),a		;d7de
 L_D7E1:
-	cp 030h		;d7e1
+	cp 030h		;d7e1   ; A trae las decenas del rotulo, cargadas en 0xD7D0 a proposito ANTES del `jr`: el `ld` no toca las banderas del `cp` de arriba, que es quien decide si hay que llevarse una
 	jr nz,L_D7F1		;d7e3
-	ld a,(0ddffh)		;d7e5
+	ld a,(0ddffh)		;d7e5   ; Decenas ya en el cero de ASCII; si las unidades tambien, no queda bonus que pagar
 	cp 030h		;d7e8
 	jr nz,L_D7F1		;d7ea
-	ld a,028h		;d7ec
-	ld (0ddf7h),a		;d7ee
+	ld a,028h		;d7ec   ; Y esta es la unica salida del cobro: el contador vuelve al 0x28, el `inc a` de 0xD7AD lo deja en 0x29 y el `jr nz` de 0xD7B9 ya lo manda a 0xD803. Mientras haya bonus, 0xD7BB lo devuelve al 0x27 y se queda dando vueltas
+	ld (0ddf7h),a		;d7ee   ; El tic del cobro va en 0xD7F1 y solo se toca aqui: los veinte cuadros de rotulo previos entran por el `jr c` de 0xD7B7 y se lo saltan
 L_D7F1:
 	ld a,000h		;d7f1
 	ld de,0eb2ch		;d7f3
@@ -11550,13 +11550,13 @@ L_D7F9:
 	ld hl,040c7h		;d7fd
 	jp rotula_cadena		;d800
 L_D803:
-	cp 03ch		;d803
+	cp 03ch		;d803   ; Cobrado el bonus, el rotulo aguanta diecinueve cuadros mas -del 0x29 al 0x3B- sin pagar nada
 	jr c,L_D7F9		;d805
-	cp 050h		;d807
+	cp 050h		;d807   ; Y del 0x3C al 0x4F, veinte cuadros a oscuras: nadie repinta el rotulo y borra_buffer (0xD762) se lo lleva
 	jr c,espera_1000		;d809
-	pop hl			;d80b
-	ld a,(0e157h)		;d80c
-	cp 008h		;d80f
+	pop hl			;d80b   ; El `pop hl` tira la vuelta a bucle_fin_de_zona. De ese bucle no se sale por abajo -acaba en un `jp` a si mismo-: se sale de aqui
+	ld a,(0e157h)		;d80c   ; 0xE157 ya vale una zona mas, que la subio 0xD755 al entrar en el remate
+	cp 008h		;d80f   ; No hay zona 8: pasada la septima lo que toca es la segunda carga de la cinta
 	jp z,carga_parte2		;d811
 	jp carga_zona		;d814
 espera_1000:		; espera_bc con BC = 1000
@@ -11568,19 +11568,19 @@ espera_bc:		; Espera activa: decrementa BC hasta cero y vuelve
 	jr nz,espera_bc		;d81d
 	ret			;d81f
 gobierna_instalaciones:		; La ultima llamada del bucle de partida (0xBF9D), y el arbitro de la tanda de instalaciones: si 0xCA91 vale 0x80 no hay ninguna montada, y entonces -sin perseguidor (0xD3C5) y sin que haya salido el tile de fin de zona (0xDAC5)- una tirada de cada 128 salta al constructor de 0xD5AA. Si la hay, pasa el mando a avanza_instalaciones, que es la que la mueve
-	ld a,(0ca91h)		;d820
+	ld a,(0ca91h)		;d820   ; 0xCA91 es la velocidad de la tanda, de 1 a 3, y el 0x80 es su valor imposible: la marca de que no hay ninguna montada
 	cp 080h		;d823
-	jr nz,avanza_instalaciones		;d825
-	ld a,(0d3c5h)		;d827
+	jr nz,avanza_instalaciones		;d825   ; Con tanda en marcha no hay nada que decidir, solo moverla
+	ld a,(0d3c5h)		;d827   ; 0xD3C5 es el contador del perseguidor: mientras haya uno suelto no entra tanda nueva
 	and a			;d82a
 	ret nz			;d82b
-	ld a,(0dac5h)		;d82c
+	ld a,(0dac5h)		;d82c   ; Y 0xDAC5 la levanta tile_5D en 0xDA48 al cerrar la zona 7: a partir de ahi tampoco entran mas
 	and a			;d82f
 	ret nz			;d830
-	call azar		;d831
+	call azar		;d831   ; Una tirada de 128 por cuadro, o sea que el hueco entre tandas no es fijo
 	and 07fh		;d834
 	ret nz			;d836
-	jp L_D5AA		;d837
+	jp L_D5AA		;d837   ; 0xD5AA es el sorteo de formacion y el constructor: elige una de las ocho de 0xC9BC segun la zona, la columna al azar y monta las 25 celdas
 avanza_instalaciones:		; El cuadro de la tanda de instalaciones: llama a recorre_instalaciones y mueve el scroll de la tanda, que es un contador de NUEVE bits -los ocho bajos en 0xCA8D y el noveno en el bit 7 de 0xCA8C-, al que suma 1, 2 o 3 segun la velocidad de 0xCA91. Una vez de cada ocho (`ld a,(0ca8eh) / and 007h`) ajusta esa velocidad: a saco mientras la tanda va por la pagina de entrada, y despues la acerca a la fila de la nave (0xC185) menos 0x34, subiendo o bajando de uno en uno con topes 1 y 3. Cuando el contador pasa de 0xC0 con el noveno bit ya apagado, la tanda se fue: pone 0xCA91 = 0x80 -la marca que mira zona_despejada- y repone el dibujo 0x73 del HUD. Remata con el `jp pinta_rejilla` de 0xD8A0, que es la unica entrada de esa rutina, pasandole la fila en H, la columna sin el bit 7 en L y ese noveno bit en D. La llama tambien el bucle de fin de zona, en 0xD798
 	call recorre_instalaciones		;d83a   ; Primero las instalaciones, una a una
 	ld hl,(0ca8ch)		;d83d   ; El contador de nueve bits, de golpe: en H los ocho bajos y en el bit 7 de L el noveno, que comparte byte con la columna de la tanda
@@ -11633,15 +11633,15 @@ L_D87B:
 	call dibuja_sprite_vram		;d890
 	pop hl			;d893
 L_D894:
-	ex af,af'			;d894
-	rla			;d895
-	sbc a,a			;d896
+	ex af,af'			;d894   ; Vuelve el A que se aparco en 0xD87E, que es el byte de la columna con el noveno bit de la fila en el 7
+	rla			;d895   ; Ese bit 7, a la bandera de acarreo...
+	sbc a,a			;d896   ; ...y el `sbc a,a` lo estira a 0x00 o a 0xFF, que es como pinta_rejilla lo quiere en D (ver 0xC6A3)
 	ld d,a			;d897
-	ld a,l			;d898
+	ld a,l			;d898   ; L se queda con la columna sola, ya sin el bit prestado
 	and 07fh		;d899
 	ld l,a			;d89b
-	ld ix,0c920h		;d89c
-	jp pinta_rejilla		;d8a0
+	ld ix,0c920h		;d89c   ; La rejilla de 25 celdas, que es lo que pinta_rejilla dibuja
+	jp pinta_rejilla		;d8a0   ; Un `jp` y no un `call`: la vuelta de pinta_rejilla es la de avanza_instalaciones, y este es su UNICO llamador
 inst_torreta:		; La torreta: mira el contacto y, una vez de cada 32, dispara desde su propia posicion mas 0x1808. Si el disparo entra, se cambia a si misma la rutina por inst_recarga
 	call choca_y_revienta		;d8a3   ; Primero lo que le puede pasar a ella
 	call azar		;d8a6   ; Y una vez de cada 32, dispara
@@ -12158,146 +12158,146 @@ L_DFB1:
 	pop de			;dfce
 	ldir		;dfcf   ; Las de detras suben cinco bytes
 	jp L_DFAB		;dfd1
-tile_37:		; El tile 0x37: mira si le han dado y, una vez de cada 32, pasa al estado siguiente
-	call impacto_objeto		;dfd4
-	call azar		;dfd7
+tile_37:		; El tile 0x37 esperando a abrirse: una tirada de 32 por cuadro (`and 01fh / ret nz` en 0xDFDA) para cambiarse por tile_37b. Como la ficha solo vive 0x60 cuadros, un 0x37 puede cruzar la pantalla entera sin llegar a abrirse nunca. Antes de la tirada llama a impacto_objeto, que es a la vez la caja del disparo del jugador -y quien le instala el derrumbe de 0xC190 y paga los 200 puntos- y la del contacto con la nave
+	call impacto_objeto		;dfd4   ; Lo primero, por si este cuadro ya no hay tile que gobernar: impacto_objeto puede reventarlo y descartar la vuelta con su `pop hl`
+	call azar		;dfd7   ; Una tirada de 32 contra los 0x60 cuadros que dura la ficha
 	and 01fh		;dfda
 	ret nz			;dfdc
-	ld hl,tile_37b		;dfdd
+	ld hl,tile_37b		;dfdd   ; El cambio de estado se hace pisando (ix+003/004), que es de donde el recorrido saca el `jp (hl)` de 0xCB99: el tile se reprograma a si mismo
 	ld (ix+003h),l		;dfe0
 	ld (ix+004h),h		;dfe3
 	ret			;dfe6
 tile_37b:		; El 0x37 creciendo: sube su tile en el mapa un punto por cuadro hasta llegar a 0x3B, y entonces se convierte en el comportamiento del 0x3B
-	inc (ix+002h)		;dfe7
+	inc (ix+002h)		;dfe7   ; La ficha lleva su propia copia del indice en (ix+002), y se sube aqui, antes de la caja: es el byte que impacto_objeto pisa con el 0x28 del derrumbe si le dan
 	call impacto_objeto		;dfea
-	ld l,(ix+005h)		;dfed
+	ld l,(ix+005h)		;dfed   ; Y el del mapa, por el puntero del alta
 	ld h,(ix+006h)		;dff0
-	inc (hl)			;dff3
+	inc (hl)			;dff3   ; Un tile por cuadro: la celda recorre 0x38, 0x39, 0x3A y 0x3B, que dibujados son el aparato abriendose
 	ld a,(hl)			;dff4
-	cp 03bh		;dff5
+	cp 03bh		;dff5   ; Al llegar al 0x3B el dibujo ya es el del 0x3B, y el comportamiento se cambia para que case: dibujo y estado vuelven a ser la misma cosa
 	ret c			;dff7
 	ld hl,tile_3B		;dff8
 	ld (ix+003h),l		;dffb
 	ld (ix+004h),h		;dffe
 	ret			;e001
 tile_3B:		; El tile 0x3B: una vez de cada 32 suelta un enemigo desde su posicion mas 0x0C0C, con el rumbo apuntado a la nave (rumbo_hacia sobre 0xC184)
-	call impacto_objeto		;e002
-	call azar		;e005
+	call impacto_objeto		;e002   ; Ya abierto, el 0x3B tambien se puede reventar
+	call azar		;e005   ; Otra tirada de 32, la misma cadencia con que el 0x37 tardaba en abrirse
 	and 01fh		;e008
 	ret nz			;e00a
-	ld l,(ix+001h)		;e00b
-	ld h,(ix+000h)		;e00e
+	ld l,(ix+001h)		;e00b   ; La columna en pixeles...
+	ld h,(ix+000h)		;e00e   ; ...y la fila, que es la edad doblada
 	sla h		;e011
-	ld bc,00c0ch		;e013
+	ld bc,00c0ch		;e013   ; Doce pixeles adentro por los dos ejes: el enemigo nace DENTRO del dibujo de 32x32, no en su esquina
 	add hl,bc			;e016
-	ld b,h			;e017
+	ld b,h			;e017   ; Las tablas de objetos quieren la fila en B y la columna en C
 	ld c,l			;e018
-	push bc			;e019
-	ld de,(0c184h)		;e01a
+	push bc			;e019   ; A salvo, que rumbo_hacia se lleva BC por delante
+	ld de,(0c184h)		;e01a   ; El objetivo, de una vez: en E la columna de la nave (0xC184) y en D su fila (0xC185), que es el orden que pide rumbo_hacia
 	call rumbo_hacia		;e01e
-	call rumbo_a_mascara2		;e021
-	ex af,af'			;e024
+	call rumbo_a_mascara2		;e021   ; rumbo_hacia devuelve una MASCARA de cuatro bits, y la tabla de 0xC9AC la convierte en el numero de rumbo de 0 a 7 que guardan las tablas de objetos
+	ex af,af'			;e024   ; alta_enemigo lo espera en A', no en A
 	pop bc			;e025
-	call alta_enemigo		;e026
+	call alta_enemigo		;e026   ; Y puede no entrar: alta_enemigo tira contra (7 - zona) * 16, o sea que en las zonas bajas se queda en nada muchas veces
 	ret			;e029
-tile_3C:		; El tile 0x3C: cuando su columna llega a 0x10 pasa al estado comun de 0xE03D
+tile_3C:		; El tile 0x3C, que es el CANON de este bloque: no arranca hasta que (ix+000) llega a 0x10, y ese 0x10 no es una columna -como estuvo publicado- sino la edad en cuadros, que a dos pixeles de scroll por cuadro son 32 filas, el alto exacto de un tile. O sea que el 0x3C espera a haber entrado ENTERO por el borde de arriba antes de hacer nada, y entonces se cambia por tile_est5, que es quien lo abre
 	call impacto_objeto		;e02a
-	ld a,(ix+000h)		;e02d
-	cp 010h		;e030
+	ld a,(ix+000h)		;e02d   ; (ix+000) no es una columna: es la edad en cuadros, que a dos pixeles por cuadro tambien es media fila
+	cp 010h		;e030   ; 0x10 son 32 pixeles, el alto justo de un tile: el 0x3C no arranca hasta haber entrado entero por el borde de arriba
 	ret c			;e032
-	ld hl,tile_est5		;e033
+	ld hl,tile_est5		;e033   ; Y de aqui en adelante manda el estado, no el indice: el 0x3C ya no vuelve a ejecutarse
 	ld (ix+003h),l		;e036
 	ld (ix+004h),h		;e039
 	ret			;e03c
-tile_est5:		; El estado comun que instalan tanto el tile 0x3C (0xE033) como el 0x32 (0xE086): mira el contacto y, en los cuadros impares de 0xCA8E, sigue en 0xE045
+tile_est5:		; El canon abriendose: cada DOS cuadros -bit 0 del contador global de cuadros 0xCA8E, o sea que todos los que esten en este estado se abren a la vez- sube un punto el tile del mapa y su copia de (ix+002), y al llegar al 0x42 pasa a tile_est4, que es quien dispara. La instalan dos sitios, y ninguno es el 0x32: tile_3C en 0xE033 la primera vez -seis pasos, del 0x3C al 0x42, doce cuadros- y tile_est4 en 0xE087 detras de cada disparo -tres pasos, del 0x3F al 0x42, seis cuadros-. Esa es la recarga
 	call impacto_objeto		;e03d
-	ld a,(0ca8eh)		;e040
-	and 001h		;e043
+	ld a,(0ca8eh)		;e040   ; El contador de cuadros GLOBAL (0xBF6A), no uno propio de la ficha: dos canones en pantalla se abren al mismo compas
+	and 001h		;e043   ; Solo los cuadros pares, o sea un paso cada dos: la mitad de rapido que el 0x37
 	ret nz			;e045
-	inc (ix+002h)		;e046
+	inc (ix+002h)		;e046   ; La copia de la ficha y la celda del mapa suben juntas
 	ld l,(ix+005h)		;e049
 	ld h,(ix+006h)		;e04c
-	inc (hl)			;e04f
+	inc (hl)			;e04f   ; Del 0x3C al 0x42 la primera vez, y del 0x3F al 0x42 despues de cada disparo
 	ld a,(hl)			;e050
-	cp 042h		;e051
+	cp 042h		;e051   ; El 0x42 es el canon abierto, y en el se para
 	ret c			;e053
-	ld hl,tile_est4		;e054
+	ld hl,tile_est4		;e054   ; tile_est4 es quien dispara; la celda se queda en el 0x42 todo el rato que este ahi
 	ld (ix+003h),l		;e057
 	ld (ix+004h),h		;e05a
 	ret			;e05d
-tile_est4:		; Una vez de cada 32 dispara desde su posicion mas 0x0C0C; si el disparo entra, se pone el tile 0x3F y pasa al estado comun de 0xE03D
+tile_est4:		; El canon abierto, que es el estado en que la celda del mapa se queda quieta en el 0x42: una tirada de 32 por cuadro y suelta un disparo desde su posicion mas 0x0C0C, el mismo desplazamiento que usa el 0x3B. El tiro nace PARADO en los dos ejes -el +0 de la entrada lo pone a cero alta_disparo en 0xC8C1 y el +1 es el A' que 0xE075 deja a cero-, y quien lo apunta despues es persigue_con_velocidad. Si la tabla de 0xC999 ya tenia dos, el `ret nc` de 0xE07A lo deja abierto y a esperar; si salio, echa el tile atras al 0x3F -en la ficha y en el mapa- y vuelve a tile_est5 para reabrirse
 	call impacto_objeto		;e05e
-	call azar		;e061
+	call azar		;e061   ; Una tirada de 32 por cuadro estando abierto: el canon no dispara a compas
 	and 01fh		;e064
 	ret nz			;e066
-	ld l,(ix+001h)		;e067
+	ld l,(ix+001h)		;e067   ; Igual que el 0x3B en 0xE00B: mismo desplazamiento de 0x0C0C y misma pareja fila-columna
 	ld h,(ix+000h)		;e06a
 	sla h		;e06d
 	ld bc,00c0ch		;e06f
 	add hl,bc			;e072
 	ld b,h			;e073
 	ld c,l			;e074
-	xor a			;e075
+	xor a			;e075   ; El A' que alta_disparo guarda en el +1 de la entrada (0xC8C5), que para el que los mueve (0xDF1D) es la velocidad de filas: a cero, y el +0 tambien, o sea que el tiro nace parado y lo apunta persigue_con_velocidad
 	ex af,af'			;e076
 	call alta_disparo		;e077
-	ret nc			;e07a
-	ld a,03fh		;e07b
+	ret nc			;e07a   ; Con dos disparos ya en el aire no sale, y el canon se queda abierto esperando al cuadro siguiente
+	ld a,03fh		;e07b   ; Disparado, el dibujo retrocede al 0x3F...
 	ld (ix+002h),a		;e07d
-	ld l,(ix+005h)		;e080
+	ld l,(ix+005h)		;e080   ; ...tambien en el mapa, que es lo que se ve
 	ld h,(ix+006h)		;e083
 	ld (hl),a			;e086
-	ld hl,tile_est5		;e087
+	ld hl,tile_est5		;e087   ; ...y vuelve el estado que lo sube: tres pasos de dos cuadros para llegar otra vez al 0x42. Esa es toda la recarga
 	ld (ix+003h),l		;e08a
 	ld (ix+004h),h		;e08d
 	ret			;e090
-tile_32:		; El tile 0x32: hasta la columna 0x28 y una vez de cada 16, suelta al azar un objeto en la tabla de 0xC990 (con A'=0x1E) o en la de 0xC97B (con A'=0x1B), y pasa a tile_est6
-	call choca_con_nave4		;e091
-	ld a,(ix+000h)		;e094
-	cp 028h		;e097
+tile_32:		; El tile 0x32, la boca que suelta objetos: no pasa por impacto_objeto -o sea que el disparo del jugador NO le hace nada- sino por choca_con_nave4, la caja alargada, que mata al que lo roce. Una tirada de 16 por cuadro, el doble de a menudo que el 0x3B, y el objeto no nace en el aparato: nace 0x50 filas mas abajo y ocho pixeles a la derecha (`ld bc,05008h` en 0xE0A8). Ese desplazamiento es lo que explica el `cp 028h` de 0xE097, que tampoco es una columna: 0x28 * 2 + 0x50 = 0xA0, las 160 filas justas del buffer, o sea que el tope es exactamente la edad a partir de la cual el objeto naceria por debajo de la pantalla. Echa a suertes -bit 2 del azar, mitad y mitad- entre alta_objeto_c990 con A' = 0x1E y alta_bandada con A' = 0x1B, y solo si alguna de las dos acepta pasa a tile_est6
+	call choca_con_nave4		;e091   ; Ni impacto_objeto ni contacto_instalacion: el 0x32 usa la cuarta caja, la alargada, que mata al que lo roce y no se deja reventar
+	ld a,(ix+000h)		;e094   ; Otra vez la edad, que es media fila
+	cp 028h		;e097   ; Y este tope sale de una cuenta exacta: el objeto nace 0x50 filas mas abajo (0xE0A8), y 0x28 * 2 + 0x50 son las 160 filas justas del buffer. Por encima del 0x28 naceria fuera de la pantalla
 	ret nc			;e099
-	call azar		;e09a
+	call azar		;e09a   ; Una tirada de 16, el doble de a menudo que el 0x3B
 	and 00fh		;e09d
 	ret nz			;e09f
 	ld l,(ix+001h)		;e0a0
 	ld h,(ix+000h)		;e0a3
 	sla h		;e0a6
-	ld bc,05008h		;e0a8
+	ld bc,05008h		;e0a8   ; Ochenta filas por debajo y ocho pixeles a la derecha: lo que suelta el 0x32 no aparece en su boca, aparece bastante mas abajo
 	add hl,bc			;e0ab
 	ld b,h			;e0ac
 	ld c,l			;e0ad
-	call azar		;e0ae
+	call azar		;e0ae   ; Y a suertes entre las dos tablas, mitad y mitad, mirando un solo bit
 	and 004h		;e0b1
 	jr z,L_E0BE		;e0b3
-	ld a,01eh		;e0b5
+	ld a,01eh		;e0b5   ; 0x1E y 0x1B no son rumbos: los dos pasan del 0x10, o sea que valen de RETARDO de entrada, y ademas son lo que impide que ninguno de los dos suene al nacer (0xCD46 y 0xC24B)
 	ex af,af'			;e0b7
-	call alta_objeto_c990		;e0b8
+	call alta_objeto_c990		;e0b8   ; Dos como mucho en 0xC990...
 	jp L_E0C4		;e0bb
 L_E0BE:
 	ld a,01bh		;e0be
 	ex af,af'			;e0c0
-	call alta_bandada		;e0c1
+	call alta_bandada		;e0c1   ; ...y cuatro como mucho en 0xC97B
 L_E0C4:
-	ret nc			;e0c4
+	ret nc			;e0c4   ; Con la tabla llena no cambia de estado: el 0x32 no se anima si no ha soltado nada
 	ld hl,tile_est6		;e0c5
 	ld (ix+003h),l		;e0c8
 	ld (ix+004h),h		;e0cb
 	ret			;e0ce
-tile_est6:		; El 0x32 animandose: suena 0xEA98 y sube su tile de 0x32 a 0x35; al llegar a 0x36 lo devuelve a 0x32 y vuelve a ser tile_32
-	call choca_con_nave4		;e0cf
-	inc (ix+002h)		;e0d2
-	ld a,001h		;e0d5
+tile_est6:		; El 0x32 animandose detras de soltar: cuatro cuadros seguidos -0x33, 0x34, 0x35 y 0x36-, uno por cuadro y sin la mitad de velocidad del canon, y en los cuatro pide el guion 0xEA98 en el canal 1 con arranca_guion_libre, que si el canal esta cogido busca otro y si no hay ninguno se calla. Al llegar al 0x36 devuelve la celda y (ix+002) al 0x32 en el mismo cuadro, sin dejar que el 0x36 llegue a dibujarse, y se cambia otra vez por tile_32
+	call choca_con_nave4		;e0cf   ; La misma caja en los dos estados del ciclo: mientras se anima tambien mata
+	inc (ix+002h)		;e0d2   ; La copia de la ficha, que aqui va sola: nadie la mira hasta que 0xE0EB la devuelve al 0x32
+	ld a,001h		;e0d5   ; El sonido se pide en los CUATRO cuadros de la animacion, no solo en el primero, y en el canal 1
 	ld de,0ea98h		;e0d7
-	call arranca_guion_libre		;e0da
+	call arranca_guion_libre		;e0da   ; Y con la version que respeta lo que ya suena: si el canal 1 esta cogido busca otro, y si no queda ninguno se calla
 	ld l,(ix+005h)		;e0dd
 	ld h,(ix+006h)		;e0e0
-	inc (hl)			;e0e3
+	inc (hl)			;e0e3   ; 0x33, 0x34, 0x35 y 0x36: uno por cuadro, sin la mitad de velocidad del canon
 	ld a,(hl)			;e0e4
 	cp 036h		;e0e5
 	ret c			;e0e7
-	ld a,032h		;e0e8
+	ld a,032h		;e0e8   ; Al 0x36 se corta y la celda vuelve al 0x32 en el mismo cuadro, o sea que el 0x36 no llega a dibujarse nunca
 	ld (hl),a			;e0ea
-	ld (ix+002h),a		;e0eb
-	ld hl,tile_32		;e0ee
+	ld (ix+002h),a		;e0eb   ; Y la copia de la ficha con ella, que llevaba subiendo suelta desde 0xE0D2
+	ld hl,tile_32		;e0ee   ; Cerrado el ciclo: a esperar la tirada de 16 del cuadro siguiente
 	ld (ix+003h),l		;e0f1
 	ld (ix+004h),h		;e0f4
 	ret			;e0f7
