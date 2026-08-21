@@ -3972,3 +3972,34 @@ C 0xE4A7 Los bits 0 y 1 se apagan aparte: cambiar de instrumento los quita siemp
 C 0xE4B0 Quince bytes por instrumento, asi que el numero se multiplica por quince
 C 0xE4BA IX se salva porque el bucle lo usa de puntero de escritura y acaba quince bytes mas alla
 C 0xE4CC Y ocho campos del estado a cero: lo que el instrumento anterior hubiera dejado a medias no se hereda
+
+C 0xE4F3 El bit 2 se apaga SIEMPRE al arrancar un efecto: de serie el barrido suena una vez y no se recarga
+C 0xE4F9 Seis bytes por entrada, asi que el numero se multiplica por seis
+C 0xE503 IY apunta a 0xEDFF, y como se incrementa dentro del bucle, el `(iy+004h)` va cayendo en 0xEE03, 0xEE04... hasta 0xEE08
+C 0xE507 Los dos contadores vivos, a cero antes de sembrar nada
+C 0xE51C El acumulador tambien: el barrido empieza sin desviacion
+C 0xE520 Y el canal que ha pedido el efecto queda anotado como dueno; op_fin lo mirara al cerrarse
+C 0xE52A El `cpl` da la vuelta a la mascara: lo que entro como "estos bits" sale como "todos menos estos"
+C 0xE52C 9 es la pareja de bits del canal 0 -tono y ruido- en el registro 7 del PSG
+C 0xE531 Una vuelta por numero de canal: el canal 0 no desplaza nada
+C 0xE536 `scf` + `rl e` mete UNOS por abajo en la mascara de apagado, mientras que `sla d` mete ceros en la de encendido
+C 0xE53F Un `or` para encender y un `and` para apagar: las dos cosas en el mismo paso, y sin tocar los bits de los otros canales
+C 0xE546 El tempo mas rapido posible, y sin gastar un byte de argumento
+C 0xE552 Los dos `inc bc` van ANTES de guardar: lo que se apila es la vuelta, ya detras del argumento
+C 0xE553 El canal por dos, que es lo que ocupa cada pareja de la pila
+C 0xE559 La pila del interprete no es la del Z80: son tres parejas propias en 0xEE1B
+C 0xE560 Y la frase se busca en la tabla de las veinte, no en la de los opcodes
+
+C 0xE56E La misma cuenta que el CALL: canal por dos dentro de la pila de 0xEE1B
+C 0xE576 Se recupera el BC apilado y se sigue por donde iba: ni un byte de argumento se consume
+C 0xE580 El argumento se lee DESPUES de calcular la entrada, porque entrada_transporte machaca A con el canal
+C 0xE589 El canal cabe en un byte, asi que H a cero y a sumar
+C 0xE599 Multiplicacion clasica: se mira el bit bajo del multiplicador...
+C 0xE59D ...y solo si esta puesto se suma el multiplicando
+C 0xE59E Y el multiplicando se dobla en cada vuelta, con el acarreo pasando de E a D
+C 0xE5AB Dieciseis vueltas, una por bit del dividendo
+C 0xE5AD El dividendo se va desplazando hacia fuera por arriba, y por abajo entra el bit del cociente
+C 0xE5B0 El resto sube una posicion y se le prueba a restar el divisor...
+C 0xE5B6 ...y si no cabia, se deshace la resta
+C 0xE5B7 El `ccf` da la vuelta al acarreo: lo que salio como "no cabia" entra como el 0 del cociente
+C 0xE5BA La ultima vuelta, fuera del bucle, es la que mete el bit dieciseis

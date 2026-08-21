@@ -12733,15 +12733,15 @@ L_E4BE:
 op_efecto:		; 0x89 n: arranca el barrido de ruido. Copia los seis bytes de la entrada 0xE6D2 + n*6 a 0xEE03-0xEE08 -por parejas, porque son dos etapas entrelazadas: las dos recargas del contador de pasos, los dos pasos y las dos recargas de la espera-, pone a cero los dos contadores vivos de 0xEDFF/0xEE00 y el acumulador 0xEE0B -el que se suma a 0xEE0A para dar el periodo de ruido en 0xEE13-, y apunta en 0xEE0C el canal de 0xEE19, que queda de dueno: es el que op_fin compara para saber si al cerrarse debe limpiar el bloque. Ademas APAGA el bit 2 de 0xEE09, que es el que hace que el barrido se recargue solo al agotarse (`bit 2,a / call nz,refresca_globales_sonido` en 0xE38E), asi que de serie suena una vez; quien lo vuelve a encender es op_banderas
 	inc bc			;e4ef
 	ld a,(0ee09h)		;e4f0
-	res 2,a		;e4f3
+	res 2,a		;e4f3   ; El bit 2 se apaga SIEMPRE al arrancar un efecto: de serie el barrido suena una vez y no se recarga
 	ld (0ee09h),a		;e4f5
 	ld a,(bc)			;e4f8
-	ld de,00006h		;e4f9
+	ld de,00006h		;e4f9   ; Seis bytes por entrada, asi que el numero se multiplica por seis
 	call mul_a_de		;e4fc
 	ld de,0e6d2h		;e4ff
 	add hl,de			;e502
-	ld iy,0edffh		;e503
-	ld (iy+000h),000h		;e507
+	ld iy,0edffh		;e503   ; IY apunta a 0xEDFF, y como se incrementa dentro del bucle, el `(iy+004h)` va cayendo en 0xEE03, 0xEE04... hasta 0xEE08
+	ld (iy+000h),000h		;e507   ; Los dos contadores vivos, a cero antes de sembrar nada
 	ld (iy+001h),000h		;e50b
 	ld d,006h		;e50f
 L_E511:
@@ -12752,75 +12752,75 @@ L_E511:
 	dec d			;e518
 	jr nz,L_E511		;e519
 	xor a			;e51b
-	ld (0ee0bh),a		;e51c
+	ld (0ee0bh),a		;e51c   ; El acumulador tambien: el barrido empieza sin desviacion
 	inc bc			;e51f
-	ld a,(0ee19h)		;e520
+	ld a,(0ee19h)		;e520   ; Y el canal que ha pedido el efecto queda anotado como dueno; op_fin lo mirara al cerrarse
 	ld (0ee0ch),a		;e523
 	jp L_E222		;e526
 mezclador_canal:		; Enciende o apaga el tono y el ruido del canal 0xEE19 en la copia del registro 7 del PSG (0xEE14), desplazando la pareja de bits 0x09 tantas posiciones como el numero de canal
 	push de			;e529
-	cpl			;e52a
+	cpl			;e52a   ; El `cpl` da la vuelta a la mascara: lo que entro como "estos bits" sale como "todos menos estos"
 	ld e,a			;e52b
-	ld d,009h		;e52c
+	ld d,009h		;e52c   ; 9 es la pareja de bits del canal 0 -tono y ruido- en el registro 7 del PSG
 	ld a,(0ee19h)		;e52e
 L_E531:
-	dec a			;e531
+	dec a			;e531   ; Una vuelta por numero de canal: el canal 0 no desplaza nada
 	jp m,L_E53C		;e532
 	scf			;e535
-	rl e		;e536
+	rl e		;e536   ; `scf` + `rl e` mete UNOS por abajo en la mascara de apagado, mientras que `sla d` mete ceros en la de encendido
 	sla d		;e538
 	jr L_E531		;e53a
 L_E53C:
 	ld a,(0ee14h)		;e53c
-	or d			;e53f
+	or d			;e53f   ; Un `or` para encender y un `and` para apagar: las dos cosas en el mismo paso, y sin tocar los bits de los otros canales
 	and e			;e540
 	ld (0ee14h),a		;e541
 	pop de			;e544
 	ret			;e545
 op_tempo1:		; 0x86: el tempo a 1, sin argumento
-	ld a,001h		;e546
+	ld a,001h		;e546   ; El tempo mas rapido posible, y sin gastar un byte de argumento
 	ld (0ee18h),a		;e548
 	inc bc			;e54b
 	jp L_E222		;e54c
 op_llama_frase:		; 0x8C n: el CALL del interprete. Guarda el BC que ya apunta detras del argumento en la pila por canal de 0xEE1B + canal*2 -tres parejas, 0xEE1B a 0xEE20, que cierran al byte contra la tabla de transposiciones de 0xEE21- y sigue interpretando desde la palabra que hay en 0xE7C1 + n*2, que es la tabla de las VEINTE frases y no la de los quince opcodes. Es el comando mas frecuente de la partitura, con 208 apariciones, e identico a su gemelo 0xC864 salvo los cinco operandos de direccion
 	ld a,(0ee19h)		;e54f
-	inc bc			;e552
-	add a,a			;e553
+	inc bc			;e552   ; Los dos `inc bc` van ANTES de guardar: lo que se apila es la vuelta, ya detras del argumento
+	add a,a			;e553   ; El canal por dos, que es lo que ocupa cada pareja de la pila
 	ld l,a			;e554
 	ld h,000h		;e555
 	ld a,(bc)			;e557
 	inc bc			;e558
-	ld de,0ee1bh		;e559
+	ld de,0ee1bh		;e559   ; La pila del interprete no es la del Z80: son tres parejas propias en 0xEE1B
 	add hl,de			;e55c
 	ld (hl),c			;e55d
 	inc hl			;e55e
 	ld (hl),b			;e55f
-	ld hl,0e7c1h		;e560
+	ld hl,0e7c1h		;e560   ; Y la frase se busca en la tabla de las veinte, no en la de los opcodes
 	call lee_puntero		;e563
 	ld b,h			;e566
 	ld c,l			;e567
 	jp L_E222		;e568
 op_vuelve:		; 0x8D: el RETURN. Recupera BC de la misma pila por canal (0xEE1B + canal*2, con el canal en 0xEE19) y vuelve al bucle del interprete en 0xE222 sin consumir ningun byte, que es por lo que TODAS las frases acaban en 0x8D mientras que las canciones acaban en 0x8B. Diecisiete bytes, los mismos que su gemelo 0xC880 salvo los tres operandos de direccion
 	ld a,(0ee19h)		;e56b
-	add a,a			;e56e
+	add a,a			;e56e   ; La misma cuenta que el CALL: canal por dos dentro de la pila de 0xEE1B
 	ld l,a			;e56f
 	ld h,000h		;e570
 	ld de,0ee1bh		;e572
 	add hl,de			;e575
-	ld c,(hl)			;e576
+	ld c,(hl)			;e576   ; Se recupera el BC apilado y se sigue por donde iba: ni un byte de argumento se consume
 	inc hl			;e577
 	ld b,(hl)			;e578
 	jp L_E222		;e579
 op_transporte:		; 0x8E n: escribe el argumento en 0xEE21 + canal, y eso es la TRANSPOSICION de la voz: el lector de notas lo suma al numero de nota antes de buscar el periodo (`call L_E586 / add a,(hl)` en 0xE232)
 	inc bc			;e57c
 	call entrada_transporte		;e57d
-	ld a,(bc)			;e580
+	ld a,(bc)			;e580   ; El argumento se lee DESPUES de calcular la entrada, porque entrada_transporte machaca A con el canal
 	inc bc			;e581
 	ld (hl),a			;e582
 	jp L_E222		;e583
 entrada_transporte:		; HL = 0xEE21 + el canal que hay en 0xEE19: la entrada de la tabla de transposiciones, la que el lector de notas suma y el comando 0x8E escribe
 	ld a,(0ee19h)		;e586
-	ld l,a			;e589
+	ld l,a			;e589   ; El canal cabe en un byte, asi que H a cero y a sumar
 	ld h,000h		;e58a
 	ld de,0ee21h		;e58c
 	add hl,de			;e58f
@@ -12832,11 +12832,11 @@ mul_a_de:		; HL = A * DE por desplazamiento y suma, ocho vueltas; con A=0 devuel
 	push bc			;e596
 	ld b,008h		;e597
 L_E599:
-	srl a		;e599
+	srl a		;e599   ; Multiplicacion clasica: se mira el bit bajo del multiplicador...
 	jr nc,L_E59E		;e59b
-	add hl,de			;e59d
+	add hl,de			;e59d   ; ...y solo si esta puesto se suma el multiplicando
 L_E59E:
-	sla e		;e59e
+	sla e		;e59e   ; Y el multiplicando se dobla en cada vuelta, con el acarreo pasando de E a D
 	rl d		;e5a0
 	djnz L_E599		;e5a2
 	pop bc			;e5a4
@@ -12845,18 +12845,18 @@ div_bc_de:		; BC = BC / DE por restas y desplazamientos, dieciseis vueltas de `a
 	push af			;e5a6
 	ld hl,00000h		;e5a7
 	ld a,b			;e5aa
-	ld b,010h		;e5ab
+	ld b,010h		;e5ab   ; Dieciseis vueltas, una por bit del dividendo
 L_E5AD:
-	rl c		;e5ad
+	rl c		;e5ad   ; El dividendo se va desplazando hacia fuera por arriba, y por abajo entra el bit del cociente
 	rla			;e5af
-	adc hl,hl		;e5b0
+	adc hl,hl		;e5b0   ; El resto sube una posicion y se le prueba a restar el divisor...
 	sbc hl,de		;e5b2
 	jr nc,L_E5B7		;e5b4
-	add hl,de			;e5b6
+	add hl,de			;e5b6   ; ...y si no cabia, se deshace la resta
 L_E5B7:
-	ccf			;e5b7
+	ccf			;e5b7   ; El `ccf` da la vuelta al acarreo: lo que salio como "no cabia" entra como el 0 del cociente
 	djnz L_E5AD		;e5b8
-	rl c		;e5ba
+	rl c		;e5ba   ; La ultima vuelta, fuera del bucle, es la que mete el bit dieciseis
 	rla			;e5bc
 	ld b,a			;e5bd
 	pop af			;e5be
