@@ -1190,13 +1190,14 @@ L 0xC509 tic_sonido El motor del sonido, y lo unico que hace la interrupcion: re
 # LOS CUATRO GIROS DEL DERRUMBE. Cuando el jugador se cae al vacio, el sprite no
 # se dibuja tal cual: se GIRA al cuarto de vuelta que toque, y el giro se elige
 # parcheando el operando del `call` de 0xA5C5 con una de estas cuatro, segun el
-# rumbo cardinal en que se cayo (0 la identidad, 2 a la derecha, 4 media vuelta,
-# 6 a la izquierda). Las cuatro dejan el resultado en el slot de trabajo 0x7D55,
+# rumbo cardinal en que se cayo (0 la identidad, 2 a la derecha, 4 el espejo de
+# arriba abajo -que no es media vuelta: ver la ficha de voltea_sprite- y 6 a la
+# izquierda). Las cuatro dejan el resultado en el slot de trabajo 0x7D55,
 # que es el sprite 0x60, y las cuatro empiezan con los mismos doce bytes que
 # pinta_sprite para sacar la entrada A del pozo.
 L 0xB2A6 gira_sprite_dcha Gira el sprite un cuarto de vuelta a la derecha sobre el slot de trabajo: cuatro pasadas de predesplaza_sprite, una por cada byte de la fila de cuatro
 L 0xB30A gira_sprite_izda La simetrica, girando a la izquierda con predesplaza_sprite_izq y los mismos cuatro destinos en otro orden
-L 0xB36E voltea_sprite Media vuelta: copia el sprite con la PILA -`ld sp,hl` sobre el pozo y dieciseis vueltas de `pop de / pop bc`- escribiendo las filas hacia atras desde el final del slot
+L 0xB36E voltea_sprite Le da la vuelta de arriba abajo: copia el sprite con la PILA -`ld sp,hl` sobre el pozo y dieciseis vueltas de `pop de / pop bc`- escribiendo las filas hacia atras desde el final del slot. NO es media vuelta, aunque asi figurara: los cuatro bytes de cada fila se sueltan en orden inverso sobre direcciones que bajan, con lo que la fila sale igual, y no hay ni una instruccion que invierta bits ni que cruce el byte izquierdo con el derecho. Es un ESPEJO VERTICAL; una media vuelta de verdad dejaria ademas el dibujo cambiado de izquierda a derecha
 L 0xB396 copia_sprite La identidad de las cuatro: un `ldir` de 0x40 bytes del pozo al slot de trabajo
 #
 # LO QUE 0xBC60 DIBUJA NO ES UNA TORRE, ES LA NAVE. El dibujo son 64 filas de
@@ -1207,7 +1208,7 @@ L 0xB396 copia_sprite La identidad de las cuatro: un `ldir` de 0x40 bytes del po
 # LLAMAS. Cuadra con que su largo (0xC468) valga cero toda la partida y solo
 # crezca -2, 4... 0x10- dentro del remate de fase, que es el despegue.
 L 0xBC60 pinta_nave Estampa en el buffer, desde HL y durante A filas, el dibujo de 64x64 de 0x7DDB leido con la pila (ocho `pop de` por fila); si 0xC468 no es cero le anade bajo las dos toberas una llama de (0xC468+8)/2 filas, sacada del final de las dos tablas de 24 bytes de detras del dibujo
-L 0xB3F7 alta_enemigo_cuadro El alta de enemigos cuadro a cuadro: una de cada cuatro tiradas y solo con 0xB720 a cero, saca columna al azar por debajo de 0xB0, elige nacer por arriba (fila 0x10) o por abajo (0xC0), y manda a la tabla de voladores o, si consulta_mapa da suelo firme, a la de andantes
+L 0xB3F7 alta_enemigo_cuadro El alta de enemigos cuadro a cuadro: una de cada cuatro tiradas -el freno de 0xB720 no llega a frenar: ese byte ya vale 0 en el bloque de textos y la unica escritura directa que tiene, la de 0xA480, tambien le mete 0-, saca columna al azar por debajo de 0xB0, elige nacer por arriba (fila 0x10) o por abajo (0xC0) con el bit 3 de esa misma columna, y con el bit 1 manda a la tabla de voladores o, si consulta_mapa da suelo firme, a la de andantes. Con la de voladores llena no se pierde la tirada: se prueba el andante
 L 0xB4CA rotula_menu Rotula el menu entero sobre el buffer con las cinco cadenas encadenadas de 0xB886, y remata poniendo la marca de seleccion en la linea que diga 0xB87C
 L 0xB65B scroll_records El scroll de la pantalla de records: baja el puntero de 0xB87D una fila del buffer por vuelta y rotula el titulo y las ocho fichas de 0xB8C8; cuando el rotulo se sale por arriba, el llamador desapila, arranca la musica y entra en la demo. Gemela de la de naves, 35 de 49 bytes
 L 0xB6D3 entra_en_records Mira si el marcador entra en la tabla: compara los seis digitos contra los ocho campos de puntuacion y, al ganar uno, hace hueco con un `lddr` y salta a la entrada del nombre. Es por donde vuelve todo game over. Gemela de la de naves, 57 de 71 bytes
@@ -1375,7 +1376,7 @@ L 0xB0EC impacto_doble Gasta dos puntos de 0xA6ED, comprobando entre uno y otro 
 # Y no hay parche de silencio, tampoco: los dos segundos bytes de las rutinas de
 # arranque de sonido (0xC4A4 y 0xC4D1) no se escriben desde ninguna parte. Si
 # aqui llegaran a salir los cuatro disparos, sonarian los cuatro.
-L 0xB3AC suma_puntos Suma al marcador de 0xB87F en ASCII con acarreo decimal a mano de derecha a izquierda, repinta, y mira si toca vida extra
+L 0xB3AC suma_puntos Suma al marcador de 0xB87F en ASCII con acarreo decimal a mano de derecha a izquierda, repinta, y mira si toca vida extra. Es LA MISMA RUTINA que la 0xD3CF de la fase de naves: 38 instrucciones cada una y 12 diferencias, todas direcciones
 L 0xC8D5 lee_puntero HL = la palabra que hay en HL + A*2; identica byte a byte a la del bloque de naves
 L 0xD136 pinta_marca_hud Pinta la marca del HUD con el color 0x11
 L 0xD35B hud_imprime Recorre la cadena de indices de glifo de (IX) hasta el 0 estampando cada uno en la VRAM: 8 bytes desde la fuente de 0x5F00 y 0x40 de avance por caracter
@@ -1544,7 +1545,7 @@ L 0xBE06 repinta_todo Rehace la pantalla entera: el fondo desde el mapa, el juga
 L 0xB336 predesplaza_sprite_izq La simetrica: mismo bucle, sacando los bits con `rrca` y metiendolos con `rl`, y con los ocho destinos en (iy+000), +004, +008, +00C, +010, +014, +018 y +01C. Traspone en el otro sentido
 L 0xBD9C escribe_par_vram Escribe la pareja D,E en la VRAM B veces seguidas, avanzando la direccion de una en una
 L 0xBDAC rehace_pantalla Coloca la camara en 0x4638, parchea el salto de 0xA98E con el 0xDA que no salta nunca -para que el dibujado pinte todas las celdas de una pasada- y arranca el guion 0xCD80
-L 0xB436 repinta_escudo Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro celdas de color, 0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1
+L 0xB436 repinta_escudo Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro posiciones -0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1- que son ocho celdas, porque pinta_celda_color pinta siempre la de la direccion y la de la columna de al lado. Deshace lo que marcaron el HUD de 0xB0F9 (color 0x11 por cada punto de escudo perdido) y la marca de muerte de 0x2778
 L 0xD331 rellena_tercio El nucleo de rellena_colores: 24 filas de C bytes cada una, avanzando 0x40 en la VRAM entre fila y fila
 #
 # Y CUANDO SE USA ESE TERCER OPCODE ESTA MEDIDO EN EL CODIGO. A rehace_pantalla
@@ -1972,7 +1973,7 @@ C 0xA62D Rumbo 3, abajo-derecha: ABAJO
 C 0xA631 Rumbo 1, arriba-derecha: ARRIBA
 C 0xA632 Cuatro comparaciones encadenadas, una por lado. Arriba se lleva copia_sprite, que es la identidad: los doce fotogramas estan dibujados mirando hacia arriba
 C 0xA638 Derecha: un cuarto de vuelta a la derecha, que es transponer el bloque bit a bit
-C 0xA63F Abajo: media vuelta, la del truco de leer el sprite con `ld sp,hl` y `pop`
+C 0xA63F Abajo: la del truco de leer el sprite con `ld sp,hl` y `pop`, que le da la vuelta de arriba abajo (espejo, no media vuelta)
 C 0xA646 Izquierda: el cuarto de vuelta del otro lado
 C 0xA64D Y el elegido se escribe en el operando del `call` de 0xA5C5, tres bytes mas atras del sitio donde se va a usar
 C 0xA650 0xAD0E se queda con el rumbo de la caida a pelo, sin fase de animacion: es lo que desliza_cadaver da por supuesto
@@ -2615,5 +2616,153 @@ C 0xB286 El cuerpo va pasando por las ocho poses del protagonista, que es lo uni
 C 0xB291 Y encima, en fila fija, los cuatro dibujos de la explosion...
 C 0xB29A ...que solo salen los cuatro primeros cuadros: de 0x60 en adelante queda el cuerpo dando vueltas a secas
 C 0xB2A6 Cada dibujo del pool ocupa 64 bytes, de ahi las seis duplicaciones
-C 0xB2B3 Los cuatro destinos no van seguidos: 0x7D55, 0x7D75, 0x7D57 y 0x7D77, o sea una rejilla de dos por dos con pasos de 0x20 y de 2. Trasponer cada bloque y ademas permutarlos es lo que da el cuarto de vuelta
+C 0xB2B3 Los cuatro destinos -0x7D55, 0x7D75, 0x7D57 y 0x7D77- no son una rejilla cualquiera: el paso de 2 separa los dos PLANOS (mascara en +0/+1 y dibujo en +2/+3) y el de 0x20 separa las ocho filas de arriba de las ocho de abajo. Cada llamada convierte una columna de ocho pixeles del original en ocho filas del resultado, y la mitad izquierda del original acaba siendo la de arriba: eso es girar a la derecha
 
+
+
+# ----------------------------------------------------------------------
+# LOS GIROS DEL POOL, EL MARCADOR Y EL MENU (0xB2D2-0xB51B)
+# ----------------------------------------------------------------------
+# COMO GIRA UN DIBUJO predesplaza_sprite, que es de lo que vive el derrumbe
+# del protagonista. Cada entrada del pool son 16 filas de cuatro bytes:
+# mascara izquierda, mascara derecha, dibujo izquierdo y dibujo derecho
+# (medido en pinta_fila_del_sprite, que lee los dos primeros con `and` y los
+# dos de detras con `or`).
+#
+# Una llamada se lleva UNA columna de bytes -ocho pixeles de ancho por 16
+# filas de alto- y la deja escrita como OCHO FILAS de 16 pixeles:
+#   * los ocho `rlca / rr (iy+n)` reparten los ocho pixeles de la fila leida
+#     entre ocho destinos separados cuatro bytes, o sea ocho filas seguidas
+#     del slot: el pixel n de la fila leida acaba en la fila n del resultado.
+#     Eso es trasponer un bloque de 8x8 bits.
+#   * el `rr` mete cada pixel por arriba del byte y empuja hacia abajo lo que
+#     ya habia, asi que la PRIMERA fila leida acaba en el bit 0 -la columna de
+#     mas a la derecha- y la ultima en el bit 7. Trasponer y ademas invertir
+#     ese orden es justo girar un cuarto de vuelta a la derecha.
+#   * las dos tandas de ocho (C = 2) son las 16 filas del original, y el
+#     `dec iy` de en medio pasa del byte derecho del slot al izquierdo: la
+#     mitad de ARRIBA del original acaba en la mitad DERECHA del resultado.
+#
+# Y por eso los cuatro destinos de gira_sprite_dcha no van seguidos: el paso
+# de 2 separa los dos planos (mascara en +0/+1, dibujo en +2/+3) y el de 0x20
+# separa las ocho filas de arriba de las ocho de abajo. Columna 0 del original
+# (mascara izquierda) -> 0x7D55, filas 0-7 de la mascara; columna 1 (mascara
+# derecha) -> 0x7D75, filas 8-15; columna 2 (dibujo izquierdo) -> 0x7D57;
+# columna 3 -> 0x7D77. gira_sprite_izda es la misma con `rrca / rl` y los
+# destinos cruzados dos a dos.
+#
+# CORRECCION DE LO ESCRITO: voltea_sprite NO da media vuelta. Los cuatro
+# bytes de cada fila se leen con `pop de / pop bc` y se sueltan B, C, D, E
+# sobre direcciones que BAJAN, con lo que la fila sale en el mismo orden en
+# que entro; y no hay una sola instruccion que invierta bits ni que cruce el
+# byte izquierdo con el derecho. Lo que hace es un ESPEJO VERTICAL: la fila 0
+# pasa a ser la 15. Para una figura que mira hacia arriba el resultado es que
+# mira hacia abajo -que es para lo que se usa, el lado 4 de
+# elige_giro_del_cadaver- pero una media vuelta de verdad dejaria ademas el
+# dibujo cambiado de izquierda a derecha, y aqui eso no pasa.
+#
+# MEDIDO, no deducido: tools/comprueba_giros.py reproduce las tres rutinas
+# instruccion a instruccion sobre 36 entradas del pool (los dos planos de cada
+# una, 72 comparaciones) y las contrasta con el giro geometrico.
+#     gira_sprite_dcha  = giro de un cuarto a la derecha ....  0 fallos
+#     gira_sprite_izda  = giro de un cuarto a la izquierda ...  0 fallos
+#     voltea_sprite     = espejo vertical ...................  0 fallos
+#     voltea_sprite     = media vuelta ......................  64 fallos
+# Las ocho comparaciones en que la media vuelta tambien cuadra son planos
+# simetricos, en los que las dos cosas dan el mismo dibujo.
+#
+# EL MARCADOR: suma_puntos y la de la fase de naves (0xD3CF) son LA MISMA
+# RUTINA. 38 instrucciones cada una y 12 diferencias, todas ellas direcciones:
+# las variables, los tres guiones del aviso, los destinos de salto y las dos
+# rutinas del premio. Suma B puntos DE UNO EN UNO sobre seis digitos ASCII, y
+# cuanto vale cada unidad lo elige el llamante apuntando HL al digito que
+# quiere subir. El premio sale de comparar las decenas de millar antes y
+# despues -o sea que salta cada 10.000 y el contador es el propio marcador- y
+# se reparte igual que alli: escudo si esta por debajo de 2, y si no una vida,
+# con tope nueve.
+
+C 0xB2AF El pozo de dibujos de la fase
+C 0xB2BA Una llamada por columna de bytes del original, y el `inc hl` de en medio pasa a la siguiente
+C 0xB2D3 Dos tandas de ocho filas, que son las 16 del dibujo
+C 0xB2D5 Ocho filas por tanda: las que caben en un byte del resultado
+C 0xB2D7 Una fila del original, ocho pixeles en un byte
+C 0xB2D8 El `rlca` saca el pixel de mas a la izquierda...
+C 0xB2D9 ...y el `rr` lo mete por arriba del destino empujando lo que ya habia, asi que la primera fila leida acaba en el bit 0, la columna de mas a la derecha
+C 0xB2DE Los ocho destinos van de cuatro en cuatro, o sea OCHO FILAS SEGUIDAS del slot: el pixel n de la fila leida es el que va a la fila n del resultado. Eso es trasponer
+C 0xB300 Cuatro bytes por fila: sumarlos es bajar una fila del original
+C 0xB303 Entre las dos tandas el destino retrocede un byte: de la mitad derecha del resultado a la izquierda, que es donde va la mitad de abajo del original
+C 0xB306 Dos vueltas de ocho y el dibujo entero girado
+C 0xB30A La misma cuenta que la de la derecha: dibujo por 64 mas el pozo
+C 0xB317 Los mismos cuatro destinos, pero cruzados dos a dos: ahora la mitad de arriba del original acaba en la mitad IZQUIERDA, que es girar al otro lado
+C 0xB31E Y la misma reparticion, una llamada por columna
+C 0xB337 Las mismas dos tandas de ocho filas
+C 0xB33B La fila del original...
+C 0xB33C ...pero aqui el `rrca` saca el pixel de mas a la DERECHA...
+C 0xB33D ...y el `rl` lo mete por abajo del destino: todo del reves que en la otra, y sale el giro simetrico
+C 0xB364 Una fila mas abajo del original
+C 0xB367 Y aqui el destino AVANZA un byte en vez de retroceder
+C 0xB37B Dieciseis vueltas, una por fila del dibujo
+C 0xB37D SP se va a usar de lector, asi que el bueno se guarda en el operando del `ld sp,00000h` de 0xB392, que es donde se repone al salir
+C 0xB381 La pila apuntando al dibujo del pozo: dos `pop` traen los cuatro bytes de la fila mas rapido que ningun `ld`
+C 0xB382 Y se escribe desde el FINAL del slot hacia atras
+C 0xB387 Los cuatro bytes se sueltan en orden inverso -B, C, D, E- sobre direcciones que bajan, con lo que la fila queda IGUAL: lo unico que se da la vuelta es el orden de las filas
+C 0xB38F Una fila menos
+C 0xB392 SP repuesto, con el valor que escribio 0xB37D
+C 0xB399 Dibujo por 64, la cuenta de siempre
+C 0xB3A3 Al slot de trabajo 0x60, que es el que se pinta
+C 0xB3A6 Los 64 bytes tal cual: este es el caso de mirar hacia arriba, que es como estan dibujados los doce fotogramas
+C 0xB3AC Las decenas de millar ANTES de sumar, guardadas para compararlas al final
+C 0xB3B0 B dice cuantos puntos se suman, y se suman DE UNO EN UNO; cuanto vale cada unidad lo elige el llamante apuntando HL al digito que quiere subir
+C 0xB3B1 Sube el digito, que es ASCII
+C 0xB3B3 Si no se ha pasado del nueve, ya esta
+C 0xB3B7 Y si se ha pasado, vuelve al cero y el acarreo sigue por el digito de la izquierda
+C 0xB3BE El primero que no se desborda se escribe, y esa unidad ya esta sumada
+C 0xB3C2 Repinta el marcador entero, con IX y DE puestos por premia
+C 0xB3C5 El digito viejo vuelve por D: el `push af` de la entrada dejo A en la parte alta
+C 0xB3C6 Si las decenas de millar no han cambiado no hay premio. O sea que se premia cada 10.000 y el contador es el propio marcador, sin gastar una variable
+C 0xB3CB El aviso: tres guiones, uno por canal, con el bit 7 puesto para volver sin `ei`
+C 0xB3E1 Y detras cierra la puerta del sonido: hasta que alguien llame a sonido_reset no puede arrancar ningun guion nuevo, asi que al aviso no lo pisa nada
+C 0xB3E4 Con el escudo por debajo de 2 el premio es escudo nuevo...
+C 0xB3EC ...y con el escudo entero, una vida mas
+C 0xB3F0 Con tope nueve: de ahi para arriba el premio se pierde
+C 0xB3FA Una tirada de cada cuatro; los otros tres cuadros ni se intenta
+C 0xB3FD El freno de 0xB720 no frena nunca: ese byte es el cero que cierra una cadena del bloque de textos, o sea que ya vale 0, y la unica escritura directa que tiene en todo el listado -la de 0xA480- tambien le mete 0
+C 0xB402 La columna sale del azar, y se vuelve a tirar hasta que caiga dentro del ancho de juego
+C 0xB40A El mismo byte hace de columna y de moneda al aire: el bit 3 dice si el bicho nace pegado arriba (fila 0x10) o abajo (0xC0)...
+C 0xB412 ...y el bit 1, si lo que nace es volador o andante
+C 0xB417 El volador entra siempre hacia dentro: naciendo abajo sube cuatro pixeles por cuadro y naciendo arriba baja cuatro
+C 0xB420 Si la tabla de voladores esta llena -solo caben dos- la tirada no se pierde: se sigue por el andante
+C 0xB426 El andante necesita suelo donde nacer: con celda vacia no sale nadie
+C 0xB42B Aqui se calcula lo mismo para el andante -4 naciendo arriba y 0 naciendo abajo, que serian los rumbos "abajo" y "arriba"- pero alta_enemigo mete A' en el quinto campo de la ficha, que no lo lee nadie, y pone el rumbo fijo en 4. Se calcula para nada
+C 0xB436 Escudo a tope, que es lo que premia suma_puntos cuando falta
+C 0xB43B Las cuatro posiciones del HUD, de arriba abajo y todas con tinta blanca: la marca de 0x2778 sobre rojo claro y las tres celdas del escudo sobre azul, azul y negro
+C 0xB45C Dos celdas por llamada
+C 0xB45E Ocho bytes, que es una celda entera de la tabla de colores
+C 0xB460 El byte va a pelo por el puerto de datos, sin tocar la direccion: el VDP la sube sola
+C 0xB462 El `and a` no comprueba nada -el `dec b` de detras vuelve a poner las banderas-: esta para darle tiempo al VDP entre byte y byte
+C 0xB466 La celda de al lado esta 0x40 mas alla, que en la geometria por columnas de este juego es la columna siguiente
+C 0xB46A Y hay que volver a dar la direccion, que la de antes se quedo ocho bytes mas alla
+C 0xB473 El buffer acaba en 0x4EFF: si el rotulo ha caido mas alla, no se pinta
+C 0xB478 Este `cp 020h` -o sea, si el caracter es un espacio- no lo lee nadie: lo unico que mira banderas detras es el `dec a` del bucle, y las pone el mismo. Esta igual de muerto en la gemela del menu (0xBABA), asi que viene de la version de la que salen las dos
+C 0xB47B El glifo son ocho bytes en 0x5F00 + caracter*8
+C 0xB489 0x18 es el ancho del buffer: sumarlo es bajar una fila
+C 0xB48C Ocho filas de glifo...
+C 0xB48E ...y cada una se estampa en DOS filas del buffer: el rotulo sale a doble altura
+C 0xB490 Esta pasada BORRA, y borra el glifo corrido un pixel a la izquierda: el `rlca` lo corre y el `cpl` lo pone del reves para el `and`
+C 0xB49B Byte siguiente del glifo
+C 0xB4A3 La segunda pasada arranca una fila mas abajo que la de borrar, asi que lo borrado asoma una fila por encima del trazo
+C 0xB4A9 Y ahora se pinta con `or`, pero tramado: en una fila los pixeles impares...
+C 0xB4AF ...y en la de al lado los pares, o sea un damero que deja ver el fondo entre trazo y trazo
+C 0xB4B4 Byte siguiente, igual que en la de borrar
+C 0xB4BC Un caracter de la cadena de IX...
+C 0xB4C2 ...y el cero la cierra
+C 0xB4C6 Un byte del buffer por caracter: los glifos van pegados
+C 0xB4CA Las cinco cadenas van SEGUIDAS desde 0xB886 -STARDUST, REDEFINIR TECLAS, JUGAR, JOYSTICK y TECLADO- y cada rotulada deja IX apuntando a la siguiente
+C 0xB4CE El titulo, ocho filas mas abajo y ocho columnas a la derecha (0xC8 = 8*24 + 8)
+C 0xB4D1 Todas las posiciones se suman al scroll: por eso el menu sube con el fondo
+C 0xB4D4 Las dos de arriba, con el rotulador del menu, que lleva otro recorte
+C 0xB4D7 Las cuatro lineas de abajo van en la columna 2 y de 32 en 32 filas: 0x3C2, 0x6C2, 0x9C2 y 0xCC2
+C 0xB4E6 Y de aqui abajo, con el rotulador normal
+C 0xB4FB 0xB87C dice el mando elegido: 0 es teclado y cualquier otra cosa joystick
+C 0xB501 La marca se rotula ENCIMA de la palabra elegida, en su mismo sitio del buffer, y trae tantas flechas como letras tiene: ocho para JOYSTICK...
+C 0xB50E ...y siete para TECLADO. Como rotula_glifo solo borra por donde va a pintar, la palabra no se va: las flechas se le montan encima

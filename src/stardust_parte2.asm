@@ -4392,7 +4392,7 @@ L_A638:
 	jr nz,L_A63F		;a63a
 	ld hl,0b2a6h		;a63c
 L_A63F:
-	cp 004h		;a63f   ; Abajo: media vuelta, la del truco de leer el sprite con `ld sp,hl` y `pop`
+	cp 004h		;a63f   ; Abajo: la del truco de leer el sprite con `ld sp,hl` y `pop`, que le da la vuelta de arriba abajo (espejo, no media vuelta)
 	jr nz,L_A646		;a641
 	ld hl,0b36eh		;a643
 L_A646:
@@ -6433,11 +6433,11 @@ gira_sprite_dcha:		; Gira el sprite un cuarto de vuelta a la derecha sobre el sl
 	add hl,hl			;b2ac
 	add hl,hl			;b2ad
 	add hl,hl			;b2ae
-	ld de,06555h		;b2af
+	ld de,06555h		;b2af   ; El pozo de dibujos de la fase
 	add hl,de			;b2b2
-	ld de,00004h		;b2b3   ; Los cuatro destinos no van seguidos: 0x7D55, 0x7D75, 0x7D57 y 0x7D77, o sea una rejilla de dos por dos con pasos de 0x20 y de 2. Trasponer cada bloque y ademas permutarlos es lo que da el cuarto de vuelta
+	ld de,00004h		;b2b3   ; Los cuatro destinos -0x7D55, 0x7D75, 0x7D57 y 0x7D77- no son una rejilla cualquiera: el paso de 2 separa los dos PLANOS (mascara en +0/+1 y dibujo en +2/+3) y el de 0x20 separa las ocho filas de arriba de las ocho de abajo. Cada llamada convierte una columna de ocho pixeles del original en ocho filas del resultado, y la mitad izquierda del original acaba siendo la de arriba: eso es girar a la derecha
 	ld iy,07d55h		;b2b6
-	call predesplaza_sprite		;b2ba
+	call predesplaza_sprite		;b2ba   ; Una llamada por columna de bytes del original, y el `inc hl` de en medio pasa a la siguiente
 	inc hl			;b2bd
 	ld iy,07d75h		;b2be
 	call predesplaza_sprite		;b2c2
@@ -6448,15 +6448,15 @@ gira_sprite_dcha:		; Gira el sprite un cuarto de vuelta a la derecha sobre el sl
 	ld iy,07d77h		;b2ce
 predesplaza_sprite:		; El nucleo de los giros: por cada bit que saca del original con `rlca` lo mete con `rr` en OCHO destinos distintos, separados 4 bytes -(iy+001), +005, +009, +00D, +011, +015, +019 y +01D-. Ocho `rlca` repartiendo un bit a cada destino, durante ocho filas, es TRASPONER un bloque de 8x8 bits. (Aqui puso CINCO destinos y que era un pre-desplazado: son ocho, contados en el binario, y no desplaza: traspone)
 	push hl			;b2d2
-	ld c,002h		;b2d3
+	ld c,002h		;b2d3   ; Dos tandas de ocho filas, que son las 16 del dibujo
 L_B2D5:
-	ld b,008h		;b2d5
+	ld b,008h		;b2d5   ; Ocho filas por tanda: las que caben en un byte del resultado
 L_B2D7:
-	ld a,(hl)			;b2d7
-	rlca			;b2d8
-	rr (iy+001h)		;b2d9
+	ld a,(hl)			;b2d7   ; Una fila del original, ocho pixeles en un byte
+	rlca			;b2d8   ; El `rlca` saca el pixel de mas a la izquierda...
+	rr (iy+001h)		;b2d9   ; ...y el `rr` lo mete por arriba del destino empujando lo que ya habia, asi que la primera fila leida acaba en el bit 0, la columna de mas a la derecha
 	rlca			;b2dd
-	rr (iy+005h)		;b2de
+	rr (iy+005h)		;b2de   ; Los ocho destinos van de cuatro en cuatro, o sea OCHO FILAS SEGUIDAS del slot: el pixel n de la fila leida es el que va a la fila n del resultado. Eso es trasponer
 	rlca			;b2e2
 	rr (iy+009h)		;b2e3
 	rlca			;b2e7
@@ -6469,15 +6469,15 @@ L_B2D7:
 	rr (iy+019h)		;b2f7
 	rlca			;b2fb
 	rr (iy+01dh)		;b2fc
-	add hl,de			;b300
+	add hl,de			;b300   ; Cuatro bytes por fila: sumarlos es bajar una fila del original
 	djnz L_B2D7		;b301
-	dec iy		;b303
+	dec iy		;b303   ; Entre las dos tandas el destino retrocede un byte: de la mitad derecha del resultado a la izquierda, que es donde va la mitad de abajo del original
 	dec c			;b305
-	jr nz,L_B2D5		;b306
+	jr nz,L_B2D5		;b306   ; Dos vueltas de ocho y el dibujo entero girado
 	pop hl			;b308
 	ret			;b309
 gira_sprite_izda:		; La simetrica, girando a la izquierda con predesplaza_sprite_izq y los mismos cuatro destinos en otro orden
-	ld h,000h		;b30a
+	ld h,000h		;b30a   ; La misma cuenta que la de la derecha: dibujo por 64 mas el pozo
 	ld l,a			;b30c
 	add hl,hl			;b30d
 	add hl,hl			;b30e
@@ -6487,9 +6487,9 @@ gira_sprite_izda:		; La simetrica, girando a la izquierda con predesplaza_sprite
 	add hl,hl			;b312
 	ld de,06555h		;b313
 	add hl,de			;b316
-	ld de,00004h		;b317
+	ld de,00004h		;b317   ; Los mismos cuatro destinos, pero cruzados dos a dos: ahora la mitad de arriba del original acaba en la mitad IZQUIERDA, que es girar al otro lado
 	ld iy,07d75h		;b31a
-	call predesplaza_sprite_izq		;b31e
+	call predesplaza_sprite_izq		;b31e   ; Y la misma reparticion, una llamada por columna
 	inc hl			;b321
 	ld iy,07d55h		;b322
 	call predesplaza_sprite_izq		;b326
@@ -6500,13 +6500,13 @@ gira_sprite_izda:		; La simetrica, girando a la izquierda con predesplaza_sprite
 	ld iy,07d57h		;b332
 predesplaza_sprite_izq:		; La simetrica: mismo bucle, sacando los bits con `rrca` y metiendolos con `rl`, y con los ocho destinos en (iy+000), +004, +008, +00C, +010, +014, +018 y +01C. Traspone en el otro sentido
 	push hl			;b336
-	ld c,002h		;b337
+	ld c,002h		;b337   ; Las mismas dos tandas de ocho filas
 L_B339:
 	ld b,008h		;b339
 L_B33B:
-	ld a,(hl)			;b33b
-	rrca			;b33c
-	rl (iy+000h)		;b33d
+	ld a,(hl)			;b33b   ; La fila del original...
+	rrca			;b33c   ; ...pero aqui el `rrca` saca el pixel de mas a la DERECHA...
+	rl (iy+000h)		;b33d   ; ...y el `rl` lo mete por abajo del destino: todo del reves que en la otra, y sale el giro simetrico
 	rrca			;b341
 	rl (iy+004h)		;b342
 	rrca			;b346
@@ -6521,14 +6521,14 @@ L_B33B:
 	rl (iy+018h)		;b35b
 	rrca			;b35f
 	rl (iy+01ch)		;b360
-	add hl,de			;b364
+	add hl,de			;b364   ; Una fila mas abajo del original
 	djnz L_B33B		;b365
-	inc iy		;b367
+	inc iy		;b367   ; Y aqui el destino AVANZA un byte en vez de retroceder
 	dec c			;b369
 	jr nz,L_B339		;b36a
 	pop hl			;b36c
 	ret			;b36d
-voltea_sprite:		; Media vuelta: copia el sprite con la PILA -`ld sp,hl` sobre el pozo y dieciseis vueltas de `pop de / pop bc`- escribiendo las filas hacia atras desde el final del slot
+voltea_sprite:		; Le da la vuelta de arriba abajo: copia el sprite con la PILA -`ld sp,hl` sobre el pozo y dieciseis vueltas de `pop de / pop bc`- escribiendo las filas hacia atras desde el final del slot. NO es media vuelta, aunque asi figurara: los cuatro bytes de cada fila se sueltan en orden inverso sobre direcciones que bajan, con lo que la fila sale igual, y no hay ni una instruccion que invierta bits ni que cruce el byte izquierdo con el derecho. Es un ESPEJO VERTICAL; una media vuelta de verdad dejaria ademas el dibujo cambiado de izquierda a derecha
 	ld h,000h		;b36e
 	ld l,a			;b370
 	add hl,hl			;b371
@@ -6539,14 +6539,14 @@ voltea_sprite:		; Media vuelta: copia el sprite con la PILA -`ld sp,hl` sobre el
 	add hl,hl			;b376
 	ld de,06555h		;b377
 	add hl,de			;b37a
-	ld a,010h		;b37b
-	ld (0b393h),sp		;b37d
-	ld sp,hl			;b381
-	ld hl,07d94h		;b382
+	ld a,010h		;b37b   ; Dieciseis vueltas, una por fila del dibujo
+	ld (0b393h),sp		;b37d   ; SP se va a usar de lector, asi que el bueno se guarda en el operando del `ld sp,00000h` de 0xB392, que es donde se repone al salir
+	ld sp,hl			;b381   ; La pila apuntando al dibujo del pozo: dos `pop` traen los cuatro bytes de la fila mas rapido que ningun `ld`
+	ld hl,07d94h		;b382   ; Y se escribe desde el FINAL del slot hacia atras
 L_B385:
 	pop de			;b385
 	pop bc			;b386
-	ld (hl),b			;b387
+	ld (hl),b			;b387   ; Los cuatro bytes se sueltan en orden inverso -B, C, D, E- sobre direcciones que bajan, con lo que la fila queda IGUAL: lo unico que se da la vuelta es el orden de las filas
 	dec hl			;b388
 	ld (hl),c			;b389
 	dec hl			;b38a
@@ -6554,14 +6554,14 @@ L_B385:
 	dec hl			;b38c
 	ld (hl),e			;b38d
 	dec hl			;b38e
-	dec a			;b38f
+	dec a			;b38f   ; Una fila menos
 	jr nz,L_B385		;b390
-	ld sp,00000h		;b392
+	ld sp,00000h		;b392   ; SP repuesto, con el valor que escribio 0xB37D
 	ret			;b395
 copia_sprite:		; La identidad de las cuatro: un `ldir` de 0x40 bytes del pozo al slot de trabajo
 	ld h,000h		;b396
 	ld l,a			;b398
-	add hl,hl			;b399
+	add hl,hl			;b399   ; Dibujo por 64, la cuenta de siempre
 	add hl,hl			;b39a
 	add hl,hl			;b39b
 	add hl,hl			;b39c
@@ -6569,34 +6569,34 @@ copia_sprite:		; La identidad de las cuatro: un `ldir` de 0x40 bytes del pozo al
 	add hl,hl			;b39e
 	ld de,06555h		;b39f
 	add hl,de			;b3a2
-	ld de,07d55h		;b3a3
-	ld bc,00040h		;b3a6
+	ld de,07d55h		;b3a3   ; Al slot de trabajo 0x60, que es el que se pinta
+	ld bc,00040h		;b3a6   ; Los 64 bytes tal cual: este es el caso de mirar hacia arriba, que es como estan dibujados los doce fotogramas
 	ldir		;b3a9
 	ret			;b3ab
-suma_puntos:		; Suma al marcador de 0xB87F en ASCII con acarreo decimal a mano de derecha a izquierda, repinta, y mira si toca vida extra
-	ld a,(0b880h)		;b3ac
+suma_puntos:		; Suma al marcador de 0xB87F en ASCII con acarreo decimal a mano de derecha a izquierda, repinta, y mira si toca vida extra. Es LA MISMA RUTINA que la 0xD3CF de la fase de naves: 38 instrucciones cada una y 12 diferencias, todas direcciones
+	ld a,(0b880h)		;b3ac   ; Las decenas de millar ANTES de sumar, guardadas para compararlas al final
 	push af			;b3af
 L_B3B0:
-	push hl			;b3b0
+	push hl			;b3b0   ; B dice cuantos puntos se suman, y se suman DE UNO EN UNO; cuanto vale cada unidad lo elige el llamante apuntando HL al digito que quiere subir
 L_B3B1:
-	ld a,(hl)			;b3b1
+	ld a,(hl)			;b3b1   ; Sube el digito, que es ASCII
 	inc a			;b3b2
-	cp 03ah		;b3b3
+	cp 03ah		;b3b3   ; Si no se ha pasado del nueve, ya esta
 	jr c,L_B3BE		;b3b5
-	sub 00ah		;b3b7
+	sub 00ah		;b3b7   ; Y si se ha pasado, vuelve al cero y el acarreo sigue por el digito de la izquierda
 	ld (hl),a			;b3b9
 	dec hl			;b3ba
 	jp L_B3B1		;b3bb
 L_B3BE:
-	ld (hl),a			;b3be
+	ld (hl),a			;b3be   ; El primero que no se desborda se escribe, y esa unidad ya esta sumada
 	pop hl			;b3bf
 	djnz L_B3B0		;b3c0
-	call hud_imprime		;b3c2
-	pop de			;b3c5
-	ld a,(0b880h)		;b3c6
+	call hud_imprime		;b3c2   ; Repinta el marcador entero, con IX y DE puestos por premia
+	pop de			;b3c5   ; El digito viejo vuelve por D: el `push af` de la entrada dejo A en la parte alta
+	ld a,(0b880h)		;b3c6   ; Si las decenas de millar no han cambiado no hay premio. O sea que se premia cada 10.000 y el contador es el propio marcador, sin gastar una variable
 	cp d			;b3c9
 	ret z			;b3ca
-	ld a,080h		;b3cb
+	ld a,080h		;b3cb   ; El aviso: tres guiones, uno por canal, con el bit 7 puesto para volver sin `ei`
 	ld de,0cdb1h		;b3cd
 	call arranca_guion		;b3d0
 	inc a			;b3d3
@@ -6605,61 +6605,61 @@ L_B3BE:
 	inc a			;b3da
 	ld de,0cdech		;b3db
 	call arranca_guion		;b3de
-	call sonido_off		;b3e1
-	ld a,(0a6edh)		;b3e4
+	call sonido_off		;b3e1   ; Y detras cierra la puerta del sonido: hasta que alguien llame a sonido_reset no puede arrancar ningun guion nuevo, asi que al aviso no lo pisa nada
+	ld a,(0a6edh)		;b3e4   ; Con el escudo por debajo de 2 el premio es escudo nuevo...
 	cp 002h		;b3e7
 	jp c,repinta_escudo		;b3e9
-	ld hl,0c45fh		;b3ec
+	ld hl,0c45fh		;b3ec   ; ...y con el escudo entero, una vida mas
 	ld a,(hl)			;b3ef
-	cp 009h		;b3f0
+	cp 009h		;b3f0   ; Con tope nueve: de ahi para arriba el premio se pierde
 	ret nc			;b3f2
 	inc (hl)			;b3f3
 	jp hud_vidas		;b3f4
-alta_enemigo_cuadro:		; El alta de enemigos cuadro a cuadro: una de cada cuatro tiradas y solo con 0xB720 a cero, saca columna al azar por debajo de 0xB0, elige nacer por arriba (fila 0x10) o por abajo (0xC0), y manda a la tabla de voladores o, si consulta_mapa da suelo firme, a la de andantes
+alta_enemigo_cuadro:		; El alta de enemigos cuadro a cuadro: una de cada cuatro tiradas -el freno de 0xB720 no llega a frenar: ese byte ya vale 0 en el bloque de textos y la unica escritura directa que tiene, la de 0xA480, tambien le mete 0-, saca columna al azar por debajo de 0xB0, elige nacer por arriba (fila 0x10) o por abajo (0xC0) con el bit 3 de esa misma columna, y con el bit 1 manda a la tabla de voladores o, si consulta_mapa da suelo firme, a la de andantes. Con la de voladores llena no se pierde la tirada: se prueba el andante
 	call azar		;b3f7
-	and 003h		;b3fa
+	and 003h		;b3fa   ; Una tirada de cada cuatro; los otros tres cuadros ni se intenta
 	ret nz			;b3fc
-	ld a,(0b720h)		;b3fd
+	ld a,(0b720h)		;b3fd   ; El freno de 0xB720 no frena nunca: ese byte es el cero que cierra una cadena del bloque de textos, o sea que ya vale 0, y la unica escritura directa que tiene en todo el listado -la de 0xA480- tambien le mete 0
 	and a			;b400
 	ret nz			;b401
 L_B402:
-	call azar		;b402
+	call azar		;b402   ; La columna sale del azar, y se vuelve a tirar hasta que caiga dentro del ancho de juego
 	cp 0b0h		;b405
 	jr nc,L_B402		;b407
 	ld c,a			;b409
-	bit 3,a		;b40a
+	bit 3,a		;b40a   ; El mismo byte hace de columna y de moneda al aire: el bit 3 dice si el bicho nace pegado arriba (fila 0x10) o abajo (0xC0)...
 	ld b,010h		;b40c
 	jr z,L_B412		;b40e
 	ld b,0c0h		;b410
 L_B412:
-	bit 1,c		;b412
+	bit 1,c		;b412   ; ...y el bit 1, si lo que nace es volador o andante
 	jr z,L_B424		;b414
 	ld a,b			;b416
-	cp 0c0h		;b417
+	cp 0c0h		;b417   ; El volador entra siempre hacia dentro: naciendo abajo sube cuatro pixeles por cuadro y naciendo arriba baja cuatro
 	ld a,0fch		;b419
 	jr z,L_B41F		;b41b
 	ld a,004h		;b41d
 L_B41F:
 	ex af,af'			;b41f
-	call alta_volador		;b420
+	call alta_volador		;b420   ; Si la tabla de voladores esta llena -solo caben dos- la tirada no se pierde: se sigue por el andante
 	ret c			;b423
 L_B424:
 	ld h,b			;b424
 	ld l,c			;b425
-	call consulta_mapa		;b426
+	call consulta_mapa		;b426   ; El andante necesita suelo donde nacer: con celda vacia no sale nadie
 	ret z			;b429
 	ld a,b			;b42a
-	cp 0c0h		;b42b
+	cp 0c0h		;b42b   ; Aqui se calcula lo mismo para el andante -4 naciendo arriba y 0 naciendo abajo, que serian los rumbos "abajo" y "arriba"- pero alta_enemigo mete A' en el quinto campo de la ficha, que no lo lee nadie, y pone el rumbo fijo en 4. Se calcula para nada
 	ld a,004h		;b42d
 	jr nz,L_B432		;b42f
 	xor a			;b431
 L_B432:
 	ex af,af'			;b432
 	jp alta_enemigo		;b433
-repinta_escudo:		; Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro celdas de color, 0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1
-	ld a,003h		;b436
+repinta_escudo:		; Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro posiciones -0x2778 en 0xF9, 0x2F40 y 0x2F48 en 0xF5, y 0x2F50 en 0xF1- que son ocho celdas, porque pinta_celda_color pinta siempre la de la direccion y la de la columna de al lado. Deshace lo que marcaron el HUD de 0xB0F9 (color 0x11 por cada punto de escudo perdido) y la marca de muerte de 0x2778
+	ld a,003h		;b436   ; Escudo a tope, que es lo que premia suma_puntos cuando falta
 	ld (0a6edh),a		;b438
-	ld hl,02778h		;b43b
+	ld hl,02778h		;b43b   ; Las cuatro posiciones del HUD, de arriba abajo y todas con tinta blanca: la marca de 0x2778 sobre rojo claro y las tres celdas del escudo sobre azul, azul y negro
 	ld c,0f9h		;b43e
 	call pinta_celda_color		;b440
 	ld hl,02f40h		;b443
@@ -6673,30 +6673,30 @@ repinta_escudo:		; Pone el escudo a 3 (0xA6ED) y repinta su indicador: cuatro ce
 pinta_celda_color:		; Rellena dos celdas de color consecutivas de la VRAM (8 bytes cada una, separadas 0x40) con el valor C. Es la misma que la 0xD480 de la fase de naves salvo por UNA instruccion: alli hay un `ei` dentro del bucle (0xD48E) que aqui no esta, y por eso las dos se desalinean a partir del byte 14 aunque hagan lo mismo
 	call vram_pon_dir		;b458
 	ld a,c			;b45b
-	ld c,002h		;b45c
+	ld c,002h		;b45c   ; Dos celdas por llamada
 L_B45E:
-	ld b,008h		;b45e
+	ld b,008h		;b45e   ; Ocho bytes, que es una celda entera de la tabla de colores
 L_B460:
-	out (098h),a		;b460
-	and a			;b462
+	out (098h),a		;b460   ; El byte va a pelo por el puerto de datos, sin tocar la direccion: el VDP la sube sola
+	and a			;b462   ; El `and a` no comprueba nada -el `dec b` de detras vuelve a poner las banderas-: esta para darle tiempo al VDP entre byte y byte
 	dec b			;b463
 	jr nz,L_B460		;b464
-	ld de,00040h		;b466
+	ld de,00040h		;b466   ; La celda de al lado esta 0x40 mas alla, que en la geometria por columnas de este juego es la columna siguiente
 	add hl,de			;b469
-	call vram_pon_dir		;b46a
+	call vram_pon_dir		;b46a   ; Y hay que volver a dar la direccion, que la de antes se quedo ocho bytes mas alla
 	dec c			;b46d
 	jr nz,L_B45E		;b46e
 	ei			;b470
 	ret			;b471
 rotula_glifo:		; Estampa el glifo 0x5F00+A*8 a DOBLE altura y tramado en damero: borra con rlca/cpl/and, pinta con and 0x55/0xAA; recorta al llegar a 0x4F00
 	ld e,a			;b472
-	ld a,h			;b473
+	ld a,h			;b473   ; El buffer acaba en 0x4EFF: si el rotulo ha caido mas alla, no se pinta
 	cp 04fh		;b474
 	ld a,e			;b476
 	ret nc			;b477
-	cp 020h		;b478
+	cp 020h		;b478   ; Este `cp 020h` -o sea, si el caracter es un espacio- no lo lee nadie: lo unico que mira banderas detras es el `dec a` del bucle, y las pone el mismo. Esta igual de muerto en la gemela del menu (0xBABA), asi que viene de la version de la que salen las dos
 	push hl			;b47a
-	ld h,000h		;b47b
+	ld h,000h		;b47b   ; El glifo son ocho bytes en 0x5F00 + caracter*8
 	ld l,a			;b47d
 	add hl,hl			;b47e
 	add hl,hl			;b47f
@@ -6707,12 +6707,12 @@ rotula_glifo:		; Estampa el glifo 0x5F00+A*8 a DOBLE altura y tramado en damero:
 	pop hl			;b486
 	push hl			;b487
 	push de			;b488
-	ld bc,00018h		;b489
-	ld a,008h		;b48c
+	ld bc,00018h		;b489   ; 0x18 es el ancho del buffer: sumarlo es bajar una fila
+	ld a,008h		;b48c   ; Ocho filas de glifo...
 L_B48E:
-	ex af,af'			;b48e
+	ex af,af'			;b48e   ; ...y cada una se estampa en DOS filas del buffer: el rotulo sale a doble altura
 	ld a,(de)			;b48f
-	rlca			;b490
+	rlca			;b490   ; Esta pasada BORRA, y borra el glifo corrido un pixel a la izquierda: el `rlca` lo corre y el `cpl` lo pone del reves para el `and`
 	cpl			;b491
 	and (hl)			;b492
 	ld (hl),a			;b493
@@ -6723,67 +6723,67 @@ L_B48E:
 	and (hl)			;b498
 	ld (hl),a			;b499
 	add hl,bc			;b49a
-	inc de			;b49b
+	inc de			;b49b   ; Byte siguiente del glifo
 	ex af,af'			;b49c
 	dec a			;b49d
 	jp nz,L_B48E		;b49e
 	pop de			;b4a1
 	pop hl			;b4a2
-	push hl			;b4a3
+	push hl			;b4a3   ; La segunda pasada arranca una fila mas abajo que la de borrar, asi que lo borrado asoma una fila por encima del trazo
 	add hl,bc			;b4a4
 	ld a,008h		;b4a5
 L_B4A7:
 	ex af,af'			;b4a7
 	ld a,(de)			;b4a8
-	and 055h		;b4a9
+	and 055h		;b4a9   ; Y ahora se pinta con `or`, pero tramado: en una fila los pixeles impares...
 	or (hl)			;b4ab
 	ld (hl),a			;b4ac
 	add hl,bc			;b4ad
 	ld a,(de)			;b4ae
-	and 0aah		;b4af
+	and 0aah		;b4af   ; ...y en la de al lado los pares, o sea un damero que deja ver el fondo entre trazo y trazo
 	or (hl)			;b4b1
 	ld (hl),a			;b4b2
 	add hl,bc			;b4b3
-	inc de			;b4b4
+	inc de			;b4b4   ; Byte siguiente, igual que en la de borrar
 	ex af,af'			;b4b5
 	dec a			;b4b6
 	jp nz,L_B4A7		;b4b7
 	pop hl			;b4ba
 	ret			;b4bb
 rotula_cadena:		; Imprime la cadena de (IX) hasta el 0 con rotula_glifo: el rotulo DEMO y el menu
-	ld a,(ix+000h)		;b4bc
+	ld a,(ix+000h)		;b4bc   ; Un caracter de la cadena de IX...
 	inc ix		;b4bf
 	and a			;b4c1
-	ret z			;b4c2
+	ret z			;b4c2   ; ...y el cero la cierra
 	call rotula_glifo		;b4c3
-	inc hl			;b4c6
+	inc hl			;b4c6   ; Un byte del buffer por caracter: los glifos van pegados
 	jp rotula_cadena		;b4c7
 rotula_menu:		; Rotula el menu entero sobre el buffer con las cinco cadenas encadenadas de 0xB886, y remata poniendo la marca de seleccion en la linea que diga 0xB87C
-	ld ix,0b886h		;b4ca
-	ld de,000c8h		;b4ce
-	call suma_scroll		;b4d1
-	call rotula_cadena_menu		;b4d4
-	ld de,003c2h		;b4d7
+	ld ix,0b886h		;b4ca   ; Las cinco cadenas van SEGUIDAS desde 0xB886 -STARDUST, REDEFINIR TECLAS, JUGAR, JOYSTICK y TECLADO- y cada rotulada deja IX apuntando a la siguiente
+	ld de,000c8h		;b4ce   ; El titulo, ocho filas mas abajo y ocho columnas a la derecha (0xC8 = 8*24 + 8)
+	call suma_scroll		;b4d1   ; Todas las posiciones se suman al scroll: por eso el menu sube con el fondo
+	call rotula_cadena_menu		;b4d4   ; Las dos de arriba, con el rotulador del menu, que lleva otro recorte
+	ld de,003c2h		;b4d7   ; Las cuatro lineas de abajo van en la columna 2 y de 32 en 32 filas: 0x3C2, 0x6C2, 0x9C2 y 0xCC2
 	call suma_scroll		;b4da
 	call rotula_cadena_menu		;b4dd
 	ld de,006c2h		;b4e0
 	call suma_scroll		;b4e3
-	call rotula_cadena		;b4e6
+	call rotula_cadena		;b4e6   ; Y de aqui abajo, con el rotulador normal
 	ld de,009c2h		;b4e9
 	call suma_scroll		;b4ec
 	call rotula_cadena		;b4ef
 	ld de,00cc2h		;b4f2
 	call suma_scroll		;b4f5
 	call rotula_cadena		;b4f8
-	ld a,(0b87ch)		;b4fb
+	ld a,(0b87ch)		;b4fb   ; 0xB87C dice el mando elegido: 0 es teclado y cualquier otra cosa joystick
 	and a			;b4fe
 	jr z,L_B50E		;b4ff
-	ld ix,0b8b7h		;b501
+	ld ix,0b8b7h		;b501   ; La marca se rotula ENCIMA de la palabra elegida, en su mismo sitio del buffer, y trae tantas flechas como letras tiene: ocho para JOYSTICK...
 	ld de,009c2h		;b505
 	call suma_scroll		;b508
 	jp rotula_cadena		;b50b
 L_B50E:
-	ld ix,0b8c0h		;b50e
+	ld ix,0b8c0h		;b50e   ; ...y siete para TECLADO. Como rotula_glifo solo borra por donde va a pintar, la palabra no se va: las flechas se le montan encima
 	ld de,00cc2h		;b512
 	call suma_scroll		;b515
 	jp rotula_cadena		;b518
