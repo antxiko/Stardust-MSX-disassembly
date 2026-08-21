@@ -165,7 +165,7 @@ D 0xCB04 0xD068 musica_de_la_fase LA MUSICA DE LA FASE DE A PIE, 1380 B escritos
 D 0xD068 0xD117 variables_del_interprete Variables a cero (175 B), y los primeros 138 tienen nombre: son los TRES ESTADOS DE CANAL del interprete de sonido, de 46 B cada uno (0xD068, 0xD096, 0xD0C4), que es lo que resolvio el enigma de los "objetos de 46 bytes". Los 37 restantes (0xD0F2-0xD117) son las variables globales del interprete y las que el listado lee con ld a,(nn). Confirmado ademas desde fuera: al volcar la memoria justo tras la multicarga, los bytes que ya no coinciden con la cinta se agolpan aqui. El trazador contaba todo esto como codigo
 #   porque 0x00 desensambla a nop. El listado las lee con ld a,(nn) desde once
 #   sitios (0xD0FC desde 0xC69F/0xC7B0/0xC805, 0xD10C desde tres mas...).
-D 0xD13A 0xD13C relleno_D13A Relleno o resto (2 B; 2 bytes)
+D 0xD13A 0xD13C entrada_muerta_D13A No es relleno: los dos bytes son 3E 71, o sea `ld a,071h`, una SEGUNDA ENTRADA a la rutina de rellenar celdas de 0xD13C que pintaria con el color 0x71 en vez de con el 0x11. No la llama nadie -0xD13A no aparece ni una vez en el listado- y el `jr $+4` de 0xD138 esta justo para saltarsela cuando se entra por pinta_marca_hud
 D 0xD348 0xD35B tabla_D348 Tabla (19 B; racha 2.45, entropia 3.72, 14 valores: pocos valores para ser un dibujo)
 
 # --- LOS BORDES DE LAS RUTINAS QUE APARECIERON JUGANDO -----------------------
@@ -3330,3 +3330,142 @@ C 0xC8DC Y la palabra, leida en dos pasos para no gastar mas registros
 C 0xC8E7 Once registros: los tres periodos de tono, el del ruido, el mezclador y los tres volumenes
 C 0xC8E9 Por el puerto 0xA0 va el numero de registro y por el 0xA1 el dato
 C 0xC8F1 El registro siguiente y el byte siguiente de la sombra, que van en el mismo orden
+
+
+# ----------------------------------------------------------------------
+# LO QUE QUEDABA: VRAM, TECLADO, MARCO Y EL NOMBRE DEL RECORD (0xD117-0xD48B)
+# ----------------------------------------------------------------------
+# EL IMPRESOR DEL MARCO (imprime_marco) escribe DIRECTO a la VRAM, sin pasar
+# por el buffer, y va con retardo: cada caracter empieza con una espera de
+# 3000 vueltas, o sea que el texto sale a maquina de escribir. Detras de cada
+# caracter deja un CURSOR -siete filas de 0x7F- en la celda siguiente.
+# Los codigos por debajo de 0x20 son control, y lo primero que hacen todos es
+# BORRAR la celda donde esta el cursor:
+#   0x01  coloca: se queda con el tercio y la fila de la posicion actual, tira
+#         la columna y le suma la que traiga (IX)*0x40
+#   0x14  silencio, dos esperas de 65536 y la musica de los carteles otra vez
+#   los demas (0x0D es el que usan los textos) son SALTO DE LINEA: bajan una
+#         fila de caracteres y vuelven a la COLUMNA 4, que es el margen
+#         izquierdo del area; si la fila era la ultima del tercio, saltan al
+#         tercio siguiente con el `add a,009h`, que es 0x800 de tercio mas
+#         0x100 de las cuatro columnas del margen. Y al saltar de linea
+#         tambien callan el sonido, esperan y rearrancan la musica de los
+#         carteles.
+#
+# LA ENTRADA DEL NOMBRE (0xD3C4) son seis caracteres sobre la ficha que
+# entra_en_records dejo en la pila, rellenados antes con espacios. De las
+# veinte cadenas de nombres de tecla de 0xB7C2 solo se miran tres -0x10 ENTER
+# para cerrar, 0x11 SPACE y 0x14 DEL-, y cualquier cosa de 0x30 para arriba
+# entra tal cual. El DEL no solo borra el hueco: repinta la celda a cero,
+# retrocede una columna, deja el cursor de OCHO filas -una mas que el que pone
+# imprime_marco-, pone un espacio en la ficha y devuelve la cuenta con `inc b`.
+#
+# Y los dos bytes que figuraban como relleno en 0xD13A son `ld a,071h`: una
+# SEGUNDA ENTRADA a la rutina de rellenar celdas, con otro color, que no llama
+# nadie. El `jr $+4` de 0xD138 esta justo para saltarsela cuando se entra por
+# pinta_marca_hud con el 0x11.
+
+C 0xD119 El `in a,(099h)` desengancha el latch del puerto antes de dar la direccion
+C 0xD11F Bit 14 a uno y el 15 a cero: eso es lo que le dice al VDP que se va a ESCRIBIR
+C 0xD129 El marcador vive en 0xB87F...
+C 0xD12D ...y se repinta en 0x12B0, la misma posicion de pantalla que usa la fase de naves
+C 0xD136 (marca del HUD) El color 0x11 es negro sobre negro: la marca se pinta apagando la celda
+C 0xD13C Dos celdas de ancho por dos de alto
+C 0xD140 Y dos filas de caracter por vuelta
+C 0xD147 Ocho bytes por celda, con los dos `and a` de respiro para el VDP
+C 0xD14F Al llegar a la ultima fila del tercio (0x38) hay que saltar al de abajo...
+C 0xD157 ...poniendo la fila a cero y subiendo 0x800, que es el tamano del tercio
+C 0xD166 Y la celda de al lado esta 0x40 mas alla: la columna siguiente
+C 0xD16F La pantalla de redefinir teclas empieza limpia...
+C 0xD175 ...y forzando teclado, que aqui el joystick no vale
+C 0xD179 A los 72 nombres de tecla se les quita el bit 7: es la marca de "ya usada", y se sueltan todas
+C 0xD183 Ocho vueltas: el titulo y las siete teclas
+C 0xD189 IY recorre las siete entradas de 0xB86A, dos bytes cada una
+C 0xD191 Cada vuelta rotula su trozo de texto...
+C 0xD195 ...y las siete primeras piden ademas una tecla
+C 0xD199 Y al acabar, una espera de 65536 antes de volver
+C 0xD19F Las nueve filas de la matriz, desde la 0xF0
+C 0xD1A3 Fila por el puerto 0xAA y lectura por el 0xA9
+C 0xD1A9 Se rota hasta que salga un cero: ese es el bit de la tecla, y E lleva fila*8 + bit
+C 0xD1AE Y si en esta fila no habia nada, a la siguiente; agotadas las nueve, se vuelve a empezar
+C 0xD1B6 Se espera a que pulsen
+C 0xD1BB De numero de bit a MASCARA: el `scf` mete un uno y las vueltas del `djnz` lo colocan
+C 0xD1BE La mascara al +0 de la entrada y el numero de fila al +1
+C 0xD1CA El nombre de esa tecla, en la tabla de 0xB7C2
+C 0xD1CF Con el bit 7 puesto la tecla ya se uso: se deshacen los dos `inc iy` y a pedir otra
+C 0xD1DA Y si estaba libre, se marca como usada
+C 0xD1DC El hueco del rotulo, seis espacios
+C 0xD1E6 Los nombres de una sola letra se escriben tal cual...
+C 0xD1F0 ...y los largos hay que buscarlos en la lista de 0xB80B, contando ceros
+C 0xD201 Y se copian hasta el cero
+C 0xD20E El sonido se calla antes de la cadena...
+C 0xD211 ...que se va pasando caracter a caracter al impresor del marco
+C 0xD217 ...y se vuelve a callar al acabar
+C 0xD21E Los tres guiones de la musica de los carteles, seguidos: los dos primeros con el bit 7 para no reactivar las interrupciones a medias
+C 0xD238 El `di` repuesto en las dos cabeceras: esto es lo que reabre la puerta que cerro sonido_off
+C 0xD240 Y los tres canales, arrancados con un guion NULO: quedan a cero y callados
+C 0xD252 3000 vueltas antes de cada caracter: el texto sale a maquina de escribir
+C 0xD25A De 0x20 para arriba es caracter; por debajo, control
+C 0xD25E Sea cual sea el control, lo primero es borrar la celda donde esta el cursor
+C 0xD26D El control 1 coloca...
+C 0xD271 ...conservando el tercio y la fila de caracter y tirando la columna...
+C 0xD279 ...para sumarle la que trae el propio texto, por 0x40, que es lo que ocupa una columna
+C 0xD28B El control 0x14 es la pausa larga: silencio, dos esperas de 65536 y la musica otra vez
+C 0xD29E Los demas controles son SALTO DE LINEA: se conservan tercio y fila y se tira la columna
+C 0xD2A6 Si era la ultima fila del tercio...
+C 0xD2AB ...se salta al tercio siguiente, que es 0x800, mas 0x100 de las cuatro columnas del margen
+C 0xD2B2 Y si no, una fila de caracteres mas abajo y a la columna 4
+C 0xD2BB El cursor: siete filas de 0x7F
+C 0xD2C5 Cada salto de linea calla el sonido, espera y vuelve a arrancar la musica de los carteles
+C 0xD2D4 El glifo del caracter, en 0x5F00 + caracter*8
+C 0xD2E5 Ocho bytes directos a la VRAM
+C 0xD2EE Y el cursor se pinta en la celda de al lado, 0x40 mas alla
+C 0xD2F7 Siete filas de 0x7F otra vez...
+C 0xD300 ...y un retardo de 256 vueltas antes de soltar el caracter siguiente
+C 0xD30B Las nueve filas de la matriz, desde la 0xF0
+C 0xD312 Con 0xFF no hay ninguna tecla pulsada en esa fila
+C 0xD316 Y agotadas las nueve se vuelve con Z: no hay nada
+C 0xD31C La tabla de colores va por tercios, igual que la de patrones
+C 0xD31F 56 filas de pixel el primer tercio, 64 el segundo y 40 el tercero: las mismas tres bandas del volcado
+C 0xD331 Y 24 columnas por tercio, que es el ancho del area
+C 0xD338 Los bytes de la columna, con el `and a` de respiro para el VDP
+C 0xD33F Y de columna a columna, 0x40
+C 0xD35B La cadena de indices de glifo, hasta el cero
+C 0xD360 El glifo en 0x5F00 + indice*8
+C 0xD370 Ocho bytes a la VRAM, con dos `and a` de respiro entre uno y otro
+C 0xD379 Y el caracter siguiente, 0x40 mas alla: la columna de al lado
+C 0xD383 La banda de arriba: 56 filas del buffer a 0x0108
+C 0xD38E La de en medio, 64 filas a 0x0900...
+C 0xD399 ...y la de abajo, 40 a 0x1100. Las tres empiezan en la columna 4
+C 0xD3A6 24 columnas por banda
+C 0xD3B2 El buffer se recoge a saltos de 24 -o sea por columnas- porque asi es como la VRAM las quiere seguidas
+C 0xD3B9 Y de columna a columna, 0x40 en la VRAM y uno en el buffer
+C 0xD3CA El cartel de BRAVO y lo que sigue
+C 0xD3D4 La ficha del record la dejo en la pila entra_en_records
+C 0xD3D6 Y se rellena de espacios: seis caracteres
+C 0xD3E7 Seis caracteres es lo que cabe en el nombre
+C 0xD3EC Primero se espera a que suelten la tecla anterior...
+C 0xD3F1 ...y luego a que pulsen otra
+C 0xD3FD El nombre de la tecla, en la tabla de 0xB7C2
+C 0xD405 De 0x30 para arriba entra tal cual
+C 0xD409 Y de las de abajo solo valen tres: 0x14 borra...
+C 0xD40D ...0x11 mete un espacio...
+C 0xD411 ...y 0x10 cierra el nombre. Lo demas se ignora
+C 0xD41E El caracter, a la ficha, y al marco
+C 0xD428 Un salto de linea al acabar, y silencio
+C 0xD430 Una espera de 65536 antes de irse
+C 0xD439 Y de aqui, a la pantalla de records
+C 0xD43E Con el cursor en el primer hueco no hay nada que borrar
+C 0xD44B La celda, a cero
+C 0xD453 Una columna atras
+C 0xD45E Y el cursor ahi, que aqui son OCHO filas: siete del bucle y una mas suelta
+C 0xD468 El hueco vuelve a ser un espacio...
+C 0xD46E ...y queda un caracter mas por meter
+C 0xD472 La columna se parte en dos: los bits 2-4 al byte alto y los 0-1 arriba del bajo
+C 0xD47E La fila dentro del tercio, seis bits, al byte bajo
+C 0xD483 Y el tercio, que son los bits 6-7 de la fila, a los bits 3-4 del alto
+C 0xAC44 Un solo `djnz` por cada 48 bytes: eso es lo que hace que salga cuatro veces mas barato que un `ldir`
+C 0xB168 Se empieza por el ultimo byte del tile (0x8872) y se guardan cuatro en la pila antes de correr el bloque
+C 0xD2DA La fuente vive en 0x5F00, la misma que usa todo el bloque
+C 0xD3A9 Una columna por vuelta, dando la direccion de VRAM cada vez
+C 0xD22E Y el tercero sin el bit 7, que es el que devuelve las interrupciones

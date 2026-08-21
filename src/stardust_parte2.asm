@@ -5491,7 +5491,7 @@ L_AC2C:
 	push de			;ac41
 	push de			;ac42
 	push de			;ac43
-	djnz L_AC2C		;ac44
+	djnz L_AC2C		;ac44   ; Un solo `djnz` por cada 48 bytes: eso es lo que hace que salga cuatro veces mas barato que un `ldir`
 	ld sp,hl			;ac46   ; SP a su sitio, y ya se puede volver a interrumpir
 	ei			;ac47
 	ret			;ac48
@@ -6366,7 +6366,7 @@ rota_fondo_sube:		; Rota el tile 0 una fila de pixel (ldir de 124 B) y deja el d
 	ret			;b166
 rota_fondo_baja:		; El simetrico de rota_fondo_sube (lddr; 0xC462 = -2)
 	push hl			;b167   ; El simetrico exacto, empezando por el ultimo byte y con `lddr`
-	ld hl,08872h		;b168
+	ld hl,08872h		;b168   ; Se empieza por el ultimo byte del tile (0x8872) y se guardan cuatro en la pila antes de correr el bloque
 	ld e,(hl)			;b16b
 	dec hl			;b16c
 	ld d,(hl)			;b16d
@@ -9094,30 +9094,34 @@ DATA_variables_del_interprete:
 vram_pon_dir:		; Fija la direccion de ESCRITURA del VDP por el puerto 0x99; identica byte a byte a la del bloque de naves
 	di			;d117
 	push af			;d118
-	in a,(099h)		;d119
+	in a,(099h)		;d119   ; El `in a,(099h)` desengancha el latch del puerto antes de dar la direccion
 	ld a,l			;d11b
 	out (099h),a		;d11c
 	ld a,h			;d11e
-	and 07fh		;d11f
+	and 07fh		;d11f   ; Bit 14 a uno y el 15 a cero: eso es lo que le dice al VDP que se va a ESCRIBIR
 	or 040h		;d121
 	out (099h),a		;d123
 	pop af			;d125
 	ret			;d126
 premia:		; Suma B al marcador por el digito que apunta HL (dentro de 0xB87F) y lo repinta en 0x12B0, que es la misma posicion de pantalla que usa el marcador de la fase de naves
 	push ix		;d127
-	ld ix,0b87fh		;d129
-	ld de,012b0h		;d12d
+	ld ix,0b87fh		;d129   ; El marcador vive en 0xB87F...
+	ld de,012b0h		;d12d   ; ...y se repinta en 0x12B0, la misma posicion de pantalla que usa la fase de naves
 	call suma_puntos		;d130
 	pop ix		;d133
 	ret			;d135
 pinta_marca_hud:		; Pinta la marca del HUD con el color 0x11
-	ld a,011h		;d136
+	ld a,011h		;d136   ; (marca del HUD) El color 0x11 es negro sobre negro: la marca se pinta apagando la celda
 	jr $+4		;d138
 
 ; ----------------------------------------------------------------------
-; DATOS relleno_D13A: Relleno o resto (2 B; 2 bytes)
+; DATOS entrada_muerta_D13A: No es relleno: los dos bytes son 3E 71, o sea `ld
+;   a,071h`, una SEGUNDA ENTRADA a la rutina de rellenar celdas de 0xD13C que
+;   pintaria con el color 0x71 en vez de con el 0x11. No la llama nadie
+;   -0xD13A no aparece ni una vez en el listado- y el `jr $+4` de 0xD138 esta
+;   justo para saltarsela cuando se entra por pinta_marca_hud
 ;   0xd13a..0xd13c  (2 bytes)
-DATA_relleno_D13A:
+DATA_entrada_muerta_D13A:
 	defb 03eh,071h	; d13a
 
 ; ======================================================================
@@ -9126,27 +9130,27 @@ DATA_relleno_D13A:
 
 
 L_D13C:
-	ld b,002h		;d13c
+	ld b,002h		;d13c   ; Dos celdas de ancho por dos de alto
 L_D13E:
 	push bc			;d13e
 	push hl			;d13f
-	ld c,002h		;d140
+	ld c,002h		;d140   ; Y dos filas de caracter por vuelta
 	call vram_pon_dir		;d142
 L_D145:
 	ld b,008h		;d145
 L_D147:
-	out (098h),a		;d147
+	out (098h),a		;d147   ; Ocho bytes por celda, con los dos `and a` de respiro para el VDP
 	and a			;d149
 	and a			;d14a
 	dec b			;d14b
 	jr nz,L_D147		;d14c
 	push af			;d14e
-	ld a,l			;d14f
+	ld a,l			;d14f   ; Al llegar a la ultima fila del tercio (0x38) hay que saltar al de abajo...
 	and 038h		;d150
 	cp 038h		;d152
 	jr nz,L_D161		;d154
 	ld a,l			;d156
-	and 0c0h		;d157
+	and 0c0h		;d157   ; ...poniendo la fila a cero y subiendo 0x800, que es el tamano del tercio
 	ld l,a			;d159
 	ld a,h			;d15a
 	add a,008h		;d15b
@@ -9157,95 +9161,95 @@ L_D161:
 	dec c			;d162
 	jr nz,L_D145		;d163
 	pop hl			;d165
-	ld bc,00040h		;d166
+	ld bc,00040h		;d166   ; Y la celda de al lado esta 0x40 mas alla: la columna siguiente
 	add hl,bc			;d169
 	pop bc			;d16a
 	djnz L_D13E		;d16b
 	ei			;d16d
 	ret			;d16e
 redefine_teclas:		; La pantalla de REDEFINIR TECLAS: limpia el buffer, fuerza teclado, libera los nombres de tecla quitandoles el bit 7 y da ocho vueltas rotulando, con siete llamadas intercaladas que rellenan las siete entradas de 0xB86A. Gemela de la de naves, 34 de 48 bytes
-	call borra_buffer		;d16f
+	call borra_buffer		;d16f   ; La pantalla de redefinir teclas empieza limpia...
 	call vuelca_pantalla		;d172
-	xor a			;d175
+	xor a			;d175   ; ...y forzando teclado, que aqui el joystick no vale
 	ld (0b87ch),a		;d176
-	ld hl,0b7c2h		;d179
+	ld hl,0b7c2h		;d179   ; A los 72 nombres de tecla se les quita el bit 7: es la marca de "ya usada", y se sueltan todas
 	ld b,048h		;d17c
 L_D17E:
 	res 7,(hl)		;d17e
 	inc hl			;d180
 	djnz L_D17E		;d181
-	ld c,008h		;d183
+	ld c,008h		;d183   ; Ocho vueltas: el titulo y las siete teclas
 	ld ix,0b721h		;d185
-	ld iy,0b86ah		;d189
+	ld iy,0b86ah		;d189   ; IY recorre las siete entradas de 0xB86A, dos bytes cada una
 	ld hl,00120h		;d18d
 L_D190:
 	push bc			;d190
-	call rotula_secuencia		;d191
+	call rotula_secuencia		;d191   ; Cada vuelta rotula su trozo de texto...
 	pop bc			;d194
-	dec c			;d195
+	dec c			;d195   ; ...y las siete primeras piden ademas una tecla
 	jr nz,redefine_tecla		;d196
 	ld b,c			;d198
 L_D199:
-	dec bc			;d199
+	dec bc			;d199   ; Y al acabar, una espera de 65536 antes de volver
 	ld a,b			;d19a
 	or c			;d19b
 	jr nz,L_D199		;d19c
 	ret			;d19e
 lee_tecla_pulsada:		; Barre las nueve filas de la matriz y devuelve en E el indice fila*8 + bit de la primera tecla pulsada
-	ld de,0f000h		;d19f
+	ld de,0f000h		;d19f   ; Las nueve filas de la matriz, desde la 0xF0
 L_D1A2:
 	ld a,d			;d1a2
-	out (0aah),a		;d1a3
+	out (0aah),a		;d1a3   ; Fila por el puerto 0xAA y lectura por el 0xA9
 	in a,(0a9h)		;d1a5
 	ld b,008h		;d1a7
 L_D1A9:
-	rrca			;d1a9
+	rrca			;d1a9   ; Se rota hasta que salga un cero: ese es el bit de la tecla, y E lleva fila*8 + bit
 	ret nc			;d1aa
 	inc e			;d1ab
 	djnz L_D1A9		;d1ac
-	inc d			;d1ae
+	inc d			;d1ae   ; Y si en esta fila no habia nada, a la siguiente; agotadas las nueve, se vuelve a empezar
 	ld a,0f9h		;d1af
 	cp d			;d1b1
 	jr z,lee_tecla_pulsada		;d1b2
 	jr L_D1A2		;d1b4
 redefine_tecla:		; Espera una tecla y guarda su entrada en la tabla: la mascara del bit en (iy+000) y el valor del puerto en (iy+001)
-	call lee_tecla_pulsada		;d1b6
+	call lee_tecla_pulsada		;d1b6   ; Se espera a que pulsen
 	xor a			;d1b9
 	scf			;d1ba
 L_D1BB:
-	rra			;d1bb
+	rra			;d1bb   ; De numero de bit a MASCARA: el `scf` mete un uno y las vueltas del `djnz` lo colocan
 	djnz L_D1BB		;d1bc
-	ld (iy+000h),a		;d1be
+	ld (iy+000h),a		;d1be   ; La mascara al +0 de la entrada y el numero de fila al +1
 	inc iy		;d1c1
 	ld (iy+000h),d		;d1c3
 	inc iy		;d1c6
 	ld d,b			;d1c8
 	push hl			;d1c9
-	ld hl,0b7c2h		;d1ca
+	ld hl,0b7c2h		;d1ca   ; El nombre de esa tecla, en la tabla de 0xB7C2
 	add hl,de			;d1cd
 	ld a,(hl)			;d1ce
-	bit 7,a		;d1cf
+	bit 7,a		;d1cf   ; Con el bit 7 puesto la tecla ya se uso: se deshacen los dos `inc iy` y a pedir otra
 	jr z,L_D1DA		;d1d1
 	dec iy		;d1d3
 	dec iy		;d1d5
 	pop hl			;d1d7
 	jr redefine_tecla		;d1d8
 L_D1DA:
-	set 7,(hl)		;d1da
-	push ix		;d1dc
+	set 7,(hl)		;d1da   ; Y si estaba libre, se marca como usada
+	push ix		;d1dc   ; El hueco del rotulo, seis espacios
 	pop hl			;d1de
 	ld b,006h		;d1df
 L_D1E1:
 	ld (hl),020h		;d1e1
 	inc hl			;d1e3
 	djnz L_D1E1		;d1e4
-	cp 015h		;d1e6
+	cp 015h		;d1e6   ; Los nombres de una sola letra se escriben tal cual...
 	jr c,L_D1F0		;d1e8
 	ld (ix+000h),a		;d1ea
 	pop hl			;d1ed
 	jr L_D190		;d1ee
 L_D1F0:
-	ld b,a			;d1f0
+	ld b,a			;d1f0   ; ...y los largos hay que buscarlos en la lista de 0xB80B, contando ceros
 	ld hl,0b80bh		;d1f1
 	jr L_D1FC		;d1f4
 L_D1F6:
@@ -9258,7 +9262,7 @@ L_D1FC:
 	push ix		;d1fe
 	pop de			;d200
 L_D201:
-	ld a,(hl)			;d201
+	ld a,(hl)			;d201   ; Y se copian hasta el cero
 	cp 000h		;d202
 	jr z,L_D20B		;d204
 	ld (de),a			;d206
@@ -9269,32 +9273,32 @@ L_D20B:
 	pop hl			;d20b
 	jr L_D190		;d20c
 rotula_secuencia:		; Recorre la cadena de (IX) hasta el 0 pasandole cada byte a imprime_marco, con el sonido puesto a cero antes y despues
-	call sonido_reset		;d20e
+	call sonido_reset		;d20e   ; El sonido se calla antes de la cadena...
 L_D211:
-	ld a,(ix+000h)		;d211
+	ld a,(ix+000h)		;d211   ; ...que se va pasando caracter a caracter al impresor del marco
 	inc ix		;d214
 	and a			;d216
-	jr z,sonido_reset		;d217
+	jr z,sonido_reset		;d217   ; ...y se vuelve a callar al acabar
 	call imprime_marco		;d219
 	jr L_D211		;d21c
 arranca_musica_carteles:		; Instala de golpe los tres guiones de la musica de los carteles, los dos primeros sin `ei`. La llama el rotulador como codigo de control
-	ld a,080h		;d21e
+	ld a,080h		;d21e   ; Los tres guiones de la musica de los carteles, seguidos: los dos primeros con el bit 7 para no reactivar las interrupciones a medias
 	ld de,0ce2bh		;d220
 	push hl			;d223
 	call arranca_guion		;d224
 	inc a			;d227
 	ld de,0d054h		;d228
 	call arranca_guion		;d22b
-	ld a,002h		;d22e
+	ld a,002h		;d22e   ; Y el tercero sin el bit 7, que es el que devuelve las interrupciones
 	ld de,0d05eh		;d230
 	call arranca_guion		;d233
 	pop hl			;d236
 	ret			;d237
 sonido_reset:		; Reabre el sonido reponiendo el `di` (0xF3) que sonido_off machaco en las dos rutinas de arranque, y deja los tres canales a cero con un guion nulo
-	ld a,0f3h		;d238
+	ld a,0f3h		;d238   ; El `di` repuesto en las dos cabeceras: esto es lo que reabre la puerta que cerro sonido_off
 	ld (0c4d0h),a		;d23a
 	ld (0c4a3h),a		;d23d
-	xor a			;d240
+	xor a			;d240   ; Y los tres canales, arrancados con un guion NULO: quedan a cero y callados
 	ld de,00000h		;d241
 	push hl			;d244
 	call arranca_guion		;d245
@@ -9305,13 +9309,13 @@ sonido_reset:		; Reabre el sonido reponiendo el `di` (0xF3) que sonido_off macha
 	pop hl			;d250
 	ret			;d251
 imprime_marco:		; El impresor del marco: DIRECTO a la VRAM con la fuente de 0x5F00; A<0x20 es control (0 borra la celda, 1 posiciona con el parametro de (IX))
-	ld bc,00bb8h		;d252
+	ld bc,00bb8h		;d252   ; 3000 vueltas antes de cada caracter: el texto sale a maquina de escribir
 	push af			;d255
 	call espera_bc		;d256
 	pop af			;d259
-	cp 020h		;d25a
+	cp 020h		;d25a   ; De 0x20 para arriba es caracter; por debajo, control
 	jr nc,L_D2D3		;d25c
-	call vram_pon_dir		;d25e
+	call vram_pon_dir		;d25e   ; Sea cual sea el control, lo primero es borrar la celda donde esta el cursor
 	ld b,008h		;d261
 	push af			;d263
 L_D264:
@@ -9322,15 +9326,15 @@ L_D264:
 	djnz L_D264		;d269
 	ei			;d26b
 	pop af			;d26c
-	cp 001h		;d26d
+	cp 001h		;d26d   ; El control 1 coloca...
 	jr nz,L_D28B		;d26f
-	ld a,h			;d271
+	ld a,h			;d271   ; ...conservando el tercio y la fila de caracter y tirando la columna...
 	and 018h		;d272
 	ld h,a			;d274
 	ld a,l			;d275
 	and 038h		;d276
 	ld l,a			;d278
-	ld a,(ix+000h)		;d279
+	ld a,(ix+000h)		;d279   ; ...para sumarle la que trae el propio texto, por 0x40, que es lo que ocupa una columna
 	inc ix		;d27c
 	push hl			;d27e
 	ld l,a			;d27f
@@ -9343,7 +9347,7 @@ L_D284:
 	add hl,bc			;d288
 	jr L_D2F2		;d289
 L_D28B:
-	cp 014h		;d28b
+	cp 014h		;d28b   ; El control 0x14 es la pausa larga: silencio, dos esperas de 65536 y la musica otra vez
 	jr nz,L_D29E		;d28d
 	call sonido_reset		;d28f
 	ld bc,00000h		;d292
@@ -9351,34 +9355,34 @@ L_D28B:
 	call espera_bc		;d298
 	jp arranca_musica_carteles		;d29b
 L_D29E:
-	ld a,h			;d29e
+	ld a,h			;d29e   ; Los demas controles son SALTO DE LINEA: se conservan tercio y fila y se tira la columna
 	and 018h		;d29f
 	ld h,a			;d2a1
 	ld a,l			;d2a2
 	and 038h		;d2a3
 	ld l,a			;d2a5
-	cp 038h		;d2a6
+	cp 038h		;d2a6   ; Si era la ultima fila del tercio...
 	jr nz,L_D2B2		;d2a8
 	ld a,h			;d2aa
-	add a,009h		;d2ab
+	add a,009h		;d2ab   ; ...se salta al tercio siguiente, que es 0x800, mas 0x100 de las cuatro columnas del margen
 	ld h,a			;d2ad
 	ld l,000h		;d2ae
 	jr L_D2B6		;d2b0
 L_D2B2:
-	ld bc,00108h		;d2b2
+	ld bc,00108h		;d2b2   ; Y si no, una fila de caracteres mas abajo y a la columna 4
 	add hl,bc			;d2b5
 L_D2B6:
 	ld b,007h		;d2b6
 	call vram_pon_dir		;d2b8
 L_D2BB:
-	ld a,07fh		;d2bb
+	ld a,07fh		;d2bb   ; El cursor: siete filas de 0x7F
 	out (098h),a		;d2bd
 	and a			;d2bf
 	and a			;d2c0
 	djnz L_D2BB		;d2c1
 	ei			;d2c3
 	push hl			;d2c4
-	call sonido_reset		;d2c5
+	call sonido_reset		;d2c5   ; Cada salto de linea calla el sonido, espera y vuelve a arrancar la musica de los carteles
 	ld bc,00fa0h		;d2c8
 	call espera_bc		;d2cb
 	call arranca_musica_carteles		;d2ce
@@ -9386,38 +9390,38 @@ L_D2BB:
 	ret			;d2d2
 L_D2D3:
 	push hl			;d2d3
-	ld l,a			;d2d4
+	ld l,a			;d2d4   ; El glifo del caracter, en 0x5F00 + caracter*8
 	ld h,000h		;d2d5
 	add hl,hl			;d2d7
 	add hl,hl			;d2d8
 	add hl,hl			;d2d9
-	ld de,05f00h		;d2da
+	ld de,05f00h		;d2da   ; La fuente vive en 0x5F00, la misma que usa todo el bloque
 	add hl,de			;d2dd
 	ex de,hl			;d2de
 	pop hl			;d2df
 	call vram_pon_dir		;d2e0
 	ld b,008h		;d2e3
 L_D2E5:
-	ld a,(de)			;d2e5
+	ld a,(de)			;d2e5   ; Ocho bytes directos a la VRAM
 	out (098h),a		;d2e6
 	inc de			;d2e8
 	and a			;d2e9
 	and a			;d2ea
 	djnz L_D2E5		;d2eb
 	ei			;d2ed
-	ld bc,00040h		;d2ee
+	ld bc,00040h		;d2ee   ; Y el cursor se pinta en la celda de al lado, 0x40 mas alla
 	add hl,bc			;d2f1
 L_D2F2:
 	call vram_pon_dir		;d2f2
 	ld b,007h		;d2f5
 L_D2F7:
-	ld a,07fh		;d2f7
+	ld a,07fh		;d2f7   ; Siete filas de 0x7F otra vez...
 	out (098h),a		;d2f9
 	and a			;d2fb
 	and a			;d2fc
 	djnz L_D2F7		;d2fd
 	ei			;d2ff
-	ld b,000h		;d300
+	ld b,000h		;d300   ; ...y un retardo de 256 vueltas antes de soltar el caracter siguiente
 L_D302:
 	djnz L_D302		;d302
 	ret			;d304
@@ -9428,21 +9432,21 @@ espera_bc:		; Espera activa: decrementa BC hasta cero y vuelve
 	jr nz,espera_bc		;d308
 	ret			;d30a
 hay_tecla:		; Vuelve con NZ si hay alguna tecla pulsada, barriendo las nueve filas de la matriz por los puertos 0xAA y 0xA9
-	ld d,0f0h		;d30b
+	ld d,0f0h		;d30b   ; Las nueve filas de la matriz, desde la 0xF0
 L_D30D:
 	ld a,d			;d30d
 	out (0aah),a		;d30e
 	in a,(0a9h)		;d310
-	cp 0ffh		;d312
+	cp 0ffh		;d312   ; Con 0xFF no hay ninguna tecla pulsada en esa fila
 	ret nz			;d314
 	inc d			;d315
-	ld a,0f9h		;d316
+	ld a,0f9h		;d316   ; Y agotadas las nueve se vuelve con Z: no hay nada
 	cp d			;d318
 	ret z			;d319
 	jr L_D30D		;d31a
 rellena_colores:		; Pone el color A en la tabla de colores, tercio a tercio: 0x2108 x 56 filas, 0x2900 x 64 y 0x3100 x 40
-	ld hl,02108h		;d31c
-	ld c,038h		;d31f
+	ld hl,02108h		;d31c   ; La tabla de colores va por tercios, igual que la de patrones
+	ld c,038h		;d31f   ; 56 filas de pixel el primer tercio, 64 el segundo y 40 el tercero: las mismas tres bandas del volcado
 	call rellena_tercio		;d321
 	ld hl,02900h		;d324
 	ld c,040h		;d327
@@ -9450,18 +9454,18 @@ rellena_colores:		; Pone el color A en la tabla de colores, tercio a tercio: 0x2
 	ld hl,03100h		;d32c
 	ld c,028h		;d32f
 rellena_tercio:		; El nucleo de rellena_colores: 24 filas de C bytes cada una, avanzando 0x40 en la VRAM entre fila y fila
-	ld b,018h		;d331
+	ld b,018h		;d331   ; Y 24 columnas por tercio, que es el ancho del area
 L_D333:
 	call vram_pon_dir		;d333
 	push bc			;d336
 	push hl			;d337
 L_D338:
-	out (098h),a		;d338
+	out (098h),a		;d338   ; Los bytes de la columna, con el `and a` de respiro para el VDP
 	and a			;d33a
 	dec c			;d33b
 	jr nz,L_D338		;d33c
 	pop hl			;d33e
-	ld bc,00040h		;d33f
+	ld bc,00040h		;d33f   ; Y de columna a columna, 0x40
 	add hl,bc			;d342
 	pop bc			;d343
 	djnz L_D333		;d344
@@ -9482,10 +9486,10 @@ DATA_tabla_D348:
 
 
 hud_imprime:		; Recorre la cadena de indices de glifo de (IX) hasta el 0 estampando cada uno en la VRAM: 8 bytes desde la fuente de 0x5F00 y 0x40 de avance por caracter
-	ld a,(ix+000h)		;d35b
+	ld a,(ix+000h)		;d35b   ; La cadena de indices de glifo, hasta el cero
 	and a			;d35e
 	ret z			;d35f
-	ld l,a			;d360
+	ld l,a			;d360   ; El glifo en 0x5F00 + indice*8
 	ld h,000h		;d361
 	add hl,hl			;d363
 	add hl,hl			;d364
@@ -9496,49 +9500,49 @@ hud_imprime:		; Recorre la cadena de indices de glifo de (IX) hasta el 0 estampa
 	call vram_pon_dir		;d36b
 	ld b,008h		;d36e
 L_D370:
-	ld a,(de)			;d370
+	ld a,(de)			;d370   ; Ocho bytes a la VRAM, con dos `and a` de respiro entre uno y otro
 	out (098h),a		;d371
 	inc de			;d373
 	and a			;d374
 	and a			;d375
 	djnz L_D370		;d376
 	ei			;d378
-	ld de,00040h		;d379
+	ld de,00040h		;d379   ; Y el caracter siguiente, 0x40 mas alla: la columna de al lado
 	add hl,de			;d37c
 	ex de,hl			;d37d
 	inc ix		;d37e
 	jp hud_imprime		;d380
 vuelca_pantalla:		; Vuelca el buffer a la VRAM en TRES bandas: 0x4000/56 filas a 0x0108, 0x4540/64 a 0x0900, 0x4B40/40 a 0x1100
-	ld de,04000h		;d383
+	ld de,04000h		;d383   ; La banda de arriba: 56 filas del buffer a 0x0108
 	ld hl,00108h		;d386
 	ld b,038h		;d389
 	call vuelca_columnas		;d38b
-	ld de,04540h		;d38e
+	ld de,04540h		;d38e   ; La de en medio, 64 filas a 0x0900...
 	ld hl,00900h		;d391
 	ld b,040h		;d394
 	call vuelca_columnas		;d396
-	ld de,04b40h		;d399
+	ld de,04b40h		;d399   ; ...y la de abajo, 40 a 0x1100. Las tres empiezan en la columna 4
 	ld hl,01100h		;d39c
 	ld b,028h		;d39f
 	call vuelca_columnas		;d3a1
 	ei			;d3a4
 	ret			;d3a5
 vuelca_columnas:		; El nucleo del volcado, identico al de la fase de naves: 24 vueltas por banda recogiendo el buffer a saltos de 24 -por columnas- y avanzando 0x40 en la VRAM entre una y otra
-	ld c,018h		;d3a6
+	ld c,018h		;d3a6   ; 24 columnas por banda
 L_D3A8:
 	push bc			;d3a8
-	call vram_pon_dir		;d3a9
+	call vram_pon_dir		;d3a9   ; Una columna por vuelta, dando la direccion de VRAM cada vez
 	push de			;d3ac
 	push hl			;d3ad
 	ex de,hl			;d3ae
 	ld de,00018h		;d3af
 L_D3B2:
-	ld a,(hl)			;d3b2
+	ld a,(hl)			;d3b2   ; El buffer se recoge a saltos de 24 -o sea por columnas- porque asi es como la VRAM las quiere seguidas
 	out (098h),a		;d3b3
 	add hl,de			;d3b5
 	djnz L_D3B2		;d3b6
 	pop hl			;d3b8
-	ld de,00040h		;d3b9
+	ld de,00040h		;d3b9   ; Y de columna a columna, 0x40 en la VRAM y uno en el buffer
 	add hl,de			;d3bc
 	pop de			;d3bd
 	inc de			;d3be
@@ -9549,12 +9553,12 @@ L_D3B2:
 L_D3C4:
 	call borra_buffer		;d3c4
 	call vuelca_pantalla		;d3c7
-	ld ix,0b940h		;d3ca
+	ld ix,0b940h		;d3ca   ; El cartel de BRAVO y lo que sigue
 	ld hl,00118h		;d3ce
 	call rotula_secuencia		;d3d1
-	pop de			;d3d4
+	pop de			;d3d4   ; La ficha del record la dejo en la pila entra_en_records
 	push hl			;d3d5
-	ld h,d			;d3d6
+	ld h,d			;d3d6   ; Y se rellena de espacios: seis caracteres
 	ld l,e			;d3d7
 	inc de			;d3d8
 	ld bc,00005h		;d3d9
@@ -9564,31 +9568,31 @@ L_D3C4:
 	and a			;d3e3
 	sbc hl,bc		;d3e4
 	ex de,hl			;d3e6
-	ld b,006h		;d3e7
+	ld b,006h		;d3e7   ; Seis caracteres es lo que cabe en el nombre
 	pop hl			;d3e9
 L_D3EA:
 	push bc			;d3ea
 	push de			;d3eb
 L_D3EC:
-	call hay_tecla		;d3ec
+	call hay_tecla		;d3ec   ; Primero se espera a que suelten la tecla anterior...
 	jr nz,L_D3EC		;d3ef
-	ld bc,007d0h		;d3f1
+	ld bc,007d0h		;d3f1   ; ...y luego a que pulsen otra
 	call espera		;d3f4
 	call lee_tecla_pulsada		;d3f7
 	ld d,000h		;d3fa
 	push hl			;d3fc
-	ld hl,0b7c2h		;d3fd
+	ld hl,0b7c2h		;d3fd   ; El nombre de la tecla, en la tabla de 0xB7C2
 	add hl,de			;d400
 	ld a,(hl)			;d401
 	pop hl			;d402
 	and 07fh		;d403
-	cp 030h		;d405
+	cp 030h		;d405   ; De 0x30 para arriba entra tal cual
 	jr nc,L_D41B		;d407
-	cp 014h		;d409
+	cp 014h		;d409   ; Y de las de abajo solo valen tres: 0x14 borra...
 	jr z,L_D43C		;d40b
-	cp 011h		;d40d
+	cp 011h		;d40d   ; ...0x11 mete un espacio...
 	jr z,L_D419		;d40f
-	cp 010h		;d411
+	cp 010h		;d411   ; ...y 0x10 cierra el nombre. Lo demas se ignora
 	jr nz,L_D3EC		;d413
 	pop de			;d415
 	pop bc			;d416
@@ -9599,7 +9603,7 @@ L_D41B:
 	pop de			;d41b
 	pop bc			;d41c
 	push bc			;d41d
-	ld (de),a			;d41e
+	ld (de),a			;d41e   ; El caracter, a la ficha, y al marco
 	push de			;d41f
 	call imprime_marco		;d420
 	pop de			;d423
@@ -9607,21 +9611,21 @@ L_D41B:
 	pop bc			;d425
 	djnz L_D3EA		;d426
 L_D428:
-	ld a,00dh		;d428
+	ld a,00dh		;d428   ; Un salto de linea al acabar, y silencio
 	call imprime_marco		;d42a
 	call sonido_reset		;d42d
-	ld bc,00000h		;d430
+	ld bc,00000h		;d430   ; Una espera de 65536 antes de irse
 L_D433:
 	dec bc			;d433
 	ld a,b			;d434
 	or c			;d435
 	jr nz,L_D433		;d436
 	pop hl			;d438
-	jp L_B68C		;d439
+	jp L_B68C		;d439   ; Y de aqui, a la pantalla de records
 L_D43C:
 	pop de			;d43c
 	pop bc			;d43d
-	ld a,b			;d43e
+	ld a,b			;d43e   ; Con el cursor en el primer hueco no hay nada que borrar
 	push bc			;d43f
 	push de			;d440
 	cp 006h		;d441
@@ -9629,32 +9633,32 @@ L_D43C:
 	call vram_pon_dir		;d446
 	ld b,008h		;d449
 L_D44B:
-	ld a,000h		;d44b
+	ld a,000h		;d44b   ; La celda, a cero
 	out (098h),a		;d44d
 	nop			;d44f
 	djnz L_D44B		;d450
 	ei			;d452
-	ld de,00040h		;d453
+	ld de,00040h		;d453   ; Una columna atras
 	and a			;d456
 	sbc hl,de		;d457
 	call vram_pon_dir		;d459
 	ld b,007h		;d45c
 L_D45E:
-	ld a,07fh		;d45e
+	ld a,07fh		;d45e   ; Y el cursor ahi, que aqui son OCHO filas: siete del bucle y una mas suelta
 	out (098h),a		;d460
 	nop			;d462
 	djnz L_D45E		;d463
 	out (098h),a		;d465
 	ei			;d467
-	pop de			;d468
+	pop de			;d468   ; El hueco vuelve a ser un espacio...
 	dec de			;d469
 	ld a,020h		;d46a
 	ld (de),a			;d46c
 	pop bc			;d46d
-	inc b			;d46e
+	inc b			;d46e   ; ...y queda un caracter mas por meter
 	jp L_D3EA		;d46f
 dir_vram_de_fila_columna:		; De la fila de pixel D y la columna E a la direccion de VRAM: (D>>6)*0x800 + E*0x40 + (D and 0x3F). Identica byte a byte a la de la fase de naves, las 26. Y explica el reparto 56/64/40 de las tres bandas: el buffer empieza en la fila 8, y 8+56=64 y 64+64=128 son las dos fronteras de tercio del SCREEN 2. Las bandas son los tercios de la pantalla, cortados donde manda el hardware
-	ld l,000h		;d472
+	ld l,000h		;d472   ; La columna se parte en dos: los bits 2-4 al byte alto y los 0-1 arriba del bajo
 	ld a,e			;d474
 	rra			;d475
 	rr l		;d476
@@ -9662,11 +9666,11 @@ dir_vram_de_fila_columna:		; De la fila de pixel D y la columna E a la direccion
 	rr l		;d479
 	and 007h		;d47b
 	ld h,a			;d47d
-	ld a,d			;d47e
+	ld a,d			;d47e   ; La fila dentro del tercio, seis bits, al byte bajo
 	and 03fh		;d47f
 	or l			;d481
 	ld l,a			;d482
-	ld a,d			;d483
+	ld a,d			;d483   ; Y el tercio, que son los bits 6-7 de la fila, a los bits 3-4 del alto
 	rra			;d484
 	rra			;d485
 	rra			;d486
