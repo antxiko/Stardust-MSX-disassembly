@@ -8119,14 +8119,14 @@ posicion_al_azar:		; Saca una posicion al azar dentro del area de juego, repitie
 	add a,018h		;c3e3
 	ld l,a			;c3e5
 L_C3E6:
-	call azar		;c3e6
+	call azar		;c3e6   ; Se tira hasta que salga por debajo de 0x28 y se sube 0x98: la fila acaba entre 0x98 y 0xBF, la franja de abajo de la pantalla
 	and 03fh		;c3e9
 	cp 028h		;c3eb
 	jr nc,L_C3E6		;c3ed
 	add a,098h		;c3ef
 	ld h,a			;c3f1
 	push hl			;c3f2
-	ld a,h			;c3f3
+	ld a,h			;c3f3   ; Y ademas se mira lo que hay PINTADO ahi: si el byte del buffer esta vacio -sin mirar los dos pixeles de en medio, que el `and 0e7h` tapa- se vuelve a tirar. O sea que las explosiones del final caen siempre encima del dibujo de la nave, nunca en el hueco
 	sub 020h		;c3f4
 	ld h,a			;c3f6
 	srl l		;c3f7
@@ -8139,23 +8139,23 @@ L_C3E6:
 	jr z,posicion_al_azar		;c404
 	ret			;c406
 fogonazo_final:		; El destello del final feliz: rellena la tabla de colores cuatro veces seguidas -0x99, 0xAA, 0xFF y 0xF1, que es el color normal- justo antes de la metralla
-	ld a,099h		;c407
-	ld iy,00bb8h		;c409
+	ld a,099h		;c407   ; Cuatro pasadas de color seguidas: 0x99, 0xAA, 0xFF y por ultimo 0xF1, que es el color normal
+	ld iy,00bb8h		;c409   ; Este `ld iy,00bb8h` no lo lee nadie -rellena_colores no toca IY-, igual que el de 0xBE15. Otros 3000 en decimal
 	call rellena_colores		;c40d
 	ld a,0aah		;c410
 	call rellena_colores		;c412
 	ld a,0ffh		;c415
 	call rellena_colores		;c417
-	xor a			;c41a
+	xor a			;c41a   ; El `xor a` no sirve de nada: el `ld a,0f1h` de la linea siguiente lo pisa sin que nadie mire A ni las banderas
 	ld a,0f1h		;c41b
 	call rellena_colores		;c41d
 	ret			;c420
 copia_al_buffer:		; Copia 720 bytes de 0x6285 al buffer en 0x4B43, en tiras de 18 con un salto de 6: 18 + 6 = 24, el ancho del buffer, o sea 40 filas de 18 bytes centradas en la banda C
-	ld hl,06285h		;c421
+	ld hl,06285h		;c421   ; 720 bytes de la imagen del final...
 	ld bc,002d0h		;c424
-	ld de,04b43h		;c427
+	ld de,04b43h		;c427   ; ...al buffer, empezando en 0x4B43, que es la fila 120 y la columna 3: con 18 de ancho quedan tres columnas a cada lado
 L_C42A:
-	ldi		;c42a
+	ldi		;c42a   ; Dieciocho `ldi` sueltos, uno por byte de la tira: sin bucle no hay `djnz` que pagar
 	ldi		;c42c
 	ldi		;c42e
 	ldi		;c430
@@ -8173,9 +8173,9 @@ L_C42A:
 	ldi		;c448
 	ldi		;c44a
 	ldi		;c44c
-	ret po			;c44e
+	ret po			;c44e   ; El `ret po` sale cuando BC llega a cero, que es lo que el propio `ldi` deja en el flag de paridad
 	push hl			;c44f
-	ld hl,00006h		;c450
+	ld hl,00006h		;c450   ; Y entre tira y tira, seis bytes de salto: 18 + 6 son las 24 columnas del buffer
 	add hl,de			;c453
 	ex de,hl			;c454
 	pop hl			;c455
@@ -8207,9 +8207,9 @@ DATA_colores_de_la_fase:
 
 interrupcion:		; El epilogo de la interrupcion, enganchado en H.TIMI: `pop hl` para tirar la vuelta a la ROM, una llamada al motor de sonido y los diez pares de registros desapilados en orden. Gemela de la de la fase de naves, 19 de 21 bytes
 	di			;c46e
-	pop hl			;c46f
-	call tic_sonido		;c470
-	pop ix		;c473
+	pop hl			;c46f   ; El `pop hl` tira la vuelta a la ROM: de la interrupcion no se vuelve, se sale por el `ret` de abajo con la pila ya recogida
+	call tic_sonido		;c470   ; Lo unico que hace la interrupcion es el sonido
+	pop ix		;c473   ; Y los diez pares de registros, desapilados en el orden contrario al que los metieron
 	pop iy		;c475
 	pop af			;c477
 	pop bc			;c478
@@ -8224,7 +8224,7 @@ interrupcion:		; El epilogo de la interrupcion, enganchado en H.TIMI: `pop hl` p
 	ei			;c481
 	ret			;c482
 arranca_musica:		; La musica de esta mitad: canal 0 a 0xCE45, canal 1 a 0xCF3D y canal 2 a 0xCFBE, y CAE en sonido_off, o sea que deja el sonido cerrado detras
-	ld a,080h		;c483
+	ld a,080h		;c483   ; El bit 7 del canal pide volver sin `ei`, que aqui hace falta porque los tres guiones se instalan seguidos
 	ld de,0ce45h		;c485
 	call arranca_guion		;c488
 	inc a			;c48b
@@ -8232,7 +8232,7 @@ arranca_musica:		; La musica de esta mitad: canal 0 a 0xCE45, canal 1 a 0xCF3D y
 	call arranca_guion		;c48f
 	ld a,002h		;c492
 	ld de,0cfbeh		;c494
-	call arranca_guion		;c497
+	call arranca_guion		;c497   ; Y CAE en sonido_off: la musica queda instalada y la puerta cerrada detras
 sonido_off:		; Cierra el sonido metiendo un `ret` (0xC9) en la cabecera de arranca_guion y arranca_guion_libre, igual que el 0xE186 del bloque de naves
 	ld a,0c9h		;c49a
 	ld (arranca_guion),a		;c49c
@@ -8242,21 +8242,21 @@ arranca_guion_libre:		; arranca_guion, pero si el canal pedido esta ocupado reco
 	di			;c4a3
 	push af			;c4a4
 	push de			;c4a5
-	and 07fh		;c4a6
-	ld de,0002eh		;c4a8
+	and 07fh		;c4a6   ; El bit 7 fuera, que el numero de canal son los tres bits bajos
+	ld de,0002eh		;c4a8   ; 46 bytes por canal: la direccion de su bloque es 0xD068 + canal*46
 	call mul_a_de		;c4ab
 	ld de,0d068h		;c4ae
 	add hl,de			;c4b1
 	push hl			;c4b2
-	ld a,(hl)			;c4b3
+	ld a,(hl)			;c4b3   ; Si el canal pedido tiene puntero de ejecucion es que esta ocupado...
 	inc hl			;c4b4
 	or (hl)			;c4b5
 	jr z,L_C4CA		;c4b6
-	ld d,003h		;c4b8
+	ld d,003h		;c4b8   ; ...y entonces se recorren los TRES buscando uno libre
 	ld hl,0d068h		;c4ba
 	ld bc,0002eh		;c4bd
 L_C4C0:
-	inc hl			;c4c0
+	inc hl			;c4c0   ; Un canal esta libre cuando sus dos primeros bytes son cero
 	ld a,(hl)			;c4c1
 	dec hl			;c4c2
 	or (hl)			;c4c3
@@ -8265,24 +8265,24 @@ L_C4C0:
 	dec d			;c4c7
 	jr nz,L_C4C0		;c4c8
 L_C4CA:
-	pop hl			;c4ca
+	pop hl			;c4ca   ; Sin ninguno libre se pisa el que se pidio
 	jr L_C4DF		;c4cb
 L_C4CD:
-	pop de			;c4cd
+	pop de			;c4cd   ; Y con uno libre, se usa ese
 	jr L_C4DF		;c4ce
 arranca_guion:		; Pone el guion DE a sonar en el canal A (bit 7 = volver sin `ei`): borra los 46 bytes de su estado en 0xD068+canal*46 y siembra el puntero de ejecucion y el de inicio
 	di			;c4d0
 arranca_guion_sin_di:		; La entrada de arranca_guion saltandose su `di`, para el unico cliente que ya lo ha hecho el mismo (0xA5BC)
 	push af			;c4d1
 	push de			;c4d2
-	and 07fh		;c4d3
-	ld de,0002eh		;c4d5
+	and 07fh		;c4d3   ; El bit 7 fuera, que el canal son los tres bits bajos
+	ld de,0002eh		;c4d5   ; Y la misma cuenta de antes: 46 bytes por canal desde 0xD068
 	call mul_a_de		;c4d8
 	ld de,0d068h		;c4db
 	add hl,de			;c4de
 L_C4DF:
 	push hl			;c4df
-	xor a			;c4e0
+	xor a			;c4e0   ; El bloque entero a cero antes de nada: 46 bytes
 	ld b,02eh		;c4e1
 L_C4E3:
 	ld (hl),a			;c4e3
@@ -8290,7 +8290,7 @@ L_C4E3:
 	djnz L_C4E3		;c4e5
 	pop hl			;c4e7
 	pop de			;c4e8
-	ld (hl),e			;c4e9
+	ld (hl),e			;c4e9   ; Y el guion se siembra DOS veces: en el puntero de ejecucion y en el de inicio, que es al que vuelve op_bucle
 	inc hl			;c4ea
 	ld (hl),d			;c4eb
 	inc hl			;c4ec
@@ -8298,10 +8298,10 @@ L_C4E3:
 	inc hl			;c4ee
 	ld (hl),d			;c4ef
 	ld a,001h		;c4f0
-	ld (0d10dh),a		;c4f2
+	ld (0d10dh),a		;c4f2   ; 0xD10D a 1: la musica esta viva. Ponerlo a cero es como se le pide que acabe (0xB6AF)
 	pop af			;c4f5
 	push af			;c4f6
-	and 07fh		;c4f7
+	and 07fh		;c4f7   ; La transposicion de este canal (0xD114 + canal) se pone a cero al arrancar
 	ld hl,0d114h		;c4f9
 	add a,l			;c4fc
 	ld l,a			;c4fd
@@ -8310,15 +8310,15 @@ L_C4E3:
 	ld h,a			;c501
 	ld (hl),000h		;c502
 	pop af			;c504
-	or a			;c505
+	or a			;c505   ; Y con el bit 7 puesto se vuelve SIN `ei`, que es lo que pedia quien llamo
 	ret m			;c506
 	ei			;c507
 	ret			;c508
 tic_sonido:		; El motor del sonido, y lo unico que hace la interrupcion: recorre los tres canales desde 0xD068, gasta la duracion y, al agotarse, calla el canal y va a por el siguiente byte del guion -comando si es 0x80 o mas, nota si no, sumandole la transposicion del canal-; luego corre las envolventes de volumen y de tono y vuelca el canal al bloque sombra de 0xD100
-	push af			;c509
+	push af			;c509   ; Los tres canales, uno detras de otro
 	ld b,003h		;c50a
 	xor a			;c50c
-	ld ix,0d068h		;c50d
+	ld ix,0d068h		;c50d   ; IX al primer bloque de canal, DE a los registros de periodo del PSG (0xD100 es el R0) y HL a los de volumen (0xD108 es el R8): el bloque sombra es la imagen de los once registros
 	ld de,0d100h		;c511
 	ld hl,0d108h		;c514
 L_C517:
@@ -8326,62 +8326,62 @@ L_C517:
 	push hl			;c518
 	push de			;c519
 	push bc			;c51a
-	ld (0d10ch),a		;c51b
-	ld a,(ix+004h)		;c51e
+	ld (0d10ch),a		;c51b   ; El canal que se esta atendiendo, que es lo que mira el mezclador
+	ld a,(ix+004h)		;c51e   ; Con nota sonando -queda duracion- no se lee el guion: solo se corren las envolventes
 	or (ix+005h)		;c521
 	jp nz,L_C582		;c524
-	xor a			;c527
+	xor a			;c527   ; Y al agotarse, lo primero es CALLAR el canal, antes de leer nada
 	call mezclador_canal		;c528
-	ld c,(ix+002h)		;c52b
+	ld c,(ix+002h)		;c52b   ; El puntero de ejecucion del guion
 	ld b,(ix+003h)		;c52e
-	ld a,b			;c531
+	ld a,b			;c531   ; Sin puntero no hay guion: canal muerto
 	or c			;c532
 	jp z,L_C63B		;c533
 L_C536:
-	ld a,(bc)			;c536
+	ld a,(bc)			;c536   ; El byte del guion: de 0x80 para arriba es una orden...
 	cp 080h		;c537
 	jp c,L_C545		;c539
 	sub 080h		;c53c
-	ld hl,0cabeh		;c53e
+	ld hl,0cabeh		;c53e   ; ...y se despacha por la tabla de 0xCABE, saltando a ella con `jp (hl)`
 	call lee_puntero		;c541
 	jp (hl)			;c544
 L_C545:
-	push af			;c545
+	push af			;c545   ; Por debajo de 0x80 es una NOTA, y se le suma la transposicion del canal
 	call estado_canal_actual		;c546
 	pop af			;c549
 	add a,(hl)			;c54a
-	ld hl,0c9feh		;c54b
+	ld hl,0c9feh		;c54b   ; La tabla de notas de 0xC9FE da el periodo, que se guarda en el +0A/+0B
 	call lee_puntero		;c54e
 	ld (ix+00ah),l		;c551
 	ld (ix+00bh),h		;c554
 	inc bc			;c557
 L_C558:
-	ld a,(ix+008h)		;c558
+	ld a,(ix+008h)		;c558   ; Ahora si se abre el canal, con el mezclador que dejo puesto el instrumento
 	call mezclador_canal		;c55b
-	call carga_envolvente_1		;c55e
-	ld (ix+02ah),000h		;c561
+	call carga_envolvente_1		;c55e   ; Las dos envolventes se recargan desde la plantilla...
+	ld (ix+02ah),000h		;c561   ; ...y lo que llevaran sumado al volumen y al periodo arranca a cero
 	call carga_envolvente_2		;c565
 	ld (ix+02bh),000h		;c568
 	ld (ix+02ch),000h		;c56c
 L_C570:
-	ld (ix+002h),c		;c570
+	ld (ix+002h),c		;c570   ; El guion queda apuntando al byte siguiente...
 	ld (ix+003h),b		;c573
-	ld l,(ix+006h)		;c576
+	ld l,(ix+006h)		;c576   ; ...y la duracion de la nota se recarga desde el +06/+07
 	ld h,(ix+007h)		;c579
 	ld (ix+004h),l		;c57c
 	ld (ix+005h),h		;c57f
 L_C582:
-	ld l,(ix+004h)		;c582
+	ld l,(ix+004h)		;c582   ; Un cuadro menos de nota, siempre, suene lo que suene
 	ld h,(ix+005h)		;c585
 	dec hl			;c588
 	ld (ix+004h),l		;c589
 	ld (ix+005h),h		;c58c
-	push ix		;c58f
+	push ix		;c58f   ; IY recorre las fases mientras IX se queda en la cabecera del bloque
 	pop iy		;c591
-	ld d,002h		;c593
+	ld d,002h		;c593   ; La envolvente de volumen tiene DOS fases
 	ld c,000h		;c595
 L_C597:
-	ld a,(iy+00ch)		;c597
+	ld a,(iy+00ch)		;c597   ; Si a la fase le faltan cuadros para el paso siguiente, se descuenta uno y se acabo el cuadro
 	or a			;c59a
 	jr z,L_C5A4		;c59b
 	dec a			;c59d
@@ -8389,35 +8389,35 @@ L_C597:
 	inc c			;c5a1
 	jr L_C5C5		;c5a2
 L_C5A4:
-	ld a,(iy+00eh)		;c5a4
+	ld a,(iy+00eh)		;c5a4   ; Y si ya toca paso, se mira cuantos le quedan a la fase
 	or a			;c5a7
 	jr z,L_C5C0		;c5a8
 	dec a			;c5aa
 	ld (iy+00eh),a		;c5ab
-	ld a,(ix+02ah)		;c5ae
+	ld a,(ix+02ah)		;c5ae   ; El paso: al volumen acumulado se le suma lo que diga la fase
 	add a,(iy+01bh)		;c5b1
 	ld (ix+02ah),a		;c5b4
-	ld a,(iy+020h)		;c5b7
+	ld a,(iy+020h)		;c5b7   ; Y se recarga la espera desde la plantilla
 	ld (iy+00ch),a		;c5ba
 	inc c			;c5bd
 	jr L_C5C5		;c5be
 L_C5C0:
-	inc iy		;c5c0
+	inc iy		;c5c0   ; Fase agotada: a la siguiente
 	dec d			;c5c2
 	jr nz,L_C597		;c5c3
 L_C5C5:
-	ld a,c			;c5c5
+	ld a,c			;c5c5   ; Si ninguna de las dos fases hizo nada, la envolvente esta terminada...
 	or a			;c5c6
 	jr nz,L_C5D0		;c5c7
-	bit 0,(ix+02dh)		;c5c9
+	bit 0,(ix+02dh)		;c5c9   ; ...y el bit 0 del +2D decide si vuelve a empezar o se queda ahi
 	call nz,carga_envolvente_1		;c5cd
 L_C5D0:
 	push ix		;c5d0
 	pop iy		;c5d2
-	ld d,003h		;c5d4
+	ld d,003h		;c5d4   ; La de periodo va igual, pero con TRES fases
 	ld c,000h		;c5d6
 L_C5D8:
-	ld a,(iy+010h)		;c5d8
+	ld a,(iy+010h)		;c5d8   ; La espera de la fase
 	or a			;c5db
 	jr z,L_C5E5		;c5dc
 	dec a			;c5de
@@ -8425,15 +8425,15 @@ L_C5D8:
 	inc c			;c5e2
 	jr L_C630		;c5e3
 L_C5E5:
-	ld a,(iy+013h)		;c5e5
+	ld a,(iy+013h)		;c5e5   ; Los pasos que le quedan
 	or a			;c5e8
 	jr z,L_C62B		;c5e9
 	dec a			;c5eb
 	ld (iy+013h),a		;c5ec
-	ld a,(iy+01dh)		;c5ef
+	ld a,(iy+01dh)		;c5ef   ; El paso es con signo: si el delta es negativo...
 	or a			;c5f2
 	jp p,L_C60F		;c5f3
-	ld a,(iy+01dh)		;c5f6
+	ld a,(iy+01dh)		;c5f6   ; ...se le da la vuelta y se RESTA con acarreo de los dos bytes
 	cpl			;c5f9
 	inc a			;c5fa
 	ld e,a			;c5fb
@@ -8442,11 +8442,11 @@ L_C5E5:
 	ld (ix+02bh),a		;c600
 	ld a,(ix+02ch)		;c603
 	sbc a,000h		;c606
-	and 00fh		;c608
+	and 00fh		;c608   ; El periodo del PSG son 12 bits: el `and 00fh` recorta el byte alto
 	ld (ix+02ch),a		;c60a
 	jr L_C622		;c60d
 L_C60F:
-	ld a,(ix+02bh)		;c60f
+	ld a,(ix+02bh)		;c60f   ; Y con delta positivo, la suma de siempre
 	add a,(iy+01dh)		;c612
 	ld (ix+02bh),a		;c615
 	ld a,(ix+02ch)		;c618
@@ -8454,12 +8454,12 @@ L_C60F:
 	and 00fh		;c61d
 	ld (ix+02ch),a		;c61f
 L_C622:
-	ld a,(iy+022h)		;c622
+	ld a,(iy+022h)		;c622   ; La espera, recargada desde la plantilla
 	ld (iy+010h),a		;c625
 	inc c			;c628
 	jr L_C630		;c629
 L_C62B:
-	inc iy		;c62b
+	inc iy		;c62b   ; Fase agotada: a la siguiente de las tres
 	dec d			;c62d
 	jr nz,L_C5D8		;c62e
 L_C630:

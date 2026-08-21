@@ -3136,3 +3136,109 @@ C 0xBFCB Y la vertical, con dos filtros seguidos...
 C 0xBFD4 ...y ojo con este `dec a`, que no solo compara: se queda con el valor. Lo que se guarda es azar-14, o sea de -14 a -2 mas el +1, con trece salidas hacia arriba por cada una hacia abajo
 C 0xBFDA La fila se guarda con 0x20 menos, que es como la quiere el pintor
 C 0xBFE3 Particula siguiente
+
+
+# ----------------------------------------------------------------------
+# EL MOTOR DE SONIDO, PRIMERA MITAD (0xC3E6-0xC5FF)
+# ----------------------------------------------------------------------
+# EL BLOQUE DE CANAL son 46 bytes en 0xD068 + canal*0x2E. Sacado del codigo,
+# campo a campo:
+#   +00/+01  puntero de INICIO del guion, el que repone op_bucle
+#   +02/+03  puntero de EJECUCION, por donde va
+#   +04/+05  lo que le queda a la nota, en cuadros (16 bits)
+#   +06/+07  la duracion con la que se recarga
+#   +08      el mezclador con el que ataca la nota (tono y/o ruido)
+#   +09      volumen base
+#   +0A/+0B  periodo base, sacado de la tabla de notas de 0xC9FE
+#   +0C/+0D  envolvente de VOLUMEN: cuadros que faltan para el paso siguiente
+#            de cada una de sus DOS fases
+#   +0E/+0F  ...y pasos que le quedan a cada fase
+#   +10..+12 envolvente de PERIODO: lo mismo para sus TRES fases
+#   +13..+15 ...y pasos que le quedan
+#   +16/+17  plantilla: pasos de cada fase de volumen
+#   +18..+1A plantilla: pasos de cada fase de periodo
+#   +1B/+1C  cuanto sube o baja el volumen en cada paso
+#   +1D..+1F cuanto se mueve el periodo en cada paso (con signo)
+#   +20/+21  plantilla: cuadros entre paso y paso, volumen
+#   +22..+24 plantilla: cuadros entre paso y paso, periodo
+#   +2A      lo que la envolvente lleva sumado al volumen
+#   +2B/+2C  lo que lleva sumado al periodo (12 bits, de ahi el `and 00fh`)
+#   +2D      bit 0: repetir la envolvente de volumen. bit 1: la de periodo
+# Los campos +0C a +15 los repone carga_envolvente_1 y _2 desde la plantilla
+# (+16 a +24), que es lo que deja puesto el instrumento.
+#
+# LAS DOS ENVOLVENTES SON EL MISMO BUCLE dos veces, y funcionan como un reloj
+# de arena por fases: se atiende a la PRIMERA fase que tenga algo que hacer
+# -cuadros por esperar o pasos por dar- y en cuanto una actua se acaba el
+# trabajo del cuadro (el `inc c` y el salto al remate). Si NINGUNA fase tuvo
+# nada que hacer, C se queda a cero y el bit que toque de +2D decide si la
+# envolvente se recarga y vuelve a empezar o se queda muerta donde esta.
+#
+# Y el remate del canal (0xC63B) no toca el PSG: suma el volumen base con lo
+# que lleve la envolvente, el periodo base con lo suyo, y lo deja en el bloque
+# sombra de 0xD100, que es lo que otro vuelca luego a los registros.
+
+C 0xC3E6 Se tira hasta que salga por debajo de 0x28 y se sube 0x98: la fila acaba entre 0x98 y 0xBF, la franja de abajo de la pantalla
+C 0xC3F3 Y ademas se mira lo que hay PINTADO ahi: si el byte del buffer esta vacio -sin mirar los dos pixeles de en medio, que el `and 0e7h` tapa- se vuelve a tirar. O sea que las explosiones del final caen siempre encima del dibujo de la nave, nunca en el hueco
+C 0xC407 Cuatro pasadas de color seguidas: 0x99, 0xAA, 0xFF y por ultimo 0xF1, que es el color normal
+C 0xC409 Este `ld iy,00bb8h` no lo lee nadie -rellena_colores no toca IY-, igual que el de 0xBE15. Otros 3000 en decimal
+C 0xC41A El `xor a` no sirve de nada: el `ld a,0f1h` de la linea siguiente lo pisa sin que nadie mire A ni las banderas
+C 0xC421 720 bytes de la imagen del final...
+C 0xC427 ...al buffer, empezando en 0x4B43, que es la fila 120 y la columna 3: con 18 de ancho quedan tres columnas a cada lado
+C 0xC42A Dieciocho `ldi` sueltos, uno por byte de la tira: sin bucle no hay `djnz` que pagar
+C 0xC44E El `ret po` sale cuando BC llega a cero, que es lo que el propio `ldi` deja en el flag de paridad
+C 0xC450 Y entre tira y tira, seis bytes de salto: 18 + 6 son las 24 columnas del buffer
+C 0xC46F El `pop hl` tira la vuelta a la ROM: de la interrupcion no se vuelve, se sale por el `ret` de abajo con la pila ya recogida
+C 0xC470 Lo unico que hace la interrupcion es el sonido
+C 0xC473 Y los diez pares de registros, desapilados en el orden contrario al que los metieron
+C 0xC483 El bit 7 del canal pide volver sin `ei`, que aqui hace falta porque los tres guiones se instalan seguidos
+C 0xC497 Y CAE en sonido_off: la musica queda instalada y la puerta cerrada detras
+C 0xC4A6 El bit 7 fuera, que el numero de canal son los tres bits bajos
+C 0xC4A8 46 bytes por canal: la direccion de su bloque es 0xD068 + canal*46
+C 0xC4B3 Si el canal pedido tiene puntero de ejecucion es que esta ocupado...
+C 0xC4B8 ...y entonces se recorren los TRES buscando uno libre
+C 0xC4C0 Un canal esta libre cuando sus dos primeros bytes son cero
+C 0xC4CA Sin ninguno libre se pisa el que se pidio
+C 0xC4CD Y con uno libre, se usa ese
+C 0xC4E0 El bloque entero a cero antes de nada: 46 bytes
+C 0xC4E9 Y el guion se siembra DOS veces: en el puntero de ejecucion y en el de inicio, que es al que vuelve op_bucle
+C 0xC4F2 0xD10D a 1: la musica esta viva. Ponerlo a cero es como se le pide que acabe (0xB6AF)
+C 0xC4F7 La transposicion de este canal (0xD114 + canal) se pone a cero al arrancar
+C 0xC505 Y con el bit 7 puesto se vuelve SIN `ei`, que es lo que pedia quien llamo
+C 0xC509 Los tres canales, uno detras de otro
+C 0xC50D IX al primer bloque de canal, DE a los registros de periodo del PSG (0xD100 es el R0) y HL a los de volumen (0xD108 es el R8): el bloque sombra es la imagen de los once registros
+C 0xC51B El canal que se esta atendiendo, que es lo que mira el mezclador
+C 0xC51E Con nota sonando -queda duracion- no se lee el guion: solo se corren las envolventes
+C 0xC527 Y al agotarse, lo primero es CALLAR el canal, antes de leer nada
+C 0xC52B El puntero de ejecucion del guion
+C 0xC531 Sin puntero no hay guion: canal muerto
+C 0xC536 El byte del guion: de 0x80 para arriba es una orden...
+C 0xC53E ...y se despacha por la tabla de 0xCABE, saltando a ella con `jp (hl)`
+C 0xC545 Por debajo de 0x80 es una NOTA, y se le suma la transposicion del canal
+C 0xC54B La tabla de notas de 0xC9FE da el periodo, que se guarda en el +0A/+0B
+C 0xC558 Ahora si se abre el canal, con el mezclador que dejo puesto el instrumento
+C 0xC55E Las dos envolventes se recargan desde la plantilla...
+C 0xC561 ...y lo que llevaran sumado al volumen y al periodo arranca a cero
+C 0xC570 El guion queda apuntando al byte siguiente...
+C 0xC576 ...y la duracion de la nota se recarga desde el +06/+07
+C 0xC582 Un cuadro menos de nota, siempre, suene lo que suene
+C 0xC58F IY recorre las fases mientras IX se queda en la cabecera del bloque
+C 0xC593 La envolvente de volumen tiene DOS fases
+C 0xC597 Si a la fase le faltan cuadros para el paso siguiente, se descuenta uno y se acabo el cuadro
+C 0xC5A4 Y si ya toca paso, se mira cuantos le quedan a la fase
+C 0xC5AE El paso: al volumen acumulado se le suma lo que diga la fase
+C 0xC5B7 Y se recarga la espera desde la plantilla
+C 0xC5C0 Fase agotada: a la siguiente
+C 0xC5C5 Si ninguna de las dos fases hizo nada, la envolvente esta terminada...
+C 0xC5C9 ...y el bit 0 del +2D decide si vuelve a empezar o se queda ahi
+C 0xC5D4 La de periodo va igual, pero con TRES fases
+C 0xC5D8 La espera de la fase
+C 0xC5E5 Los pasos que le quedan
+C 0xC5EF El paso es con signo: si el delta es negativo...
+C 0xC5F6 ...se le da la vuelta y se RESTA con acarreo de los dos bytes
+C 0xC608 El periodo del PSG son 12 bits: el `and 00fh` recorta el byte alto
+C 0xC60F Y con delta positivo, la suma de siempre
+C 0xC622 La espera, recargada desde la plantilla
+C 0xC62B Fase agotada: a la siguiente de las tres
+C 0xC4D3 El bit 7 fuera, que el canal son los tres bits bajos
+C 0xC4D5 Y la misma cuenta de antes: 46 bytes por canal desde 0xD068
