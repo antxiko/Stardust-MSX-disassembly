@@ -3242,3 +3242,91 @@ C 0xC622 La espera, recargada desde la plantilla
 C 0xC62B Fase agotada: a la siguiente de las tres
 C 0xC4D3 El bit 7 fuera, que el canal son los tres bits bajos
 C 0xC4D5 Y la misma cuenta de antes: 46 bytes por canal desde 0xD068
+
+
+# ----------------------------------------------------------------------
+# EL MOTOR DE SONIDO, SEGUNDA MITAD (0xC63B-0xC8F6)
+# ----------------------------------------------------------------------
+# EL RUIDO TIENE SU PROPIA ENVOLVENTE, y es GLOBAL, no por canal: vive en las
+# variables de 0xD0F2 con la misma forma que las de canal -dos fases, con su
+# espera, sus pasos y su recarga- y lo que va sumando queda en 0xD0FE. El
+# remate de tic_sonido (0xC6A7) manda al chip 0xD0FD + 0xD0FE, o sea el
+# periodo de ruido que puso op_ruido mas lo que lleve la envolvente. Por eso
+# hay un solo barrido de ruido a la vez y op_efecto tiene que anotar en 0xD0FF
+# quien lo lanzo.
+#
+# Y el reparto de los tres bits de repeticion queda cerrado: el 0 y el 1 son
+# del canal (ix+02D) y los mira el propio canal; el 2 vive en las globales
+# 0xD0FC y es el de la envolvente de ruido, que mira 0xC69F. Los tres los
+# enciende op_banderas de golpe con un `or`, y los apagan op_instrumento (0 y
+# 1) y op_efecto (2).
+
+C 0xC63E El volumen que suena es el base mas lo que lleve la envolvente, recortado a cuatro bits
+C 0xC647 Y el periodo va igual, pero a dos bytes: el `adc` arrastra el acarreo del bajo al alto
+C 0xC658 Al bloque del canal siguiente, 46 bytes mas alla
+C 0xC65F El numero de canal sube -es lo que mira el mezclador- y HL pasa al registro de volumen de al lado
+C 0xC665 Y detras de los tres canales, la envolvente del RUIDO, que es una sola para todos y vive en las globales
+C 0xC669 Dos fases, y el mismo bucle que la de volumen
+C 0xC66D La espera de la fase...
+C 0xC67A ...y los pasos que le quedan
+C 0xC684 El paso se suma en 0xD0FE, que es lo que la envolvente lleva puesto al periodo de ruido
+C 0xC696 Fase agotada: a la otra
+C 0xC69F Si ninguna hizo nada, el bit 2 de las banderas globales decide si se recarga y vuelve a empezar
+C 0xC6A7 Lo que llega al chip es el periodo de ruido que puso op_ruido mas lo de la envolvente
+C 0xC6B2 Y ahora si, los once registros de la sombra al PSG: una sola vez por interrupcion, con los tres canales ya resueltos
+C 0xC6BB Dos parejas: la espera desde el +20 y los pasos desde el +16
+C 0xC6C7 El `inc ix` pasa a la fase siguiente, que van byte a byte
+C 0xC6D3 Y aqui tres parejas, desde el +22 y el +18
+C 0xC6EF Las globales del ruido se rearman igual, con sus dos fases
+C 0xC70D La duracion que pide el guion...
+C 0xC70E ...por el tempo de 0xD10B, y eso son los cuadros que va a durar la nota
+C 0xC717 Se guarda en el +06/+07, que es el valor de RECARGA
+C 0xC723 Solo los bits 0 y 3: la pareja tono/ruido del canal en el registro 7
+C 0xC72F El bloque del canal entero a cero, 46 bytes
+C 0xC736 El `di` repuesto en las dos cabeceras: se deshace el `ret` que planto sonido_off y el sonido vuelve a estar abierto
+C 0xC73E La transposicion del canal, tambien a cero: B viene valiendo 0 del bucle de arriba
+C 0xC742 Y si el canal que acaba es el que anoto op_efecto...
+C 0xC749 ...se limpian ademas las globales del ruido: diez bytes con el `ldir` y uno mas saltandose 0xD0FD, que es el periodo y no se toca
+C 0xC75B El argumento del tempo por ocho...
+C 0xC763 ...y 6000 entre eso. A mas argumento, tempo mas corto y musica mas rapida
+C 0xC76B Del cociente solo interesa el byte bajo
+C 0xC777 Cinco bits: el periodo de ruido del PSG
+C 0xC77C Y de paso se rearma la envolvente global
+C 0xC781 El bit 7 del argumento decide por donde sigue: puesto, vuelve al bucle de comandos; a cero, cae en el ataque y consume una duracion como si fuera nota
+C 0xC78C Solo el canal 1 se pregunta si la musica tiene que acabarse...
+C 0xC792 ...y acaba de verdad cuando 0xD10D esta apagado, que es como se le pide el final
+C 0xC798 Si no, el puntero de ejecucion vuelve al de inicio y el guion empieza otra vez
+C 0xC7AA Las banderas se encienden con `or`: aqui no se apaga ninguna
+C 0xC7B0 Y las mismas, tambien en las globales
+C 0xC7BC Cambiar de instrumento apaga los dos bits de repeticion del canal
+C 0xC7C5 Quince bytes por instrumento, en 0xC8F7 + n*15
+C 0xC7D3 Se copian a partir del +16, que es donde vive la plantilla
+C 0xC7E1 Y los contadores vivos y los dos acumuladores, a cero: el instrumento nuevo empieza limpio
+C 0xC805 Apaga el bit 2 para que la envolvente de ruido no se recargue sola
+C 0xC80E Seis bytes por efecto, en 0xC9E7 + n*6
+C 0xC818 Que van a parar al +04 de las globales, o sea 0xD0F6, dejando a cero las dos esperas de delante
+C 0xC831 Y lo que el ruido llevara sumado, a cero
+C 0xC835 Se anota el canal que lo lanzo: es a quien op_fin le pedira cuentas
+C 0xC83F El argumento entra COMPLEMENTADO: un bit puesto enciende el generador
+C 0xC841 El 0x09 son los dos bits del canal 0, tono en el 0 y ruido en el 3
+C 0xC846 Y se corren tantas veces como diga el numero de canal...
+C 0xC84B ...metiendo unos por debajo, para no tocar lo de los otros dos
+C 0xC851 El `or d` apaga la pareja entera y el `and e` vuelve a encender solo lo que pide A
+C 0xC864 El hueco de vuelta de este canal, dos bytes en 0xD10E + canal*2
+C 0xC872 Ahi se guarda por donde iba el guion...
+C 0xC875 ...y BC se va a la frase, sacada de la tabla de veinte punteros de 0xCADC
+C 0xC880 El hueco de vuelta del canal...
+C 0xC88B ...y BC vuelve por donde iba: un solo nivel, y a la musica le sobra
+C 0xC892 La entrada de este canal en la tabla de transposiciones
+C 0xC895 Y el argumento tal cual: es lo que el lector de notas suma al numero de nota
+C 0xC89B 0xD10C es el canal que el interprete esta atendiendo en este momento
+C 0xC8AE Bit a bit del multiplicador: si el de abajo esta puesto, se suma...
+C 0xC8B3 ...y el sumando se dobla en cada vuelta
+C 0xC8C2 Dieciseis vueltas: se sube un bit al resto y se le resta el divisor...
+C 0xC8C9 ...y si no cabia, se deshace la resta
+C 0xC8CC El `ccf` es el que mete en el cociente el bit que dice si cabia
+C 0xC8D6 El indice por dos, que las entradas de la tabla son palabras
+C 0xC8DC Y la palabra, leida en dos pasos para no gastar mas registros
+C 0xC8E7 Once registros: los tres periodos de tono, el del ruido, el mezclador y los tres volumenes
+C 0xC8E9 Por el puerto 0xA0 va el numero de registro y por el 0xA1 el dato
+C 0xC8F1 El registro siguiente y el byte siguiente de la sombra, que van en el mismo orden

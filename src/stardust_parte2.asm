@@ -8472,11 +8472,11 @@ L_C63B:
 	pop bc			;c63b
 	pop de			;c63c
 	pop hl			;c63d
-	ld a,(ix+009h)		;c63e
+	ld a,(ix+009h)		;c63e   ; El volumen que suena es el base mas lo que lleve la envolvente, recortado a cuatro bits
 	add a,(ix+02ah)		;c641
 	and 00fh		;c644
 	ld (hl),a			;c646
-	ld a,(ix+00ah)		;c647
+	ld a,(ix+00ah)		;c647   ; Y el periodo va igual, pero a dos bytes: el `adc` arrastra el acarreo del bajo al alto
 	add a,(ix+02bh)		;c64a
 	ld (de),a			;c64d
 	inc de			;c64e
@@ -8485,19 +8485,19 @@ L_C63B:
 	ld (de),a			;c655
 	inc de			;c656
 	push de			;c657
-	ld de,0002eh		;c658
+	ld de,0002eh		;c658   ; Al bloque del canal siguiente, 46 bytes mas alla
 	add ix,de		;c65b
 	pop de			;c65d
 	pop af			;c65e
-	inc a			;c65f
+	inc a			;c65f   ; El numero de canal sube -es lo que mira el mezclador- y HL pasa al registro de volumen de al lado
 	inc hl			;c660
 	dec b			;c661
 	jp nz,L_C517		;c662
-	ld iy,0d0f2h		;c665
-	ld d,002h		;c669
+	ld iy,0d0f2h		;c665   ; Y detras de los tres canales, la envolvente del RUIDO, que es una sola para todos y vive en las globales
+	ld d,002h		;c669   ; Dos fases, y el mismo bucle que la de volumen
 	ld c,000h		;c66b
 L_C66D:
-	ld a,(iy+000h)		;c66d
+	ld a,(iy+000h)		;c66d   ; La espera de la fase...
 	or a			;c670
 	jr z,L_C67A		;c671
 	dec a			;c673
@@ -8505,12 +8505,12 @@ L_C66D:
 	inc c			;c677
 	jr L_C69B		;c678
 L_C67A:
-	ld a,(iy+002h)		;c67a
+	ld a,(iy+002h)		;c67a   ; ...y los pasos que le quedan
 	or a			;c67d
 	jr z,L_C696		;c67e
 	dec a			;c680
 	ld (iy+002h),a		;c681
-	ld a,(0d0feh)		;c684
+	ld a,(0d0feh)		;c684   ; El paso se suma en 0xD0FE, que es lo que la envolvente lleva puesto al periodo de ruido
 	add a,(iy+006h)		;c687
 	ld (0d0feh),a		;c68a
 	ld a,(iy+008h)		;c68d
@@ -8518,34 +8518,34 @@ L_C67A:
 	inc c			;c693
 	jr L_C69B		;c694
 L_C696:
-	inc iy		;c696
+	inc iy		;c696   ; Fase agotada: a la otra
 	dec d			;c698
 	jr nz,L_C66D		;c699
 L_C69B:
 	ld a,c			;c69b
 	or a			;c69c
 	jr nz,L_C6A7		;c69d
-	ld a,(0d0fch)		;c69f
+	ld a,(0d0fch)		;c69f   ; Si ninguna hizo nada, el bit 2 de las banderas globales decide si se recarga y vuelve a empezar
 	bit 2,a		;c6a2
 	call nz,refresca_globales_sonido		;c6a4
 L_C6A7:
-	ld a,(0d0fdh)		;c6a7
+	ld a,(0d0fdh)		;c6a7   ; Lo que llega al chip es el periodo de ruido que puso op_ruido mas lo de la envolvente
 	ld e,a			;c6aa
 	ld a,(0d0feh)		;c6ab
 	add a,e			;c6ae
 	ld (0d106h),a		;c6af
-	call vuelca_psg		;c6b2
+	call vuelca_psg		;c6b2   ; Y ahora si, los once registros de la sombra al PSG: una sola vez por interrupcion, con los tres canales ya resueltos
 	pop af			;c6b5
 	ret			;c6b6
 carga_envolvente_1:		; Copia dos parejas de la plantilla del instrumento a las variables vivas; identica byte a byte a la de la fase de naves
 	push ix		;c6b7
 	ld d,002h		;c6b9
 L_C6BB:
-	ld a,(ix+020h)		;c6bb
+	ld a,(ix+020h)		;c6bb   ; Dos parejas: la espera desde el +20 y los pasos desde el +16
 	ld (ix+00ch),a		;c6be
 	ld a,(ix+016h)		;c6c1
 	ld (ix+00eh),a		;c6c4
-	inc ix		;c6c7
+	inc ix		;c6c7   ; El `inc ix` pasa a la fase siguiente, que van byte a byte
 	dec d			;c6c9
 	jr nz,L_C6BB		;c6ca
 	pop ix		;c6cc
@@ -8554,7 +8554,7 @@ carga_envolvente_2:		; Lo mismo con tres parejas; tambien identica
 	ld d,003h		;c6cf
 	push ix		;c6d1
 L_C6D3:
-	ld a,(ix+022h)		;c6d3
+	ld a,(ix+022h)		;c6d3   ; Y aqui tres parejas, desde el +22 y el +18
 	ld (ix+010h),a		;c6d6
 	ld a,(ix+018h)		;c6d9
 	ld (ix+013h),a		;c6dc
@@ -8568,7 +8568,7 @@ refresca_globales_sonido:		; Refresca las variables globales del interprete desd
 	push iy		;c6e9
 	ld iy,0d0f2h		;c6eb
 L_C6EF:
-	ld a,(iy+008h)		;c6ef
+	ld a,(iy+008h)		;c6ef   ; Las globales del ruido se rearman igual, con sus dos fases
 	ld (iy+000h),a		;c6f2
 	ld a,(iy+004h)		;c6f5
 	ld (iy+002h),a		;c6f8
@@ -8585,39 +8585,39 @@ op_volumen:		; 0x80 n: mete el argumento en (ix+009), el volumen base de la voz.
 	jp L_C536		;c709
 op_duracion:		; 0x83 n: (ix+006/007) = argumento por el tempo, con mul_a_de y el tempo leido de 0xD10B (`ld de,(0d10bh) / ld d,000h`: solo el byte bajo, porque el alto seria 0xD10C, que es el numero de canal). Es el valor de RECARGA, no la cuenta atras: quien lo copia a (ix+004/005) es 0xC570
 	inc bc			;c70c
-	ld a,(bc)			;c70d
-	ld de,(0d10bh)		;c70e
+	ld a,(bc)			;c70d   ; La duracion que pide el guion...
+	ld de,(0d10bh)		;c70e   ; ...por el tempo de 0xD10B, y eso son los cuadros que va a durar la nota
 	ld d,000h		;c712
 	call mul_a_de		;c714
-	ld (ix+006h),l		;c717
+	ld (ix+006h),l		;c717   ; Se guarda en el +06/+07, que es el valor de RECARGA
 	ld (ix+007h),h		;c71a
 	inc bc			;c71d
 	jp L_C536		;c71e
 op_tono_ruido:		; 0x81 n: (ix+008) = argumento and 0x09, que son los bits 0 y 3, la pareja tono/ruido del registro 7 del PSG. OJO AL SENTIDO: el mezclador de 0xC83E aplica el argumento COMPLEMENTADO, asi que un bit PUESTO enciende el generador. Lo confirma la musica, cuyos 28 argumentos son solo 0x01 (tono, 19 veces), 0x08 (ruido, 8) y 0x09 (los dos, 1)
 	inc bc			;c721
 	ld a,(bc)			;c722
-	and 009h		;c723
+	and 009h		;c723   ; Solo los bits 0 y 3: la pareja tono/ruido del canal en el registro 7
 	ld (ix+008h),a		;c725
 	inc bc			;c728
 	jp L_C536		;c729
 op_fin:		; 0x8B: cierra la voz. Borra los 46 bytes de su estado (`ld b,02eh`), pone a cero su transposicion en 0xD114+canal y repone el `di` (0xF3) en la cabecera de arranca_guion y arranca_guion_libre, deshaciendo el `ret` (0xC9) que planto sonido_off; y si el canal que acaba es el mismo que anoto op_efecto en 0xD0FF, limpia ademas 0xD0F2-0xD0FC y 0xD0FE, saltandose 0xD0FD -el periodo de ruido- porque el `ldir` es de diez. Es UN BYTE mas largo que el 0xE418 de naves, y esa es la razon de que los manejadores de aqui en adelante lleven delta 0x1CEB y los anteriores 0x1CEC
 	push ix		;c72c
 	pop hl			;c72e
-	xor a			;c72f
+	xor a			;c72f   ; El bloque del canal entero a cero, 46 bytes
 	ld b,02eh		;c730
 L_C732:
 	ld (hl),a			;c732
 	inc hl			;c733
 	djnz L_C732		;c734
-	ld a,0f3h		;c736
+	ld a,0f3h		;c736   ; El `di` repuesto en las dos cabeceras: se deshace el `ret` que planto sonido_off y el sonido vuelve a estar abierto
 	ld (arranca_guion_libre),a		;c738
 	ld (arranca_guion),a		;c73b
-	call estado_canal_actual		;c73e
+	call estado_canal_actual		;c73e   ; La transposicion del canal, tambien a cero: B viene valiendo 0 del bucle de arriba
 	ld (hl),b			;c741
-	ld hl,0d0ffh		;c742
+	ld hl,0d0ffh		;c742   ; Y si el canal que acaba es el que anoto op_efecto...
 	xor (hl)			;c745
 	jp nz,L_C63B		;c746
-	ld hl,0d0f2h		;c749
+	ld hl,0d0f2h		;c749   ; ...se limpian ademas las globales del ruido: diez bytes con el `ldir` y uno mas saltandose 0xD0FD, que es el periodo y no se toca
 	ld de,0d0f3h		;c74c
 	ld bc,0000ah		;c74f
 	ld (hl),a			;c752
@@ -8627,15 +8627,15 @@ L_C732:
 	jp L_C63B		;c757
 op_tempo:		; 0x85 n: 0xD10B = 6000 / (argumento * 8), con mul_a_de para el producto y la division de 0xC8BB, guardando solo el byte bajo del cociente. Es el multiplicador que aplica op_duracion, asi que a MAS argumento, tempo mas corto y musica mas rapida; sus diez apariciones son 0x32, 0xA0 (ocho veces) y 0xFF, que dan 15, 4 y 2
 	inc bc			;c75a
-	ld a,(bc)			;c75b
+	ld a,(bc)			;c75b   ; El argumento del tempo por ocho...
 	push bc			;c75c
 	ld de,00008h		;c75d
 	call mul_a_de		;c760
-	ld bc,01770h		;c763
+	ld bc,01770h		;c763   ; ...y 6000 entre eso. A mas argumento, tempo mas corto y musica mas rapida
 	push hl			;c766
 	pop de			;c767
 	call div_bc_de		;c768
-	ld a,c			;c76b
+	ld a,c			;c76b   ; Del cociente solo interesa el byte bajo
 	ld (0d10bh),a		;c76c
 	pop bc			;c76f
 	inc bc			;c770
@@ -8644,26 +8644,26 @@ op_ruido:		; 0x88 n: 0xD0FD = argumento and 0x1F, los cinco bits del periodo de 
 	inc bc			;c774
 	ld a,(bc)			;c775
 	push af			;c776
-	and 01fh		;c777
+	and 01fh		;c777   ; Cinco bits: el periodo de ruido del PSG
 	ld (0d0fdh),a		;c779
-	call refresca_globales_sonido		;c77c
+	call refresca_globales_sonido		;c77c   ; Y de paso se rearma la envolvente global
 	pop af			;c77f
 	inc bc			;c780
-	or a			;c781
+	or a			;c781   ; El bit 7 del argumento decide por donde sigue: puesto, vuelve al bucle de comandos; a cero, cae en el ataque y consume una duracion como si fuera nota
 	jp m,L_C536		;c782
 	jp L_C558		;c785
 op_liga:		; 0x84: cuatro bytes y sin argumento. En vez de volver al bucle de comandos salta a 0xC570, saltandose entero el ataque de 0xC558-0xC56F: ni mezclador, ni carga_envolvente_1/2, ni (ix+02A/02B/02C) a cero. Solo recarga la cuenta atras, o sea que lo que estuviera sonando sigue igual y unicamente se cuenta otra duracion. Aparece 16 veces en la musica y se ejecuta 554 en el replay
 	inc bc			;c788
 	jp L_C570		;c789
 op_bucle:		; 0x82: recarga el puntero de ejecucion (ix+002/003) con el de inicio (ix+000/001) y vuelve a empezar el guion: dentro de una cancion es un bucle interno, NO un terminador. Solo cae en op_fin si se dan las dos condiciones de su cabecera, que el canal sea el 1 y que 0xD10D valga cero. Ese byte lo pone a 1 arranca_guion en 0xC4F2 cada vez que se lanza algo, y el unico que lo apaga es 0xB6AF, que justo despues se queda esperando a que se borren los dos primeros bytes del estado del canal 1: apagar 0xD10D es como se le pide a la musica que termine
-	ld a,(0d10ch)		;c78c
+	ld a,(0d10ch)		;c78c   ; Solo el canal 1 se pregunta si la musica tiene que acabarse...
 	dec a			;c78f
 	jr nz,L_C798		;c790
-	ld a,(0d10dh)		;c792
+	ld a,(0d10dh)		;c792   ; ...y acaba de verdad cuando 0xD10D esta apagado, que es como se le pide el final
 	and a			;c795
 	jr z,op_fin		;c796
 L_C798:
-	ld c,(ix+000h)		;c798
+	ld c,(ix+000h)		;c798   ; Si no, el puntero de ejecucion vuelve al de inicio y el guion empieza otra vez
 	ld b,(ix+001h)		;c79b
 	ld (ix+002h),c		;c79e
 	ld (ix+003h),b		;c7a1
@@ -8672,26 +8672,26 @@ op_banderas:		; 0x8A n: enciende bits con OR, sin apagar ninguno, y mete el argu
 	inc bc			;c7a7
 	ld a,(bc)			;c7a8
 	ld e,a			;c7a9
-	or (ix+02dh)		;c7aa
+	or (ix+02dh)		;c7aa   ; Las banderas se encienden con `or`: aqui no se apaga ninguna
 	ld (ix+02dh),a		;c7ad
-	ld a,(0d0fch)		;c7b0
+	ld a,(0d0fch)		;c7b0   ; Y las mismas, tambien en las globales
 	or e			;c7b3
 	ld (0d0fch),a		;c7b4
 	inc bc			;c7b7
 	jp L_C536		;c7b8
 op_instrumento:		; 0x87 n: copia los quince bytes del instrumento n -que vive en 0xC8F7 + n*15- a (ix+016) y siguientes, que son las dos fases de la envolvente de volumen y las tres de la de tono, con su cuenta, su paso y su recarga cada una; de paso apaga los bits 0 y 1 de (ix+02D) y pone a cero los contadores (ix+00C/00D) y (ix+010/011/012) y los acumuladores (ix+02A) y (ix+02B/02C). La musica pide 47 veces los instrumentos 0 a 12 y el 15
 	inc bc			;c7bb
-	res 0,(ix+02dh)		;c7bc
+	res 0,(ix+02dh)		;c7bc   ; Cambiar de instrumento apaga los dos bits de repeticion del canal
 	res 1,(ix+02dh)		;c7c0
 	ld a,(bc)			;c7c4
-	ld de,0000fh		;c7c5
+	ld de,0000fh		;c7c5   ; Quince bytes por instrumento, en 0xC8F7 + n*15
 	call mul_a_de		;c7c8
 	ld de,0c8f7h		;c7cb
 	add hl,de			;c7ce
 	push ix		;c7cf
 	ld d,00fh		;c7d1
 L_C7D3:
-	ld a,(hl)			;c7d3
+	ld a,(hl)			;c7d3   ; Se copian a partir del +16, que es donde vive la plantilla
 	ld (ix+016h),a		;c7d4
 	inc hl			;c7d7
 	inc ix		;c7d8
@@ -8699,7 +8699,7 @@ L_C7D3:
 	jp nz,L_C7D3		;c7db
 	pop ix		;c7de
 	inc bc			;c7e0
-	ld (ix+00ch),000h		;c7e1
+	ld (ix+00ch),000h		;c7e1   ; Y los contadores vivos y los dos acumuladores, a cero: el instrumento nuevo empieza limpio
 	ld (ix+00dh),000h		;c7e5
 	ld (ix+010h),000h		;c7e9
 	ld (ix+011h),000h		;c7ed
@@ -8710,15 +8710,15 @@ L_C7D3:
 	jp L_C536		;c801
 op_efecto:		; 0x89 n: arranca el barrido del RUIDO. Copia los seis bytes del efecto n -de 0xC9E7 + n*6- a las globales 0xD0F6-0xD0FB, que son las dos fases de la envolvente que va sumando en 0xD0FE; pone a cero 0xD0F2/0xD0F3 y el propio 0xD0FE, apaga el bit 2 de las banderas 0xD0FC -el que hace que la envolvente se recargue sola- y anota en 0xD0FF el canal que lo lanzo, que es a quien op_fin le pedira cuentas. La musica solo pide los efectos 0 y 3, y en el replay entero salta UNA vez
 	inc bc			;c804
-	ld a,(0d0fch)		;c805
+	ld a,(0d0fch)		;c805   ; Apaga el bit 2 para que la envolvente de ruido no se recargue sola
 	res 2,a		;c808
 	ld (0d0fch),a		;c80a
 	ld a,(bc)			;c80d
-	ld de,00006h		;c80e
+	ld de,00006h		;c80e   ; Seis bytes por efecto, en 0xC9E7 + n*6
 	call mul_a_de		;c811
 	ld de,0c9e7h		;c814
 	add hl,de			;c817
-	ld iy,0d0f2h		;c818
+	ld iy,0d0f2h		;c818   ; Que van a parar al +04 de las globales, o sea 0xD0F6, dejando a cero las dos esperas de delante
 	ld (iy+000h),000h		;c81c
 	ld (iy+001h),000h		;c820
 	ld d,006h		;c824
@@ -8730,26 +8730,26 @@ L_C826:
 	dec d			;c82d
 	jr nz,L_C826		;c82e
 	xor a			;c830
-	ld (0d0feh),a		;c831
+	ld (0d0feh),a		;c831   ; Y lo que el ruido llevara sumado, a cero
 	inc bc			;c834
-	ld a,(0d10ch)		;c835
+	ld a,(0d10ch)		;c835   ; Se anota el canal que lo lanzo: es a quien op_fin le pedira cuentas
 	ld (0d0ffh),a		;c838
 	jp L_C536		;c83b
 mezclador_canal:		; Enciende o apaga el tono y el ruido del canal que dice 0xD10C en la copia del registro 7 del PSG (0xD107): parte de D = 0x09 -bit 0 el tono y bit 3 el ruido del canal 0- y de E = complemento de A, los desplaza a la izquierda tantas veces como el numero de canal metiendo unos, y remata con `or d / and e`, o sea apaga la pareja entera y vuelve a encender solo lo que pide A. La llama tic_sonido dos veces por canal: con A=0 para callar el canal antes de leer el guion y con A=(ix+008) al atacar la nota. Gemela de la 0xE529 de la fase de naves
 	push de			;c83e
-	cpl			;c83f
+	cpl			;c83f   ; El argumento entra COMPLEMENTADO: un bit puesto enciende el generador
 	ld e,a			;c840
-	ld d,009h		;c841
+	ld d,009h		;c841   ; El 0x09 son los dos bits del canal 0, tono en el 0 y ruido en el 3
 	ld a,(0d10ch)		;c843
 L_C846:
-	dec a			;c846
+	dec a			;c846   ; Y se corren tantas veces como diga el numero de canal...
 	jp m,L_C851		;c847
 	scf			;c84a
-	rl e		;c84b
+	rl e		;c84b   ; ...metiendo unos por debajo, para no tocar lo de los otros dos
 	sla d		;c84d
 	jr L_C846		;c84f
 L_C851:
-	ld a,(0d107h)		;c851
+	ld a,(0d107h)		;c851   ; El `or d` apaga la pareja entera y el `and e` vuelve a encender solo lo que pide A
 	or d			;c854
 	and e			;c855
 	ld (0d107h),a		;c856
@@ -8761,7 +8761,7 @@ op_tempo1:		; 0x86: el tempo a 1, sin argumento: la unidad de tiempo mas corta p
 	inc bc			;c860
 	jp L_C536		;c861
 op_llama_frase:		; 0x8C n: el CALL del interprete. Guarda en 0xD10E + canal*2 el puntero al byte que sigue al operando y mete en BC la frase n leida de la tabla de veinte punteros de 0xCADC. Es de UN SOLO NIVEL -tres huecos de 2 B, uno por canal, y 0xD10E + 3*2 = 0xD114, donde ya empieza la tabla de transposiciones-, y a la musica le basta: es con diferencia el comando mas frecuente, 208 apariciones, y ninguna de las veinte frases lleva un 0x8C dentro
-	ld a,(0d10ch)		;c864
+	ld a,(0d10ch)		;c864   ; El hueco de vuelta de este canal, dos bytes en 0xD10E + canal*2
 	inc bc			;c867
 	add a,a			;c868
 	ld l,a			;c869
@@ -8770,34 +8770,34 @@ op_llama_frase:		; 0x8C n: el CALL del interprete. Guarda en 0xD10E + canal*2 el
 	inc bc			;c86d
 	ld de,0d10eh		;c86e
 	add hl,de			;c871
-	ld (hl),c			;c872
+	ld (hl),c			;c872   ; Ahi se guarda por donde iba el guion...
 	inc hl			;c873
 	ld (hl),b			;c874
-	ld hl,0cadch		;c875
+	ld hl,0cadch		;c875   ; ...y BC se va a la frase, sacada de la tabla de veinte punteros de 0xCADC
 	call lee_puntero		;c878
 	ld b,h			;c87b
 	ld c,l			;c87c
 	jp L_C536		;c87d
 op_vuelve:		; 0x8D: el RET del interprete, sin argumento. Recupera BC del hueco de 0xD10E + canal*2 que dejo op_llama_frase y sigue desde ahi. Por eso diecinueve de las veinte entradas de la tabla de frases acaban en 0x8D; la vigesima (0xCD53) acaba en 0x8B porque no es una frase sino un guion entero, el sonido que alta_objeto_acbb lanza al canal 2, y ninguno de los 208 comandos 0x8C la pide: todos van del 0 al 18
-	ld a,(0d10ch)		;c880
+	ld a,(0d10ch)		;c880   ; El hueco de vuelta del canal...
 	add a,a			;c883
 	ld l,a			;c884
 	ld h,000h		;c885
 	ld de,0d10eh		;c887
 	add hl,de			;c88a
-	ld c,(hl)			;c88b
+	ld c,(hl)			;c88b   ; ...y BC vuelve por donde iba: un solo nivel, y a la musica le sobra
 	inc hl			;c88c
 	ld b,(hl)			;c88d
 	jp L_C536		;c88e
 op_transporte:		; 0x8E n: escribe el argumento en 0xD114 + canal, que es la TRANSPOSICION de la voz: el lector de notas se lo suma al numero de nota antes de buscar el periodo en la tabla de 0xC9FE (`call estado_canal_actual / add a,(hl)` en 0xC546). La musica lo usa 34 veces, con 2, 5, 9, 11 y 14 hacia arriba y con 0xF6, 0xFD y 0xFF -o sea -10, -3 y -1 semitonos- hacia abajo
 	inc bc			;c891
-	call estado_canal_actual		;c892
-	ld a,(bc)			;c895
+	call estado_canal_actual		;c892   ; La entrada de este canal en la tabla de transposiciones
+	ld a,(bc)			;c895   ; Y el argumento tal cual: es lo que el lector de notas suma al numero de nota
 	inc bc			;c896
 	ld (hl),a			;c897
 	jp L_C536		;c898
 estado_canal_actual:		; HL = 0xD114 + el numero que haya en 0xD10C: la entrada del canal que el interprete esta atendiendo
-	ld a,(0d10ch)		;c89b
+	ld a,(0d10ch)		;c89b   ; 0xD10C es el canal que el interprete esta atendiendo en este momento
 	ld l,a			;c89e
 	ld h,000h		;c89f
 	ld de,0d114h		;c8a1
@@ -8810,11 +8810,11 @@ mul_a_de:		; HL = A * DE por desplazamiento y suma; identica byte a byte a la de
 	push bc			;c8ab
 	ld b,008h		;c8ac
 L_C8AE:
-	srl a		;c8ae
+	srl a		;c8ae   ; Bit a bit del multiplicador: si el de abajo esta puesto, se suma...
 	jr nc,L_C8B3		;c8b0
 	add hl,de			;c8b2
 L_C8B3:
-	sla e		;c8b3
+	sla e		;c8b3   ; ...y el sumando se dobla en cada vuelta
 	rl d		;c8b5
 	djnz L_C8AE		;c8b7
 	pop bc			;c8b9
@@ -8825,14 +8825,14 @@ div_bc_de:		; BC = BC / DE por restas y desplazamientos, dieciseis vueltas de `r
 	ld a,b			;c8bf
 	ld b,010h		;c8c0
 L_C8C2:
-	rl c		;c8c2
+	rl c		;c8c2   ; Dieciseis vueltas: se sube un bit al resto y se le resta el divisor...
 	rla			;c8c4
 	adc hl,hl		;c8c5
 	sbc hl,de		;c8c7
-	jr nc,L_C8CC		;c8c9
+	jr nc,L_C8CC		;c8c9   ; ...y si no cabia, se deshace la resta
 	add hl,de			;c8cb
 L_C8CC:
-	ccf			;c8cc
+	ccf			;c8cc   ; El `ccf` es el que mete en el cociente el bit que dice si cabia
 	djnz L_C8C2		;c8cd
 	rl c		;c8cf
 	rla			;c8d1
@@ -8841,13 +8841,13 @@ L_C8CC:
 	ret			;c8d4
 lee_puntero:		; HL = la palabra que hay en HL + A*2; identica byte a byte a la del bloque de naves
 	push af			;c8d5
-	add a,a			;c8d6
+	add a,a			;c8d6   ; El indice por dos, que las entradas de la tabla son palabras
 	add a,l			;c8d7
 	ld l,a			;c8d8
 	jr nc,L_C8DC		;c8d9
 	inc h			;c8db
 L_C8DC:
-	ld a,(hl)			;c8dc
+	ld a,(hl)			;c8dc   ; Y la palabra, leida en dos pasos para no gastar mas registros
 	inc hl			;c8dd
 	ld h,(hl)			;c8de
 	ld l,a			;c8df
@@ -8856,15 +8856,15 @@ L_C8DC:
 vuelca_psg:		; Vuelca al PSG los once bytes del bloque sombra 0xD100-0xD10A, que son los registros 0 a 10 del chip -los tres periodos de tono, el del ruido, el mezclador y los tres volumenes-, alternando el numero de registro por el puerto 0xA0 y el dato por el 0xA1. La llama tic_sonido una sola vez por interrupcion, al final, con los tres canales ya resueltos. Sus dieciocho ultimos bytes (0xC8E5-0xC8F6) son los de 0xE5D0 de la fase de naves sin tocar una coma; lo unico distinto son los tres del `ld hl,0d100h`
 	ld hl,0d100h		;c8e2
 	ld a,000h		;c8e5
-	ld d,00bh		;c8e7
+	ld d,00bh		;c8e7   ; Once registros: los tres periodos de tono, el del ruido, el mezclador y los tres volumenes
 L_C8E9:
-	push af			;c8e9
+	push af			;c8e9   ; Por el puerto 0xA0 va el numero de registro y por el 0xA1 el dato
 	ld c,(hl)			;c8ea
 	out (0a0h),a		;c8eb
 	ld a,c			;c8ed
 	out (0a1h),a		;c8ee
 	pop af			;c8f0
-	inc a			;c8f1
+	inc a			;c8f1   ; El registro siguiente y el byte siguiente de la sombra, que van en el mismo orden
 	inc hl			;c8f2
 	dec d			;c8f3
 	jr nz,L_C8E9		;c8f4
