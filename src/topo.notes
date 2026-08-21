@@ -1,23 +1,22 @@
 # TOPO: el logo animado de Topo Soft, lo primero que se ve al cargar la cinta.
 #
-# Se carga en 0x9470 con el BLOAD"cas:",R de la linea 20 del cargador y se
-# ejecuta en su primera direccion. Al terminar hace RET y el cargador sigue por
-# la linea 30, que trae la pantalla de carga.
+# Se carga en 0x9470 con el BLOAD"cas:",R del cargador y se ejecuta en su
+# primera direccion. Al terminar hace RET y el cargador sigue con el bloque
+# siguiente.
 #
 # Corre con el interprete BASIC vivo y la memoria sin conmutar, asi que puede
 # llamar al sistema con normalidad.
 #
-# Este bloque no es exclusivo de Colt 36: es la pieza de presentacion de la casa,
-# y el juego la lleva tal cual.
+# NO es exclusivo de Stardust: es la pieza de presentacion de la casa, y son
+# EL MISMO FICHERO en los cuatro juegos de Topo Soft de la serie -Ale Hop!,
+# Colt 36, Temptations y este-, los cuatro con md5
+# fbdad52ba431fc5108d67618f891ba6e. Los comentarios de aqui abajo vienen de
+# Ale Hop!, donde se explico primero; las columnas de direcciones de los cuatro
+# listados son identicas, asi que cada uno cae en su instruccion.
 #
-# Ademas es el bloque que peor sobrevive. Se carga en 0x9470..0xA50D y luego se
-# le cargan encima la pantalla de carga y el bloque de datos; de sus 4254 bytes
-# solo quedan sin pisar 1780 (0x949D..0x9B90), y esos caen justo debajo del techo
-# de memoria que fija el CLEAR, o sea en la zona que el interprete usa de pila y
-# de espacio de cadenas. Aun asi el cadaver no desaparece del todo: medido a los
-# 80 segundos de partida seguian intactos 1629 de esos bytes, 893 de ellos
-# seguidos en 0x949D..0x9819. El interprete solo se come de verdad la parte alta,
-# de 0x98B0 en adelante.
+# OJO: la cabecera anterior de este fichero venia copiada de Colt 36 y traia
+# sus medidas -cuantos bytes del cargador sobreviven a lo que se carga
+# encima-, que son de AQUEL juego y no se han medido en Stardust. Quitadas.
 
 B 0x9470 ############################################################
 B 0x9470 EL LOGO DE TOPO SOFT
@@ -29,20 +28,185 @@ B 0x9470 va al mismo ritmo en cualquier maquina.
 B 0x9470 Verificado en openMSX: el juego pasa por 0x9470 a los 69,7 s
 B 0x9470 de empezar a cargar la cinta.
 
-L 0x9470 topo_inicio      Punto de entrada: el exec que declara la cabecera BIN
-C 0x9470 aqui solo hay un salto; el codigo util empieza mas adelante
-L 0x9473 topo_anima       La animacion del logo
-C 0x947C compara HL con DE para saber si el recorrido ha terminado
-C 0x949F espera tres barridos de pantalla: asi se temporiza la animacion
+L 0x9470 topo_inicio       Punto de entrada (BLOAD ,R)
+C 0x9470 el codigo util empieza mas adelante; esto solo salta alli
+L 0x9473 corre_el_color   Corre el color por las dos bandas del recuadro de abajo, de izquierda a derecha; no anima el logo. La llama topo_main desde 0x95FA
+C 0x947C compara HL con DE para saber si ha llegado al final del recorrido
+C 0x949F espera 3 interrupciones de barrido: asi se temporiza la animacion
 
-D 0x9694 0x96B2 tabla_trozos   Quince posiciones dentro de los dibujos de abajo, una por trozo del logo. El codigo indexa aqui para saber donde empieza cada uno
+# Los bloques de datos del cargador de Topo Soft. El modulo es el MISMO en
+# Colt 36, Stardust, Temptations y Ale Hop! -los cuatro TOPO.raw dan el mismo
+# md5, fbdad52ba431fc5108d67618f891ba6e- asi que sus rangos son los mismos.
+D 0x9694 0x96B2 tabla_trozos   Quince posiciones dentro de los dibujos de abajo, una por trozo del logo. El codigo indexa aqui (numero de trozo por dos) para saber donde empieza cada uno
 F 0x9694 2
 D 0x96B2 0x96CC secuencia_1    Lista de numeros de dibujo que se van sucediendo, cerrada con 0xFF
 D 0x96CC 0x96E9 recorrido      La trayectoria de entrada: catorce parejas de coordenadas, cerradas con 0xFF
 F 0x96CC 2
-D 0x96E9 0x96F4 secuencia_2    Segunda lista de numeros de dibujo, tambien cerrada con 0xFF, y dos bytes de relleno
-D 0x96F4 0x96F8 punteros       Dos variables de trabajo de 16 bits que el propio codigo reescribe mientras anima
+D 0x96E9 0x96F4 secuencia_2    Segunda lista de numeros de dibujo (11, 12, 13, 12, 11, 12, 13 y 14), cerrada con 0xFF, y dos bytes de relleno. La recorre 0x95AE, cuatro frames por trozo, en la fila 13
+D 0x96F4 0x96F8 punteros       Dos variables de trabajo que dibuja_trozo reescribe: 0x96F4 por donde va leyendo el dibujo y 0x96F6 la entrada de tabla_vram por la que empezo. En la cinta vienen grabadas con 0xA50E y 0x9712, que son el final de los dibujos y la entrada 13 de tabla_vram: justo lo que dejan al dibujar el trozo 14 en la fila 13, el ultimo de secuencia_2
 F 0x96F4 w2
-D 0x96F8 0x9728 tabla_vram     Veinticuatro direcciones de memoria de video, de 0xC000 a 0xD700 de 256 en 256: una por cada franja donde se va escribiendo el logo
+D 0x96F8 0x9728 tabla_vram     Las veinticuatro filas de caracter de la tabla de patrones, de 256 en 256 bytes. Van apuntadas a 0xC000-0xD700 y no a 0x0000-0x1700 porque sirven para las dos cosas: tal cual son la copia que guarda_pantalla deja en RAM, y sin los bits 14 y 15 -que es lo que hace el bucle de 0x94F5- son la direccion de VRAM
 F 0x96F8 w8
-D 0x9728 0xA50E dibujos_logo   Los 3558 bytes de los trozos del logo, en el orden al que apunta la tabla de arriba
+D 0x9728 0xA50E dibujos_logo   Los quince trozos del logo, en el orden al que apunta tabla_trozos. Cada uno empieza por dos bytes de cabecera -ancho en bytes y filas de caracter- y detras van ancho*filas bytes de patrones. Sumados los quince dan 3558 bytes, que es exactamente lo que ocupa el bloque: del 0 al 6, siete cuadros de 64x2 para la animacion; el 7 de 72x11 y el 9 de 48x10, que son los dos trozos grandes que entran por los lados; el 8 de 40x7, que deja la estela; el 10 de 56x10, el que hace el recorrido; y del 11 al 14, cuatro de 24x5 para la ultima secuencia
+
+# ----------------------------------------------------------------------
+# Segunda pasada: la mecanica del logo, leida del codigo.
+#
+# Todo el modulo gira alrededor de dibuja_trozo (0x94B1), que no recibe los
+# parametros en registros sino PARCHEADOS en sus propios `ld`: la fila en
+# 0x94B2, el numero de trozo en 0x94BD y la columna en 0x94E9. Cada rutina de
+# animacion escribe esos tres bytes y llama.
+# El otro byte parcheable es 0x94F3, dentro del bucle que copia: con 0x00 (nop)
+# el trozo pisa lo que hubiera, y con 0xB6 (`or (hl)`) se superpone a la copia
+# de la pantalla que 0x9688 dejo en 0xC000.
+# ----------------------------------------------------------------------
+
+L 0x94A6 pinta_celda      Escribe A en ocho bytes seguidos de VRAM: el color de un caracter entero
+L 0x94B1 dibuja_trozo     Vuelca un trozo del logo a la VRAM. Los tres parametros van parcheados en el propio codigo
+L 0x950B anima_topo       Recorre secuencia_1 dibujando un trozo cada dos frames en la fila 15
+L 0x9532 entra_trozo_7    El trozo 7 aparece corriendose hacia la derecha
+L 0x954D entra_trozo_9    El trozo 9, al reves: entra de derecha a izquierda
+L 0x956B estela_trozo_8   El trozo 8 dibujado en siete filas seguidas, superponiendose
+L 0x958E vuelo_trozo_10   El trozo 10 siguiendo el recorrido de 0x96CC
+L 0x95AE ultima_secuencia Recorre secuencia_2 en la fila 13
+L 0x95D1 topo_main        Lo que hace el logo, de principio a fin
+L 0x9602 borra_color      Deja la tabla de colores entera en blanco sobre transparente
+L 0x9614 pinta_recuadro   Rojo sobre negro en dos bandas de ocho caracteres, donde luego corre el color
+L 0x962B abre_color       Va coloreando dos columnas que se separan desde el centro
+L 0x967E pinta_celda_c    Igual que pinta_celda pero contando con C
+L 0x9688 guarda_pantalla  Copia la tabla de patrones de la VRAM a 0xC000, para poder superponer
+
+C 0x9473 primera celda de color que se retoca
+C 0x9476 y la ultima, ocho caracteres mas alla
+C 0x9479 salto a la segunda banda: con los ocho bytes que ya avanzo pinta_celda son 255, uno menos que la fila de caracteres entera
+C 0x9481 rojo sobre negro en la banda de arriba
+C 0x9487 la misma columna, en la de abajo
+C 0x948F y blanco sobre negro una celda mas a la derecha
+C 0x949B la interrupcion, solo para poder esperar
+C 0x94A4 otra celda: el color va corriendo hacia la derecha
+
+C 0x94A7 ocho bytes: los ocho scanlines de un caracter
+
+C 0x94B1 la fila por la que empezar. El 0x0D lo parchea quien llama
+C 0x94B4 por dos, que tabla_vram es de palabras
+C 0x94B9 guarda el puntero a la entrada de tabla_vram
+C 0x94BC el numero de trozo, tambien parcheado
+C 0x94C0 su posicion dentro de los dibujos
+C 0x94C7 principio del trozo; los dos primeros bytes son la cabecera
+C 0x94CB el ancho en bytes, al contador del bucle interior
+C 0x94D0 y las filas, al del exterior
+C 0x94D5 aqui empiezan los datos
+C 0x94D8 la entrada de tabla_vram por la que empezar
+C 0x94DC cuantas filas (parcheado desde la cabecera)
+
+C 0x94DE direccion de la fila, sacada de tabla_vram
+C 0x94E8 la columna, en bytes: tambien parcheada
+C 0x94EC el puntero al dibujo, donde lo dejo la fila anterior
+C 0x94F0 bytes de esta fila (parcheado desde la cabecera)
+
+C 0x94F3 byte parcheable: nop pisa lo que hubiera, `or (hl)` lo superpone a la copia de 0xC000
+C 0x94F5 sin los bits 14 y 15, la direccion de la tabla es la de VRAM
+C 0x94FD y con ellos vuelve a apuntar a la copia en RAM
+C 0x9503 deja el puntero listo para la fila siguiente
+C 0x9507 una fila menos
+
+C 0x950B fila 15
+C 0x950D parchea el `ld hl` de dibuja_trozo: asi se le pasa la fila
+C 0x9510 columna 0x78, el caracter 15
+C 0x9515 sin OR: cada trozo pisa al anterior
+C 0x9519 la lista de trozos que se van alternando
+
+C 0x951C numero de trozo; el 0xFF cierra la lista
+C 0x9520 se lo parchea a dibuja_trozo
+C 0x9525 dos frames entre trozo y trozo
+C 0x9527 la espera
+C 0x952B y a dibujar
+C 0x952F siguiente numero de la lista
+
+C 0x9532 el trozo 7, el mas ancho: nueve caracteres por once filas
+C 0x9537 a partir de la fila 6
+C 0x953C empezando por la columna 0
+C 0x953E tres posiciones: columnas 0, 8 y 16
+C 0x9541 la columna, parcheada
+C 0x9549 un caracter mas a la derecha
+
+C 0x954D el trozo 9, seis caracteres por diez filas
+C 0x9552 en la fila 7
+C 0x9557 este entra al reves: de la columna 0x90 a la 0x58
+C 0x9559 ocho posiciones, de derecha a izquierda
+C 0x955C la columna, parcheada
+C 0x9560 un frame entre paso y paso
+C 0x9567 un caracter a la izquierda
+
+C 0x956B 0xB6 es `or (hl)`: a partir de aqui el trozo se superpone
+C 0x9570 el trozo 8, cinco caracteres por siete filas
+C 0x9575 columna 0x38, el caracter 7
+C 0x957A desde la fila 0
+C 0x957C el mismo trozo en las filas 0 a 6, una encima de otra
+C 0x9580 la fila, parcheada
+C 0x9588 una fila mas abajo
+C 0x958B lo dibuja una vez mas; como va superponiendo con OR, repetir no cambia nada
+
+C 0x958E el trozo 10, siete caracteres por diez filas
+C 0x9593 el recorrido: parejas de columna y fila
+C 0x9596 columna; el 0xFF cierra el recorrido
+C 0x959C parchea la columna
+C 0x959F y detras viene la fila
+C 0x95A5 cada punto del recorrido, encima del anterior
+C 0x95AB una vez mas en el ultimo punto
+
+C 0x95AE la segunda lista de trozos
+C 0x95B1 numero de trozo, hasta el 0xFF
+C 0x95B6 parchea el trozo
+C 0x95B9 columna 0xB0, el caracter 22
+C 0x95BE fila 13
+C 0x95C4 cuatro frames entre trozo y trozo
+C 0x95C6 la espera
+C 0x95CA a dibujar
+C 0x95CE el siguiente de la lista
+
+C 0x95D1 con la interrupcion parada: el logo se dibuja a mano
+C 0x95D3 sin OR, de momento
+C 0x95D6 borra la tabla de colores
+C 0x95D9 entran los dos trozos grandes, uno por cada lado
+C 0x95DF guarda la pantalla en RAM para poder superponer
+C 0x95E2 la estela vertical del trozo 8
+C 0x95E5 vuelve a guardarla, ya con la estela
+C 0x95E8 el trozo 10 recorriendo su trayectoria
+C 0x95EB los colores se abren desde el centro
+C 0x95EE el recuadro de las dos filas de abajo
+C 0x95F1 tres pasadas de la animacion
+C 0x95FA el color corriendo por el recuadro
+C 0x95FD y la ultima lista de trozos
+C 0x9600 devuelve la interrupcion y vuelve al BASIC
+
+C 0x9602 tabla de colores de SCREEN 2: 0x2000, 6144 bytes
+C 0x9608 0xF0: blanco sobre transparente en todas las celdas
+
+C 0x9614 0x2F78: el color de la fila 15, caracter 15
+C 0x9617 rojo sobre negro
+C 0x9619 dos bandas
+C 0x961B ocho caracteres cada una
+C 0x9623 0x40 escritos mas 0xC0: la fila de caracteres siguiente
+
+C 0x962B ocho bytes: lo que separa las dos columnas al empezar
+C 0x962E 0x2658: el color de la fila 6, caracter 11, el centro
+C 0x9635 cinco filas de cian sobre negro
+C 0x963A ocho escritos mas 0xF8 son 256: la fila de abajo
+C 0x9642 y seis mas de verde sobre negro
+C 0x9647 otra vez 256 bytes mas alla
+C 0x964D la otra columna, a la distancia que toque
+C 0x9651 los mismos cinco de cian
+C 0x9656 y la fila de abajo
+C 0x965E los mismos seis de verde
+C 0x9663 fila de abajo
+C 0x9668 hasta que las dos columnas esten a 0x98 una de otra
+C 0x966F cuatro frames por paso
+C 0x9673 la derecha, dos caracteres mas alla
+C 0x9677 y la izquierda, uno menos: se abren desde el centro
+
+C 0x967E ocho bytes, un caracter
+
+C 0x9688 la tabla de patrones entera, 6144 bytes
+C 0x968B a 0xC000, que es justo la base de tabla_vram
+C 0x9691 de ahi la lee el `or (hl)` de 0x94F3 para superponer sin borrar

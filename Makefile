@@ -70,7 +70,7 @@ trazado: work/juego.trace.json work/parte2.trace.json work/pre.trace.json work/l
 # logo de la casa NO: ese bloque es byte-identico al de otros juegos de Topo
 # Soft, asi que se reutiliza su desensamblado ya comentado y aqui solo se
 # comprueba que sigue reproduciendo el binario.
-listados: src/stardust_juego.asm src/stardust_parte2.asm src/stardust_pre.asm src/stardust_loader.asm
+listados: src/stardust_juego.asm src/stardust_parte2.asm src/stardust_pre.asm src/stardust_loader.asm src/stardust_topo.asm
 
 src/stardust_juego.asm: work/juego.trace.json src/juego.notes tools/mkasm.py
 	python3 tools/mkasm.py work/juego.raw 0x47A0 work/juego.trace.json \
@@ -87,6 +87,10 @@ src/stardust_pre.asm: work/pre.trace.json src/pre.notes tools/mkasm.py
 src/stardust_loader.asm: work/loader.trace.json src/loader.notes tools/mkasm.py
 	python3 tools/mkasm.py work/loader.raw 0xD2F0 work/loader.trace.json \
 	  src/loader.notes $(SYMS) $@ "STARDUST - MSX - el cargador turbo"
+
+src/stardust_topo.asm: work/topo.trace.json src/topo.notes tools/mkasm.py
+	python3 tools/mkasm.py work/topo.raw 0x9470 work/topo.trace.json \
+	  src/topo.notes $(SYMS) $@ "STARDUST - MSX - el logo de Topo Soft"
 
 work/topo.trace.json: tools/z80trace.py src/topo.entries extracted/.stamp
 	python3 tools/z80trace.py work/topo.raw 0x9470 src/topo.entries work/topo
