@@ -3758,3 +3758,132 @@ C 0xE403 Por eso la duracion no esta en cuadros: esta en unidades de tempo
 C 0xE40D El argumento del tono/ruido...
 C 0xE40F ...recortado a los bits 0 y 3, que son la pareja que el mezclador desplaza por canal
 C 0xE418 Y esto es callar un canal del todo: sus 46 bytes de estado a cero
+
+L 0xF305 pinta_barra_llena El bucle que pinta B segmentos encendidos de la barra de energia, uno por tile de la tabla de colores, cambiando de color a los tramos 3 y 10
+L 0xF33A apaga_barra_resto Recupera de la pila los segmentos que faltan hasta 20 y los pinta de negro sobre negro, que es como se borran
+C 0xF2D4 La barra vive en la tabla de COLORES en VRAM 0x2050, que con el orden por columnas de esta pantalla (tercio*0x800 + columna*0x40 + fila) es la COLUMNA 1, fila 2: la barra es VERTICAL y baja, y cada segmento es una celda entera, ocho bytes del mismo color
+C 0xF2D7 La energia se recorta a 20, que es lo que mide la barra
+C 0xF2DE Y lo que sobra hasta 20 se guarda en la pila: son los segmentos que hay que apagar detras
+C 0xF2E4 Sin energia no se pinta nada encendido: directo a apagar los veinte
+C 0xF2E6 Con tres segmentos o menos entra el parpadeo: en vez de un color fijo se lee el que ya hay en la VRAM...
+C 0xF2F1 ...y solo se le da la vuelta al nibble cuando el contador de 0xF393 esta a cero, o sea una vez de cada ocho
+C 0xF2F7 Cuatro `rrc c` cambian tinta por fondo: el segmento se ve invertido ese cuadro
+C 0xF301 De cuatro segmentos para arriba, el color de arranque es 0xF9: blanco sobre rojo claro
+C 0xF303 D cuenta los segmentos ya pintados, y es quien decide los tres tramos de color
+C 0xF30F El color del tramo se pasa a A antes de cambiar de juego de registros
+C 0xF310 `exx` para dejar libre el B alternativo: el B principal lleva la cuenta de segmentos y no se puede tocar
+C 0xF311 Ocho bytes, que es lo que ocupa un tile en la tabla de colores
+C 0xF315 El `and a` entre escrituras es el retardo que pide el VDP; aqui las interrupciones siguen cerradas hasta acabar el tile
+C 0xF31B Los tres tramos. El cambio de color se decide DESPUES de pintar el segmento, asi que llega con un segmento de retraso: los TRES primeros se quedan con el color de arranque...
+C 0xF320 ...del cuarto al decimo, 0xF5, blanco sobre azul claro...
+C 0xF326 ...y del undecimo al vigesimo, 0xF1, blanco sobre negro. Suman 3 + 7 + 10 = 20, que es la barra entera
+C 0xF32B Siguiente celda de la columna: ocho bytes mas adelante
+C 0xF32D Un tercio solo guarda ocho celdas de cada columna, asi que al gastar la ultima (L a 0x80) salta al tercio siguiente (H mas 8) y vuelve a la primera fila de la misma columna, L a 0x40
+C 0xF33A Los segmentos apagados que quedaron en la pila; si no falta ninguno, la barra estaba llena y no hay nada que borrar
+C 0xF34A 0x11 es tinta negra sobre fondo negro: el segmento apagado no se ve
+C 0xF34E Esta mitad abre las interrupciones DENTRO del bucle, ya en el primer byte, al reves que la de arriba
+C 0xF353 El mismo recorrido que la mitad de arriba, celda a celda y con el mismo salto de tercio
+
+C 0xF3A3 0x11 es negro sobre negro: esta entrada APAGA la marca
+C 0xF3A7 Y 0x71, cian sobre negro, la ENCIENDE. Lo unico que cambia entre las dos entradas es ese byte
+C 0xF3A9 Dos columnas...
+C 0xF3AD ...y dos celdas de alto en cada una: la marca es un cuadro de 16x16 pixeles
+C 0xF3B2 Ocho bytes, la celda entera
+C 0xF3B6 Dos `and a` seguidos, no uno: el doble retardo del VDP que usa toda esta zona
+C 0xF3BB El color esta en A y hace falta A para la cuenta, asi que se aparca en la pila
+C 0xF3BD Si la fila dentro del tercio era la septima, la columna se ha acabado en este tercio...
+C 0xF3C3 ...asi que se vuelve a la fila 0 conservando los bits de columna (`and 0c0h`) y se sube al tercio siguiente
+C 0xF3CB Cambiar de tercio rompe la direccion, hay que volver a fijarla en el VDP
+C 0xF3D3 Y entre columna y columna, 0x40: es lo que ocupa una columna entera dentro de un tercio
+C 0xF3DA El `ei` que devuelve las interrupciones, una sola vez y al final del cuadro entero
+C 0xF3DC Banda de arriba: 56 filas de pixel del buffer a VRAM 0x0108, que es columna 4, fila 1 del tercio 0
+C 0xF3E7 Banda del medio: 64 filas al tercio 1 desde su fila 0
+C 0xF3F2 Y la de abajo, 40 filas al tercio 2. Suman 160 filas de pixel, o sea 20 celdas de alto por 24 de ancho: el area de juego
+C 0xF3FF 24 columnas, que es el ancho del buffer en bytes
+C 0xF402 Cada columna se escribe de una tacada: el VDP autoincrementa y esta pantalla guarda las celdas de una columna seguidas
+C 0xF408 En el buffer, en cambio, bajar una fila son 24 bytes
+C 0xF40B Byte a byte: leer del buffer, soltar por el puerto y bajar una fila
+C 0xF412 Terminada la columna en la VRAM, 0x40 mas adelante empieza la siguiente
+C 0xF417 Y en el buffer, la columna siguiente es el byte de al lado
+C 0xF41D La cadena de glifos acaba en cero
+C 0xF425 El indice por ocho: cada glifo de la fuente son ocho bytes
+C 0xF428 La fuente vive en 0x5F00, en la RAM
+C 0xF42D Se escribe en la tabla de PATRONES, no en la de nombres: el HUD se dibuja pisando el dibujo de la celda
+C 0xF436 Otra vez el doble retardo entre escrituras
+C 0xF43B Y el glifo siguiente va 0x40 mas adelante, que en esta pantalla es la celda de al lado
+C 0xF442 `jp` en vez de `call`: se llama a si misma sin gastar pila, que es un bucle con otro nombre
+
+L 0xF46F espera_vuelta_entera Retardo puro: entra con BC a cero, asi que el `dec bc` da la vuelta entera y son 65536 vueltas. Ojo, no es la pausa_larga de 0xF7B8, que es la del error de carga
+C 0xF46E C acaba de llegar a cero, asi que BC queda a cero y el retardo de abajo da la vuelta completa
+C 0xF475 D lleva la fila del teclado (0xF0 a 0xF8) y E el indice que se va acumulando
+C 0xF479 Fila al puerto 0xAA...
+C 0xF47B ...y sus ocho teclas leidas del 0xA9, con la logica al reves: el bit a CERO es la tecla pulsada
+C 0xF480 De ahi el `ret nc`: en cuanto sale un bit a cero se vuelve, con E en el indice de esa tecla y B en lo que le faltaba al bucle
+C 0xF484 Fila siguiente...
+C 0xF485 ...y al pasar de la novena (0xF9) vuelve a empezar por la primera: no sale de aqui hasta que se pulse algo
+C 0xF48F El bit pulsado, hecho mascara: un 1 por el acarreo que baja B posiciones a golpe de `rra`
+C 0xF494 La mascara del bit en el primer byte de la entrada...
+C 0xF499 ...y la fila del puerto en el segundo: con esos dos bytes el juego ya sabe leer esa tecla
+C 0xF49E B ha quedado a cero al terminar el `djnz`, asi que esto pone D a cero de gratis para usar DE como indice
+C 0xF4A0 La tabla de nombres de tecla, indexada por fila*8 + bit
+C 0xF4A5 El bit 7 puesto es "esta tecla ya la han cogido": se descartan los dos bytes escritos y a esperar otra
+C 0xF4B0 Y aqui se marca como cogida, para que no valga dos veces
+C 0xF4B7 Seis espacios: se borra el hueco del rotulo antes de escribir el nombre nuevo
+C 0xF4BC Por debajo de 0x15 el nombre no es una letra suelta sino una palabra (ESPACIO, RETURN...)
+C 0xF4C0 Las letras se imprimen tal cual, un solo byte
+C 0xF4C7 Las palabras viven en 0xDC52, una detras de otra y terminadas en cero...
+C 0xF4CC ...asi que para llegar a la B-esima hay que saltarse B-1 ceros contandolos
+C 0xF4D7 Y copiada al hueco del rotulo hasta su cero
+C 0xF4E4 Antes de rotular, el sonido a su sitio...
+C 0xF4ED ...y al acabar la cadena, otra vez: el `jr z` a sonido_reset es la vuelta de la rutina
+C 0xF4F4 0x80 en el canal 0: el bit 7 es lo que dice "no vuelvas a abrir las interrupciones todavia"
+C 0xF504 El tercero entra sin ese bit, y es el que las reabre por los tres
+C 0xF50E 0xF3 es el codigo del `di`: sonido_reset lo REPONE en dos sitios que sonido_off habia machacado, o sea que este sonido se apaga a base de tocarse el propio codigo
+C 0xF517 Guion nulo, direccion cero: los tres canales se quedan callados pero vivos
+
+L 0xF5C8 pinta_cursor Deja el cursor -siete filas de 0x7F- en la celda donde toca escribir, y espera 256 vueltas: es el parpadeo de la maquina de escribir
+C 0xF528 3000 vueltas de espera ANTES de cada caracter: esa es la cadencia con que se escriben los carteles
+C 0xF530 De 0x20 para arriba es un caracter que se estampa; por debajo, una orden
+C 0xF534 Toda orden empieza borrando la celda: es quitar el cursor de donde estaba
+C 0xF543 Orden 0x01, ir a una columna: la columna llega en el byte siguiente de la cadena
+C 0xF547 `and 018h` en H y `and 038h` en L se quedan con el tercio y la fila y ponen la columna a cero...
+C 0xF55A ...y seis `add hl,hl` son la columna por 0x40, que es lo que ocupa una columna entera
+C 0xF561 Orden 0x14, la pausa larga del cartel: calla el sonido...
+C 0xF568 ...espera dos veces la vuelta entera del contador, o sea 131072 vueltas...
+C 0xF571 ...y vuelve a arrancar la musica al salir, en cola
+C 0xF574 Cualquier otra orden por debajo de 0x20 es el salto de linea
+C 0xF57C Si la fila era la ultima del tercio (la septima), hay que cambiar de tercio...
+C 0xF580 ...que es H mas 8, y el 9 lleva ademas la columna 4, donde empieza el texto
+C 0xF588 Y si no, 0x108: una fila mas abajo y otra vez a la columna 4
+C 0xF591 0x7F es la barra del cursor, siete filas de alto
+C 0xF59B Cada salto de linea calla el sonido, espera y lo vuelve a arrancar
+C 0xF5AD El indice por ocho, que es lo que mide un glifo...
+C 0xF5B0 ...dentro de la fuente de 0x5F00
+C 0xF5BB Los ocho bytes del glifo, con el doble `and a` de retardo entre uno y otro
+C 0xF5C4 Y el cursor pasa a la celda de al lado, 0x40 mas adelante
+C 0xF5D6 B a cero son 256 vueltas: lo que el cursor se queda quieto antes del caracter siguiente
+C 0xF5DB Entrando con BC a cero, el `dec bc` da la vuelta y son 65536 vueltas
+
+C 0xF5E3 Mientras el byte bajo no sea multiplo de 0x40 sigue dentro de la misma columna y no hay nada que hacer
+C 0xF5E8 Al agotarla, vuelta al principio de la columna (`and 0c0h`) y al tercio siguiente (H mas 8)
+C 0xF5EB Cambiar de tercio obliga a reprogramar el puerto 0x99 con los dos bytes de la direccion
+C 0xF5F5 El bit 0 se va al acarreo y decide la mitad de la entrada; lo que queda en A es el numero de sprite
+C 0xF5FA Seis `add hl,hl` son el numero por 64: lo que ocupa cada entrada de la tabla
+C 0xF605 La mitad impar empieza dos bytes mas adelante, que es el dibujo
+C 0xF609 Dos columnas de 8 pixeles: el sprite mide 16
+C 0xF60B El destino, VRAM 0x1758, en la tabla de patrones
+C 0xF613 Dieciseis filas de alto
+C 0xF618 Cuatro `inc de`: de cada fila de la entrada solo se lee un byte de cada cuatro, porque los otros tres son la otra columna y la otra mitad
+C 0xF622 0xFFC1 es -63: tras las dieciseis filas DE habia avanzado 64, asi que retroceder 63 lo deja UN byte mas adelante, que es la columna de al lado
+C 0xF628 Y en la VRAM, la columna de al lado son 0x40 mas
+C 0xF644 La tercera banda no llama: se cae dentro de rellena_colores_banda, que es la instruccion siguiente
+C 0xF649 24 columnas, el ancho de la pantalla de juego
+C 0xF64B Cada columna pide fijar la direccion otra vez
+
+C 0xF650 El color, C veces seguidas: el VDP autoincrementa y las filas de una columna van pegadas
+C 0xF657 Y de columna a columna, otra vez 0x40
+C 0xF65E Un solo `ei`, al acabar las 24 columnas
+C 0xF660 Las nueve filas de la matriz, de 0xF0 a 0xF8
+C 0xF667 0xFF es "ninguna tecla en esta fila": la logica va al reves, el bit a cero es la tecla pulsada
+C 0xF669 Con que una fila no valga 0xFF ya vuelve con NZ, sin mirar las demas
+C 0xF66E Y si las nueve dan 0xFF, vuelve con Z: no hay nadie tocando el teclado
