@@ -190,9 +190,24 @@ DATA_imagen_de_la_escena_final:
 ; mascara izda, mascara dcha, dibujo izdo, dibujo dcho. Y la relacion
 ; entre los dos no es la de "el dibujo cae donde la mascara esta a
 ; cero": es `dibujo and mascara == dibujo` en las 16 lineas, o sea que
-; el dibujo va DENTRO de la mascara. Asi que aqui la mascara es la
-; SILUETA del sprite -uno donde ocupa-, no el hueco, y quien lo pinta
-; tiene que invertirla antes del `and`.
+; el dibujo va DENTRO de la mascara.
+;
+; CORREGIDO al leer el pintor (2026-08-21). De ahi se dedujo que la
+; mascara era la SILUETA -uno donde el sprite ocupa- y que habria que
+; invertirla antes del `and`, y las dos cosas son falsas: 0xAA6F hace
+; `and` con la mascara TAL CUAL, sin un `cpl` por ningun lado, y
+; 0xAAA6 `or` con el dibujo. Leido asi, cada pixel sale de dos bits:
+; mascara 1 y dibujo 0 deja el fondo como esta (transparente),
+; mascara 0 lo fuerza a NEGRO y dibujo 1 lo fuerza a BLANCO. O sea que
+; la mascara vale UNO donde el sprite no toca, que es lo contrario de
+; la silueta. Remedido ahora sobre las 96 entradas enteras (1536
+; lineas, no una): ni una viola `dibujo and mascara == dibujo` -eso
+; seguia bien- y 240 lineas son mascara 0xFFFF con dibujo 0x0000, o
+; sea filas COMPLETAMENTE transparentes, que con la mascara-silueta
+; serian filas que borran su franja entera de pantalla. El relleno con
+; que las tiras de desplazamiento arrastran los bordes lo remacha:
+; unos para la mascara (0xAA45) y ceros para el dibujo (0xAA7E), y en
+; las dos el relleno tiene que querer decir "aqui no hay sprite".
 ; ----------------------------------------------------------------------
 DATA_pool_de_sprites:
 	defb 0ffh,0e3h	; 6555
@@ -4714,246 +4729,246 @@ borra_andante:		; Saca la ficha de la tabla: una menos en 0xACE3 y todo lo que h
 	ldir		;a8b5   ; Todo lo de detras sube cinco bytes, e IX se queda donde estaba: la vuelta siguiente procesa la ficha que acaba de caer en este hueco
 	jp L_A891		;a8b7
 paso_jugador:		; Cruza la mascara del rumbo actual con la del pedido y mueve 2 px solo en lo que tengan en comun; luego FIJA la fila en 0x68 y, si el paso la habia cambiado, cae en actualiza_scroll con el carry diciendo si sube
-	push af			;a8ba
-	and 007h		;a8bb
-	call rumbo_a_mascara		;a8bd
-	ld h,a			;a8c0
+	push af			;a8ba   ; El byte de rumbo entero, que trae dos cosas: el rumbo actual en los bits 0-2 y el pedido en los 5-7. Se guarda porque hacen falta los dos
+	and 007h		;a8bb   ; El rumbo ACTUAL, hacia donde el monigote mira ahora mismo
+	call rumbo_a_mascara		;a8bd   ; Tabla 0xAD0F, de rumbo a mascara: bit 0 abajo, 1 arriba, 2 derecha, 3 izquierda. Los rumbos pares son cardinales (arriba 0x02, derecha 0x04) y los impares diagonales, con los dos bits (arriba-derecha 0x06)
+	ld h,a			;a8c0   ; H hace de aparcamiento de la mascara. Se puede porque la fila se vuelve a clavar tres lineas mas abajo, y porque L -la X- la salva rumbo_a_mascara
 	pop af			;a8c1
-	rlca			;a8c2
+	rlca			;a8c2   ; Tres rotaciones bajan el rumbo PEDIDO de los bits 5-7 a los 0-2
 	rlca			;a8c3
 	rlca			;a8c4
-	and 007h		;a8c5
+	and 007h		;a8c5   ; Y su mascara, por la misma tabla
 	call rumbo_a_mascara		;a8c7
-	and h			;a8ca
-	ld h,068h		;a8cb
-	ret z			;a8cd
-	ld b,002h		;a8ce
-	call rumbo_a_mascara2		;a8d0
-	call aplica_rumbo		;a8d3
-	ld a,h			;a8d6
-	ld h,068h		;a8d7
-	cp h			;a8d9
-	ret z			;a8da
+	and h			;a8ca   ; La INTERSECCION de las dos mascaras, que es toda la regla del paso. Con las ocho mascaras de 0xAD0F sale asi: a 135 grados o mas nunca queda un bit y el cuadro se va entero en girar; a 90 depende de por donde se venia -en diagonal queda la componente comun, arriba-derecha cruzado con abajo-derecha da derecha, y en cruz no queda nada-; a 45 y a 0 siempre queda algo. Como gira_rumbo, dos lineas antes, solo acerca un octavo por cuadro, dar media vuelta deja al monigote clavado en el sitio los primeros cuadros: dos si venia en cruz y uno si venia en diagonal
+	ld h,068h		;a8cb   ; La fila del jugador vuelve a 0x68 pase lo que pase: en pantalla no sube ni baja NUNCA. Y el `ld` no toca banderas, asi que el `ret z` de abajo sigue mirando el `and`
+	ret z			;a8cd   ; Sin nada en comun no hay paso, no hay scroll y no hay fase de andar: solo el giro
+	ld b,002h		;a8ce   ; Dos pixeles en vertical; los dos de horizontal vienen en C, puestos por el llamador en 0xA6B0
+	call rumbo_a_mascara2		;a8d0   ; El rodeo por la tabla INVERSA (0xAD17, de mascara a rumbo) convierte la mascara cruzada otra vez en un rumbo de 0 a 7, que es lo unico que aplica_rumbo sabe leer. De paso NORMALIZA: arriba-derecha cruzado con arriba-izquierda da 0x02, y 0x02 es arriba a secas
+	call aplica_rumbo		;a8d3   ; Y ahi se suman o se restan los dos pixeles a las dos coordenadas
+	ld a,h			;a8d6   ; La fila que ha quedado despues del paso...
+	ld h,068h		;a8d7   ; ...porque la buena se vuelve a clavar en 0x68 y lo que se mueve es el mundo
+	cp h			;a8d9   ; Este `cp` hace dos cosas de golpe: dice si el paso movio la fila y deja el acarreo puesto justo cuando la nueva es MENOR que 0x68, o sea cuando el jugador tiraba hacia arriba. Eso es todo el argumento con el que se entra en actualiza_scroll
+	ret z			;a8da   ; Paso puramente lateral: la camara no se entera
 actualiza_scroll:		; La camara: fino 0xAD2C +-2 con ciclo 2..32; al agotarlo la fila 0xAD2A avanza (topes 0 y 71). Carry = subir. Remata rotando el tile 0 (L_B140/L_B167)
-	ld iy,0ad2ah		;a8db
-	jr nc,L_A8FF		;a8df
-	ld a,(iy+002h)		;a8e1
-	cp 020h		;a8e4
-	jr z,L_A8F0		;a8e6
-	add a,002h		;a8e8
+	ld iy,0ad2ah		;a8db   ; IY a la camara. Son seis bytes con dos oficios: +0 la fila del mapa y +2 el scroll fino, que son la posicion de verdad; +3, +4 y +5 el bloc de notas del redibujado de aqui abajo
+	jr nc,baja_la_camara		;a8df   ; Acarreo puesto = hacia arriba; sin el, hacia abajo. Lo unico que se le pasa a esta rutina es una bandera
+	ld a,(iy+002h)		;a8e1   ; El fino va de 2 a 32: los dieciseis pasos de 2 px que mide de alto una fila del mapa
+	cp 020h		;a8e4   ; A tope, asi que este paso ya no cabe en la fila
+	jr z,agota_fino_subiendo		;a8e6
+	add a,002h		;a8e8   ; Dentro de la fila: dos pixeles y listo
 	ld (iy+002h),a		;a8ea
-	jp rota_fondo_sube		;a8ed
-L_A8F0:
-	ld a,(iy+000h)		;a8f0
-	or a			;a8f3
+	jp rota_fondo_sube		;a8ed   ; Y todo camino que mueve la camara acaba rotando el tile 0 una fila de pixel. Como el scroll va de 2 en 2 y la rotacion de 1 en 1, la trama del fondo viaja a mitad de velocidad que las plataformas: el parallax
+agota_fino_subiendo:		; El fino ya en 32: o la camara pasa a la fila de arriba (una menos, que el mapa guarda la cima en la 0) o se ha llegado a la cima y no se mueve nada
+	ld a,(iy+000h)		;a8f0   ; La fila del mapa. Subiendo se DECREMENTA porque el mapa esta guardado con la cima de la torre en la fila 0 y el pie en la 71
+	or a			;a8f3   ; Fila 0, la cima: la camara se planta ahi y ni siquiera se rota el fondo. El monigote puede seguir andando, pero el mundo ya no se mueve
 	ret z			;a8f4
 	ld (iy+002h),002h		;a8f5
 	dec (iy+000h)		;a8f9   ; El engranaje de la camara: fino agotado (32) -> fila una menos, fino a 2
 	jp rota_fondo_sube		;a8fc
-L_A8FF:
-	ld a,(iy+002h)		;a8ff
-	cp 002h		;a902
-	jr z,L_A90E		;a904
+baja_la_camara:		; El ciclo simetrico, el del jugador tirando hacia abajo: el fino de 2 en 2 hacia atras hasta agotarse en 2
+	ld a,(iy+002h)		;a8ff   ; Bajando el ciclo es el mismo del reves, y se agota por el otro extremo
+	cp 002h		;a902   ; En 2 ya no cabe otro paso hacia atras
+	jr z,agota_fino_bajando		;a904
 	sub 002h		;a906
-	ld (iy+002h),a		;a908
+	ld (iy+002h),a		;a908   ; Dos pixeles menos
 	jp rota_fondo_baja		;a90b
-L_A90E:
-	ld a,(iy+000h)		;a90e
+agota_fino_bajando:		; El fino ya en 2: la camara pasa a la fila de abajo, salvo que ya este en la 71, el pie de la torre, que es donde se comprueba si la fase esta ganada
+	ld a,(iy+000h)		;a90e   ; 0x47 = 71 es el pie de la torre, la fila donde arranca la partida
 	cp 047h		;a911
-	jr z,remate_de_fase		;a913
-	ld (iy+002h),020h		;a915
+	jr z,remate_de_fase		;a913   ; Y aqui NO se vuelve con un `ret` como en la cima: intentar bajar del pie es LA condicion que dispara la comprobacion de si la fase esta ganada. La salida no es una celda especial del mapa, es un tope de camara
+	ld (iy+002h),020h		;a915   ; Fila una mas y el fino arriba del todo, que es el reverso exacto de 0xA8F5
 	inc (iy+000h)		;a919
 	jp rota_fondo_baja		;a91c
-remate_de_fase:		; La puerta del remate: con el scroll en la fila 0x47, los seis objetivos muertos (0xBC33) y el jugador entre 0x50 y 0x5F, salta a rehace_pantalla
-	ld a,(0bc33h)		;a91f
-	and a			;a922
+remate_de_fase:		; La puerta del remate, y no se llega a ella andando sino INTENTANDO BAJAR con la camara ya en el pie de la torre (0xA913): con los seis objetivos muertos (0xBC33) y la X del jugador entre 0x50 y 0x5F -franja centrada en el 0x58 con el que empieza la fase-, salta a rehace_pantalla
+	ld a,(0bc33h)		;a91f   ; Los objetivos que quedan, que 0xA415 pone a seis al empezar la fase
+	and a			;a922   ; Con una sola torreta en pie no se sale: se vuelve, y la camara se queda clavada en el pie de la torre
 	ret nz			;a923
-	ld a,(0a6ebh)		;a924
-	cp 050h		;a927
+	ld a,(0a6ebh)		;a924   ; El byte bajo de 0xA6EB, o sea la X del jugador; la fila no hace falta mirarla porque siempre es 0x68
+	cp 050h		;a927   ; La puerta es una franja estrecha, de 0x50 a 0x5F: dieciseis pixeles de los 176 que se pueden pisar
 	ret c			;a929
-	cp 060h		;a92a
+	cp 060h		;a92a   ; Y 0x58, el centro exacto de esa franja, es la MISMA X con la que 0xA2D5 planta al jugador al empezar: se sale por donde se entro. Debajo estan las filas 74 a 76 del mapa, las que llevan en las columnas 2 y 3 la pareja de tiles 0x28/0x29, el cartel-flecha de la base
 	ret nc			;a92c
-	jp rehace_pantalla		;a92d
+	jp rehace_pantalla		;a92d   ; Torre limpia y jugador en la puerta: se acaba la fase de a pie
 borra_globales_sonido:		; Pone a cero los catorce bytes de variables globales del interprete de sonido, 0xD0F2-0xD0FF, que es 0xD068 + 3*46: justo detras del tercer estado de canal
-	ld hl,0d0f2h		;a930
+	ld hl,0d0f2h		;a930   ; El truco de siempre para llenar de un valor: se escribe a mano el primer byte...
 	ld de,0d0f3h		;a933
-	ld bc,0000dh		;a936
+	ld bc,0000dh		;a936   ; ...y el `ldir` lo arrastra sobre los trece de detras, que con el primero son catorce
 	ld (hl),000h		;a939
-	ldir		;a93b
+	ldir		;a93b   ; Se llama una sola vez, en el arranque de la fase (0xA486), justo detras de sonido_reset: primero se repone el motor de sonido y luego se le borran las variables de encima
 	ret			;a93d
 redibuja_fondo:		; Pinta la pantalla desde el mapa: origen = 0x87F3 + celda*128 (+4*(32-fino) en la tira parcial de arriba), 6 columnas x 5-6 tiras. El jp de 0xA98E se parchea con TRES opcodes: 0xC2 pinta solo las celdas vacias (tile 0), 0xCA solo las solidas y 0xDA todas
-	ld iy,0ad2ah		;a93e
-	ld (iy+003h),000h		;a942
-	call base_mapa		;a946
-	ld de,04000h		;a949
-L_A94C:
-	ld a,(iy+002h)		;a94c
-	cp 020h		;a94f
-	jr z,L_A977		;a951
-	ld a,(iy+003h)		;a953
+	ld iy,0ad2ah		;a93e   ; La camara otra vez, y aqui es sobre todo el bloc de notas: +3 la tira que toca, +4 cuantas filas de pixel se copian de ella y +5 por donde hay que empezar a leer el tile
+	ld (iy+003h),000h		;a942   ; A la tira 0, la de arriba
+	call base_mapa		;a946   ; IX = 0x840B + fila*6: la fila del mapa que asoma por el borde de arriba de la pantalla
+	ld de,04000h		;a949   ; Y el destino, el principio del buffer de 24 bytes por 160 filas (0x4000-0x4EFF)
+prepara_la_tira:		; Reparte la pantalla en tiras de celda: con el fino a tope son CINCO enteras y cuadradas con el borde; con cualquier otro valor son SEIS, la primera y la ultima partidas
+	ld a,(iy+002h)		;a94c   ; El scroll fino es lo que manda el reparto en tiras
+	cp 020h		;a94f   ; Con el fino a tope las celdas cuadran con el borde de la pantalla: cinco tiras de 32 filas dan las 160 justas y ninguna sale partida
+	jr z,tira_completa		;a951
+	ld a,(iy+003h)		;a953   ; Con cualquier otro valor hacen falta SEIS tiras, y las de los extremos van cortadas
 	and a			;a956
-	jr z,L_A964		;a957
-	cp 005h		;a959
-	ld a,020h		;a95b
-	jr nz,L_A977		;a95d
+	jr z,tira_de_arriba		;a957   ; La 0 es la de arriba, de la que solo se ve la parte de abajo
+	cp 005h		;a959   ; La 5 es la de abajo, de la que solo se ve la parte de arriba...
+	ld a,020h		;a95b   ; ...32 - fino filas de ella. El `ld a` va delante del `jr` a proposito: cargar no toca las banderas del `cp`
+	jr nz,tira_completa		;a95d   ; Las tiras 1 a 4 son enteras, 32 filas cada una
 	sub (iy+002h)		;a95f
-	jr L_A977		;a962
-L_A964:
-	ld a,020h		;a964
+	jr tira_completa		;a962
+tira_de_arriba:		; La tira 0 con fino intermedio: se ve solo su parte BAJA -fino filas de pixel- y por eso hay que empezar a leer el tile 4*(32-fino) bytes adentro
+	ld a,020h		;a964   ; La tira de arriba: se ven `fino` filas de pixel, y son las de ABAJO del tile
 	sub (iy+002h)		;a966
-	add a,a			;a969
+	add a,a			;a969   ; Por cuatro, que es lo que ocupa una fila de tile -4 bytes, 32 px-: sale el desplazamiento en BYTES desde el que hay que leer
 	add a,a			;a96a
-	ld (iy+005h),a		;a96b
-	ld a,(iy+002h)		;a96e
+	ld (iy+005h),a		;a96b   ; Ese desplazamiento solo es distinto de cero en esta tira; en las otras cinco el tile se lee desde el principio
+	ld a,(iy+002h)		;a96e   ; Y las filas que se copian de la tira 0 son justo las del fino: fino + 4*32 + (32-fino) = 160, el alto del buffer, salga el fino que salga
 	ld (iy+004h),a		;a971
 	jp L_A97E		;a974
-L_A977:
-	ld (iy+004h),a		;a977
+tira_completa:		; Las tiras que se leen desde el principio del tile: las cuatro enteras de en medio y la ultima, que se corta por abajo sola
+	ld (iy+004h),a		;a977   ; Las demas tiras: las filas ya vienen en A y el tile se lee desde arriba
 	ld (iy+005h),000h		;a97a
 L_A97E:
-	ld a,006h		;a97e
-L_A980:
-	ex af,af'			;a980
-	ld (0b13eh),de		;a981
-	ld a,(ix+000h)		;a985
-	inc ix		;a988
-	and a			;a98a
-	ld b,(iy+004h)		;a98b
-	jp z,L_A9E4		;a98e   ; El opcode parcheado: 0xC2 solo las celdas vacias, 0xCA solo las solidas, y 0xDA -jp c, con el carry recien limpiado por el `and a` de arriba- no salta NUNCA, o sea las pinta todas
-	ld d,a			;a991
+	ld a,006h		;a97e   ; SEIS columnas por tira, el ancho de la torre: 6 celdas de 32 px son los 192 de la pantalla
+pinta_columna:		; Una celda: saca del mapa el indice de tile, decide con el opcode parcheado de 0xA98E si le toca en este pase y copia su trozo al buffer
+	ex af,af'			;a980   ; El contador de columnas se aparca en A', porque A hace falta entera para la celda
+	ld (0b13eh),de		;a981   ; 0xB13E es el bloc de notas del bloque -aqui la direccion de esta columna en el buffer, en pinta_sprite el contador de filas, y su byte alto 0xB13F el rumbo pedido del bicho de turno-, y hay que reponerlo en cada vuelta porque los `ldi` mueven el destino
+	ld a,(ix+000h)		;a985   ; La celda del mapa, que hace dos papeles: es el INDICE del tile con el que se dibuja y a la vez la colision (cero = vacio)
+	inc ix		;a988   ; La lectura del mapa avanza sola, celda a celda, las seis columnas de cada una de las seis tiras: 36 celdas por pase
+	and a			;a98a   ; Celda vacia? Y de paso limpia el acarreo, que es lo que vuelve inofensivo el tercero de los parches
+	ld b,(iy+004h)		;a98b   ; Las filas de pixel que toca copiar en esta tira
+	jp z,salta_la_celda		;a98e   ; El opcode parcheado: 0xC2 solo las celdas vacias, 0xCA solo las solidas, y 0xDA -jp c, con el carry recien limpiado por el `and a` de arriba- no salta NUNCA, o sea las pinta todas
+	ld d,a			;a991   ; De aqui abajo, la celda SOLIDA. DE = celda*256...
 	xor a			;a992
 	ld e,a			;a993
-	rr d		;a994
+	rr d		;a994   ; ...y un desplazamiento de 16 bits a la derecha lo deja en celda*128, que es lo que mide un tile
 	rr e		;a996
-	ld hl,087f3h		;a998
+	ld hl,087f3h		;a998   ; El pozo de tiles: 45 dibujos de 32x32 a 128 bytes cada uno
 	add hl,de			;a99b
-	ld e,(iy+005h)		;a99c
+	ld e,(iy+005h)		;a99c   ; Mas el desplazamiento dentro del tile, que en cinco de las seis tiras es cero
 	ld d,a			;a99f
 	add hl,de			;a9a0
-	ld de,(0b13eh)		;a9a1
+	ld de,(0b13eh)		;a9a1   ; Y el destino, recien aparcado dos lineas arriba
 	ld a,d			;a9a5
-	cp 04fh		;a9a6
-	jr nc,L_A9C2		;a9a8
-	ld c,0ffh		;a9aa
-L_A9AC:
-	ldi		;a9ac   ; El blitter de fondo: cuatro ldi por tira de 4 columnas, paso 24; redibuja las tres bandas enteras 10 veces por segundo
+	cp 04fh		;a9a6   ; El portero del final del buffer: a partir de 0x4F00 no se pinta. Ahora bien, el reparto de arriba suma siempre las 160 filas clavadas -fino + 4*32 + (32-fino), o 5*32 con el fino a tope-, asi que la ultima tira acaba justo en 0x4F00 y este `jr` no llega a saltar. Red de seguridad
+	jr nc,columna_siguiente		;a9a8
+	ld c,0ffh		;a9aa   ; C alto a proposito: los `ldi` decrementan BC entero, y arrancando en 0xFF no llegan a robarle una vuelta a B, que es el contador de filas de verdad
+blitter_de_fondo:		; El nucleo del redibujado: cuatro `ldi` sin bucle por fila de tile (4 bytes = 32 px) y 20 mas de salto hasta la fila de abajo del buffer
+	ldi		;a9ac   ; Cuatro `ldi` seguidos y sin bucle: los 4 bytes de una fila de tile, 32 pixeles de ancho de una tacada
 	ldi		;a9ae
 	ldi		;a9b0
 	ldi		;a9b2
-	dec b			;a9b4
-	jr z,L_A9C2		;a9b5
-	ld a,e			;a9b7
+	dec b			;a9b4   ; Una fila menos de la tira
+	jr z,columna_siguiente		;a9b5
+	ld a,e			;a9b7   ; Los `ldi` ya han adelantado el destino cuatro bytes; con estos veinte mas suman los 24 del ancho del buffer, o sea la fila de abajo. El origen no hay que tocarlo: dentro del tile las filas van seguidas
 	add a,014h		;a9b8
 	ld e,a			;a9ba
-	jp nc,L_A9AC		;a9bb
+	jp nc,blitter_de_fondo		;a9bb   ; Lo normal es que el byte bajo no se lleve nada y la vuelta se de sin tocar D
 	inc d			;a9be
-	jp L_A9AC		;a9bf
-L_A9C2:
-	ex af,af'			;a9c2
+	jp blitter_de_fondo		;a9bf
+columna_siguiente:		; Cierre de columna: son seis por tira, y el destino de la que viene son cuatro bytes a la derecha del principio de esta
+	ex af,af'			;a9c2   ; Vuelve el contador de columnas de A'
 	dec a			;a9c3
-	jr z,L_A9D1		;a9c4
-	ld de,(0b13eh)		;a9c6
-	inc de			;a9ca
+	jr z,tira_siguiente		;a9c4   ; Las seis hechas: se cierra la tira
+	ld de,(0b13eh)		;a9c6   ; Del principio de la columna de antes...
+	inc de			;a9ca   ; ...cuatro bytes a la derecha, que es la de al lado. Ojo con la linea de arriba: en la ULTIMA columna esto no se ejecuta, asi que DE tiene que llegar aqui apuntando ya al principio de la tira siguiente, y eso es lo que se encargan de dejar tanto el blitter como el camino que se salta la celda
 	inc de			;a9cb
 	inc de			;a9cc
 	inc de			;a9cd
-	jp L_A980		;a9ce
-L_A9D1:
-	inc (iy+003h)		;a9d1
-	ld a,(iy+002h)		;a9d4
+	jp pinta_columna		;a9ce
+tira_siguiente:		; Cierre de tira: cinco tiras si el fino esta a tope, seis si no, y el numero sale del acarreo del propio `cp`
+	inc (iy+003h)		;a9d1   ; Una tira mas hecha
+	ld a,(iy+002h)		;a9d4   ; Cuantas tiras hay en total depende otra vez del fino...
 	cp 020h		;a9d7
 	ld a,005h		;a9d9
-	adc a,000h		;a9db
-	cp (iy+003h)		;a9dd
-	jp nz,L_A94C		;a9e0
+	adc a,000h		;a9db   ; ...y se resuelve con el acarreo del `cp` de arriba, sin un solo salto: cinco con el fino a tope, seis si no
+	cp (iy+003h)		;a9dd   ; Mientras queden tiras, otra vuelta
+	jp nz,prepara_la_tira		;a9e0
 	ret			;a9e3
-L_A9E4:
-	ld de,00018h		;a9e4
-	dec b			;a9e7
+salta_la_celda:		; El camino de la celda que este pase no pinta: no copia nada, pero deja el destino exactamente donde lo habria dejado el blitter, que es de lo que vive la tira siguiente
+	ld de,00018h		;a9e4   ; Los 24 del ancho del buffer
+	dec b			;a9e7   ; Una menos, porque a la ultima fila de la tira no le sigue salto de linea
 	ld hl,(0b13eh)		;a9e8
 L_A9EB:
-	add hl,de			;a9eb
+	add hl,de			;a9eb   ; Sumar 24 tantas veces como filas es lo que aqui hace de multiplicacion; con 32 filas como mucho, sale mas barato que montar el producto
 	djnz L_A9EB		;a9ec
-	ld e,004h		;a9ee
+	ld e,004h		;a9ee   ; Y los cuatro bytes de la columna, igual que en el camino que si pinta: los dos dejan el destino en el mismo sitio
 	add hl,de			;a9f0
 	ex de,hl			;a9f1
-	jp L_A9C2		;a9f2
+	jp columna_siguiente		;a9f2
 base_mapa:		; IX = 0x840B + fila*6: la base del mapa de colision de la fase
-	ld ix,0840bh		;a9f5
-	ld l,(iy+000h)		;a9f9
+	ld ix,0840bh		;a9f5   ; El mapa de la fase: 78 filas de 6 celdas de 32x32
+	ld l,(iy+000h)		;a9f9   ; La fila de la camara: 0 es la cima de la torre y 71 el pie
 	ld h,000h		;a9fc
 	ld d,h			;a9fe
 	ld e,l			;a9ff
-	add hl,hl			;aa00
+	add hl,hl			;aa00   ; Por dos, mas una, por dos: seis, las celdas que tiene una fila
 	add hl,de			;aa01
 	add hl,hl			;aa02
 	ex de,hl			;aa03
-	add ix,de		;aa04
+	add ix,de		;aa04   ; IX se queda al principio de la fila. Ojo: consulta_mapa luego lee con (ix-006h), o sea una fila POR ENCIMA de esta
 	ret			;aa06
 pinta_sprite:		; Estampa el sprite A (64 B en 0x6555 + A*64) en la posicion HL (H = fila + 0x20, L = columna en pixeles), con el desplazamiento fino resuelto parcheando los `jr` de 0xAA4F y 0xAA86
-	push hl			;aa07
+	push hl			;aa07   ; La posicion a la pila, que HL hace falta para la cuenta del sprite
 	ld h,000h		;aa08
 	ld l,a			;aa0a
-	add hl,hl			;aa0b
+	add hl,hl			;aa0b   ; Seis veces por dos: 64 bytes por entrada, que son 16 filas de mascara y dibujo a dos bytes cada uno
 	add hl,hl			;aa0c
 	add hl,hl			;aa0d
 	add hl,hl			;aa0e
 	add hl,hl			;aa0f
 	add hl,hl			;aa10
-	ld de,06555h		;aa11
+	ld de,06555h		;aa11   ; El pozo de sprites de la fase. El pintor de la fase de naves es este mismo hasta el ultimo byte salvo las direcciones -pozo, contador y destinos de salto- y UNA constante: el recorte de 0xAA3B, que alli es 0x50 y aqui 0x4F
 	add hl,de			;aa14
 	ex de,hl			;aa15
 	pop hl			;aa16
-	ld a,010h		;aa17
-	ld (0b13eh),a		;aa19
-	ld a,h			;aa1c
+	ld a,010h		;aa17   ; DIECISEIS filas...
+	ld (0b13eh),a		;aa19   ; ...contadas en 0xB13E, el mismo bloc que usa el redibujado del fondo. No se pisan porque redibuja_fondo no llama a nadie que pinte sprites
+	ld a,h			;aa1c   ; La fila llega subida 0x20 -el jugador anda con 0x68- y aqui se le quita para tener la fila del buffer
 	sub 020h		;aa1d
 	ld h,a			;aa1f
-	ld a,l			;aa20
+	ld a,l			;aa20   ; Los tres bits bajos de la X son el desplazamiento DENTRO del byte, de 0 a 7
 	and 007h		;aa21
-	jr z,L_AA2B		;aa23
-	dec a			;aa25
+	jr z,L_AA2B		;aa23   ; Alineado al byte: el atajo, que mueve ocho bits cambiando registros de sitio
+	dec a			;aa25   ; Tres bytes por peldano de la tira -`adc hl,hl` son dos y `adc a,a` uno- mas siete de arranque: el numero que hace entrar por el peldano justo
 	ld c,a			;aa26
 	add a,a			;aa27
 	add a,c			;aa28
 	add a,007h		;aa29
 L_AA2B:
-	ld (L_AA4F+1),a		;aa2b
-	ld (L_AA86+1),a		;aa2e
-	srl l		;aa31
+	ld (jr_fino_mascara24+1),a		;aa2b   ; El `jr` de la mascara...
+	ld (jr_fino_dibujo24+1),a		;aa2e   ; ...y el del dibujo, los dos con el mismo numero. Asi el desplazamiento fino se paga UNA vez por sprite y no una por fila, que es de lo que va todo este invento
+	srl l		;aa31   ; La X entre ocho: la columna en bytes
 	srl l		;aa33
 	srl l		;aa35
-	call buffer_dir		;aa37
-L_AA3A:
-	ld a,h			;aa3a
+	call buffer_dir		;aa37   ; HL = 0x4000 + fila*24 + columna
+pinta_fila_del_sprite:		; Una de las dieciseis filas: recorta si ha caido fuera del buffer y, si no, estampa la mascara con `and` y el dibujo con `or`
+	ld a,h			;aa3a   ; Recorte por abajo: en cuanto la fila cae fuera del buffer no se estampa nada...
 	cp 04fh		;aa3b
-	jr c,L_AA45		;aa3d
-	inc de			;aa3f
+	jr c,sprite_lee_mascara		;aa3d
+	inc de			;aa3f   ; ...pero los cuatro bytes de sprite se consumen igual -dos aqui y dos en 0xAAB1- y el destino avanza sus 24, para que la fila siguiente caiga donde debe
 	inc de			;aa40
 	inc hl			;aa41
 	inc hl			;aa42
-	jr L_AAB1		;aa43
-L_AA45:
-	ld a,0ffh		;aa45
-	push de			;aa47
+	jr sprite_fila_siguiente		;aa43
+sprite_lee_mascara:		; Los dos bytes de mascara de la fila a la ventana de 24 bits, con A y el acarreo a UNOS: lo que entre por la derecha al desplazar tiene que ser "no tocar"
+	ld a,0ffh		;aa45   ; A entero de unos, que es el relleno con el que se desplaza la mascara: lo que entre por la derecha tiene que querer decir "el fondo se queda como esta"
+	push de			;aa47   ; El puntero al sprite y el destino, a la pila: los dos se recuperan mas abajo
 	push hl			;aa48
 	ex de,hl			;aa49
-	ld d,(hl)			;aa4a
+	ld d,(hl)			;aa4a   ; Los dos primeros bytes de la linea son la MASCARA, izquierdo y derecho...
 	inc hl			;aa4b
 	ld e,(hl)			;aa4c
-	scf			;aa4d
+	scf			;aa4d   ; ...y el `scf` pone el primer uno que va a entrar por la derecha, porque ni el `inc hl` ni el `ex de,hl` tocan el acarreo
 	ex de,hl			;aa4e
-L_AA4F:
-	jr L_AA4F		;aa4f
+jr_fino_mascara24:		; El `jr` cuyo operando parchea 0xAA2B: hace entrar en la tira por el peldano que da los 8-(X and 7) desplazamientos que tocan. Con operando 0 no salta y cae en el atajo de ocho
+	jr jr_fino_mascara24		;aa4f   ; Aqui esta el operando que se parchea: el `jr` sin tocar salta sobre si mismo, y con el numero puesto entra en la tira por su peldano
 atajo_mascara24:		; Desplazamiento de ocho de la mascara: A = H, H = L, L = 0xFF, sin recorrer la tira. Gemela de la de naves
-	ld a,h			;aa51
+	ld a,h			;aa51   ; Desplazar ocho no es desplazar: es mover los bytes de sitio. A se queda con el de la izquierda, H con el de la derecha y L se rellena de unos
 	ld h,l			;aa52
 	ld l,0ffh		;aa53
-	jp L_AA6D		;aa55
+	jp sprite_estampa_mascara		;aa55
 tira_mascara24:		; La tira de la mascara: siete `adc hl,hl / adc a,a` en los que se entra por el peldano n-1 para dar 8-n pasos, rellenando de unos (A=0xFF y `scf` a la entrada)
-	adc hl,hl		;aa58
+	adc hl,hl		;aa58   ; Cada peldano desplaza a la izquierda la ventana entera de 24 bits A:H:L: el bit que sale por arriba de HL entra por abajo de A, y por abajo de L entra el relleno
 	adc a,a			;aa5a
-	adc hl,hl		;aa5b
+	adc hl,hl		;aa5b   ; Se entra por el peldano que deja 8-(X and 7) pasos, con lo que el sprite acaba a (X and 7) pixeles del borde izquierdo de la ventana, que es justo donde se le quiere. Los otros tres desplazadores del bloque son esta misma tira con el relleno o el ancho cambiados
 	adc a,a			;aa5d
 	adc hl,hl		;aa5e
 	adc a,a			;aa60
@@ -4965,12 +4980,12 @@ tira_mascara24:		; La tira de la mascara: siete `adc hl,hl / adc a,a` en los que
 	adc a,a			;aa69
 	adc hl,hl		;aa6a
 	adc a,a			;aa6c
-L_AA6D:
-	ex de,hl			;aa6d
-	pop hl			;aa6e
-	and (hl)			;aa6f
-	ld (hl),a			;aa70   ; Los sprites de 24 px de ancho, con mascara and/or, precalculando el desplazamiento con las cadenas de adc
-	inc hl			;aa71
+sprite_estampa_mascara:		; Vuelca los tres bytes de la ventana sobre el buffer con `and`, y de paso deja el puntero del sprite en el par del dibujo y el destino atras del todo
+	ex de,hl			;aa6d   ; Las dos mitades bajas de la ventana pasan a DE...
+	pop hl			;aa6e   ; ...y HL vuelve a ser el destino en el buffer
+	and (hl)			;aa6f   ; La mascara va con `and` y va DIRECTA, sin invertir: en el pozo esta guardada ya al reves de como se suele contar -uno donde el fondo se deja en paz, cero donde el sprite pinta negro-, asi que el `and` abre el hueco sin gastar un `cpl`
+	ld (hl),a			;aa70   ; El byte de la izquierda de la ventana, el primero de los tres del ancho de 24
+	inc hl			;aa71   ; Tres bytes seguidos, 24 pixeles, para un sprite de 16: los 8 de sobra son el margen que hace falta para poder colocarlo en cualquier X
 	ld a,d			;aa72
 	and (hl)			;aa73
 	ld (hl),a			;aa74
@@ -4978,12 +4993,12 @@ L_AA6D:
 	ld a,e			;aa76
 	and (hl)			;aa77
 	ld (hl),a			;aa78
-	pop de			;aa79
-	inc de			;aa7a
+	pop de			;aa79   ; El puntero al sprite...
+	inc de			;aa7a   ; ...dos bytes mas alla, que es donde empieza el DIBUJO de esta misma linea
 	inc de			;aa7b
-	dec hl			;aa7c
+	dec hl			;aa7c   ; Y el destino, atras del todo otra vez
 	dec hl			;aa7d
-	xor a			;aa7e
+	xor a			;aa7e   ; Ahora el relleno es de CEROS, y el mismo `xor a` limpia el acarreo: el dibujo se estampa con `or` y un cero es "aqui no pinto"
 	push de			;aa7f
 	push hl			;aa80
 	ex de,hl			;aa81
@@ -4991,17 +5006,17 @@ L_AA6D:
 	inc hl			;aa83
 	ld e,(hl)			;aa84
 	ex de,hl			;aa85
-L_AA86:
-	jr L_AA86		;aa86
+jr_fino_dibujo24:		; El `jr` gemelo del de la mascara, parcheado por 0xAA2E con el mismo numero
+	jr jr_fino_dibujo24		;aa86   ; El otro `jr` parcheado, con el mismo numero que el de la mascara
 atajo_dibujo24:		; Desplazamiento de ocho del dibujo: A = H, H = L, L = 0x00
-	ld a,h			;aa88
+	ld a,h			;aa88   ; El atajo gemelo, cambiando los unos por ceros
 	ld h,l			;aa89
 	ld l,000h		;aa8a
-	jp L_AAA4		;aa8c
+	jp sprite_estampa_dibujo		;aa8c
 tira_dibujo24:		; La misma tira para el dibujo: se entra con `xor a`, que pone A a cero y limpia el acarreo, o sea rellenando de ceros
-	adc hl,hl		;aa8f
+	adc hl,hl		;aa8f   ; La tira gemela: los mismos siete peldanos, y lo unico distinto es con que se entra y que abajo se estampa con `or`
 	adc a,a			;aa91
-	adc hl,hl		;aa92
+	adc hl,hl		;aa92   ; Siete peldanos como la de la mascara, ni uno mas: 8 es el maximo desplazamiento y ese se despacha con el atajo de arriba
 	adc a,a			;aa94
 	adc hl,hl		;aa95
 	adc a,a			;aa97
@@ -5013,10 +5028,10 @@ tira_dibujo24:		; La misma tira para el dibujo: se entra con `xor a`, que pone A
 	adc a,a			;aaa0
 	adc hl,hl		;aaa1
 	adc a,a			;aaa3
-L_AAA4:
-	ex de,hl			;aaa4
+sprite_estampa_dibujo:		; Los mismos tres bytes, ahora con `or`: el dibujo enciende lo blanco del sprite
+	ex de,hl			;aaa4   ; Las dos mitades bajas, igual que en la mascara
 	pop hl			;aaa5
-	or (hl)			;aaa6
+	or (hl)			;aaa6   ; `or` en vez de `and`: el dibujo enciende lo blanco del sprite. Y no puede pisar lo que la mascara acaba de abrir, porque en las 96 entradas del pool -1536 lineas medidas- no hay ni una en la que el dibujo salga fuera de la mascara
 	ld (hl),a			;aaa7
 	inc hl			;aaa8
 	ld a,d			;aaa9
@@ -5027,46 +5042,46 @@ L_AAA4:
 	or (hl)			;aaae
 	ld (hl),a			;aaaf
 	pop de			;aab0
-L_AAB1:
-	inc de			;aab1
+sprite_fila_siguiente:		; Consume el par del dibujo, baja una fila del buffer (22 mas los 2 que adelanto el estampado) y descuenta de las dieciseis
+	inc de			;aab1   ; Los dos bytes del dibujo, consumidos
 	inc de			;aab2
-	ld bc,00016h		;aab3
+	ld bc,00016h		;aab3   ; Veintidos mas los dos que adelanto el estampado son los 24 del ancho del buffer: la fila de abajo
 	add hl,bc			;aab6
-	ld a,h			;aab7
+	ld a,h			;aab7   ; Pasada la fila 0x58 -el borde del anillo de 24x256 bytes que arranca en 0x4000- H se queda clavado en 0xF1, y como cada fila empieza mirando `cp 04fh`, ahi se acaba de pintar el sprite. El pintor de glifos, con el mismo problema delante, hace lo contrario: cose el anillo y sigue
 	add a,00fh		;aab8
 	cp 067h		;aaba
 	jr c,L_AABF		;aabc
 	xor a			;aabe
 L_AABF:
-	sub 00fh		;aabf
+	sub 00fh		;aabf   ; Si no se ha pasado, este `sub` deshace el `add` de arriba y H sale como entro: la comprobacion no cuesta ni una instruccion de mas
 	ld h,a			;aac1
-	ld a,(0b13eh)		;aac2
+	ld a,(0b13eh)		;aac2   ; Una fila menos de las dieciseis
 	dec a			;aac5
 	ret z			;aac6
 	ld (0b13eh),a		;aac7
-	jp L_AA3A		;aaca
+	jp pinta_fila_del_sprite		;aaca
 buffer_dir:		; La direccion en el buffer de pantalla: HL = 0x4000 + fila*24 + columna. Identica byte a byte a la del bloque de naves
-	push de			;aacd
-	ld a,l			;aace
+	push de			;aacd   ; Lo unico que hay que salvar es DE, que viene con el puntero al sprite
+	ld a,l			;aace   ; L trae la columna y H la fila; se cambian de sitio para poder multiplicar la fila
 	ld l,h			;aacf
 	ld h,000h		;aad0
 	ld d,h			;aad2
 	ld e,l			;aad3
-	add hl,hl			;aad4
+	add hl,hl			;aad4   ; Por dos, mas una, por dos, por dos y por dos: veinticuatro, el ancho del buffer
 	add hl,de			;aad5
 	add hl,hl			;aad6
 	add hl,hl			;aad7
 	add hl,hl			;aad8
 	ld e,a			;aad9
-	ld d,040h		;aada
+	ld d,040h		;aada   ; El buffer empieza en 0x4000, que no tiene bits bajos: por eso la base y la columna se pueden sumar de una vez en el mismo `add`
 	add hl,de			;aadc
 	pop de			;aadd
 	ret			;aade
 pinta_glifo:		; Estampa en el buffer el glifo A de la fuente con el mismo esquema que pinta_sprite, con el desplazamiento fino parcheado
-	push hl			;aadf
+	push hl			;aadf   ; El mismo esquema que pinta_sprite de cabo a rabo, con dos cambios: el pozo es la fuente y las entradas miden 16 bytes
 	ld h,000h		;aae0
 	ld l,a			;aae2
-	add hl,hl			;aae3
+	add hl,hl			;aae3   ; Cuatro veces por dos: 16 bytes por glifo, que son 8 filas de un byte de mascara y otro de dibujo
 	add hl,hl			;aae4
 	add hl,hl			;aae5
 	add hl,hl			;aae6
@@ -5074,102 +5089,102 @@ pinta_glifo:		; Estampa en el buffer el glifo A de la fuente con el mismo esquem
 	add hl,de			;aaea
 	ex de,hl			;aaeb
 	pop hl			;aaec
-	ld b,008h		;aaed
-	ld a,h			;aaef
+	ld b,008h		;aaed   ; OCHO filas, y aqui el contador va en B: el glifo es corto y no hace falta la variable de 0xB13E
+	ld a,h			;aaef   ; La misma resta de 0x20 de siempre
 	sub 020h		;aaf0
 	ld h,a			;aaf2
 	ld a,l			;aaf3
-	and 007h		;aaf4
-	jr z,L_AAFB		;aaf6
+	and 007h		;aaf4   ; Y el mismo desplazamiento fino, pero la tira de 16 bits gasta DOS bytes por peldano en vez de tres, asi que el numero es otro
+	jr z,glifo_parchea_los_jr		;aaf6
 	add a,a			;aaf8
 	add a,004h		;aaf9
-L_AAFB:
-	ld (L_AB1A+1),a		;aafb
-	ld (L_AB3F+1),a		;aafe
-	srl l		;ab01
+glifo_parchea_los_jr:		; Los dos `jr` del pintor de 16, 0xAB1A y 0xAB3F, con 2*(X and 7)+4: la tira de 16 bits gasta DOS bytes por peldano y no tres
+	ld (jr_fino_mascara16+1),a		;aafb   ; Los dos `jr` de este pintor
+	ld (jr_fino_dibujo16+1),a		;aafe
+	srl l		;ab01   ; La X entre ocho, la columna en bytes
 	srl l		;ab03
 	srl l		;ab05
 	call buffer_dir		;ab07
-L_AB0A:
-	ld a,h			;ab0a
+pinta_fila_del_glifo:		; Una de las ocho filas del glifo, con el mismo recorte por abajo que el pintor de sprites
+	ld a,h			;ab0a   ; Recorte por abajo, igual que en el pintor de sprites...
 	cp 04fh		;ab0b
-	jr c,L_AB13		;ab0d
-	inc de			;ab0f
+	jr c,glifo_lee_mascara		;ab0d
+	inc de			;ab0f   ; ...consumiendo los dos bytes de la fila, mascara y dibujo. Aqui no hace falta tocar HL porque el estampado de abajo lo deja donde lo encontro
 	inc de			;ab10
-	jr L_AB5E		;ab11
-L_AB13:
-	push hl			;ab13
-	ld a,(de)			;ab14
-	ld h,0ffh		;ab15
+	jr glifo_fila_siguiente		;ab11
+glifo_lee_mascara:		; El unico byte de mascara de la fila a la ventana de 16 bits, con H de unos de relleno
+	push hl			;ab13   ; El destino a la pila, que HL va a hacer de ventana
+	ld a,(de)			;ab14   ; UN solo byte de mascara: los glifos son de 8 px de ancho
+	ld h,0ffh		;ab15   ; H de unos, el relleno de "no tocar" que se va comiendo el desplazamiento
 	ld l,a			;ab17
 	inc de			;ab18
-	scf			;ab19
-L_AB1A:
-	jr L_AB1A		;ab1a
+	scf			;ab19   ; Y el primer uno que entra por la derecha
+jr_fino_mascara16:		; El `jr` que parchea 0xAAFB: el mismo truco del pintor de sprites, entrando en la tira de 16 bits por el peldano que toque
+	jr jr_fino_mascara16		;ab1a   ; Igual que 0xAA4F, pero para la ventana de 16 bits
 atajo_mascara16:		; Desplazamiento de ocho de la mascara de 16 bits: H = L, L = 0xFF. Aqui la ventana es de dos bytes y no hace falta arrastrar A
-	ld h,l			;ab1c
+	ld h,l			;ab1c   ; Desplazar ocho es, otra vez, mover el byte de sitio sin tocar un solo bit
 	ld l,0ffh		;ab1d
-	jp L_AB30		;ab1f
+	jp glifo_estampa_mascara		;ab1f
 tira_mascara16:		; La tira de 16 bits: siete `adc hl,hl` a secas, con el relleno de unos ya puesto en H
-	adc hl,hl		;ab22
+	adc hl,hl		;ab22   ; La ventana cabe entera en HL, asi que aqui sobra el `adc a,a` que la de 24 bits necesitaba para arrastrar su tercer byte
 	adc hl,hl		;ab24
 	adc hl,hl		;ab26
 	adc hl,hl		;ab28
 	adc hl,hl		;ab2a
 	adc hl,hl		;ab2c
 	adc hl,hl		;ab2e
-L_AB30:
-	ld a,h			;ab30
+glifo_estampa_mascara:		; Los dos bytes de la ventana sobre el buffer con `and`, y el destino de vuelta a la pila para el dibujo
+	ld a,h			;ab30   ; Los dos bytes de la ventana, a A y a C
 	ld c,l			;ab31
-	pop hl			;ab32
+	pop hl			;ab32   ; Y vuelve el destino
 	and (hl)			;ab33
-	ld (hl),a			;ab34   ; Los sprites de 16 px de ancho, mismo esquema que los de 24
+	ld (hl),a			;ab34   ; Dos bytes, 16 pixeles, para un glifo de 8: el mismo margen y el mismo `and` que en los sprites
 	inc hl			;ab35
 	ld a,c			;ab36
 	and (hl)			;ab37
 	ld (hl),a			;ab38
-	push hl			;ab39
-	xor a			;ab3a
+	push hl			;ab39   ; El destino otra vez a la pila, que hace falta para el dibujo
+	xor a			;ab3a   ; Cero de relleno y acarreo limpio, como en la de 24
 	ld h,a			;ab3b
-	ld a,(de)			;ab3c
+	ld a,(de)			;ab3c   ; El segundo byte de la linea es el dibujo
 	inc de			;ab3d
 	ld l,a			;ab3e
-L_AB3F:
-	jr L_AB3F		;ab3f
+jr_fino_dibujo16:		; El `jr` gemelo del de la mascara, parcheado por 0xAAFE con el mismo numero
+	jr jr_fino_dibujo16		;ab3f   ; El `jr` gemelo, con el mismo numero
 atajo_dibujo16:		; Desplazamiento de ocho del dibujo de 16 bits: H = L, L = 0x00
-	ld h,l			;ab41
+	ld h,l			;ab41   ; El atajo de ocho del dibujo, con cero de relleno
 	ld l,000h		;ab42
-	jp L_AB55		;ab44
+	jp glifo_estampa_dibujo		;ab44
 tira_dibujo16:		; La tira de 16 bits del dibujo, siete peldanos, con el relleno de ceros puesto en H
-	adc hl,hl		;ab47
-	adc hl,hl		;ab49
+	adc hl,hl		;ab47   ; Siete `adc hl,hl` y a estampar con `or`: la cuarta y ultima de las tiras del bloque, todas cortadas por el mismo patron
+	adc hl,hl		;ab49   ; El relleno de ceros lo trae ya puesto H desde 0xAB3B, asi que el acarreo con el que se entra tiene que estar limpio
 	adc hl,hl		;ab4b
 	adc hl,hl		;ab4d
 	adc hl,hl		;ab4f
 	adc hl,hl		;ab51
 	adc hl,hl		;ab53
-L_AB55:
-	ld a,l			;ab55
+glifo_estampa_dibujo:		; Los mismos dos bytes con `or`, escritos de derecha a izquierda para ahorrarse un `push`
+	ld a,l			;ab55   ; Los dos bytes de la ventana del dibujo...
 	ld c,h			;ab56
 	pop hl			;ab57
-	or (hl)			;ab58
+	or (hl)			;ab58   ; ...estampados con `or`, y de derecha a izquierda: escribiendo primero el byte de la derecha y bajando con un `dec hl` se ahorra el `push` que haria falta para volver al principio
 	ld (hl),a			;ab59
 	dec hl			;ab5a
 	ld a,c			;ab5b
 	or (hl)			;ab5c
 	ld (hl),a			;ab5d
-L_AB5E:
-	ld a,l			;ab5e
+glifo_fila_siguiente:		; Baja los 24 del ancho del buffer sumandolos a mano, y cose el anillo: en 0x5800 se vuelve a 0x4000
+	ld a,l			;ab5e   ; Los 24 del ancho del buffer, sumados a mano
 	add a,018h		;ab5f
 	ld l,a			;ab61
-	jr nc,L_AB6C		;ab62
+	jr nc,L_AB6C		;ab62   ; Lo normal es que no se lleve nada y no haya que tocar H
 	inc h			;ab64
 	ld a,h			;ab65
-	cp 058h		;ab66
+	cp 058h		;ab66   ; Y si se lleva, el anillo: 0x5800 es 0x4000 mas 24*256, o sea las 256 filas que caben en un byte de fila, y ahi se vuelve al principio del buffer. Este pintor cose el borde; el de sprites, en 0xAAB7, prefiere dejar de pintar
 	jr nz,L_AB6C		;ab68
 	ld h,040h		;ab6a
 L_AB6C:
-	djnz L_AB0A		;ab6c
+	djnz pinta_fila_del_glifo		;ab6c   ; Las ocho filas del glifo
 	ret			;ab6e
 gira_rumbo:		; Acerca el rumbo actual (bits 0-2) al pedido (bits 5-7) un octavo por vez y por el lado corto, y lo aplica en el acto: aqui no hay el contador de espera que si tiene la nave
 	ld b,a			;ab6f
