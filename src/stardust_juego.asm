@@ -11287,21 +11287,21 @@ contacto_instalacion:		; La caja de la instalacion de IX contra la nave: HL sale
 	ret c			;d6f5
 	jp mata_nave		;d6f6
 entra_en_records:		; Mira si el marcador entra en la tabla de records, y es por donde pasa TODO game over: la llama 0xBDE2, adonde llegan tanto quedarse sin vidas (0xC000) como la tecla ABANDONAR (0xBFE8). Compara los seis digitos de 0xDD80 contra los ocho campos de puntuacion de 0xDD10 + n*15 y, al ganar uno, hace hueco con un `lddr` de (7-n)*15 bytes que empuja las fichas de abajo y tira la ultima, copia ahi la puntuacion con un `ldir` de 6 y salta a 0xF671 -la entrada del nombre- con la direccion del nombre nuevo en la pila. La tabla son ocho fichas de 15 bytes desde 0xDD08 -8 de nombre, 6 de puntuacion y el cero-, y cierra al byte: 0xDD08 + 120 = 0xDD80, que es el marcador. Gemela de la entra_en_records de la fase de a pie: 57 de sus 71 bytes son identicos
-	ld hl,0dd10h		;d6f9
-	ld c,008h		;d6fc
+	ld hl,0dd10h		;d6f9   ; Los puntos de la primera ficha; el nombre son los ocho bytes de delante
+	ld c,008h		;d6fc   ; Las ocho fichas, de la mejor a la peor
 L_D6FE:
-	ld de,0dd80h		;d6fe
+	ld de,0dd80h		;d6fe   ; Contra los seis digitos del marcador
 	push hl			;d701
 	ld b,006h		;d702
 L_D704:
-	ld a,(de)			;d704
+	ld a,(de)			;d704   ; Digito a digito, empezando por el de mas peso
 	cp (hl)			;d705
-	jr c,L_D737		;d706
-	jr z,L_D733		;d708
-	ld hl,0dd71h		;d70a
-	dec c			;d70d
+	jr c,L_D737		;d706   ; Menor: esta ficha no se supera, a probar con la siguiente
+	jr z,L_D733		;d708   ; Iguales: al digito de al lado. Un empate exacto recorre los seis y acaba cayendo a la ficha de abajo, o sea que empatar no adelanta a nadie
+	ld hl,0dd71h		;d70a   ; Superada: 0xDD71 es la ultima de las ocho, que es donde se escribe si no hay nada que correr
+	dec c			;d70d   ; Y eso pasa justo cuando la superada es la ultima
 	jr z,L_D726		;d70e
-	ld h,000h		;d710
+	ld h,000h		;d710   ; Si no, hay que bajar un puesto a todas las de debajo: quince bytes por ficha, contados como hl*16 - hl
 	ld l,c			;d712
 	ld d,h			;d713
 	ld e,l			;d714
@@ -11314,38 +11314,38 @@ L_D704:
 	ld c,l			;d71c
 	ld hl,0dd70h		;d71d
 	ld de,0dd7fh		;d720
-	lddr		;d723
-	inc hl			;d725
+	lddr		;d723   ; El `lddr` las corre de una en una desde el final, y la octava se cae de la tabla
+	inc hl			;d725   ; Y HL queda en el nombre del hueco que se acaba de abrir
 L_D726:
-	pop de			;d726
+	pop de			;d726   ; Los puntos de la ficha superada, guardados antes del bucle de digitos
 	push hl			;d727
-	ld hl,0dd80h		;d728
+	ld hl,0dd80h		;d728   ; El marcador entero a su sitio...
 	ld bc,00006h		;d72b
 	ldir		;d72e
-	jp pide_nombre		;d730
+	jp pide_nombre		;d730   ; ...y a pedir el nombre, con el puntero al hueco en la pila
 L_D733:
-	inc hl			;d733
+	inc hl			;d733   ; Digito siguiente
 	inc de			;d734
 	djnz L_D704		;d735
 L_D737:
-	pop hl			;d737
+	pop hl			;d737   ; Ficha siguiente, quince bytes mas alla
 	ld de,0000fh		;d738
 	add hl,de			;d73b
 	dec c			;d73c
 	jr nz,L_D6FE		;d73d
 	ret			;d73f
 L_D740:
-	xor a			;d740
+	xor a			;d740   ; El contador del guion del bonus de zona, a cero
 	ld (0ddf7h),a		;d741
-	ld a,(0e157h)		;d744
+	ld a,(0e157h)		;d744   ; Los dos digitos que va a cobrar el bonus: (zona + 0x32) y un '0', o sea "30" en la zona 1 y "90" en la 7, que son 3.000 y 9.000 puntos
 	add a,032h		;d747
 	ld (0ddfeh),a		;d749
 	ld a,030h		;d74c
 	ld (0ddffh),a		;d74e
-	ld a,(0e157h)		;d751
+	ld a,(0e157h)		;d751   ; Y la zona, una mas
 	inc a			;d754
 	ld (0e157h),a		;d755
-	call hud_vidas_zona		;d758
+	call hud_vidas_zona		;d758   ; El HUD, ya con la zona nueva
 bucle_fin_de_zona:		; El cuadro del remate de zona: el mismo encadenado que bucle_partida pero SIN repinta_fondo ni gobierna_instalaciones ni disparo, con una espera de 1500 por vuelta y con bonus_zona al final. De aqui no se sale por abajo -acaba en `jp` a si mismo-: quien saca es bonus_zona, desapilando la vuelta
 	ld a,(0ca8eh)		;d75b   ; El contador de cuadros sigue subiendo aunque la partida ya no este en su bucle
 	inc a			;d75e

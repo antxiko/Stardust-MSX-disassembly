@@ -4292,3 +4292,28 @@ C 0xD592 Tres `nop` seguidos, con pinta de que algo se quito a mano
 C 0xD595 La musica de la demo, y aqui se espera a que acabe
 C 0xD59B La semilla del azar se planta en 0xA710 SIEMPRE, asi que la demo sale igual todas las veces
 C 0xD5A1 Y el mando pasa a leerse de la demo: 0xC1AF en el operando del `call` de 0xC090, que el arranque de partida vuelve a poner en lee_mando (0xBE1B)
+
+# ------------------------------- meter el marcador en la tabla de records
+# El cuarto tramo portado de `parte2`: 43 instrucciones que alli estaban
+# comentadas y aqui no, con las direcciones de esta tabla (fichas de 15 bytes
+# desde 0xDD08, ocho, y el marcador en 0xDD80).
+C 0xD6F9 Los puntos de la primera ficha; el nombre son los ocho bytes de delante
+C 0xD6FC Las ocho fichas, de la mejor a la peor
+C 0xD6FE Contra los seis digitos del marcador
+C 0xD704 Digito a digito, empezando por el de mas peso
+C 0xD706 Menor: esta ficha no se supera, a probar con la siguiente
+C 0xD708 Iguales: al digito de al lado. Un empate exacto recorre los seis y acaba cayendo a la ficha de abajo, o sea que empatar no adelanta a nadie
+C 0xD70A Superada: 0xDD71 es la ultima de las ocho, que es donde se escribe si no hay nada que correr
+C 0xD70D Y eso pasa justo cuando la superada es la ultima
+C 0xD710 Si no, hay que bajar un puesto a todas las de debajo: quince bytes por ficha, contados como hl*16 - hl
+C 0xD723 El `lddr` las corre de una en una desde el final, y la octava se cae de la tabla
+C 0xD725 Y HL queda en el nombre del hueco que se acaba de abrir
+C 0xD726 Los puntos de la ficha superada, guardados antes del bucle de digitos
+C 0xD728 El marcador entero a su sitio...
+C 0xD730 ...y a pedir el nombre, con el puntero al hueco en la pila
+C 0xD733 Digito siguiente
+C 0xD737 Ficha siguiente, quince bytes mas alla
+C 0xD740 El contador del guion del bonus de zona, a cero
+C 0xD744 Los dos digitos que va a cobrar el bonus: (zona + 0x32) y un '0', o sea "30" en la zona 1 y "90" en la 7, que son 3.000 y 9.000 puntos
+C 0xD751 Y la zona, una mas
+C 0xD758 El HUD, ya con la zona nueva
