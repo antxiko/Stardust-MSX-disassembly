@@ -67,21 +67,27 @@ PIE = {
 
 
 def enlinea(t):
-    """Formato dentro de una linea: codigo, negrita, cursiva, enlaces, imagenes."""
-    trozos = re.split(r"(`[^`]+`)", t)
-    out = []
-    for i, tr in enumerate(trozos):
-        if i % 2:                                   # dentro de comillas: literal
-            out.append(f"<code>{html.escape(tr[1:-1])}</code>")
-            continue
-        s = html.escape(tr)
-        s = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r'<img src="\2" alt="\1">', s)
-        s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", lambda m:
-                   f'<a href="{ruta(m.group(2))}">{m.group(1)}</a>', s)
-        s = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", s)
-        s = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<em>\1</em>", s)
-        out.append(s)
-    return "".join(out)
+    """Formato dentro de una linea: codigo, negrita, cursiva, enlaces, imagenes.
+
+    El codigo entre comillas se APARTA primero y se devuelve al final. Partir la
+    linea por las comillas y formatear cada trozo por separado, que es lo obvio,
+    deja sin convertir toda negrita que lleve codigo dentro -`**detras del
+    `call`**` se quedaba con los asteriscos a la vista-, porque la apertura y el
+    cierre caen en trozos distintos.
+    """
+    codigos = []
+
+    def aparta(m):
+        codigos.append("<code>%s</code>" % html.escape(m.group(1)))
+        return "\x00%d\x01" % (len(codigos) - 1)
+
+    s = html.escape(re.sub(r"`([^`]+)`", aparta, t))
+    s = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r'<img src="\2" alt="\1">', s)
+    s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", lambda m:
+               f'<a href="{ruta(m.group(2))}">{m.group(1)}</a>', s)
+    s = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", s)
+    s = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<em>\1</em>", s)
+    return re.sub("\x00([0-9]+)\x01", lambda m: codigos[int(m.group(1))], s)
 
 
 # La web se sirve desde docs/, asi que lo que este fuera de esa carpeta no
@@ -95,14 +101,20 @@ def ruta(href):
     if href.startswith(("http", "#", "mailto:")):
         return href
     h = href.replace("docs/", "")
-    if h.startswith("../") and not h.startswith("../src") and not h.startswith("../tools"):
-        return h if h.endswith((".html", ".png", ".txt")) else h.replace("../", "")
-    h = h.replace("../", "")
-    # Codigo fuente, herramientas y ficheros de la raiz: no estan bajo docs/
-    if h.startswith(("src/", "tools/")) or h in (
+    # Lo que no vive bajo docs/ no existe para el navegador: el codigo fuente,
+    # las herramientas, las medidas y los ficheros de la raiz se mandan al
+    # repositorio. Se mira ANTES de tocar el "../", porque desde docs/ es como
+    # se citan y quitarselo deja un enlace que la web no puede servir.
+    plano = h
+    while plano.startswith("../"):
+        plano = plano[3:]
+    if plano.startswith(("src/", "tools/", "medidas/")) or plano in (
             "README.md", "README.es.md", "LICENSE", "AVISO-LEGAL.md",
             "LEGAL-NOTICE.md", "Makefile"):
-        return f"{REPO}/blob/main/{h}"
+        return f"{REPO}/blob/main/{plano}"
+    if h.startswith("../"):
+        return h if h.endswith((".html", ".png", ".txt")) else plano
+    h = plano
     if h.endswith(".md"):
         h = h[:-3] + ".html"
     return h
@@ -201,7 +213,12 @@ def convierte(texto, titulo, actual, idioma="en"):
         nav += f'<a href="es/{otro}" style="margin-left:auto;color:var(--oro)">Castellano</a>'
     else:
         nav += f'<a href="../{otro}" style="margin-left:auto;color:var(--oro)">English</a>' 
-    return (f"<title>{html.escape(titulo)}</title>\n<style>{ESTILO}</style>\n"
+    # El charset y el viewport van explicitos. Sin la declaracion, un navegador
+    # que no reciba el charset por cabecera lee la pagina como si fuera de un
+    # byte y rompe los acentos; y sin el viewport no se lee en un telefono.
+    return ('<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+            f"<title>{html.escape(titulo)}</title>\n<style>{ESTILO}</style>\n"
             f'<div class="w"><nav class="top">{nav}</nav>\n' + "\n".join(out) +
             f'\n<footer><p>{PIE[idioma]}</p></footer></div>\n')
 
