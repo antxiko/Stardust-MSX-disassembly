@@ -1306,12 +1306,20 @@ de bajo sola, sin las otras dos voces encima.
 
 #### Las canciones no tienen ni una nota
 
-Y aquí está lo mejor del asunto, sin duda. Descodificada, la canción de 378
-bytes resulta ser 152 llamadas a frase y cero notas propias — ni una sola.
-La de 149 bytes, cincuenta y seis llamadas y una única nota suelta. La
-melodía no está en las canciones: está en las frases, y la canción es
+Y aquí está lo mejor del asunto, sin duda. Descodificadas, las tres voces
+resultan ser puras llamadas a frase y cero notas propias — ni una sola entre
+las tres. La melodía no está en las voces: está en las frases, y la voz es
 únicamente la estructura que las va encadenando. Por eso 1.420 bytes dan
 para toda la banda sonora del juego entero.
+
+Aquí se dijo «la de 149 bytes, cincuenta y seis llamadas y una única nota
+suelta», y estaba mal partido por el mismo sitio: la herramienta que recorre
+la zona no corta en el comando de bucle, así que pegaba la tercera voz con lo
+que venía detrás. Son dos cosas distintas. La voz son **137** bytes
+(0xECCC–0xED54) y sus llamadas seguidas a la frase 2 son **44**, no
+veinticuatro. Los doce bytes siguientes, 0xED55–0xED60, son un efecto de
+sonido aparte **que sí se usa**: hay un `ld de,0ed55h` en 0xCEB6, el sonido de
+aparición del perseguidor. La nota suelta era de ese efecto, no de la voz.
 
 Con la tabla de notas al lado, la armonía se lee a simple vista. Las frases
 1, 4, 5 y 6 son cuatro notas repetidas —do3, la3, fa3 y sol3, las
@@ -1323,27 +1331,108 @@ Do, la, fa, sol, dos compases por acorde: es la progresión I–vi–IV–V, la
 misma de los doo-wop de los años cincuenta, sonando aquí en un matamarcianos
 de 1987. Usa diecisiete de las veinte frases disponibles.
 
-Hay además un bloque de 149 bytes, justo detrás de la tercera voz: cincuenta
-y seis llamadas a solo dos frases, y la que repite veinticuatro veces
-seguidas no tiene ni una sola nota, así que es percusión pura por el canal
-de ruido. No es una de las tres voces —la tercera empieza un byte antes, y
-es un terminador— y quién lo hace sonar sigue sin localizarse. Queda como un
-bloque escrito en el lenguaje del intérprete y sin dueño conocido, y lo de
-«sin dueño» ya es una medida, no un simple encogimiento de hombros: el valor
-0xECCC no aparece ni una sola vez en toda la cinta. El
-control dice que la búsqueda vale de verdad: 0xECCB sí aparece, exactamente
-una vez, en 0xE181, justo la instrucción que se lo entrega al canal 2, y sus
-vecinos 0xED61 y 0xED6B también aparecen, cargados desde 0xF4FE y 0xF506.
-Tampoco se llega hasta ahí por continuidad: el byte anterior es un
-terminador, y ninguna de las veinte frases apunta tan arriba.
+#### La tercera voz existe, y es la percusión
 
-Dicho con precisión, porque aquí importa: no hay una referencia literal a
-ese bloque. Una dirección montada a mano —un `ld hl,0eccbh / inc hl»— se
-escaparía de esta búsqueda sin que nadie lo notara, así que no se puede
-afirmar que el bloque sea inalcanzable, solo que nada lo nombra por su
-nombre. La sospecha razonable, dicha como lo que es, una sospecha: que
-fuera de verdad la tercera voz, y que la conversión la apagara dejando el
-puntero un byte corto, justo encima del terminador.
+Detrás de ese «fin» del canal 2, en 0xECCC, empieza un guion completo de 137
+bytes que nadie nombra en toda la cinta. No es un resto suelto: es la tercera
+voz, y lo que toca es la percusión.
+
+La zona no son dos guiones y luego un bloque perdido. Son **tres guiones
+consecutivos**, cada uno cerrado con su propio comando de bucle, y entre el
+segundo y el tercero, un byte:
+
+    0xEB52 - 0xEC49    248 bytes    acaba en bucle    canal 0, el bajo
+    0xEC4A - 0xECCA    129 bytes    acaba en bucle    canal 1, la melodía
+    0xECCB               1 byte     «fin»             <- aquí apunta el canal 2
+    0xECCC - 0xED54    137 bytes    acaba en bucle    nadie
+
+Tres cosas, todas medidas ejecutando el intérprete del propio juego sobre los
+bytes del cartucho.
+
+**Las tres duran exactamente lo mismo:** 8.704 cuadros clavados hasta su bucle,
+contando notas y ligados y siguiendo las llamadas a frase con su pila. Un
+bloque de datos suelto no dura por casualidad el mismo compás que las otras dos
+voces.
+
+**El huérfano es el único que toca el generador de ruido:** 156 órdenes de
+ruido, contra ninguna en los otros dos. Sus cuarenta y cuatro llamadas van
+todas a la frase 2, que empieza con `81 08` y eso, tras el `and 009h` del
+comando, deja el bit del ruido puesto y quita el del tono. Percusión, no
+melodía.
+
+**Y cae en la misma rejilla.** El bajo cambia de nota cada 128 cuadros exactos,
+sin una sola excepción. La percusión repite su patrón cada 128 cuadros, con
+tres golpes siempre en las mismas posiciones: 32, 80 y 96, todas múltiplos de
+16, que es la unidad de duración de la partitura. Y 8.704 entre 128 son 68
+compases justos.
+
+#### Cómo suena
+
+Los tres audios salen de ejecutar el intérprete del juego sobre los bytes: sus
+quince comandos, la tabla de 96 notas, las veinte frases, los instrumentos con
+sus dos envolventes, el mezclador y el generador de ruido
+(`tools/suena_tres_voces.py`). Entre el primero y el segundo cambia **un solo
+byte**.
+
+<audio controls preload="none" src="../audio/tercera_voz_callada.wav"></audio>
+
+Como suena hoy: el canal 2 recibe 0xECCB y se calla. Dos voces.
+
+<audio controls preload="none" src="../audio/tercera_voz_descallada.wav"></audio>
+
+Lo mismo con el puntero un byte más allá, en 0xECCC. Aparece la percusión.
+
+<audio controls preload="none" src="../audio/tercera_voz_percusion.wav"></audio>
+
+Y la tercera voz sola, para oír el patrón limpio.
+
+Conviene decir qué es esto y qué no. Es **la lectura del listado sonando**: si
+un comando estuviera mal leído, sonaría el error. No es una grabación del chip.
+La medida sobre el hardware —parchear el byte y capturar lo que llega al
+AY-3-8910— está pendiente, y es lo que convertiría esto de reconstrucción en
+medida. Lo que sí está comprobado byte a byte son las direcciones, las
+longitudes, los 8.704 cuadros, el compás de 128 y las posiciones de los golpes.
+
+#### ¿Descuido o silenciador?
+
+Caben las dos explicaciones, y conviene no elegir por gusto. Dos cosas se
+pueden decir de los bytes, y ninguna de las dos decide.
+
+El «fin» de 0xECCB está **insertado, no sobrescrito**. Si alguien hubiera
+tapado el primer byte del guion, el `8c 02` siguiente estaría descolocado, y
+está perfectamente alineado desde 0xECCC. Ese byte se escribió en un hueco.
+
+Y **nadie puede caer en él por continuidad**: el guion del canal 1 termina en
+el comando de bucle de 0xECCA, que o recarga el puntero al principio o salta al
+fin, pero nunca avanza al byte siguiente. Ese «fin» existe sólo para quien
+apunte a él, y el único que apunta es el canal 2.
+
+Así que o es un puntero mal calculado al traer el juego del Spectrum, o alguien
+calló la percusión con un byte y dejó la pista donde estaba. El binario no
+distingue entre las dos. Y no hay referencia literal al guion: una dirección
+montada a mano —un `ld hl,0eccbh / inc hl`— se escaparía de la búsqueda sin que
+nadie lo notara, así que lo que se afirma es que nada lo nombra, no que sea
+inalcanzable. El control dice que la búsqueda vale: 0xECCB sí aparece,
+exactamente una vez, en 0xE181, la instrucción que se lo entrega al canal 2, y
+sus vecinos 0xED61 y 0xED6B también aparecen, cargados desde 0xF4FE y 0xF506.
+
+#### El mismo fallo está dos veces, una por bloque
+
+La segunda parte del juego, la de a pie, trae el subsistema de sonido entero
+duplicado y reubicado, y con él **la misma música y el mismo byte**. Su rutina
+de 0xC483 reparte 0xCE45, 0xCF3D y 0xCFBE, y 0xCFBE es otro «fin» suelto: la
+percusión empieza en 0xCFBF y son **los mismos 137 bytes**, comparados uno a
+uno.
+
+Los guiones están a 0x1D0D de los de naves, pero no todo se movió igual: la
+tabla de frases está a 0x1CE5, y cuatro instrumentos —el 3, el 4, el 5 y el
+7— se retocaron entre una parte y otra. No afecta a esta música, que pide los
+instrumentos 8, 9, 10, 11, 12 y 15: sintetizadas las dos, salen **idénticas
+byte a byte**.
+
+Las otras dos músicas del juego están sanas. La de los carteles (0xEB38,
+0xED61 y 0xED6B) y la propia de la fase de a pie (0xCDB1, 0xCDD0 y 0xCDEC)
+traen las tres voces con contenido.
 
 La tabla de notas, de paso, se comprueba sola: con el reloj del chip de
 sonido del MSX, el primer periodo da 32,70 Hz, que es el do1 teórico exacto,

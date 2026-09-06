@@ -957,6 +957,26 @@ C 0xA528 El embudo de las vidas: con 0xA6ED >= 0x2D resta una a 0xC45F; con acar
 # seguido de `8c 02 8c 02 8c 02...`, que es exactamente el molde del 0xECCB de
 # naves. No es una casualidad de la conversion: es el mismo dato movido.
 #
+#     Comprobado byte a byte: la voz que empieza en 0xCFBF son los MISMOS 137
+#     bytes que la de 0xECCC en naves, y es la PERCUSION (44 llamadas a la frase
+#     2, que abre el ruido y cierra el tono). El fallo esta DOS VECES, una por
+#     bloque, porque el subsistema entero se duplico con el.
+#
+#     Y NO TODO SE MOVIO AL MISMO DESFASE. Los tres guiones estan a 0x1D0D de los
+#     de naves, pero la tabla de FRASES esta a 0x1CE5 (los veinte punteros), y
+#     cuatro instrumentos -el 3, el 4, el 5 y el 7- se retocaron entre una parte
+#     y otra. A esta musica no le afecta: pide los instrumentos 8, 9, 10, 11, 12
+#     y 15, ninguno de los cambiados, y sintetizadas las dos partes con
+#     tools/suena_tres_voces.py salen IDENTICAS byte a byte (mismo sha256).
+#
+#     Las direcciones del subsistema de aqui: notas 0xC9FE, frases 0xCADC,
+#     instrumentos 0xC8F7, efectos 0xC9E7, interprete 0xC517.
+#
+#     Y LAS OTRAS DOS MUSICAS ESTAN SANAS. La propia de esta fase (0xB3CB ->
+#     0xCDB1, 0xCDD0, 0xCDEC) trae las tres voces con contenido, de 68, 60 y 64
+#     cuadros; y la de los carteles de naves (0xEB38, 0xED61, 0xED6B), las tres
+#     con su nota y su bucle. La voz muda es solo la de esta pieza.
+#
 # --- LA PARTITURA, COTEJADA CONTRA EL CHIP: 99,4 % --------------------------
 #
 # Sobre la musica que suena con la lista de records (medida en el replay de a

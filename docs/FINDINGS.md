@@ -1310,12 +1310,20 @@ was being heard, on its own, without the other two voices on top.
 
 #### The songs don't contain a single note
 
-And here's the best part of the whole thing. Decoded, the 378-byte song
-turns out to be 152 phrase calls and zero notes of its own — not one. The
-149-byte one is fifty-six calls and a single loose note. The melody isn't in
-the songs at all: it's in the phrases, and the song is only the structure
-that chains them together. Which is why 1,420 bytes are enough for the
-entire soundtrack.
+And here's the best part of the whole thing. Decoded, all three voices turn
+out to be pure phrase calls and zero notes of their own — not one between the
+three of them. The melody isn't in the voices at all: it's in the phrases, and
+the voice is only the structure that chains them together. Which is why 1,420
+bytes are enough for the entire soundtrack.
+
+This used to say "the 149-byte one is fifty-six calls and a single loose note",
+and it was split at the wrong place for the same reason: the tool that walks
+the area doesn't cut at the loop command, so it glued the third voice to
+whatever came after it. They're two separate things. The voice is **137** bytes
+(0xECCC–0xED54) and its run of calls to phrase 2 is **44**, not twenty-four.
+The twelve bytes after it, 0xED55–0xED60, are a separate sound effect that **is
+used**: there's an `ld de,0ed55h` at 0xCEB6, the chaser's appearance sound. The
+loose note belonged to that effect, not to the voice.
 
 With the note table alongside, the harmony reads at a glance. Phrases 1, 4,
 5 and 6 are four repeated notes — C3, A3, F3 and G3, the fundamentals — and
@@ -1327,27 +1335,109 @@ C, A, F, G, two bars per chord: that's the I–vi–IV–V progression, the same
 one from fifties doo-wop, playing here in a 1987 shoot'em up. It uses
 seventeen of the twenty available phrases.
 
-There's also a 149-byte block, right behind the third voice: fifty-six
-calls to just two phrases, and the one that repeats twenty-four times in a
-row doesn't have a single note, so it's pure percussion through the noise
-channel. It isn't one of the three voices — the third one starts a byte
-earlier, and is a terminator — and who actually plays it still hasn't been
-tracked down. It stays a block written in the interpreter's language with
-no known owner, and "no owner" here is already a measurement, not a shrug:
-the value 0xECCC doesn't appear once anywhere on the tape. The
-control says the search is sound: 0xECCB does appear, exactly once, at
-0xE181, precisely the instruction that hands it to channel 2, and its
-neighbours 0xED61 and 0xED6B turn up too, loaded from 0xF4FE and 0xF506.
-It's not reached by continuity either: the byte before it is a terminator,
-and none of the twenty phrases point that high.
+#### The third voice exists, and it's the percussion
 
-Said precisely, because it matters here: there's no literal reference to
-it. A hand-built address — an `ld hl,0eccbh / inc hl` — would slip past
-this search without anyone noticing, so the claim isn't that the block is
-unreachable, only that nothing names it by address. The reasonable
-suspicion, stated as exactly that, a suspicion: that this really was the
-third voice, and the conversion switched it off by leaving the pointer one
-byte short, sitting right on top of the terminator.
+Behind that "end" handed to channel 2, at 0xECCC, a complete 137-byte script
+begins that nothing on the tape names. It isn't a stray leftover: it is the
+third voice, and what it plays is the drum track.
+
+The area isn't two scripts followed by a loose block. It's **three consecutive
+scripts**, each closed with its own loop command, and one byte between the
+second and the third:
+
+    0xEB52 - 0xEC49    248 bytes    ends in loop    channel 0, the bass
+    0xEC4A - 0xECCA    129 bytes    ends in loop    channel 1, the melody
+    0xECCB               1 byte     "end"           <- channel 2 points here
+    0xECCC - 0xED54    137 bytes    ends in loop    nobody
+
+Three things, all measured by running the game's own interpreter over the
+cartridge bytes.
+
+**All three last exactly the same:** 8,704 frames dead on, up to their loop,
+counting notes and ties and following phrase calls with their stack. A stray
+block of data doesn't happen to last the same bar as the other two voices.
+
+**The orphan is the only one that touches the noise generator:** 156 noise
+commands, against none in the other two. All forty-four of its calls go to
+phrase 2, which opens with `81 08` — and after the command's `and 009h` that
+leaves the noise bit set and clears the tone bit. Percussion, not melody.
+
+**And it lands on the same grid.** The bass changes note every 128 frames
+exactly, without a single exception. The percussion repeats its pattern every
+128 frames, with three hits always in the same places: 32, 80 and 96, all
+multiples of 16, which is the score's unit of duration. And 8,704 divided by
+128 is 68 bars exactly.
+
+#### What it sounds like
+
+The three clips come from running the game's interpreter over the bytes: its
+fifteen commands, the 96-note table, the twenty phrases, the instruments with
+their two envelopes, the mixer and the noise generator
+(`tools/suena_tres_voces.py`). Between the first and the second, **one single
+byte** changes.
+
+<audio controls preload="none" src="audio/tercera_voz_callada.wav"></audio>
+
+How it sounds today: channel 2 gets 0xECCB and goes quiet. Two voices.
+
+<audio controls preload="none" src="audio/tercera_voz_descallada.wav"></audio>
+
+The same thing with the pointer one byte further along, at 0xECCC. The
+percussion appears.
+
+<audio controls preload="none" src="audio/tercera_voz_percusion.wav"></audio>
+
+And the third voice on its own, to hear the pattern clean.
+
+Worth saying what this is and what it isn't. It's **the reading of the listing
+made audible**: if a command were misread, you'd hear the mistake. It isn't a
+recording of the chip. The hardware measurement — patching the byte and
+capturing what reaches the AY-3-8910 — is still pending, and that's what would
+turn this from reconstruction into measurement. What *is* checked byte by byte:
+the addresses, the lengths, the 8,704 frames, the 128-frame bar and the
+positions of the hits.
+
+#### Oversight, or a mute?
+
+Both readings fit, and it's worth not picking by taste. Two things can be said
+about the bytes, and neither settles it.
+
+The "end" at 0xECCB is **inserted, not overwritten**. If someone had covered
+the script's first byte, the `8c 02` that follows would be off by one, and it
+is perfectly aligned from 0xECCC. That byte was written into a gap.
+
+And **nobody can fall into it by continuity**: the channel 1 script ends at the
+loop command at 0xECCA, which either reloads the pointer to the start or jumps
+to the end, but never advances to the next byte. That "end" exists only for
+whoever points at it, and the only thing pointing at it is channel 2.
+
+So either it's a pointer miscalculated while bringing the game over from the
+Spectrum, or someone muted the drums with one byte and left the track where it
+was. The binary doesn't tell the two apart. And there's no literal reference to
+the script: a hand-built address — an `ld hl,0eccbh / inc hl` — would slip past
+the search without anyone noticing, so the claim is that nothing names it, not
+that it's unreachable. The control says the search is sound: 0xECCB does
+appear, exactly once, at 0xE181, the instruction that hands it to channel 2,
+and its neighbours 0xED61 and 0xED6B turn up too, loaded from 0xF4FE and
+0xF506.
+
+#### The same fault is there twice, once per block
+
+The second part of the game, the on-foot one, carries the whole sound subsystem
+duplicated and relocated, and with it **the same music and the same byte**. Its
+routine at 0xC483 hands out 0xCE45, 0xCF3D and 0xCFBE, and 0xCFBE is another
+loose "end": the percussion starts at 0xCFBF and is **the same 137 bytes**,
+compared one by one.
+
+The scripts sit 0x1D0D from the ones in the ship section, but not everything
+moved by the same amount: the phrase table is at 0x1CE5, and four instruments
+— 3, 4, 5 and 7 — were retouched between one part and the other. It doesn't
+affect this music, which asks for instruments 8, 9, 10, 11, 12 and 15:
+synthesised both ways, they come out **identical byte for byte**.
+
+The game's other two pieces of music are sound. The one for the caption screens
+(0xEB38, 0xED61 and 0xED6B) and the on-foot section's own (0xCDB1, 0xCDD0 and
+0xCDEC) all have three voices with real content.
 
 The note table, incidentally, checks itself: with the MSX sound chip's
 clock, the first period gives 32.70 Hz, the theoretical C1, and of the 84

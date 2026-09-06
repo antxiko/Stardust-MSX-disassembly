@@ -15,7 +15,7 @@ TSX  := stardust.tsx
 TSX_SHA := 8f4fb3840e5ad043d8d694faeaa86a6e4a5cd2cabe5dd99fec08e5cf0a7dbb13
 SYMS := work/msx.sym
 
-.PHONY: all verify clean extract cuerpos trazado listados sanity test cinta imagenes web
+.PHONY: all verify clean extract cuerpos trazado listados sanity test cinta imagenes web audio
 
 all: verify
 
@@ -143,6 +143,18 @@ imagenes: extracted/.stamp
 	python3 tools/render_marco.py work/juego.raw docs/imagenes
 	python3 tools/render_final.py work/parte2.raw docs/imagenes
 
+# Los audios de la web. Tampoco son grabaciones: ejecutan el interprete del
+# propio juego sobre los bytes de la cinta -sus quince comandos, la tabla de 96
+# notas, las frases, los instrumentos con sus dos envolventes, el mezclador y el
+# generador de ruido-. Por eso valen de comprobacion: si un comando estuviera
+# mal leido, saldria ruido en vez de musica. Los tres se diferencian en UN BYTE:
+# la direccion que recibe el canal 2.
+audio: extracted/.stamp
+	@mkdir -p docs/audio
+	python3 tools/suena_tres_voces.py work/juego.raw docs/audio/tercera_voz_callada.wav --seg 24
+	python3 tools/suena_tres_voces.py work/juego.raw docs/audio/tercera_voz_descallada.wav --descallada --seg 24
+	python3 tools/suena_tres_voces.py work/juego.raw docs/audio/tercera_voz_percusion.wav --descallada --solo-percusion --seg 24
+
 verify: listados sanity imagenes
 	@echo "=================================================================="
 	@echo " Reproducibilidad: ensamblar debe dar el binario exacto"
@@ -162,7 +174,7 @@ test:
 # La web de GitHub Pages: ingles en docs/ y castellano en docs/es/. El diseno es
 # el compartido por la serie (tools/estilo_web.py) y las paginas salen
 # autocontenidas, con las imagenes embebidas.
-web: imagenes
+web: imagenes audio
 	python3 tools/md2html.py docs en
 	python3 tools/md2html.py docs/es es
 	python3 tools/make_web.py work/juego.raw docs/imagenes docs/index.html en

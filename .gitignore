@@ -25,6 +25,13 @@ work/*
 *.rom
 *.dsk
 
+# Pero los audios de la web SI van: no son volcados de la cinta ni grabaciones
+# del juego, sino sonido generado ejecutando el interprete de musica del propio
+# listado sobre los bytes (tools/suena_tres_voces.py, regla `make audio`). Van
+# en WAV y no en MP3 porque el codificador no esta disponible en todas las
+# maquinas donde se compila esto, y el navegador los reproduce igual.
+!docs/audio/*.wav
+
 # -----------------------------------------------------------------------------
 # Basura del sistema y del entorno
 # -----------------------------------------------------------------------------

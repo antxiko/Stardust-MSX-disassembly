@@ -907,8 +907,9 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 #
 # Recorriendo de 0xEA38 a 0xED74 salen VEINTIUN bloques: diecinueve acaban en
 # 0x8B (fin) y dos en 0x82 (bucle) ? estos dos suenan en bucle hasta que algo
-# los pare. Diecisiete son cortos, de 9 a 31 bytes: son los EFECTOS. Y dos son
-# largos, de 378 y 149 bytes (0xEB52 y 0xECCC): esas son las MUSICAS.
+# los pare. Diecisiete son cortos, de 9 a 31 bytes: son los EFECTOS. Y el tramo
+# largo del final es la MUSICA, que son TRES voces de 248, 129 y 137 bytes; el
+# recorrido las junta porque no corta en 0x82 (ver mas abajo).
 #
 # NO HAY TABLA DE SONIDOS. Cada sitio del juego que quiere sonar algo carga la
 # direccion del guion a pelo (`ld de,0eb42h`), y hay 44 de esas cargas en el
@@ -932,11 +933,10 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 #     cuenta baja a 43 de 84, porque el periodo es entero. El 76 sale con el
 #     margen del 1 % que usa tools/lee_musica.py, y asi lo comprueba el test.
 #
-# LAS CANCIONES NO TIENEN NOTAS. Es lo mas bonito del subsistema: la de 378
-# bytes (0xEB52) son **152 llamadas a frase y CERO notas propias**, y la de 149
-# (0xECCC), 56 llamadas y una sola nota suelta. La melodia esta en las frases;
-# la cancion es solo la estructura que las encadena. Por eso 1420 bytes dan
-# para toda la banda sonora.
+# LAS VOCES NO TIENEN NOTAS. Es lo mas bonito del subsistema: las TRES son
+# puras llamadas a frase y CERO notas propias. La melodia esta en las frases; la
+# voz es solo la estructura que las encadena. Por eso 1420 bytes dan para toda
+# la banda sonora.
 #
 # Y LA PROGRESION SE LEE A SIMPLE VISTA. Las frases 1, 4, 5 y 6 son cuatro
 # notas repetidas -do3, la3, fa3 y sol3-, o sea las fundamentales, y la cancion
@@ -945,9 +945,9 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 #     1 1 4 4 1 1 4 4 5 5 6 6 1 1 1 1 1 1 4 4 ...
 #
 # do-do-la-la-fa-fa-sol-sol: es el I-vi-IV-V de toda la vida, dos compases por
-# acorde. Usa 17 de las 20 frases. La otra cancion es un caso aparte: 56
-# llamadas a solo DOS frases, y la que repite 24 veces seguidas -la 2- no tiene
-# ni una nota, o sea que es percusion (suena por el canal de ruido).
+# acorde. Usa 17 de las 20 frases. La TERCERA voz es un caso aparte: 56 llamadas
+# a solo DOS frases -44 a la 2 y 12 a la 15-, y la 2 no tiene ni una nota, o sea
+# que es percusion, y suena por el canal de ruido.
 #
 # --- LOS TRES CANALES, Y EL 46 QUE LLEVABA DIAS SIN EXPLICARSE ---------------
 #
@@ -1002,22 +1002,66 @@ L 0xF0E7 vram_rellena Escribe BC veces el valor de A en VRAM desde HL
 # tono abierto en 0 y 1 y CERRADO en el 2; y en toda la musica el canal 2 no
 # recibe ni un periodo. Entra mudo y se queda mudo.
 #
-# Y LOS 149 BYTES DE 0xECCC SON UN BLOQUE SIN DUENO. Estan escritos en el
-# lenguaje del interprete -56 llamadas a la frase 2 y una nota suelta- pero
-# NADIE LOS NOMBRA: el valor 0xECCC no aparece ni una sola vez en los tres
+# Y EL BLOQUE SIN DUENO DE 0xECCC ES LA TERCERA VOZ: LA PERCUSION.
+#
+# Aqui se dijo "149 bytes" y estaba mal partido: tools/lee_musica.py no corta en
+# 0x82, asi que pegaba la voz con lo que venia detras. Son DOS cosas:
+#     0xECCC-0xED54   137 B   acaba en 0x82 (bucle), igual que las otras dos voces
+#     0xED55-0xED60    12 B   acaba en 0x8B, y es un EFECTO QUE SI SE USA:
+#                             `ld de,0ed55h` en 0xCEB6, el sonido de aparicion
+#                             del perseguidor, por el canal 0.
+# O sea que la voz no tiene ni una nota propia -como las otras dos-, y la "nota
+# suelta" era del efecto. Y las llamadas seguidas a la frase 2 son 44, no 24.
+#
+# LA ZONA SON TRES GUIONES CONSECUTIVOS, cada uno cerrado con su propio 0x82, y
+# entre el segundo y el tercero un byte:
+#     0xEB52-0xEC49  248 B  0x82 @0xEC49   canal 0, el bajo
+#     0xEC4A-0xECCA  129 B  0x82 @0xECCA   canal 1, la melodia
+#     0xECCB           1 B  0x8B           <- lo que recibe el canal 2
+#     0xECCC-0xED54  137 B  0x82 @0xED54   nadie
+#
+# TRES MEDIDAS, ejecutando el interprete sobre los bytes (tools/suena_tres_voces.py):
+#
+#   1. LAS TRES DURAN 8704 CUADROS CLAVADOS hasta su bucle, contando notas y
+#      ligados y siguiendo las llamadas a frase con su pila. Un bloque de datos
+#      suelto no dura por casualidad el mismo compas que las otras dos voces.
+#   2. ES EL UNICO QUE TOCA EL RUIDO: 156 comandos 0x88 contra 0 en los otros
+#      dos. Sus 44 llamadas van a la frase 2 (0xE7F6), que abre con `81 08`: tras
+#      el `and 009h` del comando queda el bit 3 (RUIDO) y se va el 0 (TONO).
+#   3. CAE EN LA MISMA REJILLA: el bajo cambia de nota cada 128 cuadros exactos
+#      sin una excepcion, y la percusion repite patron cada 128 con golpes en 32,
+#      80 y 96 -todos multiplos de 16, la unidad de duracion-. 8704/128 = 68
+#      compases justos.
+#
+#   Sintetizado: con 0xECCB el canal 2 da 0 cuadros de tono, 0 de ruido y volumen
+#   0; con 0xECCC da 0 de tono y 832 de ruido en 30 s, volumen max 8, y los
+#   canales 0 y 1 no cambian ni una cifra.
+#
+# NADIE LO NOMBRA: el valor 0xECCC no aparece ni una sola vez en los tres
 # bloques de la cinta (naves, a pie y pantalla de carga). El control dice que la
 # busqueda vale: 0xECCB aparece exactamente una vez, en 0xE181, que es el
 # `ld de,0eccbh` de arranca_musica, y sus vecinos 0xED61 y 0xED6B tambien
 # aparecen, cargados desde 0xF4FE y 0xF506.
-#     Tampoco se llega por continuidad: el byte de 0xECCB es un 0x8B, que corta,
-#     y ninguna de las 20 frases apunta ahi -la mas alta es 0xEA38 clavada-. Dicho con precision: no hay REFERENCIA LITERAL. Una direccion
-#     calculada a mano (un `ld hl,0eccbh / inc hl`, por ejemplo) no la cazaria
-#     esta busqueda, asi que no se afirma que sea inalcanzable, sino que nada lo
-#     nombra.
-#     La sospecha razonable, dicha como sospecha: que fuera la tercera voz de
-#     verdad y la conversion la apagara dejando el puntero un byte antes, sobre
-#     el terminador. No se puede comprobar sin el binario del Spectrum, que este
-#     repositorio no distribuye.
+#     Tampoco se llega por continuidad: el 0x82 de 0xECCA o recarga el puntero al
+#     principio o salta a op_fin, pero NUNCA avanza al byte siguiente, asi que el
+#     0x8B de 0xECCB solo lo alcanza quien apunte a el. Y ninguna de las 20
+#     frases apunta ahi -la mas alta es 0xEA38 clavada-.
+#     Dicho con precision: no hay REFERENCIA LITERAL. Una direccion calculada a
+#     mano (un `ld hl,0eccbh / inc hl`, por ejemplo) no la cazaria esta busqueda,
+#     asi que no se afirma que sea inalcanzable, sino que nada lo nombra.
+#
+# DESCUIDO O SILENCIADOR: NO SE PUEDE DECIDIR. Dos cosas de los bytes, y ninguna
+# zanja. El 0x8B esta INSERTADO, no sobrescrito -si hubiera tapado el primer byte
+# del guion, el `8c 02` iria descolocado, y va alineado desde 0xECCC-; y ese byte
+# solo existe para quien apunte a el. O es un puntero mal calculado al traer el
+# juego del Spectrum, o alguien callo la percusion con un byte y dejo la pista
+# puesta. No se puede comprobar sin el binario del Spectrum, que este repositorio
+# no distribuye.
+#
+# PENDIENTE, Y ES LO QUE LO CERRARIA: medirlo en el emulador. tools/omsx_canal2.tcl
+# lo hace parcheando DE en 0xE183 (sin tocar la memoria del juego), pero NO SE HA
+# PODIDO EJECUTAR: el replay pide la BIOS del Sony HB-20P, que no esta instalada,
+# y openMSX no arranca con la maquina desatendida. Escrito, nunca corrido.
 #
 # Eso explica ademas por que el sintetizador, tocando 0xEB52 solo, saca cuatro
 # notas graves y repetitivas: no es que la musica sea pobre, es que se estaba
