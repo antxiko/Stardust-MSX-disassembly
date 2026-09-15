@@ -85,6 +85,9 @@ def enlinea(t):
     s = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r'<img src="\2" alt="\1">', s)
     s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", lambda m:
                f'<a href="{ruta(m.group(2))}">{m.group(1)}</a>', s)
+    # El tachado marca en esta serie una pregunta ya cerrada. Sin esto
+    # los `~~` salian en crudo en la pagina publicada.
+    s = re.sub(r"~~([^~]+)~~", r"<del>\1</del>", s)
     s = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", s)
     s = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<em>\1</em>", s)
     return re.sub("\x00([0-9]+)\x01", lambda m: codigos[int(m.group(1))], s)
